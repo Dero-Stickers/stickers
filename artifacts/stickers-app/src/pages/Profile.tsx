@@ -132,13 +132,13 @@ export function Profile() {
             </button>
 
             <a
-              href="mailto:supporto@stickersmatchbox.it"
+              href="mailto:dero975@gmail.com"
               className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50 transition-colors"
             >
               <Mail className="h-5 w-5 text-primary flex-shrink-0" />
               <div>
                 <p className="font-medium text-sm text-foreground">Contatta il supporto</p>
-                <p className="text-xs text-muted-foreground">supporto@stickersmatchbox.it</p>
+                <p className="text-xs text-muted-foreground">dero975@gmail.com</p>
               </div>
             </a>
 

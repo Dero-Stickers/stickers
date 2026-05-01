@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, BookOpen, Users, User, MessageSquare } from "lucide-react";
+import { Home, BookOpen, Users, User } from "lucide-react";
 
 export function MobileLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -9,7 +9,6 @@ export function MobileLayout({ children }: { children: ReactNode }) {
     { icon: Home, label: "Home", path: "/" },
     { icon: BookOpen, label: "Album", path: "/album" },
     { icon: Users, label: "Match", path: "/match" },
-    { icon: MessageSquare, label: "Chat", path: "/chat" },
     { icon: User, label: "Profilo", path: "/profilo" },
   ];
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq, and, or, desc, lt } from "drizzle-orm";
+import { eq, and, or, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -61,12 +61,18 @@ const listChats: RequestHandler = async (req, res) => {
   }
 };
 
-// POST /api/chats/:userId/open
+// POST /api/chats — open or get chat with body { otherUserId }
 const openChat: RequestHandler = async (req, res) => {
   try {
     const session = await requireAuth(req, res);
     if (!session) return;
-    const otherUserId = parseInt(req.params.userId as string, 10);
+
+    const otherUserId = req.body?.otherUserId as number | undefined;
+    if (!otherUserId || isNaN(Number(otherUserId))) {
+      res.status(400).json({ error: "INVALID_BODY", message: "otherUserId richiesto" });
+      return;
+    }
+    const otherUserIdNum = Number(otherUserId);
 
     const canChat = await requirePremium(session.userId);
     if (!canChat) { res.status(403).json({ error: "PREMIUM_REQUIRED", message: "Funzione premium richiesta" }); return; }
@@ -76,23 +82,50 @@ const openChat: RequestHandler = async (req, res) => {
 
     const existing = await db.select().from(chatsTable).where(
       or(
-        and(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, otherUserId)),
-        and(eq(chatsTable.user1Id, otherUserId), eq(chatsTable.user2Id, session.userId))
+        and(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, otherUserIdNum)),
+        and(eq(chatsTable.user1Id, otherUserIdNum), eq(chatsTable.user2Id, session.userId))
       )
     ).limit(1);
 
     if (existing.length) {
-      const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserId)).limit(1);
-      res.json({ id: existing[0].id, otherUserId, otherUserNickname: otherUser?.nickname ?? "", status: existing[0].status, createdAt: existing[0].createdAt.toISOString() });
+      const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserIdNum)).limit(1);
+      res.json({ id: existing[0].id, otherUserId: otherUserIdNum, otherUserNickname: otherUser?.nickname ?? "", status: existing[0].status, createdAt: existing[0].createdAt.toISOString() });
       return;
     }
 
-    const [chat] = await db.insert(chatsTable).values({ user1Id: session.userId, user2Id: otherUserId }).returning();
-    const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserId)).limit(1);
+    const [chat] = await db.insert(chatsTable).values({ user1Id: session.userId, user2Id: otherUserIdNum }).returning();
+    const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserIdNum)).limit(1);
 
-    res.status(201).json({ id: chat.id, otherUserId, otherUserNickname: otherUser?.nickname ?? "", status: chat.status, createdAt: chat.createdAt.toISOString() });
+    res.status(201).json({ id: chat.id, otherUserId: otherUserIdNum, otherUserNickname: otherUser?.nickname ?? "", status: chat.status, createdAt: chat.createdAt.toISOString() });
   } catch (err) {
     req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
+// GET /api/chats/unread-count
+const getUnreadCount: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+    const { db } = await import("@workspace/db");
+    const { chatsTable, messagesTable } = await import("@workspace/db");
+
+    const userChats = await db.select().from(chatsTable).where(
+      or(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, session.userId))
+    );
+
+    let count = 0;
+    for (const chat of userChats) {
+      const senderId = chat.user1Id === session.userId ? chat.user2Id : chat.user1Id;
+      const unread = await db.select().from(messagesTable).where(
+        and(eq(messagesTable.chatId, chat.id), eq(messagesTable.senderId, senderId), eq(messagesTable.isRead, false))
+      );
+      if (unread.length > 0) count++;
+    }
+
+    res.json({ unreadCount: count });
+  } catch (err) {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -178,42 +211,16 @@ const reportChat: RequestHandler = async (req, res) => {
 
     const reportedUserId = chat.user1Id === session.userId ? chat.user2Id : chat.user1Id;
     await db.insert(reportsTable).values({ chatId, reporterId: session.userId, reportedUserId, reason: req.body.reason ?? "" });
-    res.json({ success: true, message: "Segnalazione inviata" });
+    res.status(201).json({ success: true, message: "Segnalazione inviata" });
   } catch (err) {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
 
-// GET /api/chats/unread/count
-const getUnreadCount: RequestHandler = async (req, res) => {
-  try {
-    const session = await requireAuth(req, res);
-    if (!session) return;
-    const { db } = await import("@workspace/db");
-    const { chatsTable, messagesTable } = await import("@workspace/db");
-
-    const userChats = await db.select().from(chatsTable).where(
-      or(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, session.userId))
-    );
-
-    let count = 0;
-    for (const chat of userChats) {
-      const senderId = chat.user1Id === session.userId ? chat.user2Id : chat.user1Id;
-      const unread = await db.select().from(messagesTable).where(
-        and(eq(messagesTable.chatId, chat.id), eq(messagesTable.senderId, senderId), eq(messagesTable.isRead, false))
-      );
-      count += unread.length;
-    }
-
-    res.json({ unreadCount: count });
-  } catch (err) {
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
+// Route order matters — static paths before dynamic
 router.get("/", listChats);
-router.post("/:userId/open", openChat);
-router.get("/unread/count", getUnreadCount);
+router.post("/", openChat);
+router.get("/unread-count", getUnreadCount);
 router.get("/:chatId/messages", getChatMessages);
 router.post("/:chatId/messages", sendMessage);
 router.post("/:chatId/report", reportChat);

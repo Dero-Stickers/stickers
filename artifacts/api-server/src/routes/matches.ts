@@ -211,7 +211,7 @@ const getMatchDetail: RequestHandler = async (req, res) => {
   }
 };
 
-router.get("/best", getBestMatches);
+router.get("/", getBestMatches);
 router.get("/nearby", getNearbyMatches);
 router.get("/:userId", getMatchDetail);
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq, ne, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -102,7 +102,18 @@ const toggleBlock: RequestHandler = async (req, res) => {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!user) { res.status(404).json({ error: "NOT_FOUND" }); return; }
     const [updated] = await db.update(usersTable).set({ isBlocked: isBlocked ?? !user.isBlocked }).where(eq(usersTable.id, userId)).returning();
-    res.json({ success: true, isBlocked: updated.isBlocked });
+    res.json({
+      id: updated.id,
+      nickname: updated.nickname,
+      cap: updated.cap,
+      area: updated.area,
+      isPremium: updated.isPremium,
+      demoStatus: "free",
+      albumCount: 0,
+      exchangesCompleted: updated.exchangesCompleted,
+      isBlocked: updated.isBlocked,
+      createdAt: updated.createdAt.toISOString(),
+    });
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
@@ -138,7 +149,7 @@ const listChats: RequestHandler = async (req, res) => {
   }
 };
 
-// POST /api/admin/chats/:chatId/close
+// PATCH /api/admin/chats/:chatId/close
 const closeChat: RequestHandler = async (req, res) => {
   try {
     const session = await requireAdmin(req, res);
@@ -165,7 +176,7 @@ const getChatMessages: RequestHandler = async (req, res) => {
       .from(messagesTable)
       .innerJoin(usersTable, eq(usersTable.id, messagesTable.senderId))
       .where(eq(messagesTable.chatId, chatId));
-    res.json(msgs.map(r => ({ id: r.m.id, senderId: r.m.senderId, senderNickname: r.u.nickname, text: r.m.text, createdAt: r.m.createdAt.toISOString() })));
+    res.json(msgs.map(r => ({ id: r.m.id, chatId: r.m.chatId, senderId: r.m.senderId, senderNickname: r.u.nickname, text: r.m.text, isRead: r.m.isRead, createdAt: r.m.createdAt.toISOString() })));
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
@@ -181,9 +192,9 @@ const listReports: RequestHandler = async (req, res) => {
     const reports = await db.select().from(reportsTable).orderBy(desc(reportsTable.createdAt));
     const result = await Promise.all(reports.map(async r => {
       const [reporter] = await db.select().from(usersTable).where(eq(usersTable.id, r.reporterId)).limit(1);
-      const [reported] = r.reportedUserId
-        ? await db.select().from(usersTable).where(eq(usersTable.id, r.reportedUserId)).limit(1)
-        : [null];
+      const reported = r.reportedUserId
+        ? (await db.select().from(usersTable).where(eq(usersTable.id, r.reportedUserId)).limit(1))[0] ?? null
+        : null;
       return {
         id: r.id,
         chatId: r.chatId,
@@ -200,12 +211,65 @@ const listReports: RequestHandler = async (req, res) => {
   }
 };
 
+// GET /api/admin/demo/config
+const getDemoConfig: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    const { db } = await import("@workspace/db");
+    const { appSettingsTable } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+    const [hours] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_hours")).limit(1);
+    const [enabled] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_enabled")).limit(1);
+    res.json({
+      demoHours: parseInt(hours?.value ?? "24", 10),
+      demoEnabled: enabled?.value !== "false",
+    });
+  } catch {
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
+// PUT /api/admin/demo/config
+const updateDemoConfig: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    const { db } = await import("@workspace/db");
+    const { appSettingsTable } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+
+    const upsert = async (key: string, value: string) => {
+      const existing = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, key)).limit(1);
+      if (existing.length) {
+        await db.update(appSettingsTable).set({ value, updatedAt: new Date() }).where(eq(appSettingsTable.key, key));
+      } else {
+        await db.insert(appSettingsTable).values({ key, value });
+      }
+    };
+
+    if (req.body.demoHours !== undefined) await upsert("demo_hours", String(req.body.demoHours));
+    if (req.body.demoEnabled !== undefined) await upsert("demo_enabled", String(req.body.demoEnabled));
+
+    const [hours] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_hours")).limit(1);
+    const [enabled] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_enabled")).limit(1);
+    res.json({
+      demoHours: parseInt(hours?.value ?? "24", 10),
+      demoEnabled: enabled?.value !== "false",
+    });
+  } catch {
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
 router.get("/stats", getStats);
 router.get("/users", listUsers);
 router.patch("/users/:userId/block", toggleBlock);
 router.get("/chats", listChats);
-router.post("/chats/:chatId/close", closeChat);
+router.patch("/chats/:chatId/close", closeChat);
 router.get("/chats/:chatId/messages", getChatMessages);
 router.get("/reports", listReports);
+router.get("/demo/config", getDemoConfig);
+router.put("/demo/config", updateDemoConfig);
 
 export default router;
