@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { DevSwitcher } from "@/components/dev/DevSwitcher";
 import NotFound from "@/pages/not-found";
 
 import { MobileLayout } from "@/components/layout/MobileLayout";
@@ -73,29 +74,34 @@ function ProtectedAdminRoute({ component: Component }: { component: React.FC }) 
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/login" component={Login} />
+    <>
+      <Switch>
+        <Route path="/login" component={Login} />
 
-      {/* User routes */}
-      <Route path="/" component={() => <ProtectedUserRoute component={Home} />} />
-      <Route path="/album" component={() => <ProtectedUserRoute component={AlbumList} />} />
-      <Route path="/album/:id" component={() => <ProtectedUserRoute component={AlbumDetail} />} />
-      <Route path="/match" component={() => <ProtectedUserRoute component={MatchList} />} />
-      <Route path="/match/:userId" component={() => <ProtectedUserRoute component={MatchDetail} />} />
-      <Route path="/chat/:chatId" component={() => <ProtectedUserRoute component={ChatRoom} />} />
-      <Route path="/profilo" component={() => <ProtectedUserRoute component={Profile} />} />
+        {/* User routes */}
+        <Route path="/" component={() => <ProtectedUserRoute component={Home} />} />
+        <Route path="/album" component={() => <ProtectedUserRoute component={AlbumList} />} />
+        <Route path="/album/:id" component={() => <ProtectedUserRoute component={AlbumDetail} />} />
+        <Route path="/match" component={() => <ProtectedUserRoute component={MatchList} />} />
+        <Route path="/match/:userId" component={() => <ProtectedUserRoute component={MatchDetail} />} />
+        <Route path="/chat/:chatId" component={() => <ProtectedUserRoute component={ChatRoom} />} />
+        <Route path="/profilo" component={() => <ProtectedUserRoute component={Profile} />} />
 
-      {/* Admin routes */}
-      <Route path="/admin" component={() => <ProtectedAdminRoute component={AdminDashboard} />} />
-      <Route path="/admin/album" component={() => <ProtectedAdminRoute component={AdminAlbums} />} />
-      <Route path="/admin/figurine" component={() => <ProtectedAdminRoute component={AdminFigurine} />} />
-      <Route path="/admin/utenti" component={() => <ProtectedAdminRoute component={AdminUsers} />} />
-      <Route path="/admin/messaggi" component={() => <ProtectedAdminRoute component={AdminMessages} />} />
-      <Route path="/admin/premium" component={() => <ProtectedAdminRoute component={AdminPremium} />} />
-      <Route path="/admin/impostazioni" component={() => <ProtectedAdminRoute component={AdminSettings} />} />
+        {/* Admin routes */}
+        <Route path="/admin" component={() => <ProtectedAdminRoute component={AdminDashboard} />} />
+        <Route path="/admin/album" component={() => <ProtectedAdminRoute component={AdminAlbums} />} />
+        <Route path="/admin/figurine" component={() => <ProtectedAdminRoute component={AdminFigurine} />} />
+        <Route path="/admin/utenti" component={() => <ProtectedAdminRoute component={AdminUsers} />} />
+        <Route path="/admin/messaggi" component={() => <ProtectedAdminRoute component={AdminMessages} />} />
+        <Route path="/admin/premium" component={() => <ProtectedAdminRoute component={AdminPremium} />} />
+        <Route path="/admin/impostazioni" component={() => <ProtectedAdminRoute component={AdminSettings} />} />
 
-      <Route component={NotFound} />
-    </Switch>
+        <Route component={NotFound} />
+      </Switch>
+
+      {/* Dev-only: global user switcher — visible on every page */}
+      <DevSwitcher />
+    </>
   );
 }
 

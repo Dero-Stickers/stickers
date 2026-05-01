@@ -27,6 +27,7 @@ export function MobileLayout({ children }: { children: ReactNode }) {
           );
         })}
       </nav>
+
     </div>
   );
 }

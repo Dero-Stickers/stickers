@@ -61,6 +61,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+
     </div>
   );
 }
