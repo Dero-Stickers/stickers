@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { mockUsers } from "@/mock/users";
-import { mockSettings } from "@/mock/settings";
 import { User, MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,14 +33,31 @@ export function Profile() {
   const [pin, setPin] = useState("");
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const [pinError, setPinError] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
 
-  const handleRecoveryCode = () => {
-    const mockUser = mockUsers.find(u => u.id === currentUser?.id);
-    if (pin === (mockUser as any)?.pin) {
-      setRecoveryCode((mockUser as any)?.recoveryCode ?? "STICK-XXXX-XXXX-XXXX");
-      setPinError(false);
-    } else {
+  const handleRecoveryCode = async () => {
+    setPinLoading(true);
+    setPinError(false);
+    try {
+      const token = localStorage.getItem("sticker_token");
+      const res = await fetch("/api/auth/recovery-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ pin }),
+      });
+      if (!res.ok) {
+        setPinError(true);
+        return;
+      }
+      const data = await res.json();
+      setRecoveryCode(data.recoveryCode);
+    } catch {
       setPinError(true);
+    } finally {
+      setPinLoading(false);
     }
   };
 
@@ -62,7 +77,7 @@ export function Profile() {
             <h1 className="text-xl font-bold">{currentUser?.nickname}</h1>
             <p className="text-sidebar-foreground/70 text-sm flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" />
-              {currentUser?.area} — CAP {currentUser?.cap}
+              {currentUser?.area ?? "—"} — CAP {currentUser?.cap}
             </p>
           </div>
         </div>
@@ -72,7 +87,6 @@ export function Profile() {
       </div>
 
       <div className="px-4 pt-4 pb-6 space-y-4">
-        {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="shadow-sm">
             <CardContent className="p-3 text-center">
@@ -84,14 +98,15 @@ export function Profile() {
             <CardContent className="p-3 text-center">
               <div className="flex items-center justify-center gap-1 mb-0.5">
                 <Star className="h-4 w-4 text-amber-500" />
-                <p className="text-2xl font-bold text-amber-500">4.8</p>
+                <p className="text-2xl font-bold text-amber-500">
+                  {currentUser?.exchangesCompleted && currentUser.exchangesCompleted >= 10 ? "4.8" : "—"}
+                </p>
               </div>
               <p className="text-xs text-muted-foreground">Affidabilità</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Actions */}
         <Card className="shadow-sm">
           <CardContent className="p-0 divide-y divide-border">
             <button
@@ -117,13 +132,13 @@ export function Profile() {
             </button>
 
             <a
-              href={`mailto:${mockSettings.supportEmail}`}
+              href="mailto:supporto@stickersmatchbox.it"
               className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50 transition-colors"
             >
               <Mail className="h-5 w-5 text-primary flex-shrink-0" />
               <div>
                 <p className="font-medium text-sm text-foreground">Contatta il supporto</p>
-                <p className="text-xs text-muted-foreground">{mockSettings.supportEmail}</p>
+                <p className="text-xs text-muted-foreground">supporto@stickersmatchbox.it</p>
               </div>
             </a>
 
@@ -141,7 +156,6 @@ export function Profile() {
           </CardContent>
         </Card>
 
-        {/* Logout */}
         <Button
           variant="outline"
           className="w-full h-11 text-destructive border-destructive/30 hover:bg-destructive/10 gap-2"
@@ -152,7 +166,6 @@ export function Profile() {
         </Button>
       </div>
 
-      {/* Recovery code dialog */}
       <Dialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -172,8 +185,12 @@ export function Profile() {
                 className={pinError ? "border-destructive" : ""}
               />
               {pinError && <p className="text-xs text-destructive">PIN non corretto</p>}
-              <Button className="w-full bg-primary text-primary-foreground" onClick={handleRecoveryCode}>
-                Mostra codice
+              <Button
+                className="w-full bg-primary text-primary-foreground"
+                onClick={handleRecoveryCode}
+                disabled={pinLoading}
+              >
+                {pinLoading ? "Verifica..." : "Mostra codice"}
               </Button>
             </div>
           ) : (
@@ -183,7 +200,6 @@ export function Profile() {
               </div>
               <p className="text-xs text-muted-foreground text-center">
                 Salva questo codice in un posto sicuro. Serve per recuperare il profilo se perdi l'accesso.
-                Se lo perdi, il recupero potrebbe non essere possibile o potrebbe richiedere verifica manuale.
               </p>
               <Button variant="outline" className="w-full" onClick={() => setShowRecoveryDialog(false)}>
                 Chiudi

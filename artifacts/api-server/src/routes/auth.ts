@@ -118,13 +118,23 @@ const login: RequestHandler = async (req, res) => {
     const { usersTable } = await import("@workspace/db");
     const { eq, and } = await import("drizzle-orm");
 
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(and(eq(usersTable.nickname, body.nickname), eq(usersTable.cap, body.cap)))
-      .limit(1);
+    // Search by nickname (+ optional CAP for disambiguation)
+    let usersFound;
+    if (body.cap) {
+      usersFound = await db
+        .select()
+        .from(usersTable)
+        .where(and(eq(usersTable.nickname, body.nickname), eq(usersTable.cap, body.cap)));
+    } else {
+      usersFound = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.nickname, body.nickname));
+    }
 
-    if (!user || !verifyPin(body.pin, user.pinHash)) {
+    const user = usersFound.find(u => verifyPin(body.pin, u.pinHash));
+
+    if (!user) {
       res.status(401).json({ error: "INVALID_CREDENTIALS", message: "Nickname o PIN non validi" });
       return;
     }

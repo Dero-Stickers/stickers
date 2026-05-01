@@ -1,36 +1,20 @@
-import { mockUsers } from "@/mock/users";
-import { mockAlbums } from "@/mock/albums";
-import { mockChats } from "@/mock/chats";
 import { Users, BookOpen, MessageSquare, Crown, Star, Flag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const stats = {
-  totalUsers: mockUsers.filter(u => !u.isAdmin).length,
-  publishedAlbums: mockAlbums.filter(a => a.isPublished).length,
-  activeChats: mockChats.length,
-  inDemo: mockUsers.filter(u => u.demoStatus === "demo_active").length,
-  premium: mockUsers.filter(u => u.demoStatus === "premium" && !u.isAdmin).length,
-  reports: 2,
-};
-
-const statCards = [
-  { label: "Utenti totali", value: stats.totalUsers, icon: Users, color: "text-primary" },
-  { label: "Album pubblicati", value: stats.publishedAlbums, icon: BookOpen, color: "text-primary" },
-  { label: "Chat attive", value: stats.activeChats, icon: MessageSquare, color: "text-primary" },
-  { label: "In demo", value: stats.inDemo, icon: Star, color: "text-amber-500" },
-  { label: "Premium", value: stats.premium, icon: Crown, color: "text-amber-500" },
-  { label: "Segnalazioni", value: stats.reports, icon: Flag, color: "text-destructive" },
-];
-
-const recentActivity = [
-  { text: "Nuovo utente registrato: sofia_ro", time: "5 min fa" },
-  { text: "Album 'UEFA Champions League 2024-25' pubblicato", time: "1 ora fa" },
-  { text: "Demo attivata da mario75", time: "2 ore fa" },
-  { text: "Segnalazione ricevuta in chat #2", time: "3 ore fa" },
-  { text: "Nuovo utente registrato: giulia_stickers", time: "ieri" },
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { useGetAdminStats } from "@workspace/api-client-react";
 
 export function AdminDashboard() {
+  const { data: stats, isLoading } = useGetAdminStats();
+
+  const statCards = [
+    { label: "Utenti totali", value: stats?.totalUsers, icon: Users, color: "text-primary" },
+    { label: "Album totali", value: stats?.totalAlbums, icon: BookOpen, color: "text-primary" },
+    { label: "Chat attive", value: stats?.activeChats, icon: MessageSquare, color: "text-primary" },
+    { label: "In demo", value: stats?.demoUsers, icon: Star, color: "text-amber-500" },
+    { label: "Premium", value: stats?.premiumUsers, icon: Crown, color: "text-amber-500" },
+    { label: "Segnalazioni", value: stats?.pendingReports, icon: Flag, color: "text-destructive" },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -46,7 +30,10 @@ export function AdminDashboard() {
                 <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{card.label}</p>
                 <card.icon className={`h-4 w-4 ${card.color}`} />
               </div>
-              <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
+              {isLoading
+                ? <Skeleton className="h-9 w-12" />
+                : <p className={`text-3xl font-bold ${card.color}`}>{card.value ?? 0}</p>
+              }
             </CardContent>
           </Card>
         ))}
@@ -54,13 +41,19 @@ export function AdminDashboard() {
 
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Attività recente</CardTitle>
+          <CardTitle className="text-base">Info sistema</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {recentActivity.map((item, i) => (
-            <div key={i} className={`px-4 py-3 flex items-center justify-between ${i < recentActivity.length - 1 ? "border-b border-border/50" : ""}`}>
-              <p className="text-sm text-foreground">{item.text}</p>
-              <span className="text-xs text-muted-foreground flex-shrink-0 ml-3">{item.time}</span>
+          {[
+            { label: "Messaggi totali", value: stats?.totalMessages },
+            { label: "Utenti bloccati", value: stats?.blockedUsers },
+          ].map((item, i, arr) => (
+            <div key={item.label} className={`px-4 py-3 flex items-center justify-between ${i < arr.length - 1 ? "border-b border-border/50" : ""}`}>
+              <p className="text-sm text-foreground">{item.label}</p>
+              {isLoading
+                ? <Skeleton className="h-5 w-8" />
+                : <span className="text-sm font-semibold text-foreground">{item.value ?? 0}</span>
+              }
             </div>
           ))}
         </CardContent>

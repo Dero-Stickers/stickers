@@ -1,25 +1,73 @@
-import { useState } from "react";
-import { mockSettings } from "@/mock/settings";
+import { useState, useEffect } from "react";
 import { Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useGetAppSettings,
+  useUpdateAppSettings,
+  getGetAppSettingsQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function AdminSettings() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: settings, isLoading } = useGetAppSettings();
   const [form, setForm] = useState({
-    supportEmail: mockSettings.supportEmail,
-    demoHours: String(mockSettings.demoHours),
-    privacyPolicy: mockSettings.privacyPolicyText,
-    terms: mockSettings.termsText,
-    cookies: mockSettings.cookiePolicyText,
+    supportEmail: "",
+    demoHours: "",
+    privacyPolicy: "",
+    terms: "",
+    cookies: "",
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setForm({
+        supportEmail: settings.supportEmail ?? "",
+        demoHours: String(settings.demoHours ?? 24),
+        privacyPolicy: settings.privacyPolicyText ?? "",
+        terms: settings.termsText ?? "",
+        cookies: settings.cookiePolicyText ?? "",
+      });
+    }
+  }, [settings]);
+
+  const updateSettings = useUpdateAppSettings({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetAppSettingsQueryKey() });
+        toast({ title: "Impostazioni salvate", description: "Le modifiche sono state applicate." });
+      },
+    },
   });
 
   const handleSave = () => {
-    toast({ title: "Impostazioni salvate", description: "Le modifiche sono state applicate." });
+    updateSettings.mutate({
+      data: {
+        appName: settings?.appName ?? "Stickers Matchbox",
+        supportEmail: form.supportEmail,
+        demoHours: parseInt(form.demoHours, 10) || 24,
+        privacyPolicyText: form.privacyPolicy,
+        termsText: form.terms,
+        cookiePolicyText: form.cookies,
+      },
+    });
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-48 rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -91,9 +139,13 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
-      <Button className="w-full gap-2 bg-primary text-primary-foreground h-11" onClick={handleSave}>
+      <Button
+        className="w-full gap-2 bg-primary text-primary-foreground h-11"
+        onClick={handleSave}
+        disabled={updateSettings.isPending}
+      >
         <Save className="h-4 w-4" />
-        Salva tutte le impostazioni
+        {updateSettings.isPending ? "Salvataggio..." : "Salva tutte le impostazioni"}
       </Button>
     </div>
   );

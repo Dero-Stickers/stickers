@@ -1,21 +1,32 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { mockMatches } from "@/mock/matches";
 import { MapPin, Trophy, ChevronRight, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useGetBestMatches,
+  useGetNearbyMatches,
+  GetNearbyMatchesRadius,
+  getGetNearbyMatchesQueryKey,
+} from "@workspace/api-client-react";
+
+const RADIUS_OPTIONS = [5, 10, 20, 50, 100] as const;
+type RadiusValue = typeof RADIUS_OPTIONS[number];
 
 export function MatchList() {
   const [activeTab, setActiveTab] = useState<"best" | "nearby">("best");
-  const [radiusKm, setRadiusKm] = useState(10);
+  const [radiusKm, setRadiusKm] = useState<RadiusValue>(10);
 
-  const bestMatches = [...mockMatches].sort((a, b) => b.totalExchanges - a.totalExchanges);
-  const nearbyMatches = [...mockMatches]
-    .filter(m => (m.distanceKm ?? 99) <= radiusKm)
-    .sort((a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99));
+  const { data: bestMatches, isLoading: loadingBest } = useGetBestMatches();
+  const nearbyParams = { radius: radiusKm as typeof GetNearbyMatchesRadius[keyof typeof GetNearbyMatchesRadius] };
+  const { data: nearbyMatches, isLoading: loadingNearby } = useGetNearbyMatches(
+    nearbyParams,
+    { query: { queryKey: getGetNearbyMatchesQueryKey(nearbyParams), enabled: activeTab === "nearby" } }
+  );
 
-  const matches = activeTab === "best" ? bestMatches : nearbyMatches;
+  const isLoading = activeTab === "best" ? loadingBest : loadingNearby;
+  const matches = activeTab === "best" ? (bestMatches ?? []) : (nearbyMatches ?? []);
 
   return (
     <div className="min-h-full">
@@ -25,7 +36,6 @@ export function MatchList() {
       </div>
 
       <div className="px-4 pt-4 pb-4">
-        {/* Tabs */}
         <div className="flex rounded-lg bg-muted p-1 mb-4">
           <button
             className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === "best" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
@@ -41,7 +51,6 @@ export function MatchList() {
           </button>
         </div>
 
-        {/* Radius slider for nearby tab */}
         {activeTab === "nearby" && (
           <div className="mb-4 p-4 bg-card rounded-xl border border-border">
             <div className="flex items-center justify-between mb-3">
@@ -51,29 +60,31 @@ export function MatchList() {
               </div>
               <Badge className="bg-primary/10 text-primary border-0 font-bold">{radiusKm} km</Badge>
             </div>
-            <Slider
-              min={5}
-              max={100}
-              step={5}
-              value={[radiusKm]}
-              onValueChange={([v]) => setRadiusKm(v)}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
-              <span>5 km</span>
-              <span>100 km</span>
+            <div className="flex gap-2 mt-2">
+              {RADIUS_OPTIONS.map(r => (
+                <button
+                  key={r}
+                  onClick={() => setRadiusKm(r)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${radiusKm === r ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-transparent"}`}
+                >
+                  {r} km
+                </button>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Match cards */}
-        {matches.length === 0 && (
+        {isLoading && (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          </div>
+        )}
+
+        {!isLoading && matches.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">Nessun match trovato</p>
-            {activeTab === "nearby" && (
-              <p className="text-sm mt-1">Prova ad aumentare il raggio di ricerca</p>
-            )}
+            {activeTab === "nearby" && <p className="text-sm mt-1">Prova ad aumentare il raggio di ricerca</p>}
             <p className="text-sm mt-1">Aggiungi più album e segna le tue doppie per trovare match</p>
           </div>
         )}

@@ -9,5 +9,5 @@
 export interface LoginBody {
   nickname: string;
   pin: string;
-  cap: string;
+  cap?: string;
 }

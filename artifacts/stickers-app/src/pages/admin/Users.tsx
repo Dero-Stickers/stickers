@@ -1,10 +1,15 @@
-import { useState } from "react";
-import { mockUsers } from "@/mock/users";
 import { Shield, ShieldOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useAdminListUsers,
+  useToggleBlockUser,
+  getAdminListUsersQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 function DemoStatusBadge({ status }: { status: string | null | undefined }) {
   if (status === "premium") return <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">Premium</Badge>;
@@ -15,22 +20,19 @@ function DemoStatusBadge({ status }: { status: string | null | undefined }) {
 
 export function AdminUsers() {
   const { toast } = useToast();
-  const regularUsers = mockUsers.filter(u => !u.isAdmin);
-  const [blockedIds, setBlockedIds] = useState<Set<number>>(new Set());
+  const queryClient = useQueryClient();
 
-  const toggleBlock = (id: number, nickname: string) => {
-    setBlockedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        toast({ title: `${nickname} sbloccato` });
-      } else {
-        next.add(id);
-        toast({ title: `${nickname} bloccato`, description: "L'utente non potrà più accedere all'app." });
-      }
-      return next;
-    });
-  };
+  const { data: users, isLoading } = useAdminListUsers();
+  const regularUsers = users?.filter(u => !u.isBlocked || true) ?? [];
+
+  const toggleBlock = useToggleBlockUser({
+    mutation: {
+      onSuccess: (_, vars) => {
+        queryClient.invalidateQueries({ queryKey: getAdminListUsersQueryKey() });
+        toast({ title: vars.data.isBlocked ? "Utente bloccato" : "Utente sbloccato" });
+      },
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -40,27 +42,31 @@ export function AdminUsers() {
           <p className="text-muted-foreground text-sm mt-0.5">Visualizza e gestisci gli utenti registrati</p>
         </div>
         <div className="bg-primary text-primary-foreground text-sm font-bold px-3 py-1.5 rounded-lg">
-          {regularUsers.length} utenti
+          {isLoading ? "..." : `${regularUsers.length} utenti`}
         </div>
       </div>
 
       <Card className="shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                <th className="text-left px-4 py-3 font-medium">Utente</th>
-                <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">CAP / Area</th>
-                <th className="text-left px-4 py-3 font-medium">Stato</th>
-                <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Scambi</th>
-                <th className="text-right px-4 py-3 font-medium">Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {regularUsers.map((user, i) => {
-                const isBlocked = blockedIds.has(user.id);
-                return (
-                  <tr key={user.id} className={`${i < regularUsers.length - 1 ? "border-b border-border/50" : ""} ${isBlocked ? "opacity-60" : ""}`}>
+        {isLoading && (
+          <div className="p-4 space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-lg" />)}
+          </div>
+        )}
+        {!isLoading && (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                  <th className="text-left px-4 py-3 font-medium">Utente</th>
+                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">CAP / Area</th>
+                  <th className="text-left px-4 py-3 font-medium">Stato</th>
+                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Scambi</th>
+                  <th className="text-right px-4 py-3 font-medium">Azioni</th>
+                </tr>
+              </thead>
+              <tbody>
+                {regularUsers.map((user, i) => (
+                  <tr key={user.id} className={`${i < regularUsers.length - 1 ? "border-b border-border/50" : ""} ${user.isBlocked ? "opacity-60" : ""}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary uppercase flex-shrink-0">
@@ -68,7 +74,7 @@ export function AdminUsers() {
                         </div>
                         <div>
                           <p className="font-medium text-sm text-foreground">{user.nickname}</p>
-                          {isBlocked && <p className="text-xs text-destructive">Bloccato</p>}
+                          {user.isBlocked && <p className="text-xs text-destructive">Bloccato</p>}
                         </div>
                       </div>
                     </td>
@@ -86,19 +92,20 @@ export function AdminUsers() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className={`h-7 px-2 gap-1 text-xs ${isBlocked ? "text-green-600 hover:text-green-700" : "text-destructive hover:text-destructive/80"}`}
-                        onClick={() => toggleBlock(user.id, user.nickname)}
+                        className={`h-7 px-2 gap-1 text-xs ${user.isBlocked ? "text-green-600 hover:text-green-700" : "text-destructive hover:text-destructive/80"}`}
+                        disabled={toggleBlock.isPending}
+                        onClick={() => toggleBlock.mutate({ userId: user.id, data: { isBlocked: !user.isBlocked } })}
                       >
-                        {isBlocked ? <ShieldOff className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
-                        <span className="hidden sm:inline">{isBlocked ? "Sblocca" : "Blocca"}</span>
+                        {user.isBlocked ? <ShieldOff className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
+                        <span className="hidden sm:inline">{user.isBlocked ? "Sblocca" : "Blocca"}</span>
                       </Button>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );

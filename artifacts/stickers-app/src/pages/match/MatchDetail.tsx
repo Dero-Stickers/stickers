@@ -1,23 +1,78 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { mockMatchDetails } from "@/mock/matches";
-import { mockChats } from "@/mock/chats";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, MapPin, MessageSquare, X, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useGetMatchDetail,
+  useOpenChat,
+  useActivateDemo,
+  getGetDemoStatusQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function MatchDetail() {
   const { userId } = useParams<{ userId: string }>();
   const matchUserId = parseInt(userId, 10);
   const [, setLocation] = useLocation();
   const { currentUser, demoStatus } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const detail = mockMatchDetails[matchUserId];
   const [showPaywall, setShowPaywall] = useState(false);
-  const [demoActivated, setDemoActivated] = useState(false);
+
+  const { data: detail, isLoading } = useGetMatchDetail(matchUserId);
+
+  const openChat = useOpenChat({
+    mutation: {
+      onSuccess: (chat) => {
+        setLocation(`/chat/${chat.id}`);
+      },
+      onError: (err: any) => {
+        if (err?.error === "PREMIUM_REQUIRED" || err?.statusCode === 403) {
+          setShowPaywall(true);
+        } else {
+          toast({ title: "Errore", description: "Impossibile aprire la chat", variant: "destructive" });
+        }
+      },
+    },
+  });
+
+  const activateDemo = useActivateDemo({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetDemoStatusQueryKey() });
+        toast({ title: "Demo attivata!", description: "Hai 24 ore per usare tutte le funzioni premium" });
+        setShowPaywall(false);
+        openChat.mutate({ data: { otherUserId: matchUserId } });
+      },
+    },
+  });
+
+  const canChat = demoStatus === "premium" || demoStatus === "demo_active";
+
+  const handleOpenChat = () => {
+    if (canChat) {
+      openChat.mutate({ data: { otherUserId: matchUserId } });
+    } else {
+      setShowPaywall(true);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
+  }
 
   if (!detail) {
     return (
@@ -27,24 +82,8 @@ export function MatchDetail() {
     );
   }
 
-  const canChat = demoStatus === "premium" || demoStatus === "demo_active" || demoActivated;
-
-  const handleOpenChat = () => {
-    if (canChat) {
-      const chat = mockChats.find(c => c.participants.includes(matchUserId));
-      if (chat) {
-        setLocation(`/chat/${chat.id}`);
-      } else {
-        setLocation(`/chat/new-${matchUserId}`);
-      }
-    } else {
-      setShowPaywall(true);
-    }
-  };
-
   return (
     <div className="min-h-full pb-24">
-      {/* Header */}
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-6">
         <button className="flex items-center gap-1.5 text-sidebar-foreground/70 mb-3 text-sm" onClick={() => setLocation("/match")}>
           <ArrowLeft className="h-4 w-4" />
@@ -110,15 +149,17 @@ export function MatchDetail() {
         ))}
       </div>
 
-      {/* Sticky CTA */}
       <div className="fixed bottom-16 left-0 right-0 px-4 pb-2 pt-3 bg-background/95 backdrop-blur border-t border-border">
-        <Button className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 font-bold gap-2 text-base" onClick={handleOpenChat}>
+        <Button
+          className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 font-bold gap-2 text-base"
+          onClick={handleOpenChat}
+          disabled={openChat.isPending}
+        >
           <MessageSquare className="h-5 w-5" />
           Apri chat con {detail.nickname}
         </Button>
       </div>
 
-      {/* Paywall modal */}
       <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -134,7 +175,8 @@ export function MatchDetail() {
                 </div>
                 <Button
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold"
-                  onClick={() => { setDemoActivated(true); setShowPaywall(false); }}
+                  disabled={activateDemo.isPending}
+                  onClick={() => activateDemo.mutate()}
                 >
                   Attiva demo gratuita
                 </Button>

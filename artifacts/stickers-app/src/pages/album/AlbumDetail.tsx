@@ -1,10 +1,8 @@
 import { useState, useRef } from "react";
 import { useParams, useLocation } from "wouter";
-import { mockAlbums } from "@/mock/albums";
-import { mockStickers } from "@/mock/stickers";
 import { ArrowLeft } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,8 +20,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useGetUserAlbumStickers,
+  useUpdateUserStickerState,
+  useRemoveAlbumFromUser,
+  useGetUserAlbums,
+  getGetUserAlbumsQueryKey,
+  getGetUserAlbumStickersQueryKey,
+} from "@workspace/api-client-react";
+import type { UserSticker } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 type StickerState = "mancante" | "posseduta" | "doppia";
+type FilterType = "tutte" | "mancanti" | "possedute" | "doppie";
 
 const NEXT_STATE: Record<StickerState, StickerState> = {
   mancante: "posseduta",
@@ -31,94 +40,104 @@ const NEXT_STATE: Record<StickerState, StickerState> = {
   doppia: "mancante",
 };
 
-const INITIAL_STATES: Record<number, StickerState> = {
-  1: "posseduta", 2: "doppia", 3: "mancante", 4: "posseduta", 5: "doppia",
-  6: "mancante", 7: "posseduta", 8: "mancante", 9: "doppia", 10: "mancante",
-  11: "posseduta", 12: "mancante", 13: "doppia", 14: "mancante", 15: "posseduta",
-  16: "mancante", 17: "doppia", 18: "mancante", 19: "posseduta", 20: "mancante",
-  21: "posseduta", 22: "mancante", 23: "doppia", 24: "mancante", 25: "posseduta",
-  26: "mancante", 27: "posseduta", 28: "doppia", 29: "mancante", 30: "posseduta",
+const stateColors: Record<StickerState, string> = {
+  mancante: "bg-gray-100 text-gray-400 border border-gray-200",
+  posseduta: "bg-green-100 text-green-700 border border-green-200",
+  doppia: "bg-red-100 text-red-600 border border-red-200",
 };
-
-type FilterType = "tutte" | "mancanti" | "possedute" | "doppie";
 
 export function AlbumDetail() {
   const { id } = useParams<{ id: string }>();
   const albumId = parseInt(id, 10);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  const album = mockAlbums.find(a => a.id === albumId);
-  const stickers = mockStickers[albumId] ?? [];
-
-  const [states, setStates] = useState<Record<number, StickerState>>(() => {
-    const initial: Record<number, StickerState> = {};
-    stickers.forEach(s => { initial[s.id] = INITIAL_STATES[s.id] ?? "mancante"; });
-    return initial;
-  });
+  const queryClient = useQueryClient();
 
   const [filter, setFilter] = useState<FilterType>("tutte");
-  const [selectedSticker, setSelectedSticker] = useState<(typeof stickers)[0] | null>(null);
+  const [selectedSticker, setSelectedSticker] = useState<UserSticker | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  if (!album) {
-    return (
-      <div className="flex items-center justify-center min-h-full p-4">
-        <p className="text-muted-foreground">Album non trovato</p>
-      </div>
-    );
-  }
+  const { data: userAlbums } = useGetUserAlbums();
+  const albumInfo = userAlbums?.find(a => a.id === albumId);
 
-  const tapSticker = (stickerId: number) => {
-    setStates(prev => ({ ...prev, [stickerId]: NEXT_STATE[prev[stickerId] ?? "mancante"] }));
+  const { data: stickers, isLoading } = useGetUserAlbumStickers(albumId);
+
+  const updateState = useUpdateUserStickerState({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetUserAlbumStickersQueryKey(albumId) });
+        queryClient.invalidateQueries({ queryKey: getGetUserAlbumsQueryKey() });
+      },
+    },
+  });
+
+  const removeAlbum = useRemoveAlbumFromUser({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetUserAlbumsQueryKey() });
+        toast({ title: "Album rimosso" });
+        setLocation("/album");
+      },
+    },
+  });
+
+  const tapSticker = (s: UserSticker) => {
+    const nextState = NEXT_STATE[s.state as StickerState ?? "mancante"];
+    updateState.mutate({ albumId, stickerId: s.stickerId, data: { state: nextState } });
   };
 
-  const handlePointerDown = (s: typeof stickers[0]) => {
+  const handlePointerDown = (s: UserSticker) => {
     longPressTimer.current = setTimeout(() => setSelectedSticker(s), 500);
   };
   const handlePointerUp = () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); };
 
-  const owned = Object.values(states).filter(s => s === "posseduta").length;
-  const duplicates = Object.values(states).filter(s => s === "doppia").length;
-  const missing = stickers.length - owned - duplicates;
-  const pct = stickers.length > 0 ? Math.round(((owned + duplicates) / stickers.length) * 100) : 0;
+  const owned = stickers?.filter(s => s.state === "posseduta").length ?? 0;
+  const duplicates = stickers?.filter(s => s.state === "doppia").length ?? 0;
+  const total = stickers?.length ?? 0;
+  const missing = Math.max(0, total - owned - duplicates);
+  const pct = total > 0 ? Math.round(((owned + duplicates) / total) * 100) : 0;
 
-  const filteredStickers = stickers.filter(s => {
-    const st = states[s.id] ?? "mancante";
+  const filteredStickers = stickers?.filter(s => {
     if (filter === "tutte") return true;
-    if (filter === "mancanti") return st === "mancante";
-    if (filter === "possedute") return st === "posseduta";
-    if (filter === "doppie") return st === "doppia";
+    if (filter === "mancanti") return s.state === "mancante";
+    if (filter === "possedute") return s.state === "posseduta";
+    if (filter === "doppie") return s.state === "doppia";
     return true;
-  });
-
-  const stateColors: Record<StickerState, string> = {
-    mancante: "bg-gray-100 text-gray-400 border border-gray-200",
-    posseduta: "bg-green-100 text-green-700 border border-green-200",
-    doppia: "bg-red-100 text-red-600 border border-red-200",
-  };
+  }) ?? [];
 
   const filterOptions: { key: FilterType; label: string; count: number }[] = [
-    { key: "tutte", label: "Tutte", count: stickers.length },
+    { key: "tutte", label: "Tutte", count: total },
     { key: "mancanti", label: "Mancanti", count: missing },
     { key: "possedute", label: "Possedute", count: owned },
     { key: "doppie", label: "Doppie", count: duplicates },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-20 w-full" />
+        <div className="grid grid-cols-7 gap-1.5">
+          {Array.from({ length: 21 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-md" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const albumTitle = albumInfo?.title ?? `Album #${albumId}`;
+
   return (
     <div className="min-h-full">
-      {/* Header */}
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-4">
         <button className="flex items-center gap-1.5 text-sidebar-foreground/70 mb-3 text-sm" onClick={() => setLocation("/album")}>
           <ArrowLeft className="h-4 w-4" />
           Album
         </button>
-        <h1 className="text-lg font-bold leading-tight mb-3">{album.title}</h1>
-        {/* Stats bar */}
+        <h1 className="text-lg font-bold leading-tight mb-3">{albumTitle}</h1>
         <div className="grid grid-cols-4 gap-2 text-center">
           <div>
-            <p className="text-xl font-bold">{stickers.length}</p>
+            <p className="text-xl font-bold">{total}</p>
             <p className="text-xs text-sidebar-foreground/60">Totale</p>
           </div>
           <div>
@@ -142,7 +161,6 @@ export function AlbumDetail() {
         </div>
       </div>
 
-      {/* Filter pills */}
       <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar">
         {filterOptions.map(opt => (
           <button
@@ -155,7 +173,6 @@ export function AlbumDetail() {
         ))}
       </div>
 
-      {/* Grid */}
       <div className="px-3 pb-6">
         {filteredStickers.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
@@ -164,12 +181,12 @@ export function AlbumDetail() {
         )}
         <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-9">
           {filteredStickers.map(s => {
-            const st = states[s.id] ?? "mancante";
+            const st = (s.state ?? "mancante") as StickerState;
             return (
               <button
-                key={s.id}
+                key={s.stickerId}
                 className={`aspect-square rounded-md flex items-center justify-center text-xs font-bold select-none transition-transform active:scale-95 ${stateColors[st]}`}
-                onClick={() => tapSticker(s.id)}
+                onClick={() => tapSticker(s)}
                 onPointerDown={() => handlePointerDown(s)}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
@@ -181,7 +198,6 @@ export function AlbumDetail() {
         </div>
       </div>
 
-      {/* Sticker detail modal */}
       <Dialog open={!!selectedSticker} onOpenChange={() => setSelectedSticker(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -189,7 +205,7 @@ export function AlbumDetail() {
           </DialogHeader>
           {selectedSticker && (
             <div className="space-y-3">
-              <div className={`h-24 rounded-lg flex items-center justify-center text-3xl font-black ${stateColors[states[selectedSticker.id] ?? "mancante"]}`}>
+              <div className={`h-24 rounded-lg flex items-center justify-center text-3xl font-black ${stateColors[(selectedSticker.state ?? "mancante") as StickerState]}`}>
                 {selectedSticker.number}
               </div>
               <p className="font-semibold text-foreground text-lg">{selectedSticker.name}</p>
@@ -199,9 +215,12 @@ export function AlbumDetail() {
                   <Button
                     key={st}
                     size="sm"
-                    variant={(states[selectedSticker.id] ?? "mancante") === st ? "default" : "outline"}
-                    className={`flex-1 capitalize text-xs ${(states[selectedSticker.id] ?? "mancante") === st ? "bg-primary text-primary-foreground" : ""}`}
-                    onClick={() => { setStates(p => ({ ...p, [selectedSticker.id]: st })); setSelectedSticker(null); }}
+                    variant={selectedSticker.state === st ? "default" : "outline"}
+                    className={`flex-1 capitalize text-xs ${selectedSticker.state === st ? "bg-primary text-primary-foreground" : ""}`}
+                    onClick={() => {
+                      updateState.mutate({ albumId, stickerId: selectedSticker.stickerId, data: { state: st } });
+                      setSelectedSticker(null);
+                    }}
                   >
                     {st}
                   </Button>
@@ -212,9 +231,12 @@ export function AlbumDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Remove album */}
       <div className="px-4 pb-8">
-        <Button variant="outline" className="w-full text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowRemoveDialog(true)}>
+        <Button
+          variant="outline"
+          className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+          onClick={() => setShowRemoveDialog(true)}
+        >
           Rimuovi album dalla collezione
         </Button>
       </div>
@@ -224,14 +246,14 @@ export function AlbumDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Rimuovere l'album?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tutti i progressi verranno eliminati. L'operazione non può essere annullata.
+              Tutti i progressi verranno eliminati.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annulla</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => { toast({ title: "Album rimosso" }); setLocation("/album"); }}
+              onClick={() => removeAlbum.mutate({ albumId })}
             >
               Rimuovi
             </AlertDialogAction>

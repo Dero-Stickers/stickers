@@ -23,24 +23,29 @@ const getStats: RequestHandler = async (req, res) => {
     const session = await requireAdmin(req, res);
     if (!session) return;
     const { db } = await import("@workspace/db");
-    const { usersTable, albumsTable, chatsTable, reportsTable } = await import("@workspace/db");
+    const { usersTable, albumsTable, chatsTable, reportsTable, messagesTable } = await import("@workspace/db");
 
     const users = await db.select().from(usersTable).where(eq(usersTable.isAdmin, false));
-    const albums = await db.select().from(albumsTable).where(eq(albumsTable.isPublished, true));
+    const albums = await db.select().from(albumsTable);
     const chats = await db.select().from(chatsTable);
     const reports = await db.select().from(reportsTable);
+    const messages = await db.select().from(messagesTable);
 
-    const inDemo = users.filter(u => u.demoStartedAt && u.demoExpiresAt && new Date() <= u.demoExpiresAt).length;
-    const premium = users.filter(u => u.isPremium).length;
+    const demoUsers = users.filter(u => u.demoStartedAt && u.demoExpiresAt && new Date() <= u.demoExpiresAt).length;
+    const premiumUsers = users.filter(u => u.isPremium).length;
+    const blockedUsers = users.filter(u => u.isBlocked).length;
     const activeChats = chats.filter(c => c.status === "active").length;
+    const pendingReports = reports.filter(r => r.status === "pending").length;
 
     res.json({
       totalUsers: users.length,
-      publishedAlbums: albums.length,
+      totalAlbums: albums.length,
+      totalMessages: messages.length,
       activeChats,
-      inDemo,
-      premium,
-      totalReports: reports.length,
+      demoUsers,
+      premiumUsers,
+      blockedUsers,
+      pendingReports,
     });
   } catch (err) {
     req.log?.error(err);
@@ -54,15 +59,17 @@ const listUsers: RequestHandler = async (req, res) => {
     const session = await requireAdmin(req, res);
     if (!session) return;
     const { db } = await import("@workspace/db");
-    const { usersTable } = await import("@workspace/db");
+    const { usersTable, userAlbumsTable } = await import("@workspace/db");
 
     const users = await db.select().from(usersTable).where(eq(usersTable.isAdmin, false)).orderBy(desc(usersTable.createdAt));
 
-    res.json(users.map(u => {
+    const result = await Promise.all(users.map(async u => {
       let demoStatus = "free";
       if (u.isPremium) demoStatus = "premium";
       else if (u.demoStartedAt && u.demoExpiresAt && new Date() <= u.demoExpiresAt) demoStatus = "demo_active";
       else if (u.demoStartedAt) demoStatus = "demo_expired";
+
+      const albums = await db.select().from(userAlbumsTable).where(eq(userAlbumsTable.userId, u.id));
 
       return {
         id: u.id,
@@ -71,12 +78,13 @@ const listUsers: RequestHandler = async (req, res) => {
         area: u.area,
         isPremium: u.isPremium,
         demoStatus,
-        demoExpiresAt: u.demoExpiresAt?.toISOString() ?? null,
+        albumCount: albums.length,
         exchangesCompleted: u.exchangesCompleted,
         isBlocked: u.isBlocked,
         createdAt: u.createdAt.toISOString(),
       };
     }));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
@@ -88,11 +96,12 @@ const toggleBlock: RequestHandler = async (req, res) => {
     const session = await requireAdmin(req, res);
     if (!session) return;
     const userId = parseInt(req.params.userId as string, 10);
+    const isBlocked = req.body.isBlocked as boolean;
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!user) { res.status(404).json({ error: "NOT_FOUND" }); return; }
-    const [updated] = await db.update(usersTable).set({ isBlocked: !user.isBlocked }).where(eq(usersTable.id, userId)).returning();
+    const [updated] = await db.update(usersTable).set({ isBlocked: isBlocked ?? !user.isBlocked }).where(eq(usersTable.id, userId)).returning();
     res.json({ success: true, isBlocked: updated.isBlocked });
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
@@ -115,13 +124,11 @@ const listChats: RequestHandler = async (req, res) => {
       const reports = await db.select().from(reportsTable).where(eq(reportsTable.chatId, chat.id));
       return {
         id: chat.id,
-        user1Id: chat.user1Id,
         user1Nickname: u1?.nickname ?? "",
-        user2Id: chat.user2Id,
         user2Nickname: u2?.nickname ?? "",
         status: chat.status,
         messageCount: msgCount,
-        reportCount: reports.length,
+        hasReport: reports.length > 0,
         createdAt: chat.createdAt.toISOString(),
       };
     }));
@@ -170,11 +177,24 @@ const listReports: RequestHandler = async (req, res) => {
     const session = await requireAdmin(req, res);
     if (!session) return;
     const { db } = await import("@workspace/db");
-    const { reportsTable, usersTable, chatsTable } = await import("@workspace/db");
-    const reports = await db.select({ r: reportsTable, u: usersTable })
-      .from(reportsTable)
-      .innerJoin(usersTable, eq(usersTable.id, reportsTable.reporterId));
-    res.json(reports.map(r => ({ id: r.r.id, chatId: r.r.chatId, reporterId: r.r.reporterId, reporterNickname: r.u.nickname, reason: r.r.reason, createdAt: r.r.createdAt.toISOString() })));
+    const { reportsTable, usersTable } = await import("@workspace/db");
+    const reports = await db.select().from(reportsTable).orderBy(desc(reportsTable.createdAt));
+    const result = await Promise.all(reports.map(async r => {
+      const [reporter] = await db.select().from(usersTable).where(eq(usersTable.id, r.reporterId)).limit(1);
+      const [reported] = r.reportedUserId
+        ? await db.select().from(usersTable).where(eq(usersTable.id, r.reportedUserId)).limit(1)
+        : [null];
+      return {
+        id: r.id,
+        chatId: r.chatId,
+        reporterNickname: reporter?.nickname ?? "",
+        reportedUserNickname: reported?.nickname ?? "",
+        reason: r.reason,
+        status: r.status,
+        createdAt: r.createdAt.toISOString(),
+      };
+    }));
+    res.json(result);
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
   }

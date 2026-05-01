@@ -87,7 +87,7 @@ const getNearbyMatches: RequestHandler = async (req, res) => {
   try {
     const session = await requireAuth(req, res);
     if (!session) return;
-    const radiusKm = parseFloat(req.query.radiusKm as string || "10");
+    const radiusKm = parseFloat((req.query.radius ?? req.query.radiusKm ?? "10") as string);
 
     const { db } = await import("@workspace/db");
     const { usersTable, userAlbumsTable, userStickersTable } = await import("@workspace/db");

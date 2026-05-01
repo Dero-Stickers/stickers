@@ -892,7 +892,7 @@ components:
           type: string
         cap:
           type: string
-      required: [nickname, pin, cap]
+      required: [nickname, pin]
 
     RecoverBody:
       type: object

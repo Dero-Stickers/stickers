@@ -31,7 +31,7 @@ export const RegisterBody = zod.object({
 export const LoginBody = zod.object({
   nickname: zod.string(),
   pin: zod.string(),
-  cap: zod.string(),
+  cap: zod.string().optional(),
 });
 
 export const LoginResponse = zod.object({

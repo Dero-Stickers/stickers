@@ -1,55 +1,79 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { mockChats } from "@/mock/chats";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, Send, Flag, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useGetChatMessages,
+  useSendMessage,
+  useReportChat,
+  useListChats,
+  getGetChatMessagesQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function ChatRoom() {
   const { chatId } = useParams<{ chatId: string }>();
+  const chatIdNum = parseInt(chatId, 10);
   const [, setLocation] = useLocation();
   const { currentUser } = useAuth();
   const { toast } = useToast();
-
-  const chat = mockChats.find(c => c.id === parseInt(chatId, 10));
-  const otherUserId = chat?.participants.find(p => p !== (currentUser?.id ?? 1));
-  const otherNickname = chat?.participantNames[otherUserId ?? 0] ?? "Utente";
-
-  const [messages, setMessages] = useState(chat?.messages ?? []);
-  const [text, setText] = useState("");
+  const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [text, setText] = useState("");
+
+  const { data: chats } = useListChats();
+  const chat = chats?.find(c => c.id === chatIdNum);
+  const otherNickname = chat?.otherUserNickname ?? "Utente";
+
+  const { data: messages, isLoading } = useGetChatMessages(chatIdNum, {
+    query: {
+      queryKey: getGetChatMessagesQueryKey(chatIdNum),
+      refetchInterval: 5000,
+    },
+  });
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const sendMessage = useSendMessage({
+    mutation: {
+      onSuccess: () => {
+        setText("");
+        queryClient.invalidateQueries({ queryKey: getGetChatMessagesQueryKey(chatIdNum) });
+      },
+    },
+  });
+
+  const reportChat = useReportChat({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Segnalazione inviata", description: "Il team di moderazione verificherà la chat al più presto." });
+      },
+    },
+  });
+
   const handleSend = () => {
     if (!text.trim()) return;
-    const newMsg = {
-      id: Date.now(),
-      chatId: chat?.id ?? parseInt(chatId, 10),
-      senderId: currentUser?.id ?? 1,
-      senderNickname: currentUser?.nickname ?? "Tu",
-      text: text.trim(),
-      sentAt: new Date().toISOString(),
-      isRead: false,
-    };
-    setMessages(prev => [...prev, newMsg]);
-    setText("");
+    sendMessage.mutate({ chatId: chatIdNum, data: { text: text.trim() } });
   };
 
   const handleReport = () => {
-    toast({ title: "Segnalazione inviata", description: "Il team di moderazione verificherà la chat al più presto." });
+    reportChat.mutate({ chatId: chatIdNum, data: { reason: "Segnalazione utente", reportedUserId: chat?.otherUserId ?? 0 } });
   };
 
-  if (!chat) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-full p-4">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-2">Chat non trovata</p>
-          <Button variant="outline" size="sm" onClick={() => setLocation("/match")}>Torna ai match</Button>
+      <div className="flex flex-col min-h-[100dvh] bg-sidebar">
+        <div className="px-4 pt-12 pb-4">
+          <Skeleton className="h-8 w-36 bg-white/10" />
+        </div>
+        <div className="flex-1 bg-background px-4 py-4 space-y-3">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-2xl" />)}
         </div>
       </div>
     );
@@ -57,7 +81,6 @@ export function ChatRoom() {
 
   return (
     <div className="flex flex-col min-h-[100dvh]">
-      {/* Header */}
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -75,7 +98,6 @@ export function ChatRoom() {
         </div>
       </div>
 
-      {/* Moderation notice */}
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-start gap-2 flex-shrink-0">
         <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-amber-700">
@@ -83,16 +105,20 @@ export function ChatRoom() {
         </p>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-background pb-20">
-        {messages.map(msg => {
-          const isMe = msg.senderId === (currentUser?.id ?? 1);
+        {messages?.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            Nessun messaggio. Inizia la conversazione!
+          </div>
+        )}
+        {messages?.map(msg => {
+          const isMe = msg.senderId === currentUser?.id;
           return (
             <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm ${isMe ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-card border border-border text-foreground rounded-bl-sm"}`}>
                 <p>{msg.text}</p>
                 <p className={`text-xs mt-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {new Date(msg.sentAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                  {new Date(msg.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
                 </p>
               </div>
             </div>
@@ -101,7 +127,6 @@ export function ChatRoom() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-3 flex items-center gap-2 pb-safe">
         <Input
           value={text}
@@ -114,7 +139,7 @@ export function ChatRoom() {
           size="icon"
           className="bg-primary text-primary-foreground flex-shrink-0"
           onClick={handleSend}
-          disabled={!text.trim()}
+          disabled={!text.trim() || sendMessage.isPending}
         >
           <Send className="h-4 w-4" />
         </Button>

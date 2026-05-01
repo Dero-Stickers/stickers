@@ -8,16 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
-import { mockUsers } from "@/mock/users";
-import type { UserProfile } from "@workspace/api-client-react";
+import type { AuthResponse } from "@workspace/api-client-react";
 
 const loginSchema = z.object({
   nickname: z.string().min(3, "Il nickname deve avere almeno 3 caratteri"),
-  pin: z.string().min(4, "Il PIN deve avere almeno 4 cifre"),
-  cap: z.string().length(5, "Il CAP deve essere di 5 cifre"),
+  pin: z.string().min(4, "Il PIN deve avere almeno 4 cifre").max(6),
 });
 
-const registerSchema = loginSchema.extend({
+const registerSchema = z.object({
+  nickname: z.string().min(3, "Il nickname deve avere almeno 3 caratteri"),
+  pin: z.string().min(4, "Il PIN deve avere almeno 4 cifre").max(6),
+  cap: z.string().length(5, "Il CAP deve essere di 5 cifre"),
   securityQuestion: z.string().min(5, "Domanda di sicurezza obbligatoria"),
   securityAnswer: z.string().min(2, "Risposta obbligatoria"),
 });
@@ -30,6 +31,7 @@ export function Login() {
   const { login } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [showRecoveryCode, setShowRecoveryCode] = useState<string | null>(null);
 
   const form = useForm<RegisterValues>({
@@ -43,46 +45,49 @@ export function Login() {
     },
   });
 
-  const onSubmit = (data: RegisterValues) => {
+  const onSubmit = async (data: RegisterValues) => {
     setLoginError(null);
+    setIsLoading(true);
 
-    if (isRegister) {
-      // Mock registration — create new user and log in
-      const existing = mockUsers.find(u => u.nickname === data.nickname && u.cap === data.cap);
-      if (existing) {
-        setLoginError("Nickname già in uso per questo CAP");
-        return;
+    try {
+      if (isRegister) {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nickname: data.nickname,
+            pin: data.pin,
+            cap: data.cap,
+            securityQuestion: data.securityQuestion,
+            securityAnswer: data.securityAnswer,
+          }),
+        });
+        const json: AuthResponse & { recoveryCode?: string } = await res.json();
+        if (!res.ok) {
+          setLoginError((json as any)?.message ?? "Errore durante la registrazione");
+          return;
+        }
+        login(json.user, json.token);
+        setShowRecoveryCode(json.recoveryCode ?? null);
+      } else {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nickname: data.nickname, pin: data.pin }),
+        });
+        const json: AuthResponse = await res.json();
+        if (!res.ok) {
+          setLoginError((json as any)?.message ?? "Nickname o PIN non validi");
+          return;
+        }
+        login(json.user, json.token);
+        setLocation(json.user.isAdmin ? "/admin" : "/");
       }
-
-      // Create mock user object
-      const newUser: UserProfile = {
-        id: Date.now(),
-        nickname: data.nickname,
-        cap: data.cap,
-        area: `Area ${data.cap.slice(0, 2)}XXX`,
-        isPremium: false,
-        demoStatus: "free",
-        demoExpiresAt: null,
-        exchangesCompleted: 0,
-        isAdmin: false,
-        createdAt: new Date().toISOString(),
-      };
-
-      const recoveryCode = `STICK-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-      setShowRecoveryCode(recoveryCode);
-      login(newUser);
-      return;
+    } catch {
+      setLoginError("Errore di connessione. Riprova.");
+    } finally {
+      setIsLoading(false);
     }
-
-    // Login — find user in mock data by nickname and pin (ignore CAP for demo simplicity)
-    const user = mockUsers.find(u => u.nickname === data.nickname && (u as any).pin === data.pin);
-    if (!user) {
-      setLoginError("Nickname o PIN non validi. Prova con: mario75 / 1234 / 20100");
-      return;
-    }
-
-    login(user);
-    setLocation(user.isAdmin ? "/admin" : "/");
   };
 
   const dismissRecovery = () => {
@@ -157,22 +162,22 @@ export function Login() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="cap"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CAP</FormLabel>
-                    <FormControl>
-                      <Input placeholder="es. 20100" maxLength={5} autoComplete="postal-code" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               {isRegister && (
                 <>
+                  <FormField
+                    control={form.control}
+                    name="cap"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CAP (Codice Postale)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="es. 20100" maxLength={5} autoComplete="postal-code" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="securityQuestion"
@@ -208,14 +213,18 @@ export function Login() {
 
               {!isRegister && (
                 <p className="text-xs text-muted-foreground text-center">
-                  Demo: <span className="font-mono font-medium">mario75</span> / <span className="font-mono font-medium">1234</span> / <span className="font-mono font-medium">20100</span>
-                  {" "}— Admin: <span className="font-mono font-medium">admin</span> / <span className="font-mono font-medium">0000</span> / <span className="font-mono font-medium">00000</span>
+                  Demo: <span className="font-mono font-medium">mario75</span> / <span className="font-mono font-medium">1234</span>
+                  {" "}— Admin: <span className="font-mono font-medium">admin</span> / <span className="font-mono font-medium">0000</span>
                 </p>
               )}
 
               <div className="pt-2 flex flex-col space-y-3">
-                <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base h-12">
-                  {isRegister ? "Inizia gratis" : "Accedi"}
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base h-12"
+                >
+                  {isLoading ? "Attendi..." : isRegister ? "Inizia gratis" : "Accedi"}
                 </Button>
                 <Button
                   type="button"
