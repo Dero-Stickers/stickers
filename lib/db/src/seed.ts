@@ -12,9 +12,14 @@ import { eq } from "drizzle-orm";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL non impostato");
+const connectionString = (process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL || "").trim();
+if (!connectionString) throw new Error("SUPABASE_DATABASE_URL o DATABASE_URL non impostato");
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isSupabase = !!process.env.SUPABASE_DATABASE_URL?.trim();
+const pool = new Pool({
+  connectionString,
+  ssl: isSupabase ? { rejectUnauthorized: false } : undefined,
+});
 const db = drizzle(pool, {
   schema: {
     usersTable, albumsTable, stickersTable,
