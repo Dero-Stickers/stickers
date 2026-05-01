@@ -1,5 +1,3 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
-
 # compiled output
 dist
 tmp
@@ -47,3 +45,9 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Asset di riferimento (immagini/screenshot caricati durante sviluppo, non usati nel codice)
+attached_assets/
+
+# File pesanti non necessari su GitHub
+pnpm-lock.yaml
