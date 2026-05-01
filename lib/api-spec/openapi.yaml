@@ -3,20 +3,36 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Sticker Matchbox API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: albums
+    description: Album operations
+  - name: user-albums
+    description: User album operations
+  - name: user-stickers
+    description: User sticker state operations
+  - name: matches
+    description: Match and exchange operations
+  - name: chats
+    description: Chat operations
+  - name: admin
+    description: Admin operations
+  - name: settings
+    description: App settings
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +40,807 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with nickname and PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/recover:
+    post:
+      operationId: recoverAccount
+      tags: [auth]
+      summary: Recover account with recovery code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecoverBody"
+      responses:
+        "200":
+          description: Recovery successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid recovery code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/recovery-code:
+    post:
+      operationId: getRecoveryCode
+      tags: [auth]
+      summary: Get recovery code after PIN confirmation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PinConfirmBody"
+      responses:
+        "200":
+          description: Recovery code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodeResponse"
+        "401":
+          description: Wrong PIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ALBUMS
+  /albums:
+    get:
+      operationId: listAlbums
+      tags: [albums]
+      summary: List all published albums
+      responses:
+        "200":
+          description: Albums list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Album"
+    post:
+      operationId: createAlbum
+      tags: [albums]
+      summary: Admin create album
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlbumBody"
+      responses:
+        "201":
+          description: Album created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Album"
+
+  /albums/{albumId}:
+    get:
+      operationId: getAlbum
+      tags: [albums]
+      summary: Get album with stickers
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Album with stickers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlbumWithStickers"
+    put:
+      operationId: updateAlbum
+      tags: [albums]
+      summary: Admin update album
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlbumBody"
+      responses:
+        "200":
+          description: Album updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Album"
+
+  /albums/{albumId}/publish:
+    patch:
+      operationId: toggleAlbumPublish
+      tags: [albums]
+      summary: Admin publish/unpublish album
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishBody"
+      responses:
+        "200":
+          description: Album publish state updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Album"
+
+  /albums/{albumId}/stickers:
+    get:
+      operationId: listAlbumStickers
+      tags: [albums]
+      summary: Get all stickers for an album
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Stickers list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sticker"
+    post:
+      operationId: batchInsertStickers
+      tags: [albums]
+      summary: Admin batch insert stickers from text list
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchStickersBody"
+      responses:
+        "201":
+          description: Stickers inserted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchStickersResponse"
+
+  /albums/{albumId}/stickers/{stickerId}:
+    put:
+      operationId: updateSticker
+      tags: [albums]
+      summary: Admin update a sticker
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStickerBody"
+      responses:
+        "200":
+          description: Sticker updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sticker"
+
+  # USER ALBUMS
+  /user/albums:
+    get:
+      operationId: getUserAlbums
+      tags: [user-albums]
+      summary: Get current user's albums with stats
+      responses:
+        "200":
+          description: User albums
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserAlbumWithStats"
+
+  /user/albums/{albumId}:
+    post:
+      operationId: addAlbumToUser
+      tags: [user-albums]
+      summary: Add album to user profile
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Album added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+    delete:
+      operationId: removeAlbumFromUser
+      tags: [user-albums]
+      summary: Remove album from user profile
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Album removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # USER STICKERS
+  /user/albums/{albumId}/stickers:
+    get:
+      operationId: getUserAlbumStickers
+      tags: [user-stickers]
+      summary: Get user's sticker states for an album
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User sticker states
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSticker"
+
+  /user/albums/{albumId}/stickers/{stickerId}:
+    patch:
+      operationId: updateUserStickerState
+      tags: [user-stickers]
+      summary: Update sticker state (cycle mancante/posseduta/doppia)
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStickerStateBody"
+      responses:
+        "200":
+          description: State updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSticker"
+
+  # MATCHES
+  /matches:
+    get:
+      operationId: getBestMatches
+      tags: [matches]
+      summary: Get best matches sorted by exchange count
+      responses:
+        "200":
+          description: Best matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchSummary"
+
+  /matches/nearby:
+    get:
+      operationId: getNearbyMatches
+      tags: [matches]
+      summary: Get nearby matches filtered by distance
+      parameters:
+        - name: radius
+          in: query
+          schema:
+            type: integer
+            enum: [5, 10, 20, 50, 100]
+      responses:
+        "200":
+          description: Nearby matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchSummary"
+
+  /matches/{userId}:
+    get:
+      operationId: getMatchDetail
+      tags: [matches]
+      summary: Get detailed match with a user (multi-album)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Match detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDetail"
+
+  # CHATS
+  /chats:
+    get:
+      operationId: listChats
+      tags: [chats]
+      summary: Get user's chats
+      responses:
+        "200":
+          description: Chats list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chat"
+    post:
+      operationId: openChat
+      tags: [chats]
+      summary: Open or get chat with another user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenChatBody"
+      responses:
+        "200":
+          description: Chat opened or retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+        "403":
+          description: Premium required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PremiumRequiredResponse"
+
+  /chats/{chatId}/messages:
+    get:
+      operationId: getChatMessages
+      tags: [chats]
+      summary: Get messages for a chat
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [chats]
+      summary: Send a message
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageBody"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /chats/{chatId}/report:
+    post:
+      operationId: reportChat
+      tags: [chats]
+      summary: Report a chat or user
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportBody"
+      responses:
+        "201":
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /chats/unread-count:
+    get:
+      operationId: getUnreadChatsCount
+      tags: [chats]
+      summary: Get number of chats with unread messages
+      responses:
+        "200":
+          description: Unread chats count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadCountResponse"
+
+  # DEMO
+  /demo/activate:
+    post:
+      operationId: activateDemo
+      tags: [auth]
+      summary: Activate premium demo for current user
+      responses:
+        "200":
+          description: Demo activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoStatusResponse"
+
+  /demo/status:
+    get:
+      operationId: getDemoStatus
+      tags: [auth]
+      summary: Get demo/premium status for current user
+      responses:
+        "200":
+          description: Demo status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoStatusResponse"
+
+  # ADMIN
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get dashboard stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: List all users
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{userId}/block:
+    patch:
+      operationId: toggleBlockUser
+      tags: [admin]
+      summary: Block or unblock a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockUserBody"
+      responses:
+        "200":
+          description: Block status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/chats:
+    get:
+      operationId: adminListChats
+      tags: [admin]
+      summary: List all chats
+      responses:
+        "200":
+          description: All chats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminChat"
+
+  /admin/chats/{chatId}/close:
+    patch:
+      operationId: closeChat
+      tags: [admin]
+      summary: Close a problematic chat
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chat closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/chats/{chatId}/messages:
+    get:
+      operationId: adminGetChatMessages
+      tags: [admin]
+      summary: Admin view chat messages
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+
+  /admin/reports:
+    get:
+      operationId: adminListReports
+      tags: [admin]
+      summary: List all reports
+      responses:
+        "200":
+          description: Reports list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+
+  /admin/demo/config:
+    get:
+      operationId: getDemoConfig
+      tags: [admin]
+      summary: Get demo configuration
+      responses:
+        "200":
+          description: Demo config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoConfig"
+    put:
+      operationId: updateDemoConfig
+      tags: [admin]
+      summary: Update demo duration and config
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoConfig"
+      responses:
+        "200":
+          description: Config updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoConfig"
+
+  # SETTINGS
+  /settings:
+    get:
+      operationId: getAppSettings
+      tags: [settings]
+      summary: Get app settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+    put:
+      operationId: updateAppSettings
+      tags: [settings]
+      summary: Admin update settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppSettings"
+      responses:
+        "200":
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +848,546 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required: [error]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success]
+
+    RegisterBody:
+      type: object
+      properties:
+        nickname:
+          type: string
+        pin:
+          type: string
+        cap:
+          type: string
+        securityQuestion:
+          type: string
+        securityAnswer:
+          type: string
+      required: [nickname, pin, cap, securityQuestion, securityAnswer]
+
+    LoginBody:
+      type: object
+      properties:
+        nickname:
+          type: string
+        pin:
+          type: string
+        cap:
+          type: string
+      required: [nickname, pin, cap]
+
+    RecoverBody:
+      type: object
+      properties:
+        recoveryCode:
+          type: string
+        newPin:
+          type: string
+      required: [recoveryCode, newPin]
+
+    PinConfirmBody:
+      type: object
+      properties:
+        pin:
+          type: string
+      required: [pin]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        token:
+          type: string
+        recoveryCode:
+          type: string
+      required: [user, token]
+
+    RecoveryCodeResponse:
+      type: object
+      properties:
+        recoveryCode:
+          type: string
+      required: [recoveryCode]
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        nickname:
+          type: string
+        cap:
+          type: string
+        area:
+          type: string
+        isPremium:
+          type: boolean
+        demoStatus:
+          type: string
+          enum: [free, demo_active, demo_expired, premium]
+        demoExpiresAt:
+          type: string
+          nullable: true
+        exchangesCompleted:
+          type: integer
+        isAdmin:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, nickname, cap, isPremium, demoStatus, exchangesCompleted, isAdmin]
+
+    Album:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        coverUrl:
+          type: string
+          nullable: true
+        totalStickers:
+          type: integer
+        isPublished:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, title, totalStickers, isPublished]
+
+    AlbumWithStickers:
+      allOf:
+        - $ref: "#/components/schemas/Album"
+        - type: object
+          properties:
+            stickers:
+              type: array
+              items:
+                $ref: "#/components/schemas/Sticker"
+          required: [stickers]
+
+    Sticker:
+      type: object
+      properties:
+        id:
+          type: integer
+        albumId:
+          type: integer
+        number:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+      required: [id, albumId, number, name]
+
+    CreateAlbumBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        coverUrl:
+          type: string
+        isPublished:
+          type: boolean
+      required: [title]
+
+    PublishBody:
+      type: object
+      properties:
+        isPublished:
+          type: boolean
+      required: [isPublished]
+
+    BatchStickersBody:
+      type: object
+      properties:
+        rawList:
+          type: string
+          description: "Numbered list, one per line: '1 Messi' or '1. Messi'"
+        stickers:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpdateStickerBody"
+      required: []
+
+    BatchStickersResponse:
+      type: object
+      properties:
+        inserted:
+          type: integer
+        stickers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Sticker"
+      required: [inserted, stickers]
+
+    UpdateStickerBody:
+      type: object
+      properties:
+        number:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+      required: [number, name]
+
+    UserAlbumWithStats:
+      allOf:
+        - $ref: "#/components/schemas/Album"
+        - type: object
+          properties:
+            owned:
+              type: integer
+            missing:
+              type: integer
+            duplicates:
+              type: integer
+            completionPercent:
+              type: number
+            addedAt:
+              type: string
+          required: [owned, missing, duplicates, completionPercent]
+
+    UserSticker:
+      type: object
+      properties:
+        stickerId:
+          type: integer
+        albumId:
+          type: integer
+        state:
+          type: string
+          enum: [mancante, posseduta, doppia]
+        number:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+      required: [stickerId, albumId, state, number, name]
+
+    UpdateStickerStateBody:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [mancante, posseduta, doppia]
+      required: [state]
+
+    MatchSummary:
+      type: object
+      properties:
+        userId:
+          type: integer
+        nickname:
+          type: string
+        area:
+          type: string
+        cap:
+          type: string
+        totalExchanges:
+          type: integer
+        distanceKm:
+          type: number
+          nullable: true
+        exchangesCompleted:
+          type: integer
+        albumsInCommon:
+          type: integer
+      required: [userId, nickname, totalExchanges, exchangesCompleted, albumsInCommon]
+
+    MatchAlbumDetail:
+      type: object
+      properties:
+        albumId:
+          type: integer
+        albumTitle:
+          type: string
+        exchangeCount:
+          type: integer
+        youGive:
+          type: array
+          items:
+            $ref: "#/components/schemas/Sticker"
+        youReceive:
+          type: array
+          items:
+            $ref: "#/components/schemas/Sticker"
+      required: [albumId, albumTitle, exchangeCount, youGive, youReceive]
+
+    MatchDetail:
+      type: object
+      properties:
+        userId:
+          type: integer
+        nickname:
+          type: string
+        area:
+          type: string
+        totalExchanges:
+          type: integer
+        distanceKm:
+          type: number
+          nullable: true
+        exchangesCompleted:
+          type: integer
+        albums:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchAlbumDetail"
+      required: [userId, nickname, totalExchanges, exchangesCompleted, albums]
+
+    Chat:
+      type: object
+      properties:
+        id:
+          type: integer
+        otherUserId:
+          type: integer
+        otherUserNickname:
+          type: string
+        otherUserArea:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, closed]
+        lastMessage:
+          type: string
+          nullable: true
+        lastMessageAt:
+          type: string
+          nullable: true
+        unreadCount:
+          type: integer
+        createdAt:
+          type: string
+      required: [id, otherUserId, otherUserNickname, status, unreadCount]
+
+    OpenChatBody:
+      type: object
+      properties:
+        otherUserId:
+          type: integer
+      required: [otherUserId]
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        chatId:
+          type: integer
+        senderId:
+          type: integer
+        senderNickname:
+          type: string
+        text:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, chatId, senderId, senderNickname, text, isRead, createdAt]
+
+    SendMessageBody:
+      type: object
+      properties:
+        text:
+          type: string
+      required: [text]
+
+    ReportBody:
+      type: object
+      properties:
+        reason:
+          type: string
+        reportedUserId:
+          type: integer
+      required: [reason, reportedUserId]
+
+    UnreadCountResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+      required: [count]
+
+    PremiumRequiredResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        demoStatus:
+          type: string
+          enum: [free, demo_expired]
+        message:
+          type: string
+      required: [error, demoStatus]
+
+    DemoStatusResponse:
+      type: object
+      properties:
+        demoStatus:
+          type: string
+          enum: [free, demo_active, demo_expired, premium]
+        demoStartedAt:
+          type: string
+          nullable: true
+        demoExpiresAt:
+          type: string
+          nullable: true
+        isPremium:
+          type: boolean
+      required: [demoStatus, isPremium]
+
+    AdminStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalAlbums:
+          type: integer
+        totalMessages:
+          type: integer
+        activeChats:
+          type: integer
+        demoUsers:
+          type: integer
+        premiumUsers:
+          type: integer
+        blockedUsers:
+          type: integer
+        pendingReports:
+          type: integer
+      required: [totalUsers, totalAlbums, totalMessages, activeChats, demoUsers, premiumUsers, blockedUsers, pendingReports]
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        nickname:
+          type: string
+        cap:
+          type: string
+        area:
+          type: string
+          nullable: true
+        isPremium:
+          type: boolean
+        demoStatus:
+          type: string
+          enum: [free, demo_active, demo_expired, premium]
+        albumCount:
+          type: integer
+        exchangesCompleted:
+          type: integer
+        isBlocked:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, nickname, cap, isPremium, demoStatus, albumCount, exchangesCompleted, isBlocked]
+
+    BlockUserBody:
+      type: object
+      properties:
+        isBlocked:
+          type: boolean
+        reason:
+          type: string
+      required: [isBlocked]
+
+    AdminChat:
+      type: object
+      properties:
+        id:
+          type: integer
+        user1Nickname:
+          type: string
+        user2Nickname:
+          type: string
+        status:
+          type: string
+          enum: [active, closed]
+        messageCount:
+          type: integer
+        hasReport:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, user1Nickname, user2Nickname, status, messageCount, hasReport]
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: integer
+        reporterNickname:
+          type: string
+        reportedUserNickname:
+          type: string
+        chatId:
+          type: integer
+          nullable: true
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [pending, reviewed, resolved]
+        createdAt:
+          type: string
+      required: [id, reporterNickname, reportedUserNickname, reason, status, createdAt]
+
+    DemoConfig:
+      type: object
+      properties:
+        demoHours:
+          type: integer
+        demoEnabled:
+          type: boolean
+      required: [demoHours, demoEnabled]
+
+    AppSettings:
+      type: object
+      properties:
+        supportEmail:
+          type: string
+        appName:
+          type: string
+        demoHours:
+          type: integer
+        privacyPolicyText:
+          type: string
+        termsText:
+          type: string
+        cookiePolicyText:
+          type: string
+      required: [supportEmail, appName, demoHours]
