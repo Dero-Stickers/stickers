@@ -54,3 +54,7 @@ pnpm-lock.yaml
 
 # Cartella ZIP export
 output/
+
+# Backup tarball locali (creati da agente, non versionare)
+backups/
+*.tar.gz

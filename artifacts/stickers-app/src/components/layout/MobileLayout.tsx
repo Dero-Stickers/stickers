@@ -1,11 +1,13 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Home, BookOpen, Users, User } from "lucide-react";
-import { useListChats } from "@workspace/api-client-react";
+import { useListChats, getListChatsQueryKey } from "@workspace/api-client-react";
 
 export function MobileLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  const { data: chats } = useListChats({ query: { staleTime: 15000 } });
+  const { data: chats } = useListChats({
+    query: { staleTime: 15000, queryKey: getListChatsQueryKey() },
+  });
 
   const unreadCount = chats?.reduce((sum, c) => sum + ((c as any).unreadCount ?? 0), 0) ?? 0;
 

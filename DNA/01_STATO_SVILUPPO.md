@@ -1,6 +1,51 @@
 # DNA — Stato Sviluppo
 
-Ultimo aggiornamento: 2 Maggio 2026 — Sessione 3 (Production Readiness Pass)
+Ultimo aggiornamento: 2 Maggio 2026 — Sessione 5 (E2E Testing + Enterprise Cleanup)
+
+## Fix Sessione 5 — E2E Testing + Enterprise Cleanup ✅
+
+### Bug critici corretti (scoperti via Replit App Testing)
+- **Auth race condition** ✅ — `AuthContext.tsx` ora idrata sincronamente da
+  localStorage tramite `readInitialAuth()` chiamata nello stato iniziale.
+  Le route protette vedono `isAuthenticated=true` al primo render, niente più
+  flash su `/login` su deep-link/refresh.
+- **Hardening refresh sessione** ✅ — `/api/auth/me` ora pulisce la sessione
+  **solo** su 401/403 (non più su 5xx). `AbortController` scope il fetch al
+  ciclo di vita del componente. Guard `localStorage.getItem(TOKEN_KEY) === token`
+  previene overwrite da risposte stale dopo user switch.
+- **`useAuthRedirect` hook** ✅ — `setLocation` chiamato durante il render era
+  un anti-pattern; ora wrappato in `useEffect` tramite hook dedicato in `App.tsx`.
+- **Demo gating mancante** ✅ — utenti `demo_expired` ora vedono
+  `DemoExpiredScreen` su `/match`, `/match/:userId`, `/chat/:chatId`. Le route
+  `/`, `/album`, `/profilo` restano accessibili (visibilità + upgrade).
+- **Hydration warning Home.tsx** ✅ — `<p>` che avvolgeva `<Skeleton>` (un `<div>`)
+  cambiato in `<div>` (linea 92).
+
+### Code governance ✅
+- **Dead code rimosso** ✅ — eliminata cartella `artifacts/stickers-app/src/mock/`
+  (6 file: albums, chats, matches, settings, stickers, users) — zero referenze
+  nel codice attivo, era residuo della Fase 1.
+- **TypeScript pulito** ✅ — `pnpm run typecheck` ora passa interamente.
+  Le declarations dei lib (`lib/db`, `lib/api-zod`, `lib/api-client-react`)
+  sono buildate; lo script `typecheck` root le rigenera automaticamente.
+- **Workflow consolidation** ✅ — rimossi i workflow custom duplicati
+  `API Server` / `Stickers App`. Ora gestiti dagli artifact registrati:
+  `artifacts/api-server: API Server` e `artifacts/stickers-app: web`.
+
+### Database (Sessione 4)
+- **search_path Supabase** ✅ — `lib/db/src/index.ts` usa
+  `pool.on("connect", c => c.query("SET search_path TO public"))`. Il vecchio
+  `options: "--search_path=public"` era sintassi sbagliata e causava
+  `relation "users" does not exist`.
+- **Doppio DB allineato** ✅ — schema + seed pushati sia su Supabase (via
+  `SUPABASE_DATABASE_URL` Replit Secret) sia sul Replit PostgreSQL locale
+  (`DATABASE_URL`, fallback dev).
+- **DB Setup workflow** rimosso dall'avvio automatico — manuale via
+  `cd lib/db && pnpm push-force && pnpm seed`.
+
+---
+
+Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 3 (Production Readiness Pass)
 
 ## Completato ✅
 
