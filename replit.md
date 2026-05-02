@@ -157,6 +157,14 @@ Pulsante floating in basso a destra, visibile su **ogni pagina** inclusa la logi
 - **Admin mobile nav**: hamburger + dropdown in `AdminLayout.tsx`
 - **Badge non letti**: `MobileLayout.tsx` mostra badge rosso su Match via `useListChats`
 
+## Key Architecture Decisions (Sessione 5 — E2E Testing Pass)
+
+- **Auth race condition fix**: `AuthContext.tsx` ora idrata sincronamente da localStorage tramite `readInitialAuth()` chiamata nello stato iniziale di `useState`. Così le route protette vedono `isAuthenticated=true` al primo render — niente più flash su `/login` quando si fa deep-link/refresh. Aggiunto flag `isLoading`. Il refresh server `/api/auth/me` ora anche pulisce sessioni stale se il server rifiuta il token.
+- **`useAuthRedirect` hook**: in `App.tsx`, i `setLocation` durante il render erano un anti-pattern. Ora wrappati in `useEffect` tramite hook dedicato.
+- **Demo gating**: nuovo `DemoExpiredScreen.tsx`. `ProtectedUserRoute` accetta `requirePremium` flag — `/match` e `/match/:userId` lo abilitano. `ProtectedChatRoute` blocca sempre `demo_expired`. `/`, `/album`, `/album/:id`, `/profilo` restano accessibili (l'utente vede ciò che ha e può fare upgrade).
+- **Hydration warning**: `Home.tsx` linea 92 — `<p>` che avvolgeva `<Skeleton>` (un `<div>`) cambiato in `<div>`.
+- **Workflow consolidation**: rimossi i duplicati custom `API Server` / `Stickers App`. Ora gestiti dagli artifact: `artifacts/api-server: API Server` e `artifacts/stickers-app: web`.
+
 ## Key Architecture Decisions (Sessione 4)
 
 - **search_path fix**: `lib/db/src/index.ts` — `pool.on("connect", client => client.query("SET search_path TO public"))` per Supabase. La versione precedente con `options: "--search_path=public"` era sintassi errata; il formato corretto PostgreSQL è `-c guc=value`, ma l'approccio `connect` event è più robusto.

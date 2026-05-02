@@ -86,9 +86,9 @@ export function Home() {
           <Card className="shadow-sm">
             <CardContent className="p-3">
               <p className="text-xs text-muted-foreground mb-1">Album attivi</p>
-              <p className="text-2xl font-bold text-foreground">
+              <div className="text-2xl font-bold text-foreground">
                 {loadingAlbums ? <Skeleton className="h-7 w-8 inline-block" /> : (myAlbums?.length ?? 0)}
-              </p>
+              </div>
             </CardContent>
           </Card>
           <Card className="shadow-sm">

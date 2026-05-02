@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,6 +25,7 @@ import { AdminUsers } from "@/pages/admin/Users";
 import { AdminMessages } from "@/pages/admin/Messages";
 import { AdminPremium } from "@/pages/admin/Premium";
 import { AdminSettings } from "@/pages/admin/Settings";
+import { DemoExpiredScreen } from "@/pages/DemoExpiredScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,18 +33,36 @@ const queryClient = new QueryClient({
   },
 });
 
-function ProtectedUserRoute({ component: Component }: { component: React.FC }) {
-  const { isAuthenticated, currentUser } = useAuth();
+function useAuthRedirect(target: string | null) {
   const [, setLocation] = useLocation();
+  useEffect(() => {
+    if (target) setLocation(target);
+  }, [target, setLocation]);
+}
 
-  if (!isAuthenticated) {
-    setLocation("/login");
-    return null;
-  }
+function ProtectedUserRoute({
+  component: Component,
+  requirePremium = false,
+}: {
+  component: React.FC;
+  requirePremium?: boolean;
+}) {
+  const { isAuthenticated, currentUser } = useAuth();
+  const redirect = !isAuthenticated
+    ? "/login"
+    : currentUser?.isAdmin
+      ? "/admin"
+      : null;
+  useAuthRedirect(redirect);
 
-  if (currentUser?.isAdmin) {
-    setLocation("/admin");
-    return null;
+  if (redirect) return null;
+
+  if (requirePremium && currentUser?.demoStatus === "demo_expired") {
+    return (
+      <MobileLayout>
+        <DemoExpiredScreen />
+      </MobileLayout>
+    );
   }
 
   return (
@@ -54,16 +74,21 @@ function ProtectedUserRoute({ component: Component }: { component: React.FC }) {
 
 function ProtectedChatRoute({ component: Component }: { component: React.FC }) {
   const { isAuthenticated, currentUser } = useAuth();
-  const [, setLocation] = useLocation();
+  const redirect = !isAuthenticated
+    ? "/login"
+    : currentUser?.isAdmin
+      ? "/admin"
+      : null;
+  useAuthRedirect(redirect);
 
-  if (!isAuthenticated) {
-    setLocation("/login");
-    return null;
-  }
+  if (redirect) return null;
 
-  if (currentUser?.isAdmin) {
-    setLocation("/admin");
-    return null;
+  if (currentUser?.demoStatus === "demo_expired") {
+    return (
+      <MobileLayout>
+        <DemoExpiredScreen />
+      </MobileLayout>
+    );
   }
 
   return <Component />;
@@ -71,17 +96,14 @@ function ProtectedChatRoute({ component: Component }: { component: React.FC }) {
 
 function ProtectedAdminRoute({ component: Component }: { component: React.FC }) {
   const { isAuthenticated, currentUser } = useAuth();
-  const [, setLocation] = useLocation();
+  const redirect = !isAuthenticated
+    ? "/login"
+    : !currentUser?.isAdmin
+      ? "/"
+      : null;
+  useAuthRedirect(redirect);
 
-  if (!isAuthenticated) {
-    setLocation("/login");
-    return null;
-  }
-
-  if (!currentUser?.isAdmin) {
-    setLocation("/");
-    return null;
-  }
+  if (redirect) return null;
 
   return (
     <AdminLayout>
@@ -100,8 +122,8 @@ function Router() {
         <Route path="/" component={() => <ProtectedUserRoute component={Home} />} />
         <Route path="/album" component={() => <ProtectedUserRoute component={AlbumList} />} />
         <Route path="/album/:id" component={() => <ProtectedUserRoute component={AlbumDetail} />} />
-        <Route path="/match" component={() => <ProtectedUserRoute component={MatchList} />} />
-        <Route path="/match/:userId" component={() => <ProtectedUserRoute component={MatchDetail} />} />
+        <Route path="/match" component={() => <ProtectedUserRoute component={MatchList} requirePremium />} />
+        <Route path="/match/:userId" component={() => <ProtectedUserRoute component={MatchDetail} requirePremium />} />
         <Route path="/chat/:chatId" component={() => <ProtectedChatRoute component={ChatRoom} />} />
         <Route path="/profilo" component={() => <ProtectedUserRoute component={Profile} />} />
 
