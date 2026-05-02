@@ -147,10 +147,28 @@ Pulsante floating in basso a destra, visibile su **ogni pagina** inclusa la logi
 - Static dir in production: `artifacts/stickers-app/dist/public`
 - Health check: `GET /api/healthz` → `{"status":"ok"}`
 
+## Key Architecture Decisions (Sessione 3)
+
+- **ChatRoom route** usa `ProtectedChatRoute` (senza `MobileLayout`) — layout full-screen autonomo
+- **Match queries** completamente batch: 5 query DB totali (era O(4N))
+- **Distanza CAP** deterministica con formula numerica stabile (niente `Math.random()`)
+- **Supabase keep-alive**: `artifacts/api-server/src/keepalive.ts` — ping ogni 12h
+- **Error Boundary**: `artifacts/stickers-app/src/components/ErrorBoundary.tsx` — avvolge l'app intera
+- **Admin mobile nav**: hamburger + dropdown in `AdminLayout.tsx`
+- **Badge non letti**: `MobileLayout.tsx` mostra badge rosso su Match via `useListChats`
+
+## Key Architecture Decisions (Sessione 4)
+
+- **search_path fix**: `lib/db/src/index.ts` — `pool.on("connect", client => client.query("SET search_path TO public"))` per Supabase. La versione precedente con `options: "--search_path=public"` era sintassi errata; il formato corretto PostgreSQL è `-c guc=value`, ma l'approccio `connect` event è più robusto.
+- **DB Setup workflow**: rimosso dall'avvio automatico. Rieseguire manualmente `cd lib/db && pnpm push-force && pnpm seed` per reset completo dati.
+- **Doppio database**: il DB locale Replit PostgreSQL (via `DATABASE_URL`, env vars `PG*`) è ora anche sincronizzato con lo schema + seed. Il server in produzione usa `SUPABASE_DATABASE_URL` (Replit Secret), in dev usa `DATABASE_URL` come fallback.
+- **Validazione end-to-end completa**: tutti gli endpoint testati e funzionanti (login, matches, nearby, user-albums, chats, messages, unread-count, admin/stats, admin/users, demo/status, settings, healthz).
+
 ## Workflows
 
-- `artifacts/api-server: API Server` — Express backend su `:8080`
-- `artifacts/stickers-app: web` — Vite frontend su `PORT` env var
+- `API Server` — Express backend su `:8080`
+- `Stickers App` — Vite frontend su `:18931`, `BASE_PATH=/`
+- `DB Setup (Supabase)` — **manuale** — push schema + seed su Supabase (richiede Replit Secrets)
 
 ## DNA Documentation
 

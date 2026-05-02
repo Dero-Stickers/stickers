@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { existsSync } from "fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { startKeepAlive } from "./keepalive";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,6 +36,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+// Keep Supabase Free tier alive with a lightweight ping every 12 hours
+startKeepAlive();
 
 // In production (Render), serve the built React frontend as static files
 if (process.env.NODE_ENV === "production") {

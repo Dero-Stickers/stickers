@@ -84,7 +84,7 @@ export function ChatRoom() {
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button onClick={() => setLocation("/match")} className="text-sidebar-foreground/70">
+            <button onClick={() => window.history.back()} className="text-sidebar-foreground/70">
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent text-sm uppercase">

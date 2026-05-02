@@ -143,7 +143,8 @@ const batchInsertStickers: RequestHandler = async (req, res) => {
     }
 
     const inserted = await db.insert(stickersTable).values(stickersToInsert).returning();
-    await db.update(albumsTable).set({ totalStickers: inserted.length }).where(eq(albumsTable.id, albumId));
+    const allStickers = await db.select({ id: stickersTable.id }).from(stickersTable).where(eq(stickersTable.albumId, albumId));
+    await db.update(albumsTable).set({ totalStickers: allStickers.length }).where(eq(albumsTable.id, albumId));
 
     res.status(201).json({ inserted: inserted.length, stickers: inserted.map(s => ({ id: s.id, albumId: s.albumId, number: s.number, name: s.name, description: s.description })) });
   } catch (err) {

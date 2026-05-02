@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DevSwitcher } from "@/components/dev/DevSwitcher";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import NotFound from "@/pages/not-found";
 
 import { MobileLayout } from "@/components/layout/MobileLayout";
@@ -51,6 +52,23 @@ function ProtectedUserRoute({ component: Component }: { component: React.FC }) {
   );
 }
 
+function ProtectedChatRoute({ component: Component }: { component: React.FC }) {
+  const { isAuthenticated, currentUser } = useAuth();
+  const [, setLocation] = useLocation();
+
+  if (!isAuthenticated) {
+    setLocation("/login");
+    return null;
+  }
+
+  if (currentUser?.isAdmin) {
+    setLocation("/admin");
+    return null;
+  }
+
+  return <Component />;
+}
+
 function ProtectedAdminRoute({ component: Component }: { component: React.FC }) {
   const { isAuthenticated, currentUser } = useAuth();
   const [, setLocation] = useLocation();
@@ -84,7 +102,7 @@ function Router() {
         <Route path="/album/:id" component={() => <ProtectedUserRoute component={AlbumDetail} />} />
         <Route path="/match" component={() => <ProtectedUserRoute component={MatchList} />} />
         <Route path="/match/:userId" component={() => <ProtectedUserRoute component={MatchDetail} />} />
-        <Route path="/chat/:chatId" component={() => <ProtectedUserRoute component={ChatRoom} />} />
+        <Route path="/chat/:chatId" component={() => <ProtectedChatRoute component={ChatRoom} />} />
         <Route path="/profilo" component={() => <ProtectedUserRoute component={Profile} />} />
 
         {/* Admin routes */}
@@ -107,16 +125,18 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,6 +1,6 @@
 # DNA — Stato Sviluppo
 
-Ultimo aggiornamento: 1 Maggio 2026 — Sessione 2
+Ultimo aggiornamento: 2 Maggio 2026 — Sessione 3 (Production Readiness Pass)
 
 ## Completato ✅
 
@@ -41,6 +41,7 @@ Ultimo aggiornamento: 1 Maggio 2026 — Sessione 2
 - Messaggi: revisione e chiusura chat
 - Premium/Demo: configurazione durata demo
 - Impostazioni: email supporto, testi base
+- **Navigazione mobile** ✅ — hamburger menu top bar per admin su mobile
 
 ### Dev Tools
 - **DevSwitcher** ✅ — pulsante floating in ogni pagina per switch rapido User↔Admin
@@ -52,9 +53,41 @@ Ultimo aggiornamento: 1 Maggio 2026 — Sessione 2
 - Serving file statici React in produzione configurato in `api-server/src/app.ts`
 - BASE_PATH configurato via env var
 
+---
+
+## Fix Sessione 3 — Production Readiness Pass ✅
+
+### Performance (Critica)
+- **N+1 queries eliminato** ✅ — `getBestMatches` / `getNearbyMatches` ora eseguono
+  esattamente **5 query DB** indipendentemente dal numero di utenti (era O(4N))
+- **Distanza deterministica** ✅ — `estimateDistance()` ora usa formula stabile basata
+  su differenza numerica CAP; niente più `Math.random()` (risultati inconsistenti)
+- **`getMatchDetail` ottimizzato** ✅ — 4 query parallele invece di N×4 query sequenziali
+  (sticker details ora con `inArray` batch, non `.slice(0, 10)` + N queries per sticker)
+
+### Correttezza Dati
+- **`batchInsertStickers` totalStickers** ✅ — ora conta TUTTE le figurine nell'album
+  dopo l'inserimento (era solo il batch corrente → valore sbagliato su inserimenti multipli)
+
+### UX / Layout
+- **Chat room layout** ✅ — ChatRoom non è più dentro MobileLayout (che aveva una nav bar
+  fissa in fondo che si sovrapponeva all'input chat); ora usa `ProtectedChatRoute` dedicato
+- **Back button chat** ✅ — `window.history.back()` invece di hardcoded `/match`
+- **Admin navigazione mobile** ✅ — hamburger menu con dropdown per tutte le sezioni admin
+- **Badge messaggi non letti** ✅ — icona Match nella bottom nav mostra badge rosso
+  con contatore messaggi non letti
+
+### Resilienza
+- **React Error Boundary** ✅ — `<ErrorBoundary>` avvolge l'intera app; qualsiasi
+  errore non gestito mostra una schermata di recupero invece di crashare
+- **Supabase keep-alive** ✅ — `keepalive.ts` esegue `SELECT 1` ogni 12 ore per
+  mantenere il progetto Supabase Free attivo
+
+---
+
 ## In Progresso 🔄
 
-- Test navigazione completa su tutti i flussi
+- Test navigazione completa su tutti i flussi post-fix
 - GitHub push (bloccato in sandbox Replit — richiede azione manuale o project task)
 
 ## Da Fare (Prossime Sessioni) 📋
@@ -64,16 +97,22 @@ Ultimo aggiornamento: 1 Maggio 2026 — Sessione 2
 - [ ] Test su iOS Safari e Android Chrome
 - [ ] Onboarding guide interattiva (attualmente mostra toast "in arrivo")
 - [ ] Upload copertina album (admin — endpoint presente, UI mancante)
+- [ ] Auth: passare a bcrypt + JWT firmato (attualmente base64 JSON — noto, per produzione)
 
 ### Media Priorità
+- [ ] Rate limiting sulle API (attualmente nessun throttling)
 - [ ] Notifiche push (futuro)
 - [ ] Pagamenti reali (Stripe o RevenueCat — scelta modello da definire)
 - [ ] Landing page pubblica con dominio
+- [ ] CORS ristretto a domini di produzione (attualmente `cors()` aperto)
 
 ### Bassa Priorità
+- [ ] `adminActionsTable` tracking (schema definito, mai popolato)
 - [ ] Statistiche avanzate admin (grafici)
 - [ ] Esportazione dati utente (GDPR)
 - [ ] Multilingua (mai nella v1)
+
+---
 
 ## Utenti di Test (Supabase) 🔑
 
@@ -99,7 +138,9 @@ Ultimo aggiornamento: 1 Maggio 2026 — Sessione 2
 
 - GitHub push: `git push` è bloccato nel sandbox Replit principale.
   **Soluzione**: usare il progetto task di Replit o pushare manualmente dal terminale locale.
-- PIN hash: attualmente usa base64 + salt (dev). In produzione → usare bcrypt.
+- PIN hash: attualmente usa base64 + salt (dev). In produzione → usare bcrypt + JWT firmato.
+- Auth token: `base64(JSON{userId,isAdmin})` è forgiabile; non adatto a produzione.
+  **Soluzione pianificata**: migrare a `jsonwebtoken` con secret env var.
 
 ## Decisioni da Prendere
 

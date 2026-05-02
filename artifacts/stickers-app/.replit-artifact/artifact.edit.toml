@@ -1,0 +1,32 @@
+kind = "web"
+previewPath = "/"
+title = "Sticker Matchbox"
+version = "1.0.0"
+
+[[services]]
+localPort = 18931
+name = "Stickers App"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/stickers-app run dev"
+
+[services.development.env]
+PORT = "18931"
+BASE_PATH = "/"
+
+[services.production]
+
+[services.production.build]
+args = ["pnpm", "--filter", "@workspace/stickers-app", "run", "build"]
+
+[services.production.build.env]
+NODE_ENV = "production"
+BASE_PATH = "/"
+
+[services.production.run]
+args = ["pnpm", "--filter", "@workspace/stickers-app", "run", "serve"]
+
+[services.production.run.env]
+PORT = "18931"
+NODE_ENV = "production"
