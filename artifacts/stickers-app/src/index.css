@@ -275,9 +275,64 @@
     @apply border-border;
   }
 
+  html {
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    touch-action: manipulation;
   }
+
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Respect safe areas (iOS notch / Android gesture bar) */
+  @supports (padding: env(safe-area-inset-top)) {
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+  }
+
+  /* Disable selection on interactive UI chrome but allow on text content */
+  button,
+  [role="button"],
+  nav,
+  header {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Prevent iOS auto-zoom on focused inputs (font-size must be >= 16px) */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@utility pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+@utility pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+@utility mb-safe {
+  margin-bottom: env(safe-area-inset-bottom);
 }
 
 /**

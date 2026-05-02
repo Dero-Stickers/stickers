@@ -206,3 +206,21 @@ Pulsante floating in basso a destra, visibile su **ogni pagina** inclusa la logi
 - **Dati**: tutti i record provengono da Supabase via API; nessun fixture client-side residuo.
 - **E2E test PASS**: login, navigazione user (album, match, profilo), persistenza stato figurine, logout, login admin, tutte le sezioni `/admin/*` con dati reali, isolamento sessioni multi-utente.
 - **Architect review PASS**: typecheck + build OK, nessun import rotto, proxy correttamente configurato.
+
+## Sessione 7 — PWA Mobile Optimization
+
+- **DevQuickSwitch**: pulsante tondo dev in basso a destra su tutte le pagine. Mostra "U" quando admin (per tornare user mario75), "A" quando user (per passare a admin). Posizionato `bottom: calc(env(safe-area-inset-bottom) + 5.5rem)` → sopra bottom nav (h-16) e safe-area iOS. Attivo solo `import.meta.env.DEV`.
+- **PWA / mobile install**:
+  - `index.html` con viewport `viewport-fit=cover`, theme-color `#FF8C2A`, apple-mobile-web-app-* meta, lang `it`, format-detection no telephone, OG tags
+  - `public/manifest.webmanifest` completo: name, short_name, start_url, scope, display standalone, orientation portrait, theme/background color, categories, icons (favicon.svg `any` + icon-maskable.svg `maskable`)
+  - `public/apple-touch-icon.svg` per iOS home-screen install
+  - Favicon S su sfondo arancione brand
+- **Mobile CSS** (`src/index.css`):
+  - `100dvh` su body/#root (vera viewport mobile, gestisce barra browser dinamica)
+  - safe-area padding su body con `@supports (padding: env(safe-area-inset-top))`
+  - `overscroll-behavior-y: none` (no rubber-band)
+  - `-webkit-tap-highlight-color: transparent`, `touch-action: manipulation`
+  - `font-size: 16px` su input/select/textarea (impedisce auto-zoom iOS)
+  - `user-select: none` su button/nav/header
+  - `@utility pb-safe / pt-safe / mb-safe` Tailwind v4 (prima usate ma non definite)
+- **Nota store Apple/Google**: il PWA è ottimizzato per install da browser (Add to Home Screen). Per pubblicare sugli store nativi serve un wrapper (Capacitor/PWABuilder/Bubblewrap-TWA) e icone PNG 192/512/1024. Le icone SVG attuali sono ottime per web/PWA install ma andranno rasterizzate in PNG prima del bundle nativo.

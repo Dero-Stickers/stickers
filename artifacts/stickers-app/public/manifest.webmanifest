@@ -1,0 +1,30 @@
+{
+  "name": "Stickers Matchbox",
+  "short_name": "Stickers",
+  "description": "Scambia figurine con utenti vicino a te. Trova match, completa album, divertiti.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#F5F7FA",
+  "theme_color": "#FF8C2A",
+  "lang": "it",
+  "dir": "ltr",
+  "categories": ["lifestyle", "social", "entertainment"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

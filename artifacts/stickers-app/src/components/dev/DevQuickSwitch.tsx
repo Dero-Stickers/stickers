@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { Shield, User, Loader2 } from "lucide-react";
 
 const USER_ACCOUNT = { nickname: "mario75", pin: "1234" };
 const ADMIN_ACCOUNT = { nickname: "admin", pin: "0000" };
@@ -15,6 +14,8 @@ export function DevQuickSwitch() {
 
   const isAdmin = currentUser?.isAdmin === true;
   const target = isAdmin ? USER_ACCOUNT : ADMIN_ACCOUNT;
+  const nextLetter = isAdmin ? "U" : "A";
+  const label = isAdmin ? "Switch a User" : "Switch a Admin";
 
   const handleSwitch = async () => {
     if (loading) return;
@@ -40,7 +41,6 @@ export function DevQuickSwitch() {
     }
   };
 
-  const label = isAdmin ? "Switch a User" : "Switch a Admin";
   const colorClasses = isAdmin
     ? "bg-blue-600 hover:bg-blue-700 border-blue-700"
     : "bg-purple-600 hover:bg-purple-700 border-purple-700";
@@ -52,16 +52,10 @@ export function DevQuickSwitch() {
       disabled={loading}
       title={`DEV — ${label}`}
       aria-label={label}
-      className={`fixed right-4 bottom-24 z-[9999] h-12 w-12 rounded-full shadow-xl border-2 text-white flex items-center justify-center transition-all active:scale-95 disabled:opacity-60 ${colorClasses}`}
+      className={`fixed right-4 z-[9999] h-12 w-12 rounded-full shadow-xl border-2 text-white font-black text-lg flex items-center justify-center transition-all active:scale-95 disabled:opacity-60 ${colorClasses}`}
       style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)" }}
     >
-      {loading ? (
-        <Loader2 className="h-5 w-5 animate-spin" />
-      ) : isAdmin ? (
-        <User className="h-5 w-5" />
-      ) : (
-        <Shield className="h-5 w-5" />
-      )}
+      {loading ? "…" : nextLetter}
     </button>
   );
 }
