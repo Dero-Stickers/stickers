@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/not-found";
+import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
 
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -164,6 +165,7 @@ function App() {
           <AuthProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <Router />
+              <DevQuickSwitch />
             </WouterRouter>
             <Toaster />
           </AuthProvider>
