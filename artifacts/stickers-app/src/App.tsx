@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DevSwitcher } from "@/components/dev/DevSwitcher";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/not-found";
 
 import { MobileLayout } from "@/components/layout/MobileLayout";
@@ -13,19 +14,31 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Login } from "@/pages/auth/Login";
 import { Home } from "@/pages/Home";
 import { AlbumList } from "@/pages/album/AlbumList";
-import { AlbumDetail } from "@/pages/album/AlbumDetail";
-import { MatchList } from "@/pages/match/MatchList";
-import { MatchDetail } from "@/pages/match/MatchDetail";
-import { ChatRoom } from "@/pages/chat/ChatRoom";
-import { Profile } from "@/pages/Profile";
-import { AdminDashboard } from "@/pages/admin/Dashboard";
-import { AdminAlbums } from "@/pages/admin/Albums";
-import { AdminFigurine } from "@/pages/admin/Figurine";
-import { AdminUsers } from "@/pages/admin/Users";
-import { AdminMessages } from "@/pages/admin/Messages";
-import { AdminPremium } from "@/pages/admin/Premium";
-import { AdminSettings } from "@/pages/admin/Settings";
 import { DemoExpiredScreen } from "@/pages/DemoExpiredScreen";
+
+const AlbumDetail = lazy(() => import("@/pages/album/AlbumDetail").then((m) => ({ default: m.AlbumDetail })));
+const MatchList = lazy(() => import("@/pages/match/MatchList").then((m) => ({ default: m.MatchList })));
+const MatchDetail = lazy(() => import("@/pages/match/MatchDetail").then((m) => ({ default: m.MatchDetail })));
+const ChatRoom = lazy(() => import("@/pages/chat/ChatRoom").then((m) => ({ default: m.ChatRoom })));
+const Profile = lazy(() => import("@/pages/Profile").then((m) => ({ default: m.Profile })));
+
+const AdminDashboard = lazy(() => import("@/pages/admin/Dashboard").then((m) => ({ default: m.AdminDashboard })));
+const AdminAlbums = lazy(() => import("@/pages/admin/Albums").then((m) => ({ default: m.AdminAlbums })));
+const AdminFigurine = lazy(() => import("@/pages/admin/Figurine").then((m) => ({ default: m.AdminFigurine })));
+const AdminUsers = lazy(() => import("@/pages/admin/Users").then((m) => ({ default: m.AdminUsers })));
+const AdminMessages = lazy(() => import("@/pages/admin/Messages").then((m) => ({ default: m.AdminMessages })));
+const AdminPremium = lazy(() => import("@/pages/admin/Premium").then((m) => ({ default: m.AdminPremium })));
+const AdminSettings = lazy(() => import("@/pages/admin/Settings").then((m) => ({ default: m.AdminSettings })));
+
+function PageSkeleton() {
+  return (
+    <div className="flex flex-col gap-3 p-4">
+      <Skeleton className="h-7 w-48" />
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-32 w-full" />
+    </div>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -115,6 +128,7 @@ function ProtectedAdminRoute({ component: Component }: { component: React.FC }) 
 function Router() {
   return (
     <>
+      <Suspense fallback={<PageSkeleton />}>
       <Switch>
         <Route path="/login" component={Login} />
 
@@ -138,6 +152,7 @@ function Router() {
 
         <Route component={NotFound} />
       </Switch>
+      </Suspense>
 
       {/* Dev-only: global user switcher — visible on every page */}
       <DevSwitcher />

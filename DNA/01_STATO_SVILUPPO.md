@@ -1,6 +1,73 @@
 # DNA — Stato Sviluppo
 
-Ultimo aggiornamento: 2 Maggio 2026 — Sessione 5 (E2E Testing + Enterprise Cleanup)
+Ultimo aggiornamento: 2 Maggio 2026 — Sessione 6 (Security Hardening + Performance + Enterprise Final)
+
+## Fix Sessione 6 — Security Hardening + Performance ✅
+
+### Sicurezza autenticazione (BLOCKER risolti) 🔐
+- **Token firmati HMAC-SHA256** ✅ — sostituito il vecchio
+  `base64(JSON({userId,isAdmin}))` con un token a 3 segmenti firmato:
+  `v1.<payload-base64url>.<HMAC-SHA256-base64url>`. Implementazione in
+  `artifacts/api-server/src/lib/auth.ts` usando `crypto.createHmac` (zero
+  dipendenze esterne) + `timingSafeEqual` per evitare timing attack. La chiave
+  di firma usa `SESSION_SECRET` (già presente come Replit Secret).
+- **Backward-compat legacy rimossa** ✅ — il vecchio decoder base64 era una
+  vulnerabilità grave (qualunque utente poteva forgiare un token admin
+  scrivendo `base64('{"userId":6,"isAdmin":true}')`). Rimosso completamente
+  dopo il re-seed con i nuovi hash. Test di forgery: legacy base64 → 401,
+  v1 con firma errata → 401, token valido firmato → 200.
+- **Password hashing scrypt** ✅ — `pinHash` e `securityAnswerHash` ora usano
+  `crypto.scryptSync` (Node built-in, OWASP-compliant) con salt random per
+  utente. Formato: `scrypt$<salt-base64>$<hash-base64>`. Il vecchio
+  `Buffer.from(pin + "sticker_salt").toString("base64")` (insicuro: salt
+  costante, niente stretching) è stato sostituito sia nel server (`lib/auth.ts`)
+  sia nel seed (`lib/db/src/seed.ts`). DB re-seedato con i nuovi hash.
+- **CORS lockdown** ✅ — `app.use(cors())` permissivo sostituito con allowlist:
+  `REPLIT_DOMAINS`, `REPLIT_DEV_DOMAIN`, `*.replit.app` (sempre), `*.replit.dev`
+  (solo dev), `localhost:*` (solo dev), più `CORS_ORIGINS` env var per origini
+  custom in produzione. Test: origin valido → 204 + ACAO header, origin non
+  in allowlist → 200 senza ACAO (browser blocca, comportamento corretto).
+
+### Code consolidation 🧹
+- **Middleware `requireAuth`/`requireAdmin` centralizzato** ✅ — eliminate
+  6 copie duplicate del decoder base64 sparse fra `matches.ts`, `chats.ts`,
+  `albums.ts`, `user-albums.ts`, `admin.ts`, `settings.ts`. Tutto ora passa
+  per `artifacts/api-server/src/middlewares/auth.ts` (un'unica fonte di
+  verità). Legacy DRY violation chiusa.
+- **`lib/auth.ts`** ✅ — modulo unico per token signing, scrypt hashing e
+  verifica timing-safe. Riusabile, testabile, isolato.
+
+### Performance frontend ⚡
+- **Lazy loading route** ✅ — `App.tsx` ora carica le pagine pesanti via
+  `React.lazy` + `Suspense`: tutte le 7 pagine admin + le 5 pagine utente
+  non critiche (AlbumDetail, MatchList, MatchDetail, ChatRoom, Profile)
+  sono code-split. Login + Home + AlbumList restano eager (above-the-fold).
+  Fallback: `PageSkeleton` con shadcn `Skeleton` componente.
+- **Bundle size** ✅ — bundle iniziale ~493 KB (152 KB gzip), pagine
+  separate 2-7 KB ciascuna gzippate. Build production verificata
+  (`vite build`).
+
+### Hardening enterprise extra (review architect Sessione 6) ⚙️
+- **scrypt asincrono** ✅ — `hashPin`/`verifyPin`/`hashAnswer` sono ora
+  `async` e usano `crypto.scrypt` promisificato (`util.promisify`). In
+  precedenza `scryptSync` bloccava l'event-loop sotto burst di login,
+  creando un rischio DoS. Aggiornati tutti i call site in
+  `routes/auth.ts` (await + loop esplicito su `verifyPin` per supportare
+  più match nickname/CAP).
+- **Token TTL** ✅ — il payload firmato include ora `iat` + `exp` (default
+  30 giorni). `verifyToken` rifiuta i token con `exp` passato (401). Test
+  con token sintetico expired: 401 confermato.
+- **Rate limiting in-memory** ✅ — nuovo helper `checkRateLimit` /
+  `resetRateLimit` in `lib/auth.ts` (sliding-window per chiave). Applicato
+  a `POST /api/auth/login` (8 tentativi / 5 min per IP+nickname) e
+  `POST /api/auth/recover` (5 tentativi / 15 min per IP). Il limit reset
+  al primo login riuscito. Risponde `429` con header `Retry-After`.
+  Cleanup automatico del Map ogni 60s. Test verificato: 8 tentativi
+  errati → 401, dal nono → 429.
+
+---
+
+Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 5 (E2E Testing + Enterprise Cleanup)
 
 ## Fix Sessione 5 — E2E Testing + Enterprise Cleanup ✅
 

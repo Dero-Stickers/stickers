@@ -27,8 +27,16 @@ const db = drizzle(pool, {
   }
 });
 
+import { scryptSync, randomBytes } from "crypto";
+
 function hashPin(pin: string): string {
-  return Buffer.from(pin + "sticker_salt").toString("base64");
+  const salt = randomBytes(16);
+  const derived = scryptSync(pin, salt, 32, { N: 16384 });
+  return `scrypt$${salt.toString("base64")}$${derived.toString("base64")}`;
+}
+
+function hashAnswer(answer: string): string {
+  return hashPin(answer.toLowerCase().trim());
 }
 
 async function main() {
@@ -60,7 +68,7 @@ async function main() {
       cap: "20100",
       area: "Milano Nord",
       securityQuestion: "Nome del tuo primo animale?",
-      securityAnswerHash: Buffer.from("fido").toString("base64"),
+      securityAnswerHash: hashAnswer("fido"),
       recoveryCode: "STICK-ABCD-1234-EFGH",
       isPremium: false,
       demoStartedAt: new Date(Date.now() - 4 * 3600 * 1000),
@@ -75,7 +83,7 @@ async function main() {
       cap: "20121",
       area: "Milano Centro",
       securityQuestion: "Città dove sei nato?",
-      securityAnswerHash: Buffer.from("roma").toString("base64"),
+      securityAnswerHash: hashAnswer("roma"),
       recoveryCode: "STICK-WXYZ-5678-IJKL",
       isPremium: true,
       isBlocked: false,
@@ -88,7 +96,7 @@ async function main() {
       cap: "20135",
       area: "Milano Sud",
       securityQuestion: "Scuola elementare?",
-      securityAnswerHash: Buffer.from("manzoni").toString("base64"),
+      securityAnswerHash: hashAnswer("manzoni"),
       recoveryCode: "STICK-MNOP-9999-QRST",
       isPremium: false,
       isBlocked: false,
@@ -101,7 +109,7 @@ async function main() {
       cap: "20151",
       area: "Milano Ovest",
       securityQuestion: "Colore preferito?",
-      securityAnswerHash: Buffer.from("blu").toString("base64"),
+      securityAnswerHash: hashAnswer("blu"),
       recoveryCode: "STICK-UVWX-1111-YZA0",
       isPremium: false,
       demoStartedAt: new Date(Date.now() - 30 * 3600 * 1000),
@@ -116,7 +124,7 @@ async function main() {
       cap: "20141",
       area: "Milano Est",
       securityQuestion: "Squadra del cuore?",
-      securityAnswerHash: Buffer.from("milan").toString("base64"),
+      securityAnswerHash: hashAnswer("milan"),
       recoveryCode: "STICK-ROBE-2222-COLL",
       isPremium: true,
       isBlocked: false,
@@ -129,7 +137,7 @@ async function main() {
       cap: "00000",
       area: "Admin",
       securityQuestion: "Admin",
-      securityAnswerHash: Buffer.from("admin").toString("base64"),
+      securityAnswerHash: hashAnswer("admin"),
       recoveryCode: "STICK-ADMIN-0000-XXXX",
       isPremium: true,
       isBlocked: false,

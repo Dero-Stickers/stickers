@@ -1,20 +1,20 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
 import { eq } from "drizzle-orm";
+import { verifyToken } from "../lib/auth";
 
 const router = Router();
 
 async function requireAdmin(req: any, res: any): Promise<{ userId: number; isAdmin: boolean } | null> {
   const authHeader = req.headers.authorization;
-  if (!authHeader) { res.status(401).json({ error: "UNAUTHORIZED" }); return null; }
-  try {
-    const session = JSON.parse(Buffer.from(authHeader.replace("Bearer ", ""), "base64").toString());
-    if (!session.isAdmin) { res.status(403).json({ error: "FORBIDDEN" }); return null; }
-    return session;
-  } catch {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(401).json({ error: "UNAUTHORIZED" });
     return null;
   }
+  const session = verifyToken(authHeader.slice(7).trim());
+  if (!session) { res.status(401).json({ error: "UNAUTHORIZED" }); return null; }
+  if (!session.isAdmin) { res.status(403).json({ error: "FORBIDDEN" }); return null; }
+  return session;
 }
 
 const SETTING_KEYS = ["support_email", "demo_hours", "privacy_policy", "terms", "cookie_policy", "app_name"];

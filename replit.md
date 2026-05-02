@@ -12,7 +12,7 @@ pnpm monorepo con 4 package principali:
 
 - **Frontend**: React 18, Vite, TypeScript, TailwindCSS, shadcn/ui, Wouter, React Query, Zod
 - **Backend**: Express 5, Drizzle ORM, PostgreSQL (Supabase)
-- **Auth**: Token base64(JSON{userId,isAdmin}) in Authorization header; localStorage `sticker_token` + `sticker_user`
+- **Auth**: Token firmato HMAC-SHA256 formato `v1.<payload-b64url>.<sig-b64url>` (Authorization: Bearer …) con `iat`+`exp` (TTL 30 giorni). Hash PIN/risposta sicurezza con `scrypt` async (Node `crypto`). Rate limit in-memory: login 8/5min, recovery 5/15min per IP. localStorage `sticker_token` + `sticker_user`. Secret server: `SESSION_SECRET` (Replit Secret).
 - **DB**: Supabase PostgreSQL via `SUPABASE_DATABASE_URL` (con SSL + trim automatico)
 
 ## Database — Supabase
@@ -156,6 +156,14 @@ Pulsante floating in basso a destra, visibile su **ogni pagina** inclusa la logi
 - **Error Boundary**: `artifacts/stickers-app/src/components/ErrorBoundary.tsx` — avvolge l'app intera
 - **Admin mobile nav**: hamburger + dropdown in `AdminLayout.tsx`
 - **Badge non letti**: `MobileLayout.tsx` mostra badge rosso su Match via `useListChats`
+
+## Key Architecture Decisions (Sessione 6 — Security Hardening)
+
+- **Modulo `lib/auth.ts`** centralizza signing token (HMAC-SHA256 + `timingSafeEqual`), hashing scrypt asincrono, helper rate-limit. Zero dipendenze esterne (solo `crypto`).
+- **Middleware `middlewares/auth.ts`** unico `requireAuth`/`requireAdmin`/`getSession` — eliminato 6× decoder duplicato base64 nelle route.
+- **CORS allowlist**: `REPLIT_DOMAINS`, `REPLIT_DEV_DOMAIN`, `*.replit.app`, `*.replit.dev` (dev), `localhost` (dev), `CORS_ORIGINS` env (prod). Origini non permesse: nessun header `Access-Control-Allow-Origin` → browser blocca.
+- **Lazy routes** in `App.tsx` con `React.lazy` + `Suspense<PageSkeleton>` per tutte le pagine admin + 5 pagine utente non-critiche. Login/Home/AlbumList restano eager. Bundle iniziale ~152 KB gzip.
+- **Token rotation note**: cambiare `SESSION_SECRET` invalida tutti i token esistenti (hard logout globale). Ruotare solo in caso di compromissione.
 
 ## Key Architecture Decisions (Sessione 5 — E2E Testing Pass)
 

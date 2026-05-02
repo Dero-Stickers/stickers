@@ -6,6 +6,24 @@ import {
   GetRecoveryCodeBody,
 } from "@workspace/api-zod";
 import type { RequestHandler } from "express";
+import {
+  signToken,
+  hashPin,
+  verifyPin,
+  hashAnswer,
+  checkRateLimit,
+  resetRateLimit,
+} from "../lib/auth";
+import { requireAuth, getSession } from "../middlewares/auth";
+
+const LOGIN_MAX_ATTEMPTS = 8;
+const LOGIN_WINDOW_MS = 5 * 60 * 1000;
+const RECOVERY_MAX_ATTEMPTS = 5;
+const RECOVERY_WINDOW_MS = 15 * 60 * 1000;
+
+function clientIp(req: { ip?: string }): string {
+  return req.ip || "unknown";
+}
 
 const router = Router();
 
@@ -16,15 +34,6 @@ function generateRecoveryCode(): string {
       chars[Math.floor(Math.random() * chars.length)]
     ).join("");
   return `STICK-${segment()}-${segment()}-${segment()}`;
-}
-
-function hashPin(pin: string): string {
-  // Simple hash for mock/dev — replace with bcrypt in production
-  return Buffer.from(pin + "sticker_salt").toString("base64");
-}
-
-function verifyPin(pin: string, hash: string): boolean {
-  return hashPin(pin) === hash;
 }
 
 function computeDemoStatus(user: {
@@ -38,6 +47,21 @@ function computeDemoStatus(user: {
   return "demo_active";
 }
 
+function userPayload(user: any) {
+  return {
+    id: user.id,
+    nickname: user.nickname,
+    cap: user.cap,
+    area: user.area,
+    isPremium: user.isPremium,
+    demoStatus: computeDemoStatus(user),
+    demoExpiresAt: user.demoExpiresAt?.toISOString() ?? null,
+    exchangesCompleted: user.exchangesCompleted,
+    isAdmin: user.isAdmin,
+    createdAt: user.createdAt.toISOString(),
+  };
+}
+
 // POST /api/auth/register
 const register: RequestHandler = async (req, res) => {
   try {
@@ -47,7 +71,6 @@ const register: RequestHandler = async (req, res) => {
     const { usersTable } = await import("@workspace/db");
     const { eq, and } = await import("drizzle-orm");
 
-    // Check if nickname+cap combo already exists
     const existing = await db
       .select()
       .from(usersTable)
@@ -71,32 +94,19 @@ const register: RequestHandler = async (req, res) => {
       .insert(usersTable)
       .values({
         nickname: body.nickname,
-        pinHash: hashPin(body.pin),
+        pinHash: await hashPin(body.pin),
         cap: body.cap,
         area,
         securityQuestion: body.securityQuestion,
-        securityAnswerHash: Buffer.from(body.securityAnswer.toLowerCase()).toString("base64"),
+        securityAnswerHash: await hashAnswer(body.securityAnswer),
         recoveryCode,
         isPremium: false,
       })
       .returning();
 
-    const session = { userId: user.id, isAdmin: user.isAdmin };
-
     res.status(201).json({
-      user: {
-        id: user.id,
-        nickname: user.nickname,
-        cap: user.cap,
-        area: user.area,
-        isPremium: user.isPremium,
-        demoStatus: computeDemoStatus(user),
-        demoExpiresAt: user.demoExpiresAt?.toISOString() ?? null,
-        exchangesCompleted: user.exchangesCompleted,
-        isAdmin: user.isAdmin,
-        createdAt: user.createdAt.toISOString(),
-      },
-      token: Buffer.from(JSON.stringify(session)).toString("base64"),
+      user: userPayload(user),
+      token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
       recoveryCode,
     });
   } catch (err) {
@@ -114,11 +124,23 @@ const login: RequestHandler = async (req, res) => {
   try {
     const body = LoginBody.parse(req.body);
 
+    const ip = clientIp(req);
+    const rateKey = `login:${ip}:${body.nickname.toLowerCase()}`;
+    const limit = checkRateLimit(rateKey, LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS);
+    if (!limit.allowed) {
+      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
+      res.setHeader("Retry-After", String(retryAfter));
+      res.status(429).json({
+        error: "RATE_LIMITED",
+        message: `Troppi tentativi di login. Riprova fra ${retryAfter}s.`,
+      });
+      return;
+    }
+
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
     const { eq, and } = await import("drizzle-orm");
 
-    // Search by nickname (+ optional CAP for disambiguation)
     let usersFound;
     if (body.cap) {
       usersFound = await db
@@ -132,7 +154,13 @@ const login: RequestHandler = async (req, res) => {
         .where(eq(usersTable.nickname, body.nickname));
     }
 
-    const user = usersFound.find(u => verifyPin(body.pin, u.pinHash));
+    let user: typeof usersFound[number] | undefined;
+    for (const u of usersFound) {
+      if (await verifyPin(body.pin, u.pinHash)) {
+        user = u;
+        break;
+      }
+    }
 
     if (!user) {
       res.status(401).json({ error: "INVALID_CREDENTIALS", message: "Nickname o PIN non validi" });
@@ -144,21 +172,11 @@ const login: RequestHandler = async (req, res) => {
       return;
     }
 
-    const session = { userId: user.id, isAdmin: user.isAdmin };
+    resetRateLimit(rateKey);
+
     res.json({
-      user: {
-        id: user.id,
-        nickname: user.nickname,
-        cap: user.cap,
-        area: user.area,
-        isPremium: user.isPremium,
-        demoStatus: computeDemoStatus(user),
-        demoExpiresAt: user.demoExpiresAt?.toISOString() ?? null,
-        exchangesCompleted: user.exchangesCompleted,
-        isAdmin: user.isAdmin,
-        createdAt: user.createdAt.toISOString(),
-      },
-      token: Buffer.from(JSON.stringify(session)).toString("base64"),
+      user: userPayload(user),
+      token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
     });
   } catch (err) {
     if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
@@ -170,8 +188,7 @@ const login: RequestHandler = async (req, res) => {
   }
 };
 
-// POST /api/auth/logout
-const logout: RequestHandler = async (req, res) => {
+const logout: RequestHandler = async (_req, res) => {
   res.json({ success: true, message: "Disconnesso" });
 };
 
@@ -179,6 +196,19 @@ const logout: RequestHandler = async (req, res) => {
 const recover: RequestHandler = async (req, res) => {
   try {
     const body = RecoverAccountBody.parse(req.body);
+
+    const ip = clientIp(req);
+    const rateKey = `recover:${ip}`;
+    const limit = checkRateLimit(rateKey, RECOVERY_MAX_ATTEMPTS, RECOVERY_WINDOW_MS);
+    if (!limit.allowed) {
+      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
+      res.setHeader("Retry-After", String(retryAfter));
+      res.status(429).json({
+        error: "RATE_LIMITED",
+        message: `Troppi tentativi di recupero. Riprova fra ${retryAfter}s.`,
+      });
+      return;
+    }
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
@@ -197,23 +227,14 @@ const recover: RequestHandler = async (req, res) => {
 
     await db
       .update(usersTable)
-      .set({ pinHash: hashPin(body.newPin) })
+      .set({ pinHash: await hashPin(body.newPin) })
       .where(eq(usersTable.id, user.id));
 
+    resetRateLimit(rateKey);
+
     res.json({
-      user: {
-        id: user.id,
-        nickname: user.nickname,
-        cap: user.cap,
-        area: user.area,
-        isPremium: user.isPremium,
-        demoStatus: computeDemoStatus(user),
-        demoExpiresAt: user.demoExpiresAt?.toISOString() ?? null,
-        exchangesCompleted: user.exchangesCompleted,
-        isAdmin: user.isAdmin,
-        createdAt: user.createdAt.toISOString(),
-      },
-      token: Buffer.from(JSON.stringify({ userId: user.id, isAdmin: user.isAdmin })).toString("base64"),
+      user: userPayload(user),
+      token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
     });
   } catch (err) {
     if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
@@ -224,22 +245,10 @@ const recover: RequestHandler = async (req, res) => {
   }
 };
 
-// GET /api/auth/me — requires auth token in Authorization header
+// GET /api/auth/me
 const getMe: RequestHandler = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      res.status(401).json({ error: "UNAUTHORIZED", message: "Non autenticato" });
-      return;
-    }
-
-    let session: { userId: number; isAdmin: boolean };
-    try {
-      session = JSON.parse(Buffer.from(authHeader.replace("Bearer ", ""), "base64").toString());
-    } catch {
-      res.status(401).json({ error: "UNAUTHORIZED", message: "Token non valido" });
-      return;
-    }
+    const session = req.session!;
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
@@ -256,19 +265,9 @@ const getMe: RequestHandler = async (req, res) => {
       return;
     }
 
-    res.json({
-      id: user.id,
-      nickname: user.nickname,
-      cap: user.cap,
-      area: user.area,
-      isPremium: user.isPremium,
-      demoStatus: computeDemoStatus(user),
-      demoExpiresAt: user.demoExpiresAt?.toISOString() ?? null,
-      exchangesCompleted: user.exchangesCompleted,
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt.toISOString(),
-    });
+    res.json(userPayload(user));
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
   }
 };
@@ -277,26 +276,14 @@ const getMe: RequestHandler = async (req, res) => {
 const getRecoveryCode: RequestHandler = async (req, res) => {
   try {
     const body = GetRecoveryCodeBody.parse(req.body);
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      res.status(401).json({ error: "UNAUTHORIZED" });
-      return;
-    }
-
-    let session: { userId: number };
-    try {
-      session = JSON.parse(Buffer.from(authHeader.replace("Bearer ", ""), "base64").toString());
-    } catch {
-      res.status(401).json({ error: "UNAUTHORIZED" });
-      return;
-    }
+    const session = req.session!;
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
     const { eq } = await import("drizzle-orm");
 
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-    if (!user || !verifyPin(body.pin, user.pinHash)) {
+    if (!user || !(await verifyPin(body.pin, user.pinHash))) {
       res.status(401).json({ error: "WRONG_PIN", message: "PIN non corretto" });
       return;
     }
@@ -314,11 +301,8 @@ const getRecoveryCode: RequestHandler = async (req, res) => {
 // POST /api/demo/activate
 export const activateDemo: RequestHandler = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) { res.status(401).json({ error: "UNAUTHORIZED" }); return; }
-    let session: { userId: number };
-    try { session = JSON.parse(Buffer.from(authHeader.replace("Bearer ", ""), "base64").toString()); }
-    catch { res.status(401).json({ error: "UNAUTHORIZED" }); return; }
+    const session = getSession(req, res);
+    if (!session) return;
 
     const { db } = await import("@workspace/db");
     const { usersTable, appSettingsTable } = await import("@workspace/db");
@@ -351,6 +335,7 @@ export const activateDemo: RequestHandler = async (req, res) => {
       isPremium: false,
     });
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -358,11 +343,8 @@ export const activateDemo: RequestHandler = async (req, res) => {
 // GET /api/demo/status
 export const getDemoStatus: RequestHandler = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) { res.status(401).json({ error: "UNAUTHORIZED" }); return; }
-    let session: { userId: number };
-    try { session = JSON.parse(Buffer.from(authHeader.replace("Bearer ", ""), "base64").toString()); }
-    catch { res.status(401).json({ error: "UNAUTHORIZED" }); return; }
+    const session = getSession(req, res);
+    if (!session) return;
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
@@ -385,7 +367,7 @@ router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", logout);
 router.post("/recover", recover);
-router.get("/me", getMe);
-router.post("/recovery-code", getRecoveryCode);
+router.get("/me", requireAuth, getMe);
+router.post("/recovery-code", requireAuth, getRecoveryCode);
 
 export default router;

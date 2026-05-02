@@ -12,6 +12,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Express = express();
 
+// Trust the first reverse proxy (Render, Replit) so req.ip resolves to the
+// real client IP from x-forwarded-for. Required for the auth rate limiter to
+// avoid bypass via header spoofing.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
@@ -31,7 +36,58 @@ app.use(
     },
   }),
 );
-app.use(cors());
+function buildAllowedOrigins(): (string | RegExp)[] {
+  const origins: (string | RegExp)[] = [];
+  const env = process.env["CORS_ORIGINS"];
+  if (env) {
+    for (const o of env.split(",").map((s) => s.trim()).filter(Boolean)) {
+      origins.push(o);
+    }
+  }
+  const replitDomains = process.env["REPLIT_DOMAINS"];
+  if (replitDomains) {
+    for (const d of replitDomains.split(",").map((s) => s.trim()).filter(Boolean)) {
+      origins.push(`https://${d}`);
+    }
+  }
+  const devDomain = process.env["REPLIT_DEV_DOMAIN"];
+  if (devDomain) {
+    origins.push(`https://${devDomain}`);
+    origins.push(new RegExp(`^https://[a-z0-9-]+-\\d+\\.${devDomain.replace(/\./g, "\\.")}$`));
+  }
+  if (process.env["NODE_ENV"] !== "production") {
+    origins.push(/^https?:\/\/localhost(:\d+)?$/);
+    origins.push(/^https?:\/\/127\.0\.0\.1(:\d+)?$/);
+    origins.push(/\.replit\.dev$/);
+    origins.push(/\.repl\.co$/);
+    origins.push(/\.janeway\.replit\.dev$/);
+    origins.push(/\.kirk\.replit\.dev$/);
+    origins.push(/\.picard\.replit\.dev$/);
+    origins.push(/\.replit\.app$/);
+  } else {
+    origins.push(/\.replit\.app$/);
+  }
+  return origins;
+}
+
+const allowedOrigins = buildAllowedOrigins();
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      const ok = allowedOrigins.some((o) =>
+        typeof o === "string" ? o === origin : o.test(origin),
+      );
+      if (ok) return callback(null, true);
+      logger.warn({ origin }, "CORS rejected origin");
+      callback(null, false);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

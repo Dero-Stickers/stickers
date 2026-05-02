@@ -1,6 +1,6 @@
 # DNA — Guida Deploy su Render (100% Sicuro)
 
-Ultimo aggiornamento: 1 Maggio 2026
+Ultimo aggiornamento: 2 Maggio 2026 — Sessione 6
 
 ---
 
@@ -89,6 +89,14 @@ Vai su **Environment** del servizio Render e aggiungi:
 | `SUPABASE_ANON_KEY` | `eyJ...` | Da Supabase → Settings → API → anon public |
 | `SUPABASE_URL` | `https://xxx.supabase.co` | Da Supabase → Settings → API → Project URL |
 | `BASE_PATH` | `/` | Percorso base dell'app |
+| `SESSION_SECRET` | *(stringa random ≥ 32 char)* | **Obbligatoria in produzione**. Chiave per firmare i token sessione (HMAC-SHA256). Genera con `openssl rand -base64 48`. **Non condividere mai** e **non riusare** chiavi di altri ambienti. |
+
+### Opzionali
+
+| Variabile | Valore | Note |
+|-----------|--------|------|
+| `CORS_ORIGINS` | `https://app1.example.com,https://app2.example.com` | Lista CSV di origini autorizzate aggiuntive (oltre a `*.replit.app`). Lascia vuota se l'app è raggiunta solo dal proprio dominio Render. |
+| `AUTH_SECRET` | *(alias di `SESSION_SECRET`)* | Solo per back-compat. Usa `SESSION_SECRET`. |
 
 ### Come trovare i valori Supabase
 
@@ -101,6 +109,8 @@ Vai su **Environment** del servizio Render e aggiungi:
 - **MAI** committare le variabili d'ambiente nel repository
 - **MAI** usare la `service_role` key lato client (solo la `anon` key)
 - `SUPABASE_DATABASE_URL` contiene la password del DB — trattala come segreto
+- `SESSION_SECRET` firma i token di sessione: se cambi il valore, **tutti gli utenti vengono sloggati** (i token esistenti diventano invalidi). Ruota solo in caso di sospetta compromissione.
+- Token di sessione: durata 30 giorni (`exp` nel payload firmato). Rate limit login: 8 tentativi / 5 min per IP+nickname; recupero PIN: 5 / 15 min per IP.
 
 ---
 

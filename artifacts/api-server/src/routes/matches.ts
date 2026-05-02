@@ -1,15 +1,11 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
 import { eq, and, ne, inArray } from "drizzle-orm";
+import { getSession } from "../middlewares/auth";
 
 const router = Router();
 
-async function requireAuth(req: any, res: any): Promise<{ userId: number; isAdmin: boolean } | null> {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) { res.status(401).json({ error: "UNAUTHORIZED" }); return null; }
-  try { return JSON.parse(Buffer.from(authHeader.replace("Bearer ", ""), "base64").toString()); }
-  catch { res.status(401).json({ error: "UNAUTHORIZED" }); return null; }
-}
+const requireAuth = async (req: any, res: any) => getSession(req, res);
 
 /**
  * Deterministic distance estimation from Italian CAP codes.
