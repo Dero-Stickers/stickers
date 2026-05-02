@@ -194,3 +194,15 @@ Pulsante floating in basso a destra, visibile su **ogni pagina** inclusa la logi
 - `DNA/03_ROADMAP.md` — Roadmap fasi 1-5
 - `DNA/05_PROSSIMO_PROMPT.md` — Prompt per sessioni future
 - `DNA/06_RENDER_DEPLOY.md` — Guida deploy Render step-by-step
+
+## Sessione 7 (2026-05-02)
+
+- **Fix login "Errore di connessione"**: aggiunto Vite dev proxy `/api -> http://localhost:8080` in `artifacts/stickers-app/vite.config.ts`. Il frontend usa path relativi `/api/*`; senza proxy, da iframe Replit le richieste cadevano sul Vite dev server.
+- **Eliminati riferimenti mock dal frontend**:
+  - Cancellato `src/components/dev/DevSwitcher.tsx` (e dir `dev/`) — conteneva array hardcoded `DEV_USERS` con nickname/PIN.
+  - Rimosso import + JSX `<DevSwitcher />` da `App.tsx`.
+  - Rimosso hint "Demo: mario75 / 1234 — Admin: admin / 0000" da `Login.tsx`.
+  - Placeholder input cambiato da `"es. mario75"` a `"es. nickname"`.
+- **Dati**: tutti i record provengono da Supabase via API; nessun fixture client-side residuo.
+- **E2E test PASS**: login, navigazione user (album, match, profilo), persistenza stato figurine, logout, login admin, tutte le sezioni `/admin/*` con dati reali, isolamento sessioni multi-utente.
+- **Architect review PASS**: typecheck + build OK, nessun import rotto, proxy correttamente configurato.

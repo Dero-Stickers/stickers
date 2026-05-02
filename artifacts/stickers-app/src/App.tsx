@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { DevSwitcher } from "@/components/dev/DevSwitcher";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/not-found";
@@ -153,9 +152,6 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
       </Suspense>
-
-      {/* Dev-only: global user switcher — visible on every page */}
-      <DevSwitcher />
     </>
   );
 }

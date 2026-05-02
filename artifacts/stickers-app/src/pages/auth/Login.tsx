@@ -143,7 +143,7 @@ export function Login() {
                   <FormItem>
                     <FormLabel>Nickname</FormLabel>
                     <FormControl>
-                      <Input placeholder="es. mario75" autoComplete="username" {...field} />
+                      <Input placeholder="es. nickname" autoComplete="username" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -209,13 +209,6 @@ export function Login() {
 
               {loginError && (
                 <p className="text-sm text-destructive text-center bg-destructive/5 border border-destructive/20 rounded-lg p-2">{loginError}</p>
-              )}
-
-              {!isRegister && (
-                <p className="text-xs text-muted-foreground text-center">
-                  Demo: <span className="font-mono font-medium">mario75</span> / <span className="font-mono font-medium">1234</span>
-                  {" "}— Admin: <span className="font-mono font-medium">admin</span> / <span className="font-mono font-medium">0000</span>
-                </p>
               )}
 
               <div className="pt-2 flex flex-col space-y-3">
