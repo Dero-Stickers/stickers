@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile=false && pnpm --filter @workspace/stickers-app build && pnpm --filter @workspace/api-server build
+    buildCommand: npm install -g pnpm@10.26.1 && pnpm install --frozen-lockfile=false && pnpm --filter @workspace/stickers-app build && pnpm --filter @workspace/api-server build
     startCommand: pnpm --filter @workspace/api-server run start
     autoDeploy: true
     envVars:
