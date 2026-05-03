@@ -221,3 +221,16 @@ Senza questi step l'app **non regge** 5K-10K utenti paganti:
 4. **Monitoring** — aggiungere Sentry (free tier 5K errori/mese basta) per tracking errori e performance. Variabile `SENTRY_DSN`. Senza monitoring si scoprono i bug solo quando gli utenti lamentano.
 
 5. **Backup esterni** — oltre ai backup automatici Supabase, considera un dump giornaliero su Object Storage / S3 con `pg_dump` (cron via GitHub Actions). 30 secondi di setup salvano da disaster catastrofici.
+
+## Sessione collegamento Supabase prod + fix auth (3 Maggio 2026)
+
+**Cosa è stato fatto**:
+1. **`SUPABASE_DATABASE_URL` collegata** — pooler `aws-1-eu-west-2.pooler.supabase.com:5432` (Session pooler). `lib/db/src/index.ts` fa `.trim()` sulla env (alcuni paste hanno trailing space/newline). API health `db: ok`, latenza ~90-700ms.
+2. **Schema sync su Supabase** — `drizzle-kit push` ha aggiunto la colonna `users.accepted_terms_at` (nullable, retroattivo) + tutti i 17 indici di performance che erano stati pushati per errore solo sul Postgres locale Replit. Indici totali su Supabase: **27** (prima 11), tutti i 9 critici presenti.
+3. **Fix bug auth produzione** — gli utenti seed (`mario75`, `luca_fan`, ecc.) avevano un `pin_hash` placeholder (`MTIzNHN0aWNrZXJfc2FsdA==` = base64 di `1234sticker_salt`) che non era un vero hash scrypt. `verifyPin` falliva sempre → 401 su ogni login. Risolto rieseguendo `pnpm --filter @workspace/db run seed` contro Supabase: ora i 6 utenti demo hanno hash scrypt corretti. Login verificato OK su tutti, anche case-insensitive.
+
+**Note operative**:
+- Test SQL ad-hoc → eseguire da `cd lib/db && node -e ...` (il pacchetto `pg` è installato lì, non in root).
+- Per produzione a 5K-10K utenti, cambiare a porta **6543 (Transaction pooler) + `?pgbouncer=true`** nella URL SUPABASE_DATABASE_URL su Render.
+- Password DB con caratteri speciali (`!`, `@`, `:`, `/`, `?`, `&`) **devono essere URL-encoded** (es. `!` → `%21`).
+- I 6 utenti demo sono soltanto seed (0 chat / 0 messaggi / 0 report reali); il re-seed non distrugge dati di utenti veri (al momento inesistenti su Supabase).
