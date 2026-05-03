@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq } from "drizzle-orm";
-import { getSession } from "../middlewares/auth";
+import { and, eq } from "drizzle-orm";
+import { getSession, requireAdmin } from "../middlewares/auth";
 
 const router = Router();
 
@@ -148,10 +148,19 @@ const batchInsertStickers: RequestHandler = async (req, res) => {
 // PUT /api/albums/:albumId/stickers/:stickerId
 const updateSticker: RequestHandler = async (req, res) => {
   try {
+    const albumId = parseInt(req.params.albumId as string, 10);
     const stickerId = parseInt(req.params.stickerId as string, 10);
+    if (!Number.isFinite(albumId) || !Number.isFinite(stickerId)) {
+      res.status(400).json({ error: "BAD_REQUEST" }); return;
+    }
     const { db } = await import("@workspace/db");
     const { stickersTable } = await import("@workspace/db");
-    const [s] = await db.update(stickersTable).set({ number: req.body.number, name: req.body.name, description: req.body.description ?? null }).where(eq(stickersTable.id, stickerId)).returning();
+    // Constrain the update to the sticker AND its parent album to prevent
+    // cross-album tampering (IDOR).
+    const [s] = await db.update(stickersTable)
+      .set({ number: req.body.number, name: req.body.name, description: req.body.description ?? null })
+      .where(and(eq(stickersTable.id, stickerId), eq(stickersTable.albumId, albumId)))
+      .returning();
     if (!s) { res.status(404).json({ error: "NOT_FOUND" }); return; }
     res.json({ id: s.id, albumId: s.albumId, number: s.number, name: s.name, description: s.description });
   } catch {
@@ -160,12 +169,13 @@ const updateSticker: RequestHandler = async (req, res) => {
 };
 
 router.get("/", listAlbums);
-router.post("/", createAlbum);
+// Admin-only catalog mutations
+router.post("/", requireAdmin, createAlbum);
 router.get("/:albumId", getAlbum);
-router.put("/:albumId", updateAlbum);
-router.patch("/:albumId/publish", togglePublish);
+router.put("/:albumId", requireAdmin, updateAlbum);
+router.patch("/:albumId/publish", requireAdmin, togglePublish);
 router.get("/:albumId/stickers", listStickers);
-router.post("/:albumId/stickers", batchInsertStickers);
-router.put("/:albumId/stickers/:stickerId", updateSticker);
+router.post("/:albumId/stickers", requireAdmin, batchInsertStickers);
+router.put("/:albumId/stickers/:stickerId", requireAdmin, updateSticker);
 
 export default router;

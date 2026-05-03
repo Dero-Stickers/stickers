@@ -120,3 +120,32 @@ The project is structured as a pnpm monorepo with four main packages: `artifacts
 - Banner cookie: l'app usa solo storage tecnico essenziale (auth token + sessionStorage splash), niente cookie di profilazione né analytics di terzi.
 - DPO / registro trattamenti formale: non obbligatori per dati non sensibili e bassi volumi.
 - Doppio opt-in email: non si raccolgono email.
+
+## Album Calciatori 2025-2026 + admin Figurine consolidate
+
+**Seed album ufficiale** — `lib/db/src/seed-calciatori.ts`:
+- Crea l'album "Calciatori 2025-2026" (pubblicato) con 624 figurine: 618 numeriche (001-618) + 6 bonus K01-K06 (Kinder) mappate a 619-624.
+- Idempotente: se l'album esiste già con ≥624 figurine non fa nulla; se esiste con meno, fa wipe & reinsert.
+- Eseguire da `lib/db/`: `pnpm exec tsx src/seed-calciatori.ts`.
+- Sorgente: `attached_assets/Pasted-001-Trofeo-Serie-A-Enilive-...txt` (path relativo `../../attached_assets/...`).
+
+**Consolidamento admin Figurine → Album**:
+- Rimossa pagina `/admin/figurine` (file `pages/admin/Figurine.tsx` cancellato, voce sidebar e route in `App.tsx` eliminate).
+- Nuovo componente riutilizzabile `components/admin/AlbumStickersManager.tsx` (inserimento rapido + lista figurine con edit inline).
+- Nella tabella di `pages/admin/Albums.tsx` ogni riga ha ora un bottone **Figurine** che apre un Dialog con `AlbumStickersManager` scoped sull'album cliccato. Le figurine non hanno più una sezione admin separata.
+
+## Keep-alive Supabase + Render (24h)
+
+Doppia ridondanza per evitare lo sleep dopo 7gg di inattività su Supabase free e lo spin-down dopo 15min su Render free:
+
+1. **Scheduler interno** (api-server) — fa `SELECT 1` ogni 12h appena il server è up. Log `[keepalive] Started — pinging Supabase every 12h`.
+2. **GitHub Actions cron** — `.github/workflows/keepalive.yml`, schedule `17 6 * * *` (06:17 UTC quotidiano). Fa `curl` su `${PROD_URL}/api/healthz/db` (fallback `https://stickers-api.onrender.com`). Sveglia Render e tocca Supabase. Configurabile via repository secret `PROD_URL`.
+
+**Endpoint backend**: `GET /api/healthz/db` → `{status, db, latencyMs, timestamp}`. Pubblico (read-only, niente dati sensibili).
+
+## Hardening admin album/figurine (sessione consolidamento)
+
+Audit architect → fix definitivi su `artifacts/api-server/src/routes/albums.ts`:
+- Aggiunto middleware `requireAdmin` su tutte le mutation del catalogo: `POST /api/albums`, `PUT /api/albums/:albumId`, `PATCH /api/albums/:albumId/publish`, `POST /api/albums/:albumId/stickers`, `PUT /api/albums/:albumId/stickers/:stickerId`. Caller non autenticati → 401, non-admin → 403.
+- IDOR fix su `updateSticker`: WHERE constraint ora include sia `stickerId` sia `albumId` (impedisce di modificare figurine di altri album passando `:albumId` arbitrario).
+- Seed `seed-calciatori.ts`: wipe+reinsert e create+insert ora avvengono in una **transazione Drizzle** (`db.transaction`), così un fallimento parziale non lascia il DB in stato inconsistente.

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Plus, Edit, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit, Eye, EyeOff, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   useListAlbums,
@@ -16,6 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import type { Album } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AlbumStickersManager } from "@/components/admin/AlbumStickersManager";
 
 export function AdminAlbums() {
   const { toast } = useToast();
@@ -25,6 +26,7 @@ export function AdminAlbums() {
   const [showCreate, setShowCreate] = useState(false);
   const [editAlbum, setEditAlbum] = useState<Album | null>(null);
   const [form, setForm] = useState({ title: "", description: "", totalStickers: "" });
+  const [stickersAlbum, setStickersAlbum] = useState<Album | null>(null);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListAlbumsQueryKey() });
 
@@ -131,6 +133,10 @@ export function AdminAlbums() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => setStickersAlbum(album)}>
+                          <Star className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Figurine</span>
+                        </Button>
                         <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => openEdit(album)}>
                           <Edit className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">Modifica</span>
@@ -154,6 +160,16 @@ export function AdminAlbums() {
           </div>
         )}
       </Card>
+
+      <Dialog open={!!stickersAlbum} onOpenChange={v => { if (!v) setStickersAlbum(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Figurine — {stickersAlbum?.title}</DialogTitle>
+            <DialogDescription>Aggiungi, modifica e gestisci le figurine di questo album.</DialogDescription>
+          </DialogHeader>
+          {stickersAlbum && <AlbumStickersManager albumId={stickersAlbum.id} />}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showCreate} onOpenChange={v => { setShowCreate(v); if (!v) setEditAlbum(null); }}>
         <DialogContent className="max-w-md">

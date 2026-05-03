@@ -26,7 +26,6 @@ const importChatRoom = () => import("@/pages/chat/ChatRoom");
 const importProfile = () => import("@/pages/Profile");
 const importAdminDashboard = () => import("@/pages/admin/Dashboard");
 const importAdminAlbums = () => import("@/pages/admin/Albums");
-const importAdminFigurine = () => import("@/pages/admin/Figurine");
 const importAdminUsers = () => import("@/pages/admin/Users");
 const importAdminMessages = () => import("@/pages/admin/Messages");
 const importAdminPremium = () => import("@/pages/admin/Premium");
@@ -40,7 +39,6 @@ const Profile = lazy(() => importProfile().then((m) => ({ default: m.Profile }))
 
 const AdminDashboard = lazy(() => importAdminDashboard().then((m) => ({ default: m.AdminDashboard })));
 const AdminAlbums = lazy(() => importAdminAlbums().then((m) => ({ default: m.AdminAlbums })));
-const AdminFigurine = lazy(() => importAdminFigurine().then((m) => ({ default: m.AdminFigurine })));
 const AdminUsers = lazy(() => importAdminUsers().then((m) => ({ default: m.AdminUsers })));
 const AdminMessages = lazy(() => importAdminMessages().then((m) => ({ default: m.AdminMessages })));
 const AdminPremium = lazy(() => importAdminPremium().then((m) => ({ default: m.AdminPremium })));
@@ -58,7 +56,6 @@ function prefetchUserChunks() {
 function prefetchAdminChunks() {
   void importAdminDashboard();
   void importAdminAlbums();
-  void importAdminFigurine();
   void importAdminUsers();
   void importAdminMessages();
   void importAdminPremium();
@@ -189,7 +186,6 @@ function Router() {
         {/* Admin routes */}
         <Route path="/admin" component={() => <ProtectedAdminRoute component={AdminDashboard} />} />
         <Route path="/admin/album" component={() => <ProtectedAdminRoute component={AdminAlbums} />} />
-        <Route path="/admin/figurine" component={() => <ProtectedAdminRoute component={AdminFigurine} />} />
         <Route path="/admin/utenti" component={() => <ProtectedAdminRoute component={AdminUsers} />} />
         <Route path="/admin/messaggi" component={() => <ProtectedAdminRoute component={AdminMessages} />} />
         <Route path="/admin/premium" component={() => <ProtectedAdminRoute component={AdminPremium} />} />
