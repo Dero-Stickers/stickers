@@ -46,9 +46,58 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"
       rel="stylesheet"
     />
+    <link rel="preload" as="image" href="/logo.svg" fetchpriority="high" />
+
+    <style>
+      html, body { background: #ebf7ff; }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ebf7ff;
+        opacity: 1;
+        transition: opacity 600ms ease-in;
+        pointer-events: none;
+      }
+      #boot-splash.boot-splash-hide { opacity: 0; }
+      #boot-splash img {
+        width: 66%;
+        max-width: 320px;
+        height: auto;
+        animation: bootSplashIn 500ms ease-out both;
+        user-select: none;
+        -webkit-user-drag: none;
+      }
+      @keyframes bootSplashIn {
+        from { opacity: 0; transform: scale(0.96); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash, #boot-splash img { transition: none; animation: none; }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-splash" role="presentation" aria-hidden="true">
+      <img src="/logo.svg" alt="" decoding="async" fetchpriority="high" />
+    </div>
     <div id="root"></div>
+    <script>
+      // Splash gate: visible only on first session open.
+      // Marks shown synchronously to avoid double-trigger on remounts.
+      try {
+        if (sessionStorage.getItem('sticker_splash_shown') === '1') {
+          var s = document.getElementById('boot-splash');
+          if (s) s.parentNode.removeChild(s);
+        } else {
+          sessionStorage.setItem('sticker_splash_shown', '1');
+          window.__splashUntil = performance.now() + 4500;
+        }
+      } catch (e) { /* private mode: keep splash but no persistence */ }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

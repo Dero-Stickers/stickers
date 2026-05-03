@@ -8,7 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/not-found";
 import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
-import { SplashScreen } from "@/components/brand/SplashScreen";
+import { dismissBootSplash } from "@/components/brand/SplashScreen";
 
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -17,19 +17,51 @@ import { Home } from "@/pages/Home";
 import { AlbumList } from "@/pages/album/AlbumList";
 import { DemoExpiredScreen } from "@/pages/DemoExpiredScreen";
 
-const AlbumDetail = lazy(() => import("@/pages/album/AlbumDetail").then((m) => ({ default: m.AlbumDetail })));
-const MatchList = lazy(() => import("@/pages/match/MatchList").then((m) => ({ default: m.MatchList })));
-const MatchDetail = lazy(() => import("@/pages/match/MatchDetail").then((m) => ({ default: m.MatchDetail })));
-const ChatRoom = lazy(() => import("@/pages/chat/ChatRoom").then((m) => ({ default: m.ChatRoom })));
-const Profile = lazy(() => import("@/pages/Profile").then((m) => ({ default: m.Profile })));
+const importAlbumDetail = () => import("@/pages/album/AlbumDetail");
+const importMatchList = () => import("@/pages/match/MatchList");
+const importMatchDetail = () => import("@/pages/match/MatchDetail");
+const importChatRoom = () => import("@/pages/chat/ChatRoom");
+const importProfile = () => import("@/pages/Profile");
+const importAdminDashboard = () => import("@/pages/admin/Dashboard");
+const importAdminAlbums = () => import("@/pages/admin/Albums");
+const importAdminFigurine = () => import("@/pages/admin/Figurine");
+const importAdminUsers = () => import("@/pages/admin/Users");
+const importAdminMessages = () => import("@/pages/admin/Messages");
+const importAdminPremium = () => import("@/pages/admin/Premium");
+const importAdminSettings = () => import("@/pages/admin/Settings");
 
-const AdminDashboard = lazy(() => import("@/pages/admin/Dashboard").then((m) => ({ default: m.AdminDashboard })));
-const AdminAlbums = lazy(() => import("@/pages/admin/Albums").then((m) => ({ default: m.AdminAlbums })));
-const AdminFigurine = lazy(() => import("@/pages/admin/Figurine").then((m) => ({ default: m.AdminFigurine })));
-const AdminUsers = lazy(() => import("@/pages/admin/Users").then((m) => ({ default: m.AdminUsers })));
-const AdminMessages = lazy(() => import("@/pages/admin/Messages").then((m) => ({ default: m.AdminMessages })));
-const AdminPremium = lazy(() => import("@/pages/admin/Premium").then((m) => ({ default: m.AdminPremium })));
-const AdminSettings = lazy(() => import("@/pages/admin/Settings").then((m) => ({ default: m.AdminSettings })));
+const AlbumDetail = lazy(() => importAlbumDetail().then((m) => ({ default: m.AlbumDetail })));
+const MatchList = lazy(() => importMatchList().then((m) => ({ default: m.MatchList })));
+const MatchDetail = lazy(() => importMatchDetail().then((m) => ({ default: m.MatchDetail })));
+const ChatRoom = lazy(() => importChatRoom().then((m) => ({ default: m.ChatRoom })));
+const Profile = lazy(() => importProfile().then((m) => ({ default: m.Profile })));
+
+const AdminDashboard = lazy(() => importAdminDashboard().then((m) => ({ default: m.AdminDashboard })));
+const AdminAlbums = lazy(() => importAdminAlbums().then((m) => ({ default: m.AdminAlbums })));
+const AdminFigurine = lazy(() => importAdminFigurine().then((m) => ({ default: m.AdminFigurine })));
+const AdminUsers = lazy(() => importAdminUsers().then((m) => ({ default: m.AdminUsers })));
+const AdminMessages = lazy(() => importAdminMessages().then((m) => ({ default: m.AdminMessages })));
+const AdminPremium = lazy(() => importAdminPremium().then((m) => ({ default: m.AdminPremium })));
+const AdminSettings = lazy(() => importAdminSettings().then((m) => ({ default: m.AdminSettings })));
+
+function prefetchUserChunks() {
+  // Prefetch lazy chunks after first paint so navigations feel instant.
+  void importAlbumDetail();
+  void importMatchList();
+  void importMatchDetail();
+  void importChatRoom();
+  void importProfile();
+}
+
+function prefetchAdminChunks() {
+  void importAdminDashboard();
+  void importAdminAlbums();
+  void importAdminFigurine();
+  void importAdminUsers();
+  void importAdminMessages();
+  void importAdminPremium();
+  void importAdminSettings();
+}
 
 function PageSkeleton() {
   return (
@@ -43,7 +75,15 @@ function PageSkeleton() {
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 30000 },
+    queries: {
+      retry: 1,
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+    },
+    mutations: { retry: 0 },
   },
 });
 
@@ -158,13 +198,32 @@ function Router() {
   );
 }
 
+function BootEffects() {
+  const { currentUser, isAuthenticated } = useAuth();
+  useEffect(() => {
+    dismissBootSplash();
+    const ric = (window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+    }).requestIdleCallback;
+    const schedule = (cb: () => void) =>
+      ric ? ric(cb, { timeout: 2000 }) : window.setTimeout(cb, 800);
+    schedule(() => {
+      if (isAuthenticated) {
+        if (currentUser?.isAdmin) prefetchAdminChunks();
+        else prefetchUserChunks();
+      }
+    });
+  }, [isAuthenticated, currentUser?.isAdmin]);
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
-      <SplashScreen />
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <AuthProvider>
+            <BootEffects />
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <Router />
               <DevQuickSwitch />
