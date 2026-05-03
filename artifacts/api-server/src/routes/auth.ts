@@ -11,10 +11,34 @@ import {
   hashPin,
   verifyPin,
   hashAnswer,
+  verifyAnswer,
   checkRateLimit,
   resetRateLimit,
 } from "../lib/auth";
+import { z } from "zod";
 import { requireAuth, getSession } from "../middlewares/auth";
+
+const PIN_REGEX = /^\d{4,6}$/;
+
+const RecoverLookupBody = z.object({
+  nickname: z.string().min(3).max(24),
+  cap: z.string().length(5),
+});
+
+const RecoverAnswerBody = z.object({
+  nickname: z.string().min(3).max(24),
+  cap: z.string().length(5),
+  securityAnswer: z.string().min(1),
+  newPin: z.string().regex(PIN_REGEX, "Il PIN deve essere di 4-6 cifre numeriche"),
+});
+
+const ChangeNicknameBody = z.object({
+  pin: z.string().regex(PIN_REGEX, "PIN non valido"),
+  newNickname: z.string().min(3).max(24),
+});
+
+const NICKNAME_CHANGE_MAX_ATTEMPTS = 5;
+const NICKNAME_CHANGE_WINDOW_MS = 15 * 60 * 1000;
 
 const LOGIN_MAX_ATTEMPTS = 8;
 const LOGIN_WINDOW_MS = 5 * 60 * 1000;
@@ -483,13 +507,196 @@ const deleteMe: RequestHandler = async (req, res) => {
   }
 };
 
+// POST /api/auth/recover/lookup — returns the security question for a given nickname+cap
+const recoverLookup: RequestHandler = async (req, res) => {
+  try {
+    const body = RecoverLookupBody.parse(req.body);
+
+    const ip = clientIp(req);
+    const rateKey = `recover-lookup:${ip}`;
+    const limit = checkRateLimit(rateKey, RECOVERY_MAX_ATTEMPTS, RECOVERY_WINDOW_MS);
+    if (!limit.allowed) {
+      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
+      res.setHeader("Retry-After", String(retryAfter));
+      res.status(429).json({
+        error: "RATE_LIMITED",
+        message: `Troppi tentativi. Riprova fra ${retryAfter}s.`,
+      });
+      return;
+    }
+
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const { eq, and } = await import("drizzle-orm");
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(and(eq(usersTable.nickname, body.nickname), eq(usersTable.cap, body.cap)))
+      .limit(1);
+
+    // Anti-enumeration: same shape & status code whether the user exists or not.
+    // The security-question feature inherently requires showing the question to a
+    // legitimate user; abuse is mitigated by rate limiting (5 / 15min per IP) and
+    // by the answer-verification step that follows.
+    if (!user) {
+      res.status(200).json({ securityQuestion: null });
+      return;
+    }
+
+    res.json({ securityQuestion: user.securityQuestion });
+  } catch (err) {
+    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: "Dati non validi" });
+      return;
+    }
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
+  }
+};
+
+// POST /api/auth/recover/answer — reset PIN by answering the security question
+const recoverAnswer: RequestHandler = async (req, res) => {
+  try {
+    const body = RecoverAnswerBody.parse(req.body);
+
+    const ip = clientIp(req);
+    const rateKey = `recover-answer:${ip}:${body.nickname.toLowerCase()}`;
+    const limit = checkRateLimit(rateKey, RECOVERY_MAX_ATTEMPTS, RECOVERY_WINDOW_MS);
+    if (!limit.allowed) {
+      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
+      res.setHeader("Retry-After", String(retryAfter));
+      res.status(429).json({
+        error: "RATE_LIMITED",
+        message: `Troppi tentativi. Riprova fra ${retryAfter}s.`,
+      });
+      return;
+    }
+
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const { eq, and } = await import("drizzle-orm");
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(and(eq(usersTable.nickname, body.nickname), eq(usersTable.cap, body.cap)))
+      .limit(1);
+
+    if (!user || !(await verifyAnswer(body.securityAnswer, user.securityAnswerHash))) {
+      res.status(401).json({ error: "WRONG_ANSWER", message: "Risposta non corretta" });
+      return;
+    }
+
+    await db
+      .update(usersTable)
+      .set({ pinHash: await hashPin(body.newPin) })
+      .where(eq(usersTable.id, user.id));
+
+    resetRateLimit(rateKey);
+
+    res.json({
+      user: userPayload(user),
+      token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
+    });
+  } catch (err) {
+    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: "Dati non validi" });
+      return;
+    }
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
+  }
+};
+
+// PATCH /api/auth/me/nickname — change nickname (auth required, PIN re-confirmation, rate-limited)
+const changeNickname: RequestHandler = async (req, res) => {
+  try {
+    const body = ChangeNicknameBody.parse(req.body);
+    const session = req.session!;
+
+    const ip = clientIp(req);
+    const rateKey = `nickname-change:${session.userId}:${ip}`;
+    const limit = checkRateLimit(rateKey, NICKNAME_CHANGE_MAX_ATTEMPTS, NICKNAME_CHANGE_WINDOW_MS);
+    if (!limit.allowed) {
+      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
+      res.setHeader("Retry-After", String(retryAfter));
+      res.status(429).json({
+        error: "RATE_LIMITED",
+        message: `Troppi tentativi. Riprova fra ${retryAfter}s.`,
+      });
+      return;
+    }
+
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const { eq, and, ne } = await import("drizzle-orm");
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
+
+    if (!(await verifyPin(body.pin, user.pinHash))) {
+      res.status(401).json({ error: "WRONG_PIN", message: "PIN non corretto" });
+      return;
+    }
+
+    resetRateLimit(rateKey);
+
+    if (body.newNickname === user.nickname) {
+      res.json({ user: userPayload(user) });
+      return;
+    }
+
+    const conflict = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(and(
+        eq(usersTable.nickname, body.newNickname),
+        eq(usersTable.cap, user.cap),
+        ne(usersTable.id, user.id),
+      ))
+      .limit(1);
+
+    if (conflict.length > 0) {
+      res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso per questo CAP" });
+      return;
+    }
+
+    try {
+      const [updated] = await db
+        .update(usersTable)
+        .set({ nickname: body.newNickname })
+        .where(eq(usersTable.id, user.id))
+        .returning();
+      res.json({ user: userPayload(updated) });
+    } catch (e: any) {
+      // Race-safe: catch unique-violation from DB-level (cap, nickname) index
+      if (e?.code === "23505") {
+        res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso per questo CAP" });
+        return;
+      }
+      throw e;
+    }
+  } catch (err) {
+    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: "Dati non validi" });
+      return;
+    }
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
+  }
+};
+
 router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", logout);
 router.post("/recover", recover);
+router.post("/recover/lookup", recoverLookup);
+router.post("/recover/answer", recoverAnswer);
 router.get("/me", requireAuth, getMe);
 router.get("/me/export", requireAuth, exportMe);
 router.delete("/me", requireAuth, deleteMe);
+router.patch("/me/nickname", requireAuth, changeNickname);
 router.post("/recovery-code", requireAuth, getRecoveryCode);
 
 export default router;

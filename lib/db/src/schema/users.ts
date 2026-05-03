@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -19,7 +19,10 @@ export const usersTable = pgTable("users", {
   exchangesCompleted: integer("exchanges_completed").default(0).notNull(),
   acceptedTermsAt: timestamp("accepted_terms_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  // Race-safe uniqueness for "nickname per CAP".
+  nicknameCapUnique: uniqueIndex("users_nickname_cap_unique").on(t.cap, t.nickname),
+}));
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true });
 export type InsertUser = z.infer<typeof insertUserSchema>;

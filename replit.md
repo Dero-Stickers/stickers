@@ -90,6 +90,23 @@ The project is structured as a pnpm monorepo with four main packages: `artifacts
 - **Cartella**: sempre dentro `backups/`.
 - Esclusi dall'archivio: `node_modules`, `dist`, `.git`, `backups`, `*.log`.
 
+## Recupero account & cambio nickname (sessione recovery)
+
+**Endpoint backend** (tutti rate-limited):
+- `POST /api/auth/recover` — reset PIN tramite **codice di recupero** STICK-XXXX-XXXX-XXXX (esistente).
+- `POST /api/auth/recover/lookup` — body `{nickname, cap}` → restituisce sempre status 200 con `{securityQuestion: string|null}` (anti-enumerazione: stessa shape per utente esistente/inesistente).
+- `POST /api/auth/recover/answer` — body `{nickname, cap, securityAnswer, newPin}` → reset PIN se la risposta è corretta. PIN validato `/^\d{4,6}$/`.
+- `PATCH /api/auth/me/nickname` — autenticato, body `{pin, newNickname}`. Rate-limited 5/15min per `userId+IP`. Race-safe via DB unique index `(cap, nickname)`.
+- `POST /api/auth/recovery-code` — autenticato, mostra codice a chi conosce il PIN (esistente).
+
+**Frontend**:
+- Nuova pagina pubblica `/recover` (`Recover.tsx`) con due flussi: "Ho il codice di recupero" e "Rispondi alla domanda di sicurezza". Link "Hai dimenticato il PIN o il nickname?" sotto il form di Login.
+- In `Profile.tsx` nuova voce "Cambia nickname" (dialog con PIN re-confirmation).
+
+**DB**: aggiunto unique index `users_nickname_cap_unique` su `(cap, nickname)` per garantire unicità a livello DB e prevenire race condition.
+
+**PIN policy**: tutti gli endpoint che impostano un PIN richiedono `^\d{4,6}$` (solo cifre).
+
 ## Conformità Privacy / GDPR (sessione legal)
 
 **Cosa è stato aggiunto** (minimo legale, niente di superfluo):

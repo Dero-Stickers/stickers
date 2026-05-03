@@ -257,6 +257,17 @@ export function Login() {
               </div>
             </form>
           </Form>
+          {!isRegister && (
+            <div className="mt-3 text-center">
+              <button
+                type="button"
+                onClick={() => setLocation("/recover")}
+                className="text-xs text-primary hover:underline"
+              >
+                Hai dimenticato il PIN o il nickname?
+              </button>
+            </div>
+          )}
           <div className="mt-5 pt-4 border-t border-border/60 flex justify-center gap-4 text-[11px] text-muted-foreground">
             <a href="/legal/privacy" className="hover:text-primary hover:underline">Privacy</a>
             <span aria-hidden>·</span>

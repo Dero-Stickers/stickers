@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield, Download, Trash2, FileText } from "lucide-react";
+import { MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield, Download, Trash2, FileText, UserCog } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ function DemoStatusBadge({ status, expiresAt }: { status: string | null; expires
 }
 
 export function Profile() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, login } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -65,6 +65,34 @@ export function Profile() {
   const handleLogout = () => {
     logout();
     setLocation("/login");
+  };
+
+  const [showNickDialog, setShowNickDialog] = useState(false);
+  const [nickPin, setNickPin] = useState("");
+  const [newNickname, setNewNickname] = useState("");
+  const [nickError, setNickError] = useState<string | null>(null);
+  const [nickLoading, setNickLoading] = useState(false);
+
+  const handleChangeNickname = async () => {
+    setNickError(null); setNickLoading(true);
+    try {
+      const token = localStorage.getItem("sticker_token");
+      const res = await fetch("/api/auth/me/nickname", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ pin: nickPin, newNickname: newNickname.trim() }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { setNickError((j as any)?.message ?? "Errore aggiornamento"); return; }
+      if (token && j.user) login(j.user, token);
+      toast({ title: "Nickname aggiornato", description: `Ora ti chiami ${j.user?.nickname ?? newNickname}.` });
+      setShowNickDialog(false);
+      setNickPin(""); setNewNickname("");
+    } catch { setNickError("Errore di connessione."); }
+    finally { setNickLoading(false); }
   };
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -181,6 +209,17 @@ export function Profile() {
 
             <button
               className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+              onClick={() => { setShowNickDialog(true); setNickPin(""); setNewNickname(currentUser?.nickname ?? ""); setNickError(null); }}
+            >
+              <UserCog className="h-5 w-5 text-primary flex-shrink-0" />
+              <div>
+                <p className="font-medium text-sm text-foreground">Cambia nickname</p>
+                <p className="text-xs text-muted-foreground">Devi confermare con il PIN</p>
+              </div>
+            </button>
+
+            <button
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
               onClick={() => toast({ title: "Guida", description: "La guida sarà disponibile a breve." })}
             >
               <HelpCircle className="h-5 w-5 text-primary flex-shrink-0" />
@@ -255,6 +294,46 @@ export function Profile() {
           </button>
         )}
       </div>
+
+      <Dialog open={showNickDialog} onOpenChange={setShowNickDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cambia nickname</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Il nuovo nickname dev'essere unico nel tuo CAP ({currentUser?.cap}).
+            </p>
+            <Input
+              placeholder="Nuovo nickname"
+              value={newNickname}
+              onChange={e => setNewNickname(e.target.value)}
+              maxLength={24}
+            />
+            <Input
+              type="password"
+              placeholder="PIN"
+              maxLength={6}
+              value={nickPin}
+              onChange={e => setNickPin(e.target.value)}
+              autoComplete="current-password"
+            />
+            {nickError && <p className="text-xs text-destructive">{nickError}</p>}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowNickDialog(false)} disabled={nickLoading}>
+                Annulla
+              </Button>
+              <Button
+                className="flex-1 bg-primary text-primary-foreground"
+                onClick={handleChangeNickname}
+                disabled={nickLoading || newNickname.trim().length < 3 || nickPin.length < 4}
+              >
+                {nickLoading ? "Aggiorno..." : "Salva"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="max-w-sm">
