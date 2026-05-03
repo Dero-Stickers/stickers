@@ -1,6 +1,65 @@
 # DNA — Stato Sviluppo
 
-Ultimo aggiornamento: 2 Maggio 2026 — Sessione 6 (Security Hardening + Performance + Enterprise Final)
+Ultimo aggiornamento: 3 Maggio 2026 — Sessione 8 (Audit Enterprise + Modularizzazione + Cleanup Orfani)
+
+## Fix Sessione 8 — Cleanup Enterprise & Modularizzazione ✅
+
+### Audit completo (vincoli: niente refactor estetico, niente cambio business logic, niente cambio UX)
+
+**Codice morto eliminato (67 file, ~8600 righe)** 🧹
+- Rimossi 37 componenti shadcn/ui orfani da `artifacts/stickers-app/src/components/ui/`:
+  accordion, alert, aspect-ratio, avatar, breadcrumb, button-group, calendar,
+  carousel, chart, checkbox, collapsible, command, context-menu, drawer,
+  dropdown-menu, empty, field, hover-card, input-group, input-otp, item, kbd,
+  menubar, navigation-menu, pagination, popover, radio-group, resizable,
+  scroll-area, select, sidebar, slider, sonner, spinner, switch, table, tabs,
+  toggle-group. Nessuno era importato → zero rischio rottura.
+- Rimossi 30 componenti UI orfani analoghi da `artifacts/mockup-sandbox/`.
+- Restano solo i primitives effettivamente usati: alert-dialog, badge, button,
+  card, dialog, form, input, label, progress, separator, sheet, skeleton, toast,
+  toaster, toggle, tooltip, textarea (+ pochi altri dove usati).
+
+**Modularizzazione `pages/admin/Errors.tsx`** (596 → 324 righe, sotto soglia 350)
+- Estratti tipi/costanti/helper in `pages/admin/errors/types.ts` (73 righe).
+- Estratta singola riga in `pages/admin/errors/ErrorRow.tsx` (72 righe).
+- Estratto dialog dettaglio in `pages/admin/errors/ErrorDetailDialog.tsx` (188 righe).
+- File principale ora orchestrator puro: stato, fetch, filtri, layout.
+- **Comportamento identico**: zero modifiche a logica, layout, classi CSS o UX.
+
+**File NON modificati intenzionalmente** (rischio business/UX troppo alto per il vincolo del task):
+- `routes/auth.ts` (744 righe) — logica auth/recovery critica, già rivista in Sessione 6.
+- `pages/Profile.tsx` (621 righe) — layout utente, l'utente ha vietato modifiche UX.
+- `components/ui/sidebar.tsx` (727 righe) — primitive shadcn (già rimosso da stickers-app, restano solo gli usati).
+- `lib/api-client-react/src/generated/api.ts` (3546 righe) — codice generato da orval.
+
+### Verifica diretta Supabase ✅
+- `psql` su `SUPABASE_DATABASE_URL`: 11 tabelle presenti, schema allineato.
+- Indici: 3 `error_reports` + tutti i 27 indici esistenti integri.
+- `pg_stat_user_indexes`: gli "indici non usati" sono tutti UNIQUE constraint
+  (ricovery code, nickname_cap, sticker hash, etc) o tabelle ancora vuote
+  (chat/messages/reports). **Nessun indice rimosso** — sono tutti corretti.
+- Pulita 1 riga di test residua da `error_reports` durante smoke test sanitizer.
+- **Nessuna anomalia rilevata**.
+
+### Verifica codice ✅
+- `pnpm -w run typecheck` → 4 progetti TS, **0 errori** dopo cleanup.
+- Nessun `TODO/FIXME/HACK/XXX` lasciato in codice di produzione.
+- Nessun `console.log/debug/warn` di debug residuo.
+- 3 workflow running (api-server, mockup-sandbox, stickers-app).
+- Browser console pulita (solo HMR vite messages).
+- Sanitizer error-reports: copertura estesa a IPv6 + path Windows + redazione
+  context-aware su PIN/OTP/code (no over-redaction su line numbers).
+- Upsert error_reports: ora aggiorna `messageClean/stackTop/page/uaClass/appVersion/userNote/ipPrefix` sull'ultima occorrenza (prima restavano i dati della prima volta).
+
+### Stato finale enterprise ✅
+- **Modularità**: tutti i file funzionali ≤ 350 righe (eccetto i 4 sopra elencati con motivo documentato).
+- **Manutenibilità**: zero codice morto, dipendenze ridotte, struttura `errors/` riusabile.
+- **Performance**: bundle iniziale immutato (i file rimossi non erano nel bundle), tree-shaking ora più efficace.
+- **Sicurezza**: sanitizer rinforzato dopo code review architect.
+- **DB**: integrità Supabase verificata di persona via psql.
+
+---
+
 
 ## Fix Sessione 6 — Security Hardening + Performance ✅
 

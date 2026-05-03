@@ -1,110 +1,20 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  AlertTriangle,
-  Bug,
-  CheckCircle2,
-  EyeOff,
-  Search,
-  Copy,
-  RefreshCw,
-  ChevronRight,
-  Smartphone,
-  Monitor,
-  Globe,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Copy, RefreshCw, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-
-type Priority = "critical" | "high" | "medium" | "low";
-type Status = "new" | "investigating" | "resolved" | "ignored";
-
-interface ErrorRow {
-  id: string;
-  errorHash: string;
-  count: number;
-  priority: Priority;
-  status: Status;
-  page: string | null;
-  errorType: string;
-  messageClean: string | null;
-  stackTop: string | null;
-  uaClass: string | null;
-  ipPrefix: string | null;
-  userId: number | null;
-  appVersion: string | null;
-  userNote: string | null;
-  adminNote: string | null;
-  createdAt: string;
-  lastSeenAt: string;
-}
-
-interface ListResponse {
-  counts: { total: number; new: number; critical: number; last7d: number };
-  items: ErrorRow[];
-}
-
-function authHeaders(): HeadersInit {
-  const token = localStorage.getItem("sticker_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-const PRIORITY_LABEL: Record<Priority, string> = {
-  critical: "Critica",
-  high: "Alta",
-  medium: "Media",
-  low: "Bassa",
-};
-
-const PRIORITY_COLOR: Record<Priority, string> = {
-  critical: "bg-red-100 text-red-700 border-red-200",
-  high: "bg-orange-100 text-orange-700 border-orange-200",
-  medium: "bg-amber-100 text-amber-700 border-amber-200",
-  low: "bg-slate-100 text-slate-600 border-slate-200",
-};
-
-const STATUS_LABEL: Record<Status, string> = {
-  new: "Nuova",
-  investigating: "In analisi",
-  resolved: "Risolta",
-  ignored: "Ignorata",
-};
-
-const STATUS_COLOR: Record<Status, string> = {
-  new: "bg-blue-100 text-blue-700",
-  investigating: "bg-violet-100 text-violet-700",
-  resolved: "bg-green-100 text-green-700",
-  ignored: "bg-gray-100 text-gray-600",
-};
-
-function DeviceIcon({ ua }: { ua: string | null }) {
-  if (!ua) return <Globe className="h-3.5 w-3.5 text-muted-foreground" />;
-  if (ua.startsWith("mobile"))
-    return <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />;
-  if (ua === "bot") return <Bug className="h-3.5 w-3.5 text-muted-foreground" />;
-  return <Monitor className="h-3.5 w-3.5 text-muted-foreground" />;
-}
-
-function timeAgo(iso: string): string {
-  const d = new Date(iso).getTime();
-  const diff = Date.now() - d;
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "ora";
-  if (m < 60) return `${m} min fa`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} h fa`;
-  const days = Math.floor(h / 24);
-  if (days < 7) return `${days} g fa`;
-  return new Date(iso).toLocaleDateString("it-IT");
-}
+import { ErrorRow } from "./errors/ErrorRow";
+import { ErrorDetailDialog } from "./errors/ErrorDetailDialog";
+import {
+  authHeaders,
+  PRIORITY_LABEL,
+  STATUS_LABEL,
+  type ErrorRow as ErrorRowType,
+  type ListResponse,
+  type Priority,
+  type Status,
+} from "./errors/types";
 
 export function AdminErrors() {
   const { toast } = useToast();
@@ -113,7 +23,7 @@ export function AdminErrors() {
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | Priority>("all");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<ErrorRow | null>(null);
+  const [selected, setSelected] = useState<ErrorRowType | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
 
@@ -129,7 +39,7 @@ export function AdminErrors() {
       if (!res.ok) throw new Error(String(res.status));
       const json: ListResponse = await res.json();
       setData(json);
-    } catch (err) {
+    } catch {
       toast({
         title: "Errore di caricamento",
         description: "Non sono riuscito a caricare le segnalazioni.",
@@ -180,7 +90,7 @@ export function AdminErrors() {
       if (!res.ok) throw new Error(String(res.status));
       toast({ title: "Aggiornato" });
       void fetchData();
-      if (selected?.id === id) setSelected({ ...selected, ...body } as ErrorRow);
+      if (selected?.id === id) setSelected({ ...selected, ...body } as ErrorRowType);
     } catch {
       toast({
         title: "Errore",
@@ -215,11 +125,15 @@ export function AdminErrors() {
             "Ora incollalo in ChatGPT, Codex o Replit Agent per farti aiutare.",
         });
       } catch {
-        // Fallback: open in new tab
         const w = window.open("", "_blank");
         if (w) {
+          const safe = (j.markdown as string).replace(
+            /[<&>]/g,
+            (c: string) =>
+              ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] ?? c,
+          );
           w.document.write(
-            `<pre style="white-space:pre-wrap;font-family:monospace;padding:1rem">${j.markdown.replace(/[<&>]/g, (c: string) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] ?? c)}</pre>`,
+            `<pre style="white-space:pre-wrap;font-family:monospace;padding:1rem">${safe}</pre>`,
           );
         }
       }
@@ -246,7 +160,6 @@ export function AdminErrors() {
         </p>
       </div>
 
-      {/* Counter cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="shadow-sm">
           <CardContent className="p-4">
@@ -278,7 +191,6 @@ export function AdminErrors() {
         </Card>
       </div>
 
-      {/* Filter bar */}
       <Card className="shadow-sm">
         <CardContent className="p-3 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -366,7 +278,6 @@ export function AdminErrors() {
         </CardContent>
       </Card>
 
-      {/* List */}
       <Card className="shadow-sm">
         {loading && (
           <div className="p-4 space-y-3">
@@ -389,207 +300,25 @@ export function AdminErrors() {
         {!loading && filtered.length > 0 && (
           <div className="divide-y divide-border">
             {filtered.map((r) => (
-              <div
+              <ErrorRow
                 key={r.id}
-                className="flex items-start gap-3 px-3 py-3 hover:bg-muted/40 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(r.id)}
-                  onChange={() => toggleSelect(r.id)}
-                  className="mt-1 h-4 w-4 accent-primary cursor-pointer"
-                  aria-label="Seleziona"
-                />
-                <button
-                  onClick={() => setSelected(r)}
-                  className="flex-1 text-left min-w-0"
-                >
-                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                    <Badge className={`${PRIORITY_COLOR[r.priority]} border text-[10px] px-1.5 py-0`}>
-                      {PRIORITY_LABEL[r.priority]}
-                    </Badge>
-                    <Badge className={`${STATUS_COLOR[r.status]} border-0 text-[10px] px-1.5 py-0`}>
-                      {STATUS_LABEL[r.status]}
-                    </Badge>
-                    {r.count > 1 && (
-                      <Badge className="bg-foreground/10 text-foreground border-0 text-[10px] px-1.5 py-0">
-                        ×{r.count}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm font-medium text-foreground line-clamp-1 break-all">
-                    {r.userNote || r.messageClean || "(nessun dettaglio)"}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-muted-foreground">
-                    <span className="font-mono">{r.page || "—"}</span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <DeviceIcon ua={r.uaClass} />
-                      {r.uaClass ?? "?"}
-                    </span>
-                    <span>•</span>
-                    <span>{timeAgo(r.lastSeenAt)}</span>
-                  </div>
-                </button>
-                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
-              </div>
+                row={r}
+                selected={selectedIds.has(r.id)}
+                onToggleSelect={toggleSelect}
+                onOpen={setSelected}
+              />
             ))}
           </div>
         )}
       </Card>
 
-      {/* Detail dialog */}
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Dettaglio segnalazione
-            </DialogTitle>
-          </DialogHeader>
-          {selected && (
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-1.5">
-                <Badge className={`${PRIORITY_COLOR[selected.priority]} border`}>
-                  {PRIORITY_LABEL[selected.priority]}
-                </Badge>
-                <Badge className={`${STATUS_COLOR[selected.status]} border-0`}>
-                  {STATUS_LABEL[selected.status]}
-                </Badge>
-                <Badge variant="outline" className="text-xs">
-                  ×{selected.count} occorrenze
-                </Badge>
-              </div>
-
-              {selected.userNote && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                    Cosa ha scritto l'utente
-                  </p>
-                  <p className="text-sm bg-muted/50 rounded p-2.5 whitespace-pre-wrap">
-                    {selected.userNote}
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">Pagina</p>
-                  <p className="font-mono text-xs break-all">{selected.page || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Tipo</p>
-                  <p className="text-xs">{selected.errorType}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Dispositivo</p>
-                  <p className="text-xs">{selected.uaClass ?? "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Versione app</p>
-                  <p className="text-xs">{selected.appVersion ?? "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Prima volta</p>
-                  <p className="text-xs">
-                    {new Date(selected.createdAt).toLocaleString("it-IT")}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Ultima volta</p>
-                  <p className="text-xs">
-                    {new Date(selected.lastSeenAt).toLocaleString("it-IT")}
-                  </p>
-                </div>
-              </div>
-
-              {selected.messageClean && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                    Errore tecnico
-                  </p>
-                  <pre className="text-[11px] bg-muted rounded p-2.5 whitespace-pre-wrap break-all font-mono max-h-32 overflow-y-auto">
-                    {selected.messageClean}
-                  </pre>
-                </div>
-              )}
-
-              {selected.stackTop && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                    Stack
-                  </p>
-                  <pre className="text-[11px] bg-muted rounded p-2.5 whitespace-pre-wrap break-all font-mono max-h-40 overflow-y-auto">
-                    {selected.stackTop}
-                  </pre>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="space-y-2 pt-2 border-t">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Cambia priorità
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(Object.keys(PRIORITY_LABEL) as Priority[]).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => updateRow(selected.id, { priority: p })}
-                      className={`px-2.5 py-1 rounded-full border text-xs ${
-                        selected.priority === p
-                          ? PRIORITY_COLOR[p] + " border"
-                          : "border-border hover:bg-muted"
-                      }`}
-                    >
-                      {PRIORITY_LABEL[p]}
-                    </button>
-                  ))}
-                </div>
-
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2">
-                  Cambia stato
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => updateRow(selected.id, { status: s })}
-                      className={`px-2.5 py-1 rounded-full border text-xs ${
-                        selected.status === s
-                          ? STATUS_COLOR[s] + " border-transparent"
-                          : "border-border hover:bg-muted"
-                      }`}
-                    >
-                      {STATUS_LABEL[s]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  className="flex-1 gap-1.5"
-                  onClick={() => generateReport([selected.id])}
-                  disabled={generating}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  Copia report tecnico
-                </Button>
-                <Button
-                  variant="outline"
-                  className="gap-1.5"
-                  onClick={() =>
-                    updateRow(selected.id, { status: "ignored" })
-                  }
-                >
-                  <EyeOff className="h-3.5 w-3.5" />
-                  Ignora
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ErrorDetailDialog
+        selected={selected}
+        generating={generating}
+        onClose={() => setSelected(null)}
+        onUpdate={updateRow}
+        onGenerateReport={generateReport}
+      />
     </div>
   );
 }

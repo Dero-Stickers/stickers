@@ -307,3 +307,22 @@ Sistema **opt-in minimale** per raccogliere segnalazioni errori dagli utenti e g
 - Niente Sentry/LogRocket/external services.
 - Niente OpenAPI codegen per i nuovi endpoint (usato `fetch` diretto come `auth/recovery-code` e altri custom — evita rebuild client SDK per 4 endpoint nuovi).
 - Niente email/Slack/Discord webhook.
+
+---
+
+## 3 Maggio 2026 — Sessione 3: Audit Enterprise & Cleanup
+
+### Cosa è stato fatto
+- **67 file orfani eliminati** (~8600 righe codice morto): 37 shadcn primitives non importati da `stickers-app/src/components/ui/` + 30 da `mockup-sandbox/src/components/ui/`. Verificato con `rg` che nessuno fosse importato.
+- **`pages/admin/Errors.tsx` modularizzato** 596 → 324 righe (sotto soglia 350). Estratti `errors/types.ts` (tipi+costanti+helper), `errors/ErrorRow.tsx` (riga lista), `errors/ErrorDetailDialog.tsx` (dialog). Comportamento identico, zero cambi UX.
+- **Sanitizer error-reports rinforzato** (post code-review architect): aggiunto IPv6, path Windows, redazione context-aware su PIN/OTP/code (solo se preceduti da keyword secret, no over-redaction su line numbers).
+- **Upsert error_reports** ora aggiorna `messageClean/stackTop/page/uaClass/appVersion/userNote/ipPrefix` sull'ultima occorrenza (prima restavano i dati della prima volta).
+- **Verifica DB Supabase via psql**: 11 tabelle, 27 indici tutti corretti (gli "indici non usati" sono UNIQUE constraint o tabelle ancora vuote — nessun indice rimosso). Pulita 1 riga di test da `error_reports`.
+
+### File NON toccati (rischio business/UX troppo alto, vincolo dal task)
+- `routes/auth.ts` (744r), `pages/Profile.tsx` (621r), `components/ui/sidebar.tsx` (727r), `lib/api-client-react/src/generated/api.ts` (3546r — generato da orval).
+
+### Stato finale
+- `pnpm -w run typecheck` → **0 errori** su 4 progetti TS.
+- 3 workflow running, browser console pulita, no TODO/console.log residui.
+- App in stato enterprise: modulare, scalabile, manutenibile, codice morto eliminato.
