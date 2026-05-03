@@ -222,15 +222,40 @@ Senza questi step l'app **non regge** 5K-10K utenti paganti:
 
 5. **Backup esterni** — oltre ai backup automatici Supabase, considera un dump giornaliero su Object Storage / S3 con `pg_dump` (cron via GitHub Actions). 30 secondi di setup salvano da disaster catastrofici.
 
-## Sessione collegamento Supabase prod + fix auth (3 Maggio 2026)
+## Sessione collegamento Supabase prod + fix auth + deploy script (3 Maggio 2026)
 
-**Cosa è stato fatto**:
-1. **`SUPABASE_DATABASE_URL` collegata** — pooler `aws-1-eu-west-2.pooler.supabase.com:5432` (Session pooler). `lib/db/src/index.ts` fa `.trim()` sulla env (alcuni paste hanno trailing space/newline). API health `db: ok`, latenza ~90-700ms.
-2. **Schema sync su Supabase** — `drizzle-kit push` ha aggiunto la colonna `users.accepted_terms_at` (nullable, retroattivo) + tutti i 17 indici di performance che erano stati pushati per errore solo sul Postgres locale Replit. Indici totali su Supabase: **27** (prima 11), tutti i 9 critici presenti.
-3. **Fix bug auth produzione** — gli utenti seed (`mario75`, `luca_fan`, ecc.) avevano un `pin_hash` placeholder (`MTIzNHN0aWNrZXJfc2FsdA==` = base64 di `1234sticker_salt`) che non era un vero hash scrypt. `verifyPin` falliva sempre → 401 su ogni login. Risolto rieseguendo `pnpm --filter @workspace/db run seed` contro Supabase: ora i 6 utenti demo hanno hash scrypt corretti. Login verificato OK su tutti, anche case-insensitive.
+### 1. Supabase produzione collegata
+- **`SUPABASE_DATABASE_URL`** salvata in Replit Secrets, attualmente punta a `aws-1-eu-west-2.pooler.supabase.com:5432` (**Session pooler**). API `/api/healthz/db` → `db: ok`, latenza ~90-700ms.
+- `lib/db/src/index.ts` fa `.trim()` sulla env (alcuni paste contengono trailing space/newline che farebbero fallire la connessione con errore criptico tipo `database "postgres " does not exist`).
+- Test ad-hoc: eseguire da `cd lib/db && node -e ...` (il pacchetto `pg` è installato in `lib/db`, non nel root).
 
-**Note operative**:
-- Test SQL ad-hoc → eseguire da `cd lib/db && node -e ...` (il pacchetto `pg` è installato lì, non in root).
-- Per produzione a 5K-10K utenti, cambiare a porta **6543 (Transaction pooler) + `?pgbouncer=true`** nella URL SUPABASE_DATABASE_URL su Render.
-- Password DB con caratteri speciali (`!`, `@`, `:`, `/`, `?`, `&`) **devono essere URL-encoded** (es. `!` → `%21`).
-- I 6 utenti demo sono soltanto seed (0 chat / 0 messaggi / 0 report reali); il re-seed non distrugge dati di utenti veri (al momento inesistenti su Supabase).
+### 2. Schema allineato su Supabase
+`drizzle-kit push` ha sincronizzato lo schema, aggiungendo:
+- Colonna `users.accepted_terms_at` (nullable, retroattivo: i 6 utenti seed hanno NULL — il check GDPR è enforcement solo per nuove registrazioni).
+- 17 indici di performance che erano stati pushati per errore solo sul Postgres locale Replit nelle sessioni precedenti.
+- Stato finale: **27 indici totali** (prima 11), tutti i 9 critici presenti (`stickers_album_number_unique`, `user_stickers_user_sticker_unique`, `user_albums_user_album_unique`, `chats_user{1,2}_idx`, `messages_chat_created_idx`, `reports_status_idx`, `admin_actions_admin_created_idx`, `users_nickname_cap_unique`).
+
+### 3. Fix bug auth in produzione
+- **Sintomo**: login su `stickers-matchbox.onrender.com` falliva con 401 su tutti gli utenti seed.
+- **Causa**: gli utenti seed avevano `pin_hash` placeholder (`MTIzNHN0aWNrZXJfc2FsdA==` = base64 di `1234sticker_salt`), non un vero hash scrypt. `verifyPin` falliva sempre.
+- **Fix**: re-eseguito `pnpm --filter @workspace/db run seed` contro Supabase. I 6 utenti demo hanno ora hash scrypt corretti.
+- **Verificato** OK: `mario75/1234`, `luca_fan/5678`, `admin/0000`, anche case-insensitive (`MARIO75` → ok).
+- **Sicurezza dati**: il re-seed era safe perché Supabase aveva 0 utenti reali (solo seed) e 0 chat/messaggi/reports.
+
+### 4. Script `./deploy.sh` per push automatico
+- File `deploy.sh` nella root, eseguibile.
+- **Uso**: `./deploy.sh` o `./deploy.sh "messaggio commit"`.
+- **Cosa fa**: stage+commit (se serve) → fetch da GitHub → fast-forward o merge non-fast-forward in caso di divergenza → push su `origin main` con verifica finale di allineamento SHA.
+- **Auth GitHub**: usa `GITHUB_TOKEN` (Replit Secrets) come `x-access-token` nella URL https.
+- **Pre-check**: avvisa se il push include modifiche a `.github/workflows/` (richiede scope `workflow` sul PAT, non solo `repo`).
+- **Sicurezza**: mai `--force` / `--force-with-lease`, mai branch laterali, sempre e solo `main`.
+- **Trap noto**: dopo aver aggiornato un secret in Replit, **chiudere e riaprire la shell** per ricaricare le env vars (le shell aperte prima vedono il valore vecchio).
+
+### 5. Stato GitHub
+- Repo: `https://github.com/Dero-Stickers/stickers`, branch `main`.
+- Locale e remote allineati su `d0bde25`. Storico include il merge commit di riconciliazione con il commit `0006c87` che il remote aveva e il locale no.
+
+### 6. To-do non bloccanti per la scalabilità
+- ⚠️ **Migrazione a Transaction pooler (porta 6543)**: oggi siamo su Session pooler (5432), che funziona ma ha meno headroom oltre i ~100 utenti concorrenti. Codice già verificato compatibile (`pg_advisory_xact_lock` è transaction-level, niente prepared statements riusate, niente `LISTEN/NOTIFY`). Quando si vuole migrare: aggiornare `SUPABASE_DATABASE_URL` a `…pooler.supabase.com:6543/postgres?pgbouncer=true` su Replit + Render, restart API. Test a 6543 già passato (parametrizzate + advisory lock OK).
+- Password DB con caratteri speciali devono essere URL-encoded (es. `!` → `%21`, `@` → `%40`, `:` → `%3A`).
+- Render free tier ancora attivo: per i 5K-10K utenti pianificati passare a Render Starter ($7/mo, no sleep) o Standard ($25/mo, 2GB RAM).
