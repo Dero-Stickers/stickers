@@ -149,3 +149,75 @@ Audit architect → fix definitivi su `artifacts/api-server/src/routes/albums.ts
 - Aggiunto middleware `requireAdmin` su tutte le mutation del catalogo: `POST /api/albums`, `PUT /api/albums/:albumId`, `PATCH /api/albums/:albumId/publish`, `POST /api/albums/:albumId/stickers`, `PUT /api/albums/:albumId/stickers/:stickerId`. Caller non autenticati → 401, non-admin → 403.
 - IDOR fix su `updateSticker`: WHERE constraint ora include sia `stickerId` sia `albumId` (impedisce di modificare figurine di altri album passando `:albumId` arbitrario).
 - Seed `seed-calciatori.ts`: wipe+reinsert e create+insert ora avvengono in una **transazione Drizzle** (`db.transaction`), così un fallimento parziale non lascia il DB in stato inconsistente.
+
+## Predisposizione produzione multi-utente (5K-10K paying users)
+
+App, DB e server sono stati induriti per gestire migliaia di utenti paganti senza perdita dati. Modifiche fatte in codice + checklist di azioni manuali che SOLO l'utente può eseguire.
+
+### 1. Database (Supabase) — indici e pool
+
+**Indici creati** (via `drizzle-kit push`, già in produzione):
+
+| Tabella | Indice | Scopo |
+|---|---|---|
+| `stickers` | `stickers_album_number_unique` (UNIQUE album_id+number) | Impedisce duplicati per numero, accelera lookup |
+| `stickers` | `stickers_album_idx` (album_id) | List-by-album |
+| `user_stickers` | `user_stickers_user_sticker_unique` (UNIQUE user_id+sticker_id) | Anti race-condition + lookup principale |
+| `user_stickers` | `user_stickers_user_album_idx` (user_id+album_id) | "tutte le mie figurine di un album" |
+| `user_stickers` | `user_stickers_sticker_idx` (sticker_id) | Statistiche sticker |
+| `user_albums` | `user_albums_user_album_unique` (UNIQUE) | Anti duplicato + lookup |
+| `user_albums` | `user_albums_album_idx` | "chi ha questo album" |
+| `chats` | `chats_user1_idx` / `chats_user2_idx` (user+status) | Inbox utente |
+| `messages` | `messages_chat_created_idx` (chat_id+created_at) | Ordinamento cronologico chat |
+| `messages` | `messages_sender_idx` | Audit per mittente |
+| `reports` | `reports_status_idx` (status+created_at) | Coda moderazione |
+| `reports` | `reports_reported_user_idx` | Storico utente segnalato |
+| `admin_actions` | `admin_actions_admin_created_idx` / `admin_actions_target_user_idx` | Audit log admin |
+
+**Pool pg** (`lib/db/src/index.ts`): max=10 conn, idle=30s, connect-timeout=10s, `allowExitOnIdle:false`, error-handler. Configurabile via env `DB_POOL_MAX`, `DB_POOL_IDLE_MS`, `DB_POOL_CONNECT_TIMEOUT_MS`. `closePool()` esportata per shutdown pulito.
+
+### 2. API server hardening
+
+- **Helmet** attivo (HSTS, X-Frame, X-Content-Type-Options, ecc.). CSP disabilitato perché la SPA serve il proprio.
+- **Compression** (gzip/br) — risparmio bandwidth significativo su `/api/albums/*/stickers` (624 figurine).
+- **Body limit** 256kb su json/urlencoded (no upload, protezione DoS memoria).
+- **Graceful shutdown** in `index.ts`: SIGTERM/SIGINT → stop accept → drain → `closePool()` → exit. Timeout 25s prima del kill forzato. Render manda SIGTERM ad ogni deploy: prima senza, ora le query in-flight finiscono e Supabase non vede TCP rotti.
+- **Safety nets**: `unhandledRejection` e `uncaughtException` loggati invece di crashare.
+- **Trust proxy** (già presente): `app.set("trust proxy", 1)` per IP rate-limit corretto dietro Render.
+- **Rate limit auth** (già presente in `lib/auth.ts`) — in-memory: OK con 1 worker Render, da migrare a Redis se si scala a >1 worker.
+
+### 2.b Fix scalabilità endpoint critici (audit architect)
+
+Riscritti i percorsi caldi che sarebbero collassati con migliaia di utenti:
+
+- **`/api/matches` & `/api/matches/nearby`** (`routes/matches.ts`): prima caricavano in memoria Node TUTTI gli utenti + tutte le loro figurine (≈8MB+/request a 10K utenti). Ora un'unica query con CTE PostgreSQL (`my_dups`, `my_miss`, `my_albums` → JOIN aggregati) ritorna direttamente i top-20 candidati, ordinati per `LEAST(you_give, you_receive)`. `/nearby` aggiunge un pre-filtro per prefisso CAP (3 cifre se ≤5km, 2 se ≤30km) per ridurre il pool prima dell'aggregazione. Latenza attesa: ~50-200ms con 10K utenti vs decine di secondi prima.
+
+- **`GET /api/chats`** (`routes/chats.ts`): prima 3 query per chat (N+1, 50 chat = 150 query). Ora **una singola query** con `LEFT JOIN LATERAL` per ultimo messaggio + COUNT unread, usando gli indici `messages_chat_created_idx` e `chats_user{1,2}_idx`. Ordering già fatto in DB.
+
+- **`GET /api/chats/unread-count`**: prima un loop con 1 query per chat. Ora un singolo `SELECT COUNT(DISTINCT chat_id)` con join, usa l'indice `messages_chat_created_idx`.
+
+- **`POST /api/chats` (openChat)**: race condition risolta con **transazione + advisory lock** `pg_advisory_xact_lock(LEAST, GREATEST)` sulla coppia di user-id ordinati. Due richieste concorrenti per la stessa coppia ora si serializzano e solo un INSERT viene eseguito → niente duplicati di chat.
+
+- **`POST /api/user/albums/:id` (addAlbum)**: prima 2 INSERT non atomici (album + stickers). Ora un'**unica transazione Drizzle** con `onConflictDoNothing` sull'unique index `user_albums_user_album_unique` e `user_stickers_user_sticker_unique`. Idempotente, niente stato inconsistente "album presente, figurine no".
+
+### 3. AZIONI OBBLIGATORIE PER L'UTENTE prima del lancio
+
+Senza questi step l'app **non regge** 5K-10K utenti paganti:
+
+1. **Supabase Pro ($25/mo)** — il piano Free ha:
+   - 500 MB DB (10K utenti la saturano in poche settimane)
+   - 60 connessioni max
+   - **NESSUN PITR** (Point-In-Time Recovery): se un admin cancella per sbaglio, perdi dati
+   - Pausa dopo 7gg inattività
+   Pro sblocca: 8GB DB, PITR 7 giorni, 200 connessioni dedicate, backup giornalieri 14gg.
+
+2. **Connessione via Pooler Supabase** — usare la URL `aws-0-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true` (Transaction mode) come `SUPABASE_DATABASE_URL`, non la `db.<ref>.supabase.co:5432` diretta. Senza pooler, ogni connessione Render consuma uno slot Postgres reale; con pooler 200 connessioni Postgres servono migliaia di client.
+
+3. **Render Starter ($7/mo) o Standard ($25/mo)** — il piano Free:
+   - Si addormenta dopo 15min di inattività (cold start ~30s = utenti pagano e vedono pagina bianca)
+   - 512 MB RAM, 0.1 CPU
+   Starter: always-on, 512 MB ma no sleep. Standard: 2 GB RAM, scalabile orizzontalmente.
+
+4. **Monitoring** — aggiungere Sentry (free tier 5K errori/mese basta) per tracking errori e performance. Variabile `SENTRY_DSN`. Senza monitoring si scoprono i bug solo quando gli utenti lamentano.
+
+5. **Backup esterni** — oltre ai backup automatici Supabase, considera un dump giornaliero su Object Storage / S3 con `pg_dump` (cron via GitHub Actions). 30 secondi di setup salvano da disaster catastrofici.

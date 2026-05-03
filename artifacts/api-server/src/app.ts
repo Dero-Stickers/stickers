@@ -1,5 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
 import pinoHttp from "pino-http";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -88,8 +90,23 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Security headers. CSP is intentionally disabled here because the SPA is
+// served by the same process and already ships its own meta CSP; enabling
+// Helmet's default CSP would block the Vite-built bundle.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }),
+);
+
+// gzip/br responses — big win for JSON list endpoints (albums, stickers).
+app.use(compression());
+
+// Body limits — we never accept large uploads on this API. A small ceiling
+// stops a malicious client from exhausting memory on a single request.
+app.use(express.json({ limit: "256kb" }));
+app.use(express.urlencoded({ extended: true, limit: "256kb" }));
 
 app.use("/api", router);
 

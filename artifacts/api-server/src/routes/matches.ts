@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq, and, ne, inArray } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { getSession } from "../middlewares/auth";
 
 const router = Router();
@@ -9,8 +9,6 @@ const requireAuth = async (req: any, res: any) => getSession(req, res);
 
 /**
  * Deterministic distance estimation from Italian CAP codes.
- * Stable output for identical pairs — no Math.random().
- * Uses numeric CAP difference as a geographic proximity proxy.
  */
 function estimateDistance(cap1: string, cap2: string): number {
   if (!cap1 || !cap2) return 99;
@@ -26,135 +24,150 @@ function estimateDistance(cap1: string, cap2: string): number {
   return 60 + (diff % 140);
 }
 
-/**
- * Core match computation — fully batched.
- * Executes exactly 5 DB queries regardless of user count,
- * replacing the previous O(4N) N+1 pattern.
- */
-async function computeMatchList(
-  session: { userId: number },
-  radiusKm?: number
-): Promise<any[]> {
-  const { db } = await import("@workspace/db");
-  const { usersTable, userAlbumsTable, userStickersTable } = await import("@workspace/db");
-
-  // Query 1: current user
-  const [myUser] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-  if (!myUser) return [];
-
-  // Query 2: my album IDs
-  const myAlbumRows = await db
-    .select({ albumId: userAlbumsTable.albumId })
-    .from(userAlbumsTable)
-    .where(eq(userAlbumsTable.userId, session.userId));
-  if (!myAlbumRows.length) return [];
-
-  // Query 3: my stickers (all states)
-  const myStickers = await db
-    .select({ stickerId: userStickersTable.stickerId, state: userStickersTable.state })
-    .from(userStickersTable)
-    .where(eq(userStickersTable.userId, session.userId));
-
-  const myDuplicateIds = new Set(myStickers.filter(s => s.state === "doppia").map(s => s.stickerId));
-  const myMissingIds = new Set(myStickers.filter(s => s.state === "mancante").map(s => s.stickerId));
-  const myAlbumIds = new Set(myAlbumRows.map(a => a.albumId));
-
-  // Query 4: all other users (not blocked, not self)
-  const otherUsers = await db.select().from(usersTable)
-    .where(and(ne(usersTable.id, session.userId), eq(usersTable.isBlocked, false)));
-  if (!otherUsers.length) return [];
-
-  const otherUserIds = otherUsers.map(u => u.id);
-
-  // Query 5a: all albums for other users (batch)
-  const allOtherAlbums = await db
-    .select({ userId: userAlbumsTable.userId, albumId: userAlbumsTable.albumId })
-    .from(userAlbumsTable)
-    .where(inArray(userAlbumsTable.userId, otherUserIds));
-
-  // Query 5b: all stickers for other users (batch)
-  const allOtherStickers = await db
-    .select({
-      userId: userStickersTable.userId,
-      stickerId: userStickersTable.stickerId,
-      state: userStickersTable.state,
-    })
-    .from(userStickersTable)
-    .where(inArray(userStickersTable.userId, otherUserIds));
-
-  // Build in-memory lookup maps
-  const otherAlbumsByUser = new Map<number, Set<number>>();
-  for (const ua of allOtherAlbums) {
-    if (!otherAlbumsByUser.has(ua.userId)) otherAlbumsByUser.set(ua.userId, new Set());
-    otherAlbumsByUser.get(ua.userId)!.add(ua.albumId);
-  }
-
-  const otherDupsByUser = new Map<number, Set<number>>();
-  const otherMissingByUser = new Map<number, Set<number>>();
-  for (const s of allOtherStickers) {
-    if (s.state === "doppia") {
-      if (!otherDupsByUser.has(s.userId)) otherDupsByUser.set(s.userId, new Set());
-      otherDupsByUser.get(s.userId)!.add(s.stickerId);
-    } else if (s.state === "mancante") {
-      if (!otherMissingByUser.has(s.userId)) otherMissingByUser.set(s.userId, new Set());
-      otherMissingByUser.get(s.userId)!.add(s.stickerId);
-    }
-  }
-
-  // Compute matches in-memory (zero extra DB queries)
-  const matches: any[] = [];
-  for (const other of otherUsers) {
-    const dist = parseFloat(estimateDistance(myUser.cap, other.cap).toFixed(1));
-    if (radiusKm !== undefined && dist > radiusKm) continue;
-
-    const theirAlbums = otherAlbumsByUser.get(other.id) ?? new Set<number>();
-    const theirDups = otherDupsByUser.get(other.id) ?? new Set<number>();
-    const theirMissing = otherMissingByUser.get(other.id) ?? new Set<number>();
-
-    const albumsInCommon = [...myAlbumIds].filter(id => theirAlbums.has(id)).length;
-    const youGive = [...myDuplicateIds].filter(id => theirMissing.has(id)).length;
-    const youReceive = [...theirDups].filter(id => myMissingIds.has(id)).length;
-    const totalExchanges = Math.min(youGive, youReceive);
-
-    if (totalExchanges === 0) continue;
-
-    matches.push({
-      userId: other.id,
-      nickname: other.nickname,
-      area: other.area,
-      cap: other.cap,
-      totalExchanges,
-      distanceKm: dist,
-      exchangesCompleted: other.exchangesCompleted,
-      albumsInCommon,
-    });
-  }
-  return matches;
+interface CandidateRow extends Record<string, unknown> {
+  id: number;
+  nickname: string;
+  area: string | null;
+  cap: string;
+  exchanges_completed: number;
+  albums_in_common: number;
+  you_give: number;
+  you_receive: number;
 }
 
-// GET /api/matches  — sorted by exchange count (best matches first)
+/**
+ * Top-N match aggregation done entirely in PostgreSQL.
+ * Replaces the previous "load all users + all their stickers into Node memory"
+ * approach which would have needed ~8MB+ of data per request at 10K users.
+ *
+ * Uses CTEs that hit the (user_id) and (sticker_id) indexes on user_stickers,
+ * plus the (user_id, album_id) index on user_albums. Returns at most `limit`
+ * candidates ranked by `LEAST(you_give, you_receive)` — i.e. the ones who can
+ * actually trade the most stickers with the current user.
+ */
+async function fetchCandidates(
+  meId: number,
+  limit: number,
+  capPrefix?: string,
+): Promise<CandidateRow[]> {
+  const { db } = await import("@workspace/db");
+  // CAP pre-filter for /nearby — limits the candidate pool to nearby postal
+  // codes before any sticker-set math runs.
+  const capFilter = capPrefix
+    ? sql`AND u.cap LIKE ${capPrefix + "%"}`
+    : sql``;
+
+  const rows = await db.execute<CandidateRow>(sql`
+    WITH my_dups AS (
+      SELECT sticker_id FROM user_stickers
+      WHERE user_id = ${meId} AND state = 'doppia'
+    ),
+    my_miss AS (
+      SELECT sticker_id FROM user_stickers
+      WHERE user_id = ${meId} AND state = 'mancante'
+    ),
+    my_albums AS (
+      SELECT album_id FROM user_albums WHERE user_id = ${meId}
+    ),
+    give AS (
+      SELECT us.user_id, COUNT(*)::int AS n
+      FROM user_stickers us
+      JOIN my_dups d ON d.sticker_id = us.sticker_id
+      WHERE us.state = 'mancante' AND us.user_id <> ${meId}
+      GROUP BY us.user_id
+    ),
+    receive AS (
+      SELECT us.user_id, COUNT(*)::int AS n
+      FROM user_stickers us
+      JOIN my_miss m ON m.sticker_id = us.sticker_id
+      WHERE us.state = 'doppia' AND us.user_id <> ${meId}
+      GROUP BY us.user_id
+    ),
+    common AS (
+      SELECT ua.user_id, COUNT(*)::int AS n
+      FROM user_albums ua
+      JOIN my_albums ma ON ma.album_id = ua.album_id
+      WHERE ua.user_id <> ${meId}
+      GROUP BY ua.user_id
+    )
+    SELECT u.id, u.nickname, u.area, u.cap, u.exchanges_completed,
+           COALESCE(c.n, 0) AS albums_in_common,
+           COALESCE(g.n, 0) AS you_give,
+           COALESCE(r.n, 0) AS you_receive
+    FROM users u
+    JOIN give g ON g.user_id = u.id
+    JOIN receive r ON r.user_id = u.id
+    LEFT JOIN common c ON c.user_id = u.id
+    WHERE u.id <> ${meId} AND u.is_blocked = false
+    ${capFilter}
+    ORDER BY LEAST(g.n, r.n) DESC, c.n DESC NULLS LAST
+    LIMIT ${limit}
+  `);
+  return (rows as any).rows ?? (rows as any);
+}
+
+// GET /api/matches  — top 20 by exchange potential
 const getBestMatches: RequestHandler = async (req, res) => {
   try {
     const session = await requireAuth(req, res);
     if (!session) return;
-    const matches = await computeMatchList(session);
-    matches.sort((a, b) => b.totalExchanges - a.totalExchanges);
-    res.json(matches.slice(0, 20));
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const [me] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+    if (!me) { res.json([]); return; }
+
+    const candidates = await fetchCandidates(session.userId, 20);
+    const result = candidates.map(c => ({
+      userId: c.id,
+      nickname: c.nickname,
+      area: c.area,
+      cap: c.cap,
+      totalExchanges: Math.min(c.you_give, c.you_receive),
+      distanceKm: parseFloat(estimateDistance(me.cap, c.cap).toFixed(1)),
+      exchangesCompleted: c.exchanges_completed,
+      albumsInCommon: c.albums_in_common,
+    }));
+    res.json(result);
   } catch (err) {
     req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
 
-// GET /api/matches/nearby  — filtered by radius, sorted by distance
+// GET /api/matches/nearby?radius=10
 const getNearbyMatches: RequestHandler = async (req, res) => {
   try {
     const session = await requireAuth(req, res);
     if (!session) return;
     const radiusKm = parseFloat((req.query.radius ?? req.query.radiusKm ?? "10") as string);
-    const matches = await computeMatchList(session, radiusKm);
-    matches.sort((a, b) => a.distanceKm - b.distanceKm);
-    res.json(matches.slice(0, 20));
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const [me] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+    if (!me) { res.json([]); return; }
+
+    // For tight radii, pre-filter candidates by CAP prefix so the heavy
+    // sticker aggregation runs on dozens, not thousands, of users.
+    let capPrefix: string | undefined;
+    if (radiusKm <= 5 && me.cap?.length >= 3) capPrefix = me.cap.slice(0, 3);
+    else if (radiusKm <= 30 && me.cap?.length >= 2) capPrefix = me.cap.slice(0, 2);
+
+    // Fetch a wider pool, then JS-filter by exact distance (CAP-based proxy).
+    const candidates = await fetchCandidates(session.userId, 200, capPrefix);
+    const result = candidates
+      .map(c => ({
+        userId: c.id,
+        nickname: c.nickname,
+        area: c.area,
+        cap: c.cap,
+        totalExchanges: Math.min(c.you_give, c.you_receive),
+        distanceKm: parseFloat(estimateDistance(me.cap, c.cap).toFixed(1)),
+        exchangesCompleted: c.exchanges_completed,
+        albumsInCommon: c.albums_in_common,
+      }))
+      .filter(c => c.distanceKm <= radiusKm)
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 20);
+    res.json(result);
   } catch (err) {
     req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
@@ -167,6 +180,7 @@ const getMatchDetail: RequestHandler = async (req, res) => {
     const session = await requireAuth(req, res);
     if (!session) return;
     const otherUserId = parseInt(req.params.userId as string, 10);
+    if (!Number.isFinite(otherUserId)) { res.status(400).json({ error: "BAD_REQUEST" }); return; }
 
     const { db } = await import("@workspace/db");
     const { usersTable, userAlbumsTable, userStickersTable, albumsTable, stickersTable } = await import("@workspace/db");
@@ -198,39 +212,20 @@ const getMatchDetail: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Batch-fetch everything needed for detail view
     const [myStickers, theirStickers, commonAlbums, allStickers] = await Promise.all([
-      db.select({
-        stickerId: userStickersTable.stickerId,
-        albumId: userStickersTable.albumId,
-        state: userStickersTable.state,
-      })
+      db.select({ stickerId: userStickersTable.stickerId, albumId: userStickersTable.albumId, state: userStickersTable.state })
         .from(userStickersTable)
-        .where(and(
-          eq(userStickersTable.userId, session.userId),
-          inArray(userStickersTable.albumId, commonAlbumIds)
-        )),
-      db.select({
-        stickerId: userStickersTable.stickerId,
-        albumId: userStickersTable.albumId,
-        state: userStickersTable.state,
-      })
+        .where(and(eq(userStickersTable.userId, session.userId), inArray(userStickersTable.albumId, commonAlbumIds))),
+      db.select({ stickerId: userStickersTable.stickerId, albumId: userStickersTable.albumId, state: userStickersTable.state })
         .from(userStickersTable)
-        .where(and(
-          eq(userStickersTable.userId, otherUserId),
-          inArray(userStickersTable.albumId, commonAlbumIds)
-        )),
+        .where(and(eq(userStickersTable.userId, otherUserId), inArray(userStickersTable.albumId, commonAlbumIds))),
       db.select().from(albumsTable).where(inArray(albumsTable.id, commonAlbumIds)),
       db.select().from(stickersTable).where(inArray(stickersTable.albumId, commonAlbumIds)),
     ]);
 
     const stickerMap = new Map<number, { id: number; albumId: number; number: number; name: string }>();
-    for (const s of allStickers) {
-      stickerMap.set(s.id, { id: s.id, albumId: s.albumId, number: s.number, name: s.name });
-    }
-
-    const toDetail = (ids: number[]) =>
-      ids.map(id => stickerMap.get(id)).filter(Boolean) as { id: number; albumId: number; number: number; name: string }[];
+    for (const s of allStickers) stickerMap.set(s.id, { id: s.id, albumId: s.albumId, number: s.number, name: s.name });
+    const toDetail = (ids: number[]) => ids.map(id => stickerMap.get(id)).filter(Boolean) as { id: number; albumId: number; number: number; name: string }[];
 
     let totalExchanges = 0;
     const albumDetails = commonAlbumIds.map(albumId => {
@@ -239,12 +234,10 @@ const getMatchDetail: RequestHandler = async (req, res) => {
       const myMiss = new Set(myStickers.filter(s => s.albumId === albumId && s.state === "mancante").map(s => s.stickerId));
       const theirDups = new Set(theirStickers.filter(s => s.albumId === albumId && s.state === "doppia").map(s => s.stickerId));
       const theirMiss = new Set(theirStickers.filter(s => s.albumId === albumId && s.state === "mancante").map(s => s.stickerId));
-
       const youGiveIds = [...myDups].filter(id => theirMiss.has(id));
       const youReceiveIds = [...theirDups].filter(id => myMiss.has(id));
       const exchangeCount = Math.min(youGiveIds.length, youReceiveIds.length);
       totalExchanges += exchangeCount;
-
       return {
         albumId,
         albumTitle: album?.title ?? `Album #${albumId}`,

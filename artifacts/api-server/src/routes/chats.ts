@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, sql } from "drizzle-orm";
 import { getSession } from "../middlewares/auth";
 
 const router = Router();
@@ -17,40 +17,65 @@ async function requirePremium(userId: number): Promise<boolean> {
   return false;
 }
 
-// GET /api/chats
+// GET /api/chats — single aggregated query: chat + other user + last message
+// + unread count, no per-row N+1. Backed by indexes:
+//   chats_user1_idx / chats_user2_idx → WHERE filter
+//   messages_chat_created_idx → LATERAL last-message + unread count
 const listChats: RequestHandler = async (req, res) => {
   try {
     const session = await requireAuth(req, res);
     if (!session) return;
     const { db } = await import("@workspace/db");
-    const { chatsTable, usersTable, messagesTable } = await import("@workspace/db");
+    const me = session.userId;
 
-    const userChats = await db.select().from(chatsTable).where(
-      or(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, session.userId))
-    );
+    const rows = await db.execute<{
+      id: number;
+      other_user_id: number;
+      other_nickname: string;
+      other_area: string | null;
+      status: string;
+      last_text: string | null;
+      last_at: Date | null;
+      unread: number;
+      created_at: Date;
+    }>(sql`
+      SELECT
+        c.id,
+        CASE WHEN c.user1_id = ${me} THEN c.user2_id ELSE c.user1_id END AS other_user_id,
+        ou.nickname AS other_nickname,
+        ou.area AS other_area,
+        c.status,
+        lm.text AS last_text,
+        lm.created_at AS last_at,
+        COALESCE(uc.unread, 0)::int AS unread,
+        c.created_at
+      FROM chats c
+      JOIN users ou ON ou.id = CASE WHEN c.user1_id = ${me} THEN c.user2_id ELSE c.user1_id END
+      LEFT JOIN LATERAL (
+        SELECT text, created_at FROM messages
+        WHERE chat_id = c.id ORDER BY created_at DESC LIMIT 1
+      ) lm ON true
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*) AS unread FROM messages
+        WHERE chat_id = c.id AND sender_id <> ${me} AND is_read = false
+      ) uc ON true
+      WHERE c.user1_id = ${me} OR c.user2_id = ${me}
+      ORDER BY COALESCE(lm.created_at, c.created_at) DESC
+    `);
 
-    const result = await Promise.all(userChats.map(async chat => {
-      const otherUserId = chat.user1Id === session.userId ? chat.user2Id : chat.user1Id;
-      const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserId)).limit(1);
-      const [lastMsg] = await db.select().from(messagesTable).where(eq(messagesTable.chatId, chat.id)).orderBy(desc(messagesTable.createdAt)).limit(1);
-      const unread = (await db.select().from(messagesTable).where(
-        and(eq(messagesTable.chatId, chat.id), eq(messagesTable.senderId, otherUserId), eq(messagesTable.isRead, false))
-      )).length;
+    const result = ((rows as any).rows ?? rows).map((r: any) => ({
+      id: r.id,
+      otherUserId: r.other_user_id,
+      otherUserNickname: r.other_nickname ?? "",
+      otherUserArea: r.other_area ?? "",
+      status: r.status,
+      lastMessage: r.last_text ?? null,
+      lastMessageAt: r.last_at ? new Date(r.last_at).toISOString() : null,
+      unreadCount: Number(r.unread) || 0,
+      createdAt: new Date(r.created_at).toISOString(),
+    })).filter((c: any) => c.status !== "closed" || c.lastMessage);
 
-      return {
-        id: chat.id,
-        otherUserId,
-        otherUserNickname: otherUser?.nickname ?? "",
-        otherUserArea: otherUser?.area ?? "",
-        status: chat.status,
-        lastMessage: lastMsg?.text ?? null,
-        lastMessageAt: lastMsg?.createdAt?.toISOString() ?? null,
-        unreadCount: unread,
-        createdAt: chat.createdAt.toISOString(),
-      };
-    }));
-
-    res.json(result.filter(c => c.status !== "closed" || c.lastMessage));
+    res.json(result);
   } catch (err) {
     req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
@@ -76,52 +101,61 @@ const openChat: RequestHandler = async (req, res) => {
     const { db } = await import("@workspace/db");
     const { chatsTable, usersTable } = await import("@workspace/db");
 
-    const existing = await db.select().from(chatsTable).where(
-      or(
-        and(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, otherUserIdNum)),
-        and(eq(chatsTable.user1Id, otherUserIdNum), eq(chatsTable.user2Id, session.userId))
-      )
-    ).limit(1);
+    // Race-proof open-or-create: serialize concurrent calls for the same
+    // unordered pair via a transaction-scoped advisory lock keyed on the
+    // sorted (lo, hi) ids. Two requests racing to open the same chat will
+    // queue on the lock and only one INSERT actually runs.
+    const lo = Math.min(session.userId, otherUserIdNum);
+    const hi = Math.max(session.userId, otherUserIdNum);
 
-    if (existing.length) {
-      const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserIdNum)).limit(1);
-      res.json({ id: existing[0].id, otherUserId: otherUserIdNum, otherUserNickname: otherUser?.nickname ?? "", status: existing[0].status, createdAt: existing[0].createdAt.toISOString() });
-      return;
-    }
+    const [chat, otherUser] = await db.transaction(async (tx) => {
+      // pg_advisory_xact_lock(int, int) — two 32-bit keys form a 64-bit lock
+      // id. User ids are serial INT so they fit. Lock is auto-released at the
+      // end of the transaction (commit or rollback).
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${lo}::int, ${hi}::int)`);
 
-    const [chat] = await db.insert(chatsTable).values({ user1Id: session.userId, user2Id: otherUserIdNum }).returning();
-    const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserIdNum)).limit(1);
+      const existing = await tx.select().from(chatsTable).where(
+        or(
+          and(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, otherUserIdNum)),
+          and(eq(chatsTable.user1Id, otherUserIdNum), eq(chatsTable.user2Id, session.userId))
+        )
+      ).limit(1);
 
-    res.status(201).json({ id: chat.id, otherUserId: otherUserIdNum, otherUserNickname: otherUser?.nickname ?? "", status: chat.status, createdAt: chat.createdAt.toISOString() });
+      const c = existing[0]
+        ?? (await tx.insert(chatsTable).values({ user1Id: session.userId, user2Id: otherUserIdNum }).returning())[0];
+
+      const [u] = await tx.select().from(usersTable).where(eq(usersTable.id, otherUserIdNum)).limit(1);
+      return [c, u] as const;
+    });
+
+    const status = chat.status;
+    res.status(201).json({ id: chat.id, otherUserId: otherUserIdNum, otherUserNickname: otherUser?.nickname ?? "", status, createdAt: chat.createdAt.toISOString() });
   } catch (err) {
     req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
 
-// GET /api/chats/unread-count
+// GET /api/chats/unread-count — single COUNT(DISTINCT) query, no per-chat loop
 const getUnreadCount: RequestHandler = async (req, res) => {
   try {
     const session = await requireAuth(req, res);
     if (!session) return;
     const { db } = await import("@workspace/db");
-    const { chatsTable, messagesTable } = await import("@workspace/db");
+    const me = session.userId;
 
-    const userChats = await db.select().from(chatsTable).where(
-      or(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, session.userId))
-    );
-
-    let count = 0;
-    for (const chat of userChats) {
-      const senderId = chat.user1Id === session.userId ? chat.user2Id : chat.user1Id;
-      const unread = await db.select().from(messagesTable).where(
-        and(eq(messagesTable.chatId, chat.id), eq(messagesTable.senderId, senderId), eq(messagesTable.isRead, false))
-      );
-      if (unread.length > 0) count++;
-    }
-
-    res.json({ unreadCount: count });
+    const rows = await db.execute<{ n: number }>(sql`
+      SELECT COUNT(DISTINCT m.chat_id)::int AS n
+      FROM messages m
+      JOIN chats c ON c.id = m.chat_id
+      WHERE m.is_read = false
+        AND m.sender_id <> ${me}
+        AND (c.user1_id = ${me} OR c.user2_id = ${me})
+    `);
+    const r = ((rows as any).rows ?? rows)[0];
+    res.json({ unreadCount: Number(r?.n ?? 0) });
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };

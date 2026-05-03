@@ -68,25 +68,38 @@ const addAlbum: RequestHandler = async (req, res) => {
     const albumId = parseInt(req.params.albumId as string, 10);
 
     const { db } = await import("@workspace/db");
-    const { userAlbumsTable, albumsTable, stickersTable, userStickersTable } = await import("@workspace/db");
+    const { userAlbumsTable, stickersTable, userStickersTable } = await import("@workspace/db");
 
-    // Check not already added
-    const existing = await db.select().from(userAlbumsTable)
-      .where(and(eq(userAlbumsTable.userId, session.userId), eq(userAlbumsTable.albumId, albumId)))
-      .limit(1);
-    if (existing.length) { res.status(400).json({ error: "ALREADY_ADDED" }); return; }
+    // Atomic enrollment: insert the user_album row + the per-sticker rows in
+    // a single transaction. If anything fails, Postgres rolls back so we
+    // never leave an "album added but stickers missing" inconsistent state.
+    // The unique index on (user_id, album_id) protects against double-clicks.
+    const result = await db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(userAlbumsTable)
+        .values({ userId: session.userId, albumId })
+        .onConflictDoNothing({ target: [userAlbumsTable.userId, userAlbumsTable.albumId] })
+        .returning();
 
-    // Add the album
-    await db.insert(userAlbumsTable).values({ userId: session.userId, albumId });
+      if (inserted.length === 0) {
+        return { alreadyAdded: true as const };
+      }
 
-    // Initialize all stickers as "mancante"
-    const stickers = await db.select().from(stickersTable).where(eq(stickersTable.albumId, albumId));
-    if (stickers.length) {
-      await db.insert(userStickersTable).values(
-        stickers.map(s => ({ userId: session.userId, albumId, stickerId: s.id, state: "mancante" }))
-      );
-    }
+      const stickers = await tx
+        .select({ id: stickersTable.id })
+        .from(stickersTable)
+        .where(eq(stickersTable.albumId, albumId));
 
+      if (stickers.length) {
+        await tx
+          .insert(userStickersTable)
+          .values(stickers.map(s => ({ userId: session.userId, albumId, stickerId: s.id, state: "mancante" })))
+          .onConflictDoNothing({ target: [userStickersTable.userId, userStickersTable.stickerId] });
+      }
+      return { alreadyAdded: false as const };
+    });
+
+    if (result.alreadyAdded) { res.status(400).json({ error: "ALREADY_ADDED" }); return; }
     res.status(201).json({ success: true, message: "Album aggiunto" });
   } catch (err) {
     req.log?.error(err);
