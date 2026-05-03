@@ -68,9 +68,28 @@ else
   ok "Merge completato."
 fi
 
-# 4. Push
+# 4. Pre-push check: workflow files richiedono scope 'workflow' sul token
+WORKFLOW_CHANGES=$(git diff --name-only "$REMOTE" HEAD -- '.github/workflows/' 2>/dev/null || true)
+if [ -n "$WORKFLOW_CHANGES" ]; then
+  warn "Il push include modifiche a file GitHub Actions:"
+  echo "$WORKFLOW_CHANGES" | sed 's/^/    /'
+  warn "Il tuo GITHUB_TOKEN potrebbe NON avere lo scope 'workflow' richiesto."
+  warn "Se il push fallisce con 'refusing to allow a Personal Access Token…':"
+  echo "    1. Vai su https://github.com/settings/tokens"
+  echo "    2. Modifica il token esistente (o creane uno nuovo)"
+  echo "    3. Spunta lo scope 'workflow' (oltre a 'repo')"
+  echo "    4. Salva il nuovo token in Replit Secrets come GITHUB_TOKEN"
+  echo "    5. Rilancia ./deploy.sh"
+fi
+
+# 5. Push
 info "Push su GitHub $BRANCH…"
-git push "$AUTH_URL" "$BRANCH"
+if ! git push "$AUTH_URL" "$BRANCH" 2>&1 | tee /tmp/deploy_push.log; then
+  if grep -q "without .workflow. scope" /tmp/deploy_push.log; then
+    fail "Token GitHub senza scope 'workflow'. Aggiorna il token come spiegato sopra e rilancia."
+  fi
+  fail "Push fallito. Controlla l'errore qui sopra."
+fi
 ok "Push completato → $REMOTE_URL"
 
 # 5. Verifica
