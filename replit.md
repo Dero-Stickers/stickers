@@ -89,3 +89,17 @@ The project is structured as a pnpm monorepo with four main packages: `artifacts
 - **Formato compressione**: `tar.gz` (mai zip).
 - **Cartella**: sempre dentro `backups/`.
 - Esclusi dall'archivio: `node_modules`, `dist`, `.git`, `backups`, `*.log`.
+
+## Conformità Privacy / GDPR (sessione legal)
+
+**Cosa è stato aggiunto** (minimo legale, niente di superfluo):
+- Pagine pubbliche `/legal/privacy` e `/legal/termini` (componente `LegalPage`). Mostrano i testi inseriti dall'admin in `app_settings` (chiavi `privacy_policy` e `terms`); se mancanti, fallback a un testo italiano GDPR-compliant predefinito.
+- Link discreti "Privacy · Termini" sotto il form di Login.
+- Checkbox obbligatoria di accettazione Privacy + Termini + dichiarazione ≥14 anni nel form di registrazione (zod `acceptTerms: z.literal(true)`).
+- Diritto di accesso/portabilità (Art.20): endpoint `GET /api/auth/me/export` + pulsante "Scarica i miei dati" in Profilo. Restituisce JSON con profilo, chat, messaggi, album, figurine. Esclude PIN, codice di recupero, risposta sicurezza.
+- Diritto alla cancellazione (Art.17): endpoint `DELETE /api/auth/me` (richiede PIN + parola "ELIMINA") + link discreto "Elimina definitivamente l'account" in Profilo. NON visibile per admin (l'admin non può autocancellarsi). Cascade automatico su chats/messages/user_albums/user_stickers; pulizia esplicita di reports/admin_actions.
+
+**Cosa NON serve** (e quindi non è stato aggiunto):
+- Banner cookie: l'app usa solo storage tecnico essenziale (auth token + sessionStorage splash), niente cookie di profilazione né analytics di terzi.
+- DPO / registro trattamenti formale: non obbligatori per dati non sensibili e bassi volumi.
+- Doppio opt-in email: non si raccolgono email.

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { User, MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield } from "lucide-react";
+import { MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield, Download, Trash2, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,61 @@ export function Profile() {
   const handleLogout = () => {
     logout();
     setLocation("/login");
+  };
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletePin, setDeletePin] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleExportData = async () => {
+    try {
+      const token = localStorage.getItem("sticker_token");
+      const res = await fetch("/api/auth/me/export", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `stickers-i-miei-dati-${currentUser?.nickname ?? "utente"}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Download avviato", description: "Il file con i tuoi dati è stato scaricato." });
+    } catch {
+      toast({ title: "Errore", description: "Impossibile esportare i dati. Riprova.", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError(null);
+    setDeleteLoading(true);
+    try {
+      const token = localStorage.getItem("sticker_token");
+      const res = await fetch("/api/auth/me", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ pin: deletePin, confirm: deleteConfirm }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setDeleteError((j as any)?.message ?? "Errore durante la cancellazione.");
+        return;
+      }
+      logout();
+      setLocation("/login");
+    } catch {
+      setDeleteError("Errore di connessione. Riprova.");
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -146,17 +201,38 @@ export function Profile() {
               </div>
             </a>
 
-            <a
-              href="#"
-              onClick={e => { e.preventDefault(); toast({ title: "Privacy Policy in arrivo" }); }}
-              className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50 transition-colors"
+            <button
+              onClick={() => setLocation("/legal/privacy")}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
             >
               <Shield className="h-5 w-5 text-primary flex-shrink-0" />
               <div>
-                <p className="font-medium text-sm text-foreground">Privacy &amp; Termini</p>
-                <p className="text-xs text-muted-foreground">Informativa sulla privacy e termini d'uso</p>
+                <p className="font-medium text-sm text-foreground">Privacy Policy</p>
+                <p className="text-xs text-muted-foreground">Come trattiamo i tuoi dati</p>
               </div>
-            </a>
+            </button>
+
+            <button
+              onClick={() => setLocation("/legal/termini")}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+            >
+              <FileText className="h-5 w-5 text-primary flex-shrink-0" />
+              <div>
+                <p className="font-medium text-sm text-foreground">Termini d'uso</p>
+                <p className="text-xs text-muted-foreground">Regole di utilizzo dell'app</p>
+              </div>
+            </button>
+
+            <button
+              onClick={handleExportData}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+            >
+              <Download className="h-5 w-5 text-primary flex-shrink-0" />
+              <div>
+                <p className="font-medium text-sm text-foreground">Scarica i miei dati</p>
+                <p className="text-xs text-muted-foreground">File JSON con tutti i tuoi dati personali</p>
+              </div>
+            </button>
           </CardContent>
         </Card>
 
@@ -168,7 +244,59 @@ export function Profile() {
           <LogOut className="h-4 w-4" />
           Esci dall'account
         </Button>
+
+        {!currentUser?.isAdmin && (
+          <button
+            onClick={() => { setShowDeleteDialog(true); setDeletePin(""); setDeleteConfirm(""); setDeleteError(null); }}
+            className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground/70 hover:text-destructive transition-colors py-2"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Elimina definitivamente l'account
+          </button>
+        )}
       </div>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Elimina account</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Questa azione cancella in modo definitivo il tuo profilo, le chat e le figurine selezionate.
+              <br /><br />
+              Per confermare, inserisci il tuo PIN e scrivi <span className="font-mono font-bold text-foreground">ELIMINA</span> nel campo sotto.
+            </p>
+            <Input
+              type="password"
+              placeholder="PIN"
+              maxLength={6}
+              value={deletePin}
+              onChange={e => setDeletePin(e.target.value)}
+              autoComplete="current-password"
+            />
+            <Input
+              placeholder='Scrivi "ELIMINA"'
+              value={deleteConfirm}
+              onChange={e => setDeleteConfirm(e.target.value)}
+            />
+            {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowDeleteDialog(false)} disabled={deleteLoading}>
+                Annulla
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading || deleteConfirm !== "ELIMINA" || deletePin.length < 4}
+              >
+                {deleteLoading ? "Elimino..." : "Elimina"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
         <DialogContent className="max-w-sm">

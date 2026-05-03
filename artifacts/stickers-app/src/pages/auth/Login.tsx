@@ -22,6 +22,9 @@ const registerSchema = z.object({
   cap: z.string().length(5, "Il CAP deve essere di 5 cifre"),
   securityQuestion: z.string().min(5, "Domanda di sicurezza obbligatoria"),
   securityAnswer: z.string().min(2, "Risposta obbligatoria"),
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({ message: "Devi accettare Privacy e Termini per registrarti" }),
+  }),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -43,6 +46,7 @@ export function Login() {
       cap: "",
       securityQuestion: "",
       securityAnswer: "",
+      acceptTerms: false as unknown as true,
     },
   });
 
@@ -61,6 +65,7 @@ export function Login() {
             cap: data.cap,
             securityQuestion: data.securityQuestion,
             securityAnswer: data.securityAnswer,
+            acceptTerms: data.acceptTerms === true,
           }),
         });
         const json: AuthResponse & { recoveryCode?: string } = await res.json();
@@ -203,6 +208,29 @@ export function Login() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="acceptTerms"
+                    render={({ field }) => (
+                      <FormItem>
+                        <label className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="mt-0.5 h-4 w-4 accent-primary"
+                            checked={!!field.value}
+                            onChange={e => field.onChange(e.target.checked)}
+                          />
+                          <span>
+                            Dichiaro di avere almeno 14 anni e di aver letto la{" "}
+                            <a href="/legal/privacy" target="_blank" rel="noopener" className="underline text-primary">Privacy Policy</a>
+                            {" "}e i{" "}
+                            <a href="/legal/termini" target="_blank" rel="noopener" className="underline text-primary">Termini d'uso</a>.
+                          </span>
+                        </label>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               )}
 
@@ -229,6 +257,11 @@ export function Login() {
               </div>
             </form>
           </Form>
+          <div className="mt-5 pt-4 border-t border-border/60 flex justify-center gap-4 text-[11px] text-muted-foreground">
+            <a href="/legal/privacy" className="hover:text-primary hover:underline">Privacy</a>
+            <span aria-hidden>·</span>
+            <a href="/legal/termini" className="hover:text-primary hover:underline">Termini</a>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -17,6 +17,7 @@ export const usersTable = pgTable("users", {
   isBlocked: boolean("is_blocked").default(false).notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   exchangesCompleted: integer("exchanges_completed").default(0).notNull(),
+  acceptedTermsAt: timestamp("accepted_terms_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

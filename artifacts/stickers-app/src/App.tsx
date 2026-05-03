@@ -16,6 +16,7 @@ import { Login } from "@/pages/auth/Login";
 import { Home } from "@/pages/Home";
 import { AlbumList } from "@/pages/album/AlbumList";
 import { DemoExpiredScreen } from "@/pages/DemoExpiredScreen";
+import { LegalPage } from "@/pages/LegalPage";
 
 const importAlbumDetail = () => import("@/pages/album/AlbumDetail");
 const importMatchList = () => import("@/pages/match/MatchList");
@@ -172,6 +173,7 @@ function Router() {
       <Suspense fallback={<PageSkeleton />}>
       <Switch>
         <Route path="/login" component={Login} />
+        <Route path="/legal/:doc" component={LegalPage} />
 
         {/* User routes */}
         <Route path="/" component={() => <ProtectedUserRoute component={Home} />} />
