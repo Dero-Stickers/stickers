@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield, Download, Trash2, FileText, UserCog, ArrowRight, Check, X, Lock } from "lucide-react";
+import { MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield, Download, Trash2, FileText, UserCog, ArrowRight, Check, X, Lock, AlertTriangle, Send } from "lucide-react";
+import { reportError } from "@/lib/report-error";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,41 @@ export function Profile() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportNote, setReportNote] = useState("");
+  const [reportPage, setReportPage] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
+
+  const handleSendReport = async () => {
+    setReportLoading(true);
+    const ok = await reportError({
+      errorType: "user_report",
+      page: reportPage || window.location.pathname,
+      userNote: reportNote.trim(),
+    });
+    setReportLoading(false);
+    if (ok) {
+      setReportSent(true);
+      toast({
+        title: "Segnalazione inviata",
+        description: "Grazie! Daremo un'occhiata appena possibile.",
+      });
+      setTimeout(() => {
+        setShowReportDialog(false);
+        setReportNote("");
+        setReportPage("");
+        setReportSent(false);
+      }, 1500);
+    } else {
+      toast({
+        title: "Errore",
+        description: "Non sono riuscito a inviare la segnalazione. Riprova tra poco.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleExportData = async () => {
     try {
@@ -226,6 +262,22 @@ export function Profile() {
               <div>
                 <p className="font-medium text-sm text-foreground">Guida Stickers</p>
                 <p className="text-xs text-muted-foreground">Come usare l'app e trovare match</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setShowReportDialog(true);
+                setReportNote("");
+                setReportPage(window.location.pathname);
+                setReportSent(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+            >
+              <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-sm text-foreground">Segnala un problema</p>
+                <p className="text-xs text-muted-foreground">Qualcosa non funziona? Faccelo sapere</p>
               </div>
             </button>
 
@@ -433,6 +485,89 @@ export function Profile() {
                 disabled={deleteLoading || deleteConfirm !== "ELIMINA" || deletePin.length < 4}
               >
                 {deleteLoading ? "Elimino..." : "Elimina"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Segnala un problema
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Descrivi cosa è successo. Più sei chiaro, più in fretta possiamo sistemarlo.
+              <br />
+              <span className="text-xs">Non serve scrivere dati personali: non li raccogliamo.</span>
+            </p>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">
+                Cosa stavi facendo? <span className="text-muted-foreground font-normal">(facoltativo)</span>
+              </label>
+              <Input
+                placeholder="es. /album/123 o lascia vuoto"
+                value={reportPage}
+                onChange={(e) => setReportPage(e.target.value)}
+                maxLength={200}
+                className="text-xs font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">
+                Cosa è andato storto?
+              </label>
+              <textarea
+                placeholder="es. Quando clicco 'Aggiungi figurina' non succede niente"
+                value={reportNote}
+                onChange={(e) => setReportNote(e.target.value.slice(0, 500))}
+                rows={4}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                autoFocus
+              />
+              <p className="text-[11px] text-muted-foreground text-right">
+                {reportNote.length}/500
+              </p>
+            </div>
+
+            <div className="rounded-md bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground flex items-start gap-2">
+              <Shield className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+              <span>
+                Inviamo solo: pagina visitata, tipo dispositivo (es. mobile-chrome), versione app.
+                Niente PIN, password, email.
+              </span>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                className="flex-1 h-11"
+                onClick={() => setShowReportDialog(false)}
+                disabled={reportLoading}
+              >
+                Annulla
+              </Button>
+              <Button
+                className="flex-1 h-11 bg-primary text-primary-foreground gap-1.5"
+                onClick={handleSendReport}
+                disabled={reportLoading || reportSent || reportNote.trim().length < 5}
+              >
+                {reportSent ? (
+                  <>
+                    <Check className="h-4 w-4" /> Inviata
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    {reportLoading ? "Invio…" : "Invia"}
+                  </>
+                )}
               </Button>
             </div>
           </div>

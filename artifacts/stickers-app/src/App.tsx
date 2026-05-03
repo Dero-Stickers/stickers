@@ -28,6 +28,7 @@ const importAdminDashboard = () => import("@/pages/admin/Dashboard");
 const importAdminAlbums = () => import("@/pages/admin/Albums");
 const importAdminUsers = () => import("@/pages/admin/Users");
 const importAdminMessages = () => import("@/pages/admin/Messages");
+const importAdminErrors = () => import("@/pages/admin/Errors");
 const importAdminPremium = () => import("@/pages/admin/Premium");
 const importAdminSettings = () => import("@/pages/admin/Settings");
 
@@ -41,6 +42,7 @@ const AdminDashboard = lazy(() => importAdminDashboard().then((m) => ({ default:
 const AdminAlbums = lazy(() => importAdminAlbums().then((m) => ({ default: m.AdminAlbums })));
 const AdminUsers = lazy(() => importAdminUsers().then((m) => ({ default: m.AdminUsers })));
 const AdminMessages = lazy(() => importAdminMessages().then((m) => ({ default: m.AdminMessages })));
+const AdminErrors = lazy(() => importAdminErrors().then((m) => ({ default: m.AdminErrors })));
 const AdminPremium = lazy(() => importAdminPremium().then((m) => ({ default: m.AdminPremium })));
 const AdminSettings = lazy(() => importAdminSettings().then((m) => ({ default: m.AdminSettings })));
 
@@ -58,6 +60,7 @@ function prefetchAdminChunks() {
   void importAdminAlbums();
   void importAdminUsers();
   void importAdminMessages();
+  void importAdminErrors();
   void importAdminPremium();
   void importAdminSettings();
 }
@@ -188,6 +191,7 @@ function Router() {
         <Route path="/admin/album" component={() => <ProtectedAdminRoute component={AdminAlbums} />} />
         <Route path="/admin/utenti" component={() => <ProtectedAdminRoute component={AdminUsers} />} />
         <Route path="/admin/messaggi" component={() => <ProtectedAdminRoute component={AdminMessages} />} />
+        <Route path="/admin/segnalazioni" component={() => <ProtectedAdminRoute component={AdminErrors} />} />
         <Route path="/admin/premium" component={() => <ProtectedAdminRoute component={AdminPremium} />} />
         <Route path="/admin/impostazioni" component={() => <ProtectedAdminRoute component={AdminSettings} />} />
 

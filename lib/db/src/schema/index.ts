@@ -4,3 +4,4 @@ export * from "./stickers";
 export * from "./user-albums";
 export * from "./user-stickers";
 export * from "./chats";
+export * from "./error-reports";

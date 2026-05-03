@@ -259,3 +259,51 @@ Senza questi step l'app **non regge** 5K-10K utenti paganti:
 - ⚠️ **Migrazione a Transaction pooler (porta 6543)**: oggi siamo su Session pooler (5432), che funziona ma ha meno headroom oltre i ~100 utenti concorrenti. Codice già verificato compatibile (`pg_advisory_xact_lock` è transaction-level, niente prepared statements riusate, niente `LISTEN/NOTIFY`). Quando si vuole migrare: aggiornare `SUPABASE_DATABASE_URL` a `…pooler.supabase.com:6543/postgres?pgbouncer=true` su Replit + Render, restart API. Test a 6543 già passato (parametrizzate + advisory lock OK).
 - Password DB con caratteri speciali devono essere URL-encoded (es. `!` → `%21`, `@` → `%40`, `:` → `%3A`).
 - Render free tier ancora attivo: per i 5K-10K utenti pianificati passare a Render Starter ($7/mo, no sleep) o Standard ($25/mo, 2GB RAM).
+
+---
+
+## 3 Maggio 2026 — Sessione 2: Sezione Segnalazioni Errori (admin)
+
+### Funzione consegnata
+Sistema **opt-in minimale** per raccogliere segnalazioni errori dagli utenti e gestirle in admin. Versione conservativa: niente auto-capture invasivo, niente servizi esterni, deduplicazione + rate-limit + sanitizer.
+
+### File aggiunti
+- `lib/db/src/schema/error-reports.ts` — nuova tabella `error_reports` con dedup (unique `error_hash`), priorità (critical/high/medium/low), stato (new/investigating/resolved/ignored), counter occorrenze, FK `user_id` ON DELETE SET NULL.
+- `artifacts/api-server/src/lib/sanitize-error.ts` — pattern-based stripper (JWT, Bearer, email, IP, codici STICK, path assoluti, numeri 4-8 cifre = potenziali PIN), normalizzatore pagina (`/chat/123` → `/chat/:id`), classificatore UA (mobile-ios/chrome/etc), prefisso IP /24, hash sha256 dedup.
+- `artifacts/api-server/src/routes/errors.ts` — 4 endpoint:
+  - `POST /api/errors/report` — submission utente, rate-limit 3/min/IP + 10/giorno/utente, upsert idempotente per hash.
+  - `GET /api/admin/errors` — lista filtrata (status, priority) + counters (totali/nuove/critiche/ultimi 7gg).
+  - `PATCH /api/admin/errors/:id` — admin cambia status/priority/note.
+  - `POST /api/admin/errors/report` — genera markdown consolidato per ChatGPT/Codex/Replit Agent.
+- `artifacts/stickers-app/src/lib/report-error.ts` — helper client fire-and-forget (`keepalive: true`).
+- `artifacts/stickers-app/src/pages/admin/Errors.tsx` — pagina admin con counter-card colorate, filtri pill (stato/priorità), tabella con badge, dialog dettaglio, selezione multipla → "Genera report" che copia in clipboard. Copy in italiano semplice, non tecnico.
+
+### File modificati
+- `lib/db/src/schema/index.ts` — export `error-reports`.
+- `artifacts/api-server/src/routes/index.ts` — mount `errorsRouter` (no prefix, paths assoluti).
+- `artifacts/stickers-app/src/components/ErrorBoundary.tsx` — bottone "Invia segnalazione anonima" che chiama `reportError({errorType:'client_crash'})`.
+- `artifacts/stickers-app/src/pages/Profile.tsx` — voce "Segnala un problema" + dialog con textarea (max 500 char), pre-fill pagina corrente, info-box su privacy.
+- `artifacts/stickers-app/src/components/layout/AdminLayout.tsx` — voce nav "Segnalazioni" con icona AlertTriangle.
+- `artifacts/stickers-app/src/App.tsx` — route lazy `/admin/segnalazioni` + prefetch.
+
+### DB Supabase
+- `pnpm --filter @workspace/db run push` ha creato la tabella `error_reports` con 3 indici: unique `error_reports_hash_unique`, composito `error_reports_status_priority_idx`, `error_reports_user_idx`.
+- Stima storage a regime: ~7MB con cap 10K record (1.4% di Supabase Free).
+
+### Privacy & Sicurezza
+- **Mai salvati**: PIN (regex `\d{4,8}` strippata), JWT, Bearer token, email, IP completi, password, codici recupero (regex `STICK-…`), path assoluti `/home/`, body POST/PATCH.
+- **Salvati sanitizzati**: pagina normalizzata (params rimossi), tipo errore, messaggio (max 1000 char), stack top (max 1500 char), classe UA (no fingerprint), prefisso IP `/24`, app version, nota utente (max 500 char).
+- Dedup hash basato su `errorType + page + first 200 char di message` — ripetizioni dello stesso bug incrementano `count`, non duplicano righe.
+- Rate-limit in-memory (riuso `checkRateLimit` esistente, no nuove dependency).
+
+### Verifiche
+- Smoke test `POST /api/errors/report` → HTTP 204 OK con payload contenente PIN+email; conferma sanitize lato server.
+- `GET /api/admin/errors` senza token → HTTP 401 (admin guard OK).
+- `pnpm -w run typecheck` → pulito (4 progetti TS, 0 errori).
+- Tutti i workflow restartati e running.
+
+### Cosa NON è stato fatto (intenzionalmente, da Diagnosi punto 9)
+- Niente auto-capture `window.onerror` / `unhandledrejection` automatico (solo opt-in da Profile + ErrorBoundary).
+- Niente Sentry/LogRocket/external services.
+- Niente OpenAPI codegen per i nuovi endpoint (usato `fetch` diretto come `auth/recovery-code` e altri custom — evita rebuild client SDK per 4 endpoint nuovi).
+- Niente email/Slack/Discord webhook.

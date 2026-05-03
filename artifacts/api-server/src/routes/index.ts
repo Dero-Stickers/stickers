@@ -8,6 +8,7 @@ import matchesRouter from "./matches";
 import chatsRouter from "./chats";
 import adminRouter from "./admin";
 import settingsRouter from "./settings";
+import errorsRouter from "./errors";
 
 const router: IRouter = Router();
 
@@ -35,5 +36,8 @@ router.use("/admin", adminRouter);
 
 // Settings routes
 router.use("/settings", settingsRouter);
+
+// Error reports (user opt-in submission + admin management)
+router.use(errorsRouter);
 
 export default router;
