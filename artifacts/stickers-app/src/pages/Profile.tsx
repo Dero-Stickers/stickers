@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield, Download, Trash2, FileText, UserCog } from "lucide-react";
+import { MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield, Download, Trash2, FileText, UserCog, ArrowRight, Check, X, Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -297,48 +297,100 @@ export function Profile() {
 
       <Dialog open={showNickDialog} onOpenChange={setShowNickDialog}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Cambia nickname</DialogTitle>
+          <DialogHeader className="text-center sm:text-left">
+            <DialogTitle className="text-lg">Cambia nome utente</DialogTitle>
+            <p className="text-sm text-muted-foreground pt-1">
+              Scegli il nuovo nome con cui ti vedranno gli altri.
+            </p>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Il nuovo nickname dev'essere unico nel tuo CAP ({currentUser?.cap}).
-            </p>
-            <Input
-              placeholder="5-15 caratteri (a-z, 0-9)"
-              value={newNickname}
-              onChange={e =>
-                setNewNickname(
-                  e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""),
-                )
-              }
-              maxLength={15}
-              autoCapitalize="none"
-              spellCheck={false}
-              className="lowercase"
-            />
-            <p className="text-[11px] text-muted-foreground -mt-2">
-              Solo lettere e numeri minuscoli, da 5 a 15 caratteri.
-            </p>
-            <Input
-              type="password"
-              placeholder="PIN"
-              maxLength={6}
-              value={nickPin}
-              onChange={e => setNickPin(e.target.value)}
-              autoComplete="current-password"
-            />
-            {nickError && <p className="text-xs text-destructive">{nickError}</p>}
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowNickDialog(false)} disabled={nickLoading}>
+
+          <div className="space-y-5 pt-2">
+            {/* Anteprima visiva: vecchio → nuovo */}
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <span className="px-2.5 py-1 rounded-md bg-muted text-muted-foreground lowercase font-medium">
+                {currentUser?.nickname ?? "—"}
+              </span>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              <span className={`px-2.5 py-1 rounded-md font-medium lowercase ${newNickname ? "bg-primary/10 text-primary" : "bg-muted/40 text-muted-foreground/50"}`}>
+                {newNickname || "nuovonome"}
+              </span>
+            </div>
+
+            {/* Campo nuovo nome */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <UserCog className="h-3.5 w-3.5 text-primary" />
+                Nuovo nome utente
+              </label>
+              <Input
+                placeholder="es. mario99"
+                value={newNickname}
+                onChange={e =>
+                  setNewNickname(
+                    e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""),
+                  )
+                }
+                maxLength={15}
+                autoCapitalize="none"
+                spellCheck={false}
+                className="lowercase h-11"
+              />
+              {/* Checklist regole — feedback live */}
+              {(() => {
+                const lenOk = newNickname.length >= 5 && newNickname.length <= 15;
+                const charOk = newNickname.length === 0 || /^[a-z0-9]+$/.test(newNickname);
+                const Item = ({ ok, text }: { ok: boolean; text: string }) => (
+                  <li className={`flex items-center gap-1.5 ${ok ? "text-green-600" : "text-muted-foreground"}`}>
+                    {ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5 opacity-50" />}
+                    <span>{text}</span>
+                  </li>
+                );
+                return (
+                  <ul className="text-[11px] space-y-0.5 pl-0.5">
+                    <Item ok={lenOk} text="Da 5 a 15 caratteri" />
+                    <Item ok={charOk} text="Solo lettere (a-z) e numeri (0-9)" />
+                  </ul>
+                );
+              })()}
+            </div>
+
+            {/* Campo PIN — spiegato */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-primary" />
+                Conferma con il tuo PIN
+              </label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                placeholder="••••"
+                maxLength={6}
+                value={nickPin}
+                onChange={e => setNickPin(e.target.value.replace(/\D/g, ""))}
+                autoComplete="current-password"
+                className="h-11 tracking-[0.4em] text-center"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Serve solo a confermare che sei tu.
+              </p>
+            </div>
+
+            {nickError && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                {nickError}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1 h-11" onClick={() => setShowNickDialog(false)} disabled={nickLoading}>
                 Annulla
               </Button>
               <Button
-                className="flex-1 bg-primary text-primary-foreground"
+                className="flex-1 h-11 bg-primary text-primary-foreground font-semibold"
                 onClick={handleChangeNickname}
                 disabled={nickLoading || !/^[a-z0-9]{5,15}$/.test(newNickname) || nickPin.length < 4}
               >
-                {nickLoading ? "Aggiorno..." : "Salva"}
+                {nickLoading ? "Aggiorno…" : "Conferma"}
               </Button>
             </div>
           </div>
