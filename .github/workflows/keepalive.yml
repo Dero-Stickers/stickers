@@ -1,0 +1,34 @@
+name: Keep Supabase + Render Awake
+
+# Pings the production /api/healthz/db endpoint daily.
+# - Wakes the Render free web service (auto-spins down after ~15 min)
+# - Issues a SELECT 1 against Supabase to reset the 7-day inactivity timer
+#
+# Configure repository secret PROD_URL with your production base URL,
+# e.g. https://stickers-api.onrender.com
+# If PROD_URL is not set, the workflow falls back to the default Render URL.
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # daily at 06:17 UTC (slightly off-hour to avoid contention)
+  workflow_dispatch:        # allow manual run
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/healthz/db
+        run: |
+          BASE_URL="${{ secrets.PROD_URL }}"
+          if [ -z "$BASE_URL" ]; then
+            BASE_URL="https://stickers-api.onrender.com"
+          fi
+          echo "Pinging $BASE_URL/api/healthz/db"
+          # Render free tier may take 30-60s to wake → allow up to 90s
+          curl --fail --show-error --silent --max-time 90 \
+               --retry 3 --retry-delay 20 \
+               "$BASE_URL/api/healthz/db" \
+               -o response.json
+          echo "--- Response:"
+          cat response.json
+          echo
