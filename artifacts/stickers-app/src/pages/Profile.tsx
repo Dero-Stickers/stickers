@@ -305,11 +305,21 @@ export function Profile() {
               Il nuovo nickname dev'essere unico nel tuo CAP ({currentUser?.cap}).
             </p>
             <Input
-              placeholder="Nuovo nickname"
+              placeholder="5-15 caratteri (a-z, 0-9)"
               value={newNickname}
-              onChange={e => setNewNickname(e.target.value)}
-              maxLength={24}
+              onChange={e =>
+                setNewNickname(
+                  e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""),
+                )
+              }
+              maxLength={15}
+              autoCapitalize="none"
+              spellCheck={false}
+              className="lowercase"
             />
+            <p className="text-[11px] text-muted-foreground -mt-2">
+              Solo lettere e numeri minuscoli, da 5 a 15 caratteri.
+            </p>
             <Input
               type="password"
               placeholder="PIN"
@@ -326,7 +336,7 @@ export function Profile() {
               <Button
                 className="flex-1 bg-primary text-primary-foreground"
                 onClick={handleChangeNickname}
-                disabled={nickLoading || newNickname.trim().length < 3 || nickPin.length < 4}
+                disabled={nickLoading || !/^[a-z0-9]{5,15}$/.test(newNickname) || nickPin.length < 4}
               >
                 {nickLoading ? "Aggiorno..." : "Salva"}
               </Button>

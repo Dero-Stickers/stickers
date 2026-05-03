@@ -20,13 +20,38 @@ import { requireAuth, getSession } from "../middlewares/auth";
 
 const PIN_REGEX = /^\d{4,6}$/;
 
+// Nickname: 5–15 alphanumeric, always lowercase. Trim + lowercase first so
+// users typing uppercase still match a stored lowercase nickname.
+const NICKNAME_REGEX = /^[a-z0-9]{5,15}$/;
+const NicknameSchema = z
+  .string()
+  .trim()
+  .transform(s => s.toLowerCase())
+  .pipe(
+    z
+      .string()
+      .regex(
+        NICKNAME_REGEX,
+        "Il nickname deve avere 5-15 caratteri, solo lettere e numeri",
+      ),
+  );
+
+// For LOGIN we still need to accept legacy mixed-case nicknames stored in
+// the DB, so we only normalize (lowercase + trim) without enforcing the
+// stricter 5–15 alphanumeric rule that applies to NEW nicknames.
+const LoginNicknameSchema = z
+  .string()
+  .trim()
+  .transform(s => s.toLowerCase())
+  .pipe(z.string().min(1).max(64));
+
 const RecoverLookupBody = z.object({
-  nickname: z.string().min(3).max(24),
+  nickname: LoginNicknameSchema,
   cap: z.string().length(5),
 });
 
 const RecoverAnswerBody = z.object({
-  nickname: z.string().min(3).max(24),
+  nickname: LoginNicknameSchema,
   cap: z.string().length(5),
   securityAnswer: z.string().min(1),
   newPin: z.string().regex(PIN_REGEX, "Il PIN deve essere di 4-6 cifre numeriche"),
@@ -34,7 +59,7 @@ const RecoverAnswerBody = z.object({
 
 const ChangeNicknameBody = z.object({
   pin: z.string().regex(PIN_REGEX, "PIN non valido"),
-  newNickname: z.string().min(3).max(24),
+  newNickname: NicknameSchema,
 });
 
 const NICKNAME_CHANGE_MAX_ATTEMPTS = 5;
@@ -100,6 +125,9 @@ const register: RequestHandler = async (req, res) => {
       return;
     }
     const body = RegisterBody.parse(req.body);
+    // Enforce stricter rules on top of generated schema: 5–15 alphanumeric,
+    // always stored lowercase.
+    const nickname = NicknameSchema.parse(body.nickname);
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
@@ -108,7 +136,7 @@ const register: RequestHandler = async (req, res) => {
     const existing = await db
       .select()
       .from(usersTable)
-      .where(and(eq(usersTable.nickname, body.nickname), eq(usersTable.cap, body.cap)))
+      .where(and(eq(usersTable.nickname, nickname), eq(usersTable.cap, body.cap)))
       .limit(1);
 
     if (existing.length > 0) {
@@ -127,7 +155,7 @@ const register: RequestHandler = async (req, res) => {
     const [user] = await db
       .insert(usersTable)
       .values({
-        nickname: body.nickname,
+        nickname,
         pinHash: await hashPin(body.pin),
         cap: body.cap,
         area,
@@ -158,9 +186,12 @@ const register: RequestHandler = async (req, res) => {
 const login: RequestHandler = async (req, res) => {
   try {
     const body = LoginBody.parse(req.body);
+    // Normalize nickname (lowercase + trim) so users typing it with capitals
+    // still match. Legacy DB rows may have mixed case so we compare with lower().
+    const nickname = LoginNicknameSchema.parse(body.nickname);
 
     const ip = clientIp(req);
-    const rateKey = `login:${ip}:${body.nickname.toLowerCase()}`;
+    const rateKey = `login:${ip}:${nickname}`;
     const limit = checkRateLimit(rateKey, LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS);
     if (!limit.allowed) {
       const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
@@ -174,19 +205,23 @@ const login: RequestHandler = async (req, res) => {
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
-    const { eq, and } = await import("drizzle-orm");
+    const { eq, and, sql } = await import("drizzle-orm");
+
+    // Case-insensitive match: handles legacy mixed-case nicknames stored
+    // before lowercase normalization was enforced.
+    const nicknameMatch = sql`lower(${usersTable.nickname}) = ${nickname}`;
 
     let usersFound;
     if (body.cap) {
       usersFound = await db
         .select()
         .from(usersTable)
-        .where(and(eq(usersTable.nickname, body.nickname), eq(usersTable.cap, body.cap)));
+        .where(and(nicknameMatch, eq(usersTable.cap, body.cap)));
     } else {
       usersFound = await db
         .select()
         .from(usersTable)
-        .where(eq(usersTable.nickname, body.nickname));
+        .where(nicknameMatch);
     }
 
     let user: typeof usersFound[number] | undefined;
@@ -527,12 +562,15 @@ const recoverLookup: RequestHandler = async (req, res) => {
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
-    const { eq, and } = await import("drizzle-orm");
+    const { eq, and, sql } = await import("drizzle-orm");
 
     const [user] = await db
       .select()
       .from(usersTable)
-      .where(and(eq(usersTable.nickname, body.nickname), eq(usersTable.cap, body.cap)))
+      .where(and(
+        sql`lower(${usersTable.nickname}) = ${body.nickname}`,
+        eq(usersTable.cap, body.cap),
+      ))
       .limit(1);
 
     // Anti-enumeration: same shape & status code whether the user exists or not.
@@ -561,7 +599,7 @@ const recoverAnswer: RequestHandler = async (req, res) => {
     const body = RecoverAnswerBody.parse(req.body);
 
     const ip = clientIp(req);
-    const rateKey = `recover-answer:${ip}:${body.nickname.toLowerCase()}`;
+    const rateKey = `recover-answer:${ip}:${body.nickname}`;
     const limit = checkRateLimit(rateKey, RECOVERY_MAX_ATTEMPTS, RECOVERY_WINDOW_MS);
     if (!limit.allowed) {
       const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
@@ -575,12 +613,15 @@ const recoverAnswer: RequestHandler = async (req, res) => {
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
-    const { eq, and } = await import("drizzle-orm");
+    const { eq, and, sql } = await import("drizzle-orm");
 
     const [user] = await db
       .select()
       .from(usersTable)
-      .where(and(eq(usersTable.nickname, body.nickname), eq(usersTable.cap, body.cap)))
+      .where(and(
+        sql`lower(${usersTable.nickname}) = ${body.nickname}`,
+        eq(usersTable.cap, body.cap),
+      ))
       .limit(1);
 
     if (!user || !(await verifyAnswer(body.securityAnswer, user.securityAnswerHash))) {
@@ -630,7 +671,7 @@ const changeNickname: RequestHandler = async (req, res) => {
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
-    const { eq, and, ne } = await import("drizzle-orm");
+    const { eq, and, ne, sql } = await import("drizzle-orm");
 
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
     if (!user) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
@@ -642,7 +683,8 @@ const changeNickname: RequestHandler = async (req, res) => {
 
     resetRateLimit(rateKey);
 
-    if (body.newNickname === user.nickname) {
+    // body.newNickname is already normalized (lowercase) by NicknameSchema.
+    if (body.newNickname === user.nickname.toLowerCase()) {
       res.json({ user: userPayload(user) });
       return;
     }
@@ -651,7 +693,7 @@ const changeNickname: RequestHandler = async (req, res) => {
       .select({ id: usersTable.id })
       .from(usersTable)
       .where(and(
-        eq(usersTable.nickname, body.newNickname),
+        sql`lower(${usersTable.nickname}) = ${body.newNickname}`,
         eq(usersTable.cap, user.cap),
         ne(usersTable.id, user.id),
       ))

@@ -11,13 +11,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppLogo } from "@/components/brand/AppLogo";
 import type { AuthResponse } from "@workspace/api-client-react";
 
+const NICKNAME_REGEX = /^[a-z0-9]{5,15}$/;
+const NICKNAME_MSG = "Il nickname deve avere 5-15 caratteri, solo lettere e numeri";
+
 const loginSchema = z.object({
-  nickname: z.string().min(3, "Il nickname deve avere almeno 3 caratteri"),
+  nickname: z.string().min(1, "Inserisci il nickname"),
   pin: z.string().min(4, "Il PIN deve avere almeno 4 cifre").max(6),
 });
 
 const registerSchema = z.object({
-  nickname: z.string().min(3, "Il nickname deve avere almeno 3 caratteri"),
+  nickname: z.string().regex(NICKNAME_REGEX, NICKNAME_MSG),
   pin: z.string().min(4, "Il PIN deve avere almeno 4 cifre").max(6),
   cap: z.string().length(5, "Il CAP deve essere di 5 cifre"),
   securityQuestion: z.string().min(5, "Domanda di sicurezza obbligatoria"),
@@ -55,12 +58,13 @@ export function Login() {
     setIsLoading(true);
 
     try {
+      const normalizedNick = data.nickname.trim().toLowerCase();
       if (isRegister) {
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            nickname: data.nickname,
+            nickname: normalizedNick,
             pin: data.pin,
             cap: data.cap,
             securityQuestion: data.securityQuestion,
@@ -79,7 +83,7 @@ export function Login() {
         const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nickname: data.nickname, pin: data.pin }),
+          body: JSON.stringify({ nickname: normalizedNick, pin: data.pin }),
         });
         const json: AuthResponse = await res.json();
         if (!res.ok) {
@@ -147,7 +151,21 @@ export function Login() {
                   <FormItem>
                     <FormLabel>Nickname</FormLabel>
                     <FormControl>
-                      <Input placeholder="es. nickname" autoComplete="username" {...field} />
+                      <Input
+                        placeholder={isRegister ? "5-15 caratteri (a-z, 0-9)" : "es. nickname"}
+                        autoComplete="username"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        inputMode="text"
+                        maxLength={15}
+                        className="lowercase"
+                        {...field}
+                        onChange={e => {
+                          // Force lowercase + strip any non-alphanumeric while typing.
+                          const v = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "");
+                          field.onChange(v);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

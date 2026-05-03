@@ -185,7 +185,17 @@ export function Recover() {
 
           {method === "question" && securityQuestion === null && (
             <>
-              <Input placeholder="Nickname" value={nickname} onChange={e => setNickname(e.target.value)} />
+              <Input
+                placeholder="Nickname"
+                value={nickname}
+                onChange={e =>
+                  setNickname(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))
+                }
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={15}
+                className="lowercase"
+              />
               <Input placeholder="CAP (5 cifre)" maxLength={5} value={cap} onChange={e => setCap(e.target.value)} />
               {error && <p className="text-sm text-destructive text-center">{error}</p>}
               <Button

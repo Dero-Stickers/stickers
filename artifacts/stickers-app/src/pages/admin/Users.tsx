@@ -1,4 +1,5 @@
-import { Shield, ShieldOff } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Shield, ShieldOff, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,8 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
+type SortDir = "asc" | "desc";
+
 function DemoStatusBadge({ status }: { status: string | null | undefined }) {
   if (status === "premium") return <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">Premium</Badge>;
   if (status === "demo_active") return <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">Demo</Badge>;
@@ -21,9 +24,17 @@ function DemoStatusBadge({ status }: { status: string | null | undefined }) {
 export function AdminUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const { data: users, isLoading } = useAdminListUsers();
-  const regularUsers = users?.filter(u => !u.isBlocked || true) ?? [];
+
+  const regularUsers = useMemo(() => {
+    const list = users?.filter(u => !u.isBlocked || true) ?? [];
+    const sorted = [...list].sort((a, b) =>
+      a.nickname.toLowerCase().localeCompare(b.nickname.toLowerCase(), "it"),
+    );
+    return sortDir === "asc" ? sorted : sorted.reverse();
+  }, [users, sortDir]);
 
   const toggleBlock = useToggleBlockUser({
     mutation: {
@@ -33,6 +44,9 @@ export function AdminUsers() {
       },
     },
   });
+
+  const toggleSort = () => setSortDir(d => (d === "asc" ? "desc" : "asc"));
+  const SortIcon = sortDir === "asc" ? ArrowDownAZ : ArrowUpAZ;
 
   return (
     <div className="space-y-6">
@@ -57,7 +71,22 @@ export function AdminUsers() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                  <th className="text-left px-4 py-3 font-medium">Utente</th>
+                  <th className="text-left px-4 py-3 font-medium">
+                    <button
+                      type="button"
+                      onClick={toggleSort}
+                      className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors uppercase tracking-wide"
+                      aria-label={`Ordina utenti ${sortDir === "asc" ? "Z-A" : "A-Z"}`}
+                      title={sortDir === "asc" ? "Ordinato A → Z (clicca per Z → A)" : "Ordinato Z → A (clicca per A → Z)"}
+                      data-testid="sort-users-nickname"
+                    >
+                      Utente
+                      <SortIcon className="h-3.5 w-3.5" />
+                      <span className="font-semibold text-[10px] text-primary">
+                        {sortDir === "asc" ? "A→Z" : "Z→A"}
+                      </span>
+                    </button>
+                  </th>
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">CAP / Area</th>
                   <th className="text-left px-4 py-3 font-medium">Stato</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Scambi</th>
@@ -65,15 +94,24 @@ export function AdminUsers() {
                 </tr>
               </thead>
               <tbody>
-                {regularUsers.map((user, i) => (
+                {regularUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      Nessun utente da mostrare.
+                    </td>
+                  </tr>
+                )}
+                {regularUsers.map((user, i) => {
+                  const nick = user.nickname.toLowerCase();
+                  return (
                   <tr key={user.id} className={`${i < regularUsers.length - 1 ? "border-b border-border/50" : ""} ${user.isBlocked ? "opacity-60" : ""}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary uppercase flex-shrink-0">
-                          {user.nickname.slice(0, 2)}
+                          {nick.slice(0, 2)}
                         </div>
                         <div>
-                          <p className="font-medium text-sm text-foreground">{user.nickname}</p>
+                          <p className="font-medium text-sm text-foreground lowercase">{nick}</p>
                           {user.isBlocked && <p className="text-xs text-destructive">Bloccato</p>}
                         </div>
                       </div>
@@ -101,7 +139,8 @@ export function AdminUsers() {
                       </Button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -110,3 +149,4 @@ export function AdminUsers() {
     </div>
   );
 }
+

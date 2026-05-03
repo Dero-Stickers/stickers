@@ -107,7 +107,7 @@ export function AdminPremium() {
               {demoUsers.map((u, i) => (
                 <tr key={u.id} className={i < demoUsers.length - 1 ? "border-b border-border/50" : ""}>
                   <td className="px-4 py-3">
-                    <p className="text-sm font-medium text-foreground">{u.nickname}</p>
+                    <p className="text-sm font-medium text-foreground lowercase">{u.nickname.toLowerCase()}</p>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <p className="text-sm text-muted-foreground">{u.area}</p>
@@ -146,7 +146,7 @@ export function AdminPremium() {
                 <tr key={u.id} className={i < premiumUsers.length - 1 ? "border-b border-border/50" : ""}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground">{u.nickname}</p>
+                      <p className="text-sm font-medium text-foreground lowercase">{u.nickname.toLowerCase()}</p>
                       <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">Premium</Badge>
                     </div>
                   </td>
