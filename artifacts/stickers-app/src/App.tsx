@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/not-found";
 import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
+import { SplashScreen } from "@/components/brand/SplashScreen";
 
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -160,6 +161,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
+      <SplashScreen />
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <AuthProvider>

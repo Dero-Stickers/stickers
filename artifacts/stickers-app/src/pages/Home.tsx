@@ -10,6 +10,7 @@ import {
   useGetUserAlbums,
   useGetBestMatches,
 } from "@workspace/api-client-react";
+import { AppLogo } from "@/components/brand/AppLogo";
 
 function DemoStatusBadge({ status, expiresAt }: { status: string | null; expiresAt?: string | null }) {
   if (status === "premium") return <Badge className="bg-amber-500 text-white text-xs font-bold">PREMIUM</Badge>;
@@ -36,14 +37,13 @@ export function Home() {
     <div className="min-h-full">
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-8">
         <div className="flex items-start justify-between mb-1">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight">
-              <span className="text-accent">S</span>TICKERS
-              <span className="text-xs font-normal text-sidebar-foreground/60 ml-1 align-middle tracking-widest">matchbox</span>
-            </h1>
-            <p className="text-sidebar-foreground/70 text-sm mt-0.5">
-              Ciao, <span className="font-semibold text-sidebar-foreground">{currentUser?.nickname}</span>
-            </p>
+          <div className="flex items-center gap-3">
+            <AppLogo className="h-12 w-auto shrink-0" />
+            <div>
+              <p className="text-sidebar-foreground/70 text-sm">
+                Ciao, <span className="font-semibold text-sidebar-foreground">{currentUser?.nickname}</span>
+              </p>
+            </div>
           </div>
           <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
         </div>

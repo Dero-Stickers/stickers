@@ -2,6 +2,7 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { BarChart2, BookOpen, Star, Users, MessageSquare, Crown, Settings, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { AppLogo } from "@/components/brand/AppLogo";
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -23,9 +24,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
         <div className="flex items-center justify-between px-4 h-14">
-          <div>
-            <span className="font-bold tracking-wider text-sidebar-primary-foreground">STICKERS</span>
-            <span className="text-xs text-sidebar-foreground/60 ml-2 uppercase tracking-widest">Admin</span>
+          <div className="flex items-center gap-2">
+            <AppLogo className="h-8 w-auto" />
+            <span className="text-xs text-sidebar-foreground/60 uppercase tracking-widest">Admin</span>
           </div>
           <button
             onClick={() => setMobileOpen(o => !o)}
@@ -68,8 +69,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
       <aside className="w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border hidden md:flex flex-col">
         <div className="p-6">
-          <h1 className="text-xl font-bold tracking-wider text-sidebar-primary-foreground">STICKERS</h1>
-          <p className="text-xs text-sidebar-foreground/70 uppercase tracking-widest mt-1">Pannello Admin</p>
+          <AppLogo className="h-12 w-auto" />
+          <p className="text-xs text-sidebar-foreground/70 uppercase tracking-widest mt-2">Pannello Admin</p>
         </div>
         
         <nav className="flex-1 px-4 space-y-1">

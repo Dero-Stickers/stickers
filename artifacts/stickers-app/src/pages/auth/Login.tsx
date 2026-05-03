@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
+import { AppLogo } from "@/components/brand/AppLogo";
 import type { AuthResponse } from "@workspace/api-client-react";
 
 const loginSchema = z.object({
@@ -124,11 +125,9 @@ export function Login() {
     <div className="min-h-[100dvh] flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-3xl font-black tracking-tight">
-            <span className="text-accent">S</span>
-            <span className="text-primary">TICKERS</span>
+          <CardTitle className="flex items-center justify-center">
+            <AppLogo className="h-24 w-auto" />
           </CardTitle>
-          <p className="text-xs text-muted-foreground tracking-widest uppercase">matchbox</p>
           <CardDescription className="text-base font-medium text-foreground">
             {isRegister ? "Crea un nuovo account" : "Accedi al tuo account"}
           </CardDescription>

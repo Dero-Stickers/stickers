@@ -224,3 +224,17 @@ Pulsante floating in basso a destra, visibile su **ogni pagina** inclusa la logi
   - `user-select: none` su button/nav/header
   - `@utility pb-safe / pt-safe / mb-safe` Tailwind v4 (prima usate ma non definite)
 - **Nota store Apple/Google**: il PWA è ottimizzato per install da browser (Add to Home Screen). Per pubblicare sugli store nativi serve un wrapper (Capacitor/PWABuilder/Bubblewrap-TWA) e icone PNG 192/512/1024. Le icone SVG attuali sono ottime per web/PWA install ma andranno rasterizzate in PNG prima del bundle nativo.
+
+## Sessione 7 — Logo brand integrato
+
+- **Logo brand `logo.svg`** (vettoriale, 42KB) sostituisce ovunque la scritta "STICKERS / MATCHBOX" hardcoded:
+  - Componente `<AppLogo />` riutilizzabile in `src/components/brand/AppLogo.tsx`
+  - Usato in: `Login.tsx` (h-24), `Home.tsx` (h-12), `AdminLayout.tsx` mobile bar (h-8) e sidebar desktop (h-12)
+  - SVG scelto su PNG → crisp a ogni risoluzione, niente rasterizzazione, peso costante
+- **Splash screen 4.5s** in `src/components/brand/SplashScreen.tsx`:
+  - Logo SVG centrato (max-w-xs)
+  - Fade-in 600ms con scale-up + hold ~3.3s + fade-out 600ms con scale-up (animazioni in `index.css`)
+  - `sessionStorage("sticker_splash_shown")` → mostrato solo al primo apri sessione (alla chiusura tab/app si riazzera)
+  - Montato in `App.tsx` sopra ErrorBoundary children
+- **Icone PWA/store ricompresse** (palette 256 colori): icon-192 9KB, icon-512 40KB, icon-maskable-512 41KB, apple-touch-icon 8KB. Set totale ~120KB.
+- **File rimossi**: `logo-app.png`, `logo-app-sm.png`, `apple-touch-icon.svg`, `favicon.svg`, `icon-maskable.svg` (sostituiti da PNG ottimizzati o dal logo.svg unificato).

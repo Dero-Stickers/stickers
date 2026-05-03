@@ -259,3 +259,30 @@ Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 3 (Production Readin
 - Modello pagamento (una tantum / mensile / annuale)
 - Soglia affidabilità utente (quanti scambi = affidabile?)
 - Gestione minori (serve verifica età?)
+
+## Sessione 7 (2026-05-02)
+
+### Bug fix
+- Risolto "Errore di connessione" su login: aggiunto Vite proxy `/api -> http://localhost:8080`.
+
+### Frontend cleanup mock
+- Cancellato `DevSwitcher.tsx` con array hardcoded utenti.
+- Rimosso hint "Demo: mario75/1234 — Admin: admin/0000" dalla Login.
+- Tutti i dati ora arrivano esclusivamente da Supabase via API.
+
+### Dev tooling
+- Aggiunto `DevQuickSwitch` (cerchio U/A) bottom-right su tutte le pagine, attivo solo `import.meta.env.DEV`.
+
+### PWA mobile-first
+- `index.html` con viewport-fit=cover, theme-color, apple-mobile-web-app-* meta, OG tags.
+- `manifest.webmanifest` completo (display standalone, orientation portrait, icons any+maskable).
+- Set icone ottimizzato: favicon.ico, favicon-16/32, apple-touch-icon 180, icon-192, icon-512, icon-maskable-512 (~120KB totali).
+- CSS mobile: 100dvh, safe-area, overscroll, no auto-zoom iOS, utility pb-safe/pt-safe/mb-safe.
+
+### Brand
+- Logo `logo.svg` integrato via componente `<AppLogo />` in Login, Home, AdminLayout (sostituite scritte STICKERS/MATCHBOX).
+- Splash screen 4.5s con fade in/out, gestito da sessionStorage (1 volta per sessione).
+
+### E2E + review
+- runTest E2E completo PASS: auth, user flows (album, match, profilo), admin flows, isolamento sessioni multi-utente, nessun errore connessione/CORS.
+- Architect review PASS round 4: typecheck + build OK, nessun import rotto, proxy corretto.
