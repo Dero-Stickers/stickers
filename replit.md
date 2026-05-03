@@ -79,3 +79,13 @@ The project is structured as a pnpm monorepo with four main packages: `artifacts
   - Sidebar desktop AdminLayout: logo + sottotitolo centrati (flex-col items-center)
   - Home: logo centrato in alto, sotto riga `Ciao {nickname}` + badge demo
 - **Theme-color meta** PWA aggiornato a `#9DC9E8` per coerenza con la headbar.
+
+## Convenzione backup (memorizzata)
+
+- **Formato nome file**: `Backup_<giorno> <Mese italiano>_<H.MM>.tar.gz`
+  - Esempio: `Backup_3 Maggio_2.04.tar.gz`
+  - Giorno senza zero iniziale, mese in italiano (Gennaio, Febbraio, …, Dicembre), ora in formato `H.MM` (24h, senza zero iniziale sull'ora).
+  - Timezone: **Europe/Rome**.
+- **Formato compressione**: `tar.gz` (mai zip).
+- **Cartella**: sempre dentro `backups/`.
+- Esclusi dall'archivio: `node_modules`, `dist`, `.git`, `backups`, `*.log`.
