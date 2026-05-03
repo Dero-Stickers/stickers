@@ -35,17 +35,15 @@ export function Home() {
 
   return (
     <div className="min-h-full">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-8">
-        <div className="flex items-start justify-between mb-1">
-          <div className="flex items-center gap-3">
-            <AppLogo className="h-12 w-auto shrink-0" />
-            <div>
-              <p className="text-sidebar-foreground/70 text-sm">
-                Ciao, <span className="font-semibold text-sidebar-foreground">{currentUser?.nickname}</span>
-              </p>
-            </div>
+      <div className="bg-sidebar text-sidebar-foreground px-4 pt-10 pb-8 border-b border-sidebar-border">
+        <div className="flex flex-col items-center gap-2">
+          <AppLogo className="h-14 w-auto" />
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <p className="text-sidebar-foreground/80 text-sm">
+              Ciao, <span className="font-semibold text-sidebar-foreground">{currentUser?.nickname}</span>
+            </p>
+            <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
           </div>
-          <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
         </div>
       </div>
 

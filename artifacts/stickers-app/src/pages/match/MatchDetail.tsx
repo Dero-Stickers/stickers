@@ -85,7 +85,7 @@ export function MatchDetail() {
   return (
     <div className="min-h-full pb-24">
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-6">
-        <button className="flex items-center gap-1.5 text-sidebar-foreground/70 mb-3 text-sm" onClick={() => setLocation("/match")}>
+        <button className="flex items-center gap-1.5 text-sidebar-foreground/85 mb-3 text-sm" onClick={() => setLocation("/match")}>
           <ArrowLeft className="h-4 w-4" />
           Match
         </button>
@@ -95,7 +95,7 @@ export function MatchDetail() {
           </div>
           <div>
             <h1 className="text-xl font-bold">{detail.nickname}</h1>
-            <p className="text-sidebar-foreground/70 text-sm flex items-center gap-1">
+            <p className="text-sidebar-foreground/85 text-sm flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" />
               {detail.area}
               {detail.distanceKm != null && <span className="ml-1">{detail.distanceKm.toFixed(1)} km</span>}
@@ -104,7 +104,7 @@ export function MatchDetail() {
         </div>
         <div className="mt-4 text-center bg-white/10 rounded-xl py-3">
           <p className="text-3xl font-black text-accent">{detail.totalExchanges}</p>
-          <p className="text-sm text-sidebar-foreground/70">scambi possibili</p>
+          <p className="text-sm text-sidebar-foreground/85">scambi possibili</p>
         </div>
       </div>
 

@@ -84,7 +84,7 @@ export function ChatRoom() {
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button onClick={() => window.history.back()} className="text-sidebar-foreground/70">
+            <button onClick={() => window.history.back()} className="text-sidebar-foreground/85">
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent text-sm uppercase">
@@ -92,7 +92,7 @@ export function ChatRoom() {
             </div>
             <span className="font-semibold">{otherNickname}</span>
           </div>
-          <button onClick={handleReport} className="text-sidebar-foreground/70 p-1">
+          <button onClick={handleReport} className="text-sidebar-foreground/85 p-1">
             <Flag className="h-4.5 w-4.5" />
           </button>
         </div>

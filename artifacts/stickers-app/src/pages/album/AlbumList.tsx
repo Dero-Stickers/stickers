@@ -26,6 +26,7 @@ import {
   getListAlbumsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AppLogo } from "@/components/brand/AppLogo";
 
 export function AlbumList() {
   const [activeTab, setActiveTab] = useState<"my" | "available">("my");
@@ -62,9 +63,10 @@ export function AlbumList() {
 
   return (
     <div className="min-h-full">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-6">
-        <h1 className="text-xl font-bold">Album</h1>
-        <p className="text-sidebar-foreground/70 text-sm mt-0.5">Gestisci le tue collezioni</p>
+      <div className="bg-sidebar text-sidebar-foreground px-4 pt-10 pb-6 border-b border-sidebar-border flex flex-col items-center text-center">
+        <AppLogo className="h-10 w-auto" />
+        <h1 className="text-base font-bold mt-2">Album</h1>
+        <p className="text-sidebar-foreground/85 text-xs">Gestisci le tue collezioni</p>
       </div>
 
       <div className="px-4 pt-4 pb-4">

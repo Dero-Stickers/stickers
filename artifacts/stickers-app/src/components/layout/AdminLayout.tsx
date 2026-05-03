@@ -23,14 +23,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-[100dvh] bg-background">
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-2">
-            <AppLogo className="h-8 w-auto" />
-            <span className="text-xs text-sidebar-foreground/60 uppercase tracking-widest">Admin</span>
-          </div>
+        <div className="relative flex items-center justify-center px-4 h-14">
+          <AppLogo className="h-8 w-auto" />
+          <span className="absolute left-4 text-[10px] text-sidebar-foreground/85 uppercase tracking-widest font-semibold">Admin</span>
           <button
             onClick={() => setMobileOpen(o => !o)}
-            className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+            className="absolute right-3 p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
             aria-label="Menu"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -68,9 +66,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       </div>
 
       <aside className="w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border hidden md:flex flex-col">
-        <div className="p-6">
+        <div className="p-6 flex flex-col items-center text-center">
           <AppLogo className="h-12 w-auto" />
-          <p className="text-xs text-sidebar-foreground/70 uppercase tracking-widest mt-2">Pannello Admin</p>
+          <p className="text-xs text-sidebar-foreground/85 uppercase tracking-widest mt-2">Pannello Admin</p>
         </div>
         
         <nav className="flex-1 px-4 space-y-1">

@@ -130,7 +130,7 @@ export function AlbumDetail() {
   return (
     <div className="min-h-full">
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-4">
-        <button className="flex items-center gap-1.5 text-sidebar-foreground/70 mb-3 text-sm" onClick={() => setLocation("/album")}>
+        <button className="flex items-center gap-1.5 text-sidebar-foreground/85 mb-3 text-sm" onClick={() => setLocation("/album")}>
           <ArrowLeft className="h-4 w-4" />
           Album
         </button>
@@ -138,19 +138,19 @@ export function AlbumDetail() {
         <div className="grid grid-cols-4 gap-2 text-center">
           <div>
             <p className="text-xl font-bold">{total}</p>
-            <p className="text-xs text-sidebar-foreground/60">Totale</p>
+            <p className="text-xs text-sidebar-foreground/85">Totale</p>
           </div>
           <div>
             <p className="text-xl font-bold text-green-400">{owned}</p>
-            <p className="text-xs text-sidebar-foreground/60">Possedute</p>
+            <p className="text-xs text-sidebar-foreground/85">Possedute</p>
           </div>
           <div>
             <p className="text-xl font-bold text-red-400">{duplicates}</p>
-            <p className="text-xs text-sidebar-foreground/60">Doppie</p>
+            <p className="text-xs text-sidebar-foreground/85">Doppie</p>
           </div>
           <div>
-            <p className="text-xl font-bold text-sidebar-foreground/60">{missing}</p>
-            <p className="text-xs text-sidebar-foreground/60">Mancanti</p>
+            <p className="text-xl font-bold text-sidebar-foreground/85">{missing}</p>
+            <p className="text-xs text-sidebar-foreground/85">Mancanti</p>
           </div>
         </div>
         <div className="mt-2 flex items-center gap-2">

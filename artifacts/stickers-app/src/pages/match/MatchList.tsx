@@ -10,6 +10,7 @@ import {
   GetNearbyMatchesRadius,
   getGetNearbyMatchesQueryKey,
 } from "@workspace/api-client-react";
+import { AppLogo } from "@/components/brand/AppLogo";
 
 const RADIUS_OPTIONS = [5, 10, 20, 50, 100] as const;
 type RadiusValue = typeof RADIUS_OPTIONS[number];
@@ -30,9 +31,10 @@ export function MatchList() {
 
   return (
     <div className="min-h-full">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-6">
-        <h1 className="text-xl font-bold">Match</h1>
-        <p className="text-sidebar-foreground/70 text-sm mt-0.5">Trova collezionisti per scambiare</p>
+      <div className="bg-sidebar text-sidebar-foreground px-4 pt-10 pb-6 border-b border-sidebar-border flex flex-col items-center text-center">
+        <AppLogo className="h-10 w-auto" />
+        <h1 className="text-base font-bold mt-2">Match</h1>
+        <p className="text-sidebar-foreground/85 text-xs">Trova collezionisti per scambiare</p>
       </div>
 
       <div className="px-4 pt-4 pb-4">

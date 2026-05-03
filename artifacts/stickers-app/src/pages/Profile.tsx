@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { AppLogo } from "@/components/brand/AppLogo";
 
 function DemoStatusBadge({ status, expiresAt }: { status: string | null; expiresAt?: string | null }) {
   if (status === "premium") return <Badge className="bg-amber-500 text-white">PREMIUM</Badge>;
@@ -68,20 +69,23 @@ export function Profile() {
 
   return (
     <div className="min-h-full">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-8">
-        <div className="flex items-center gap-4">
+      <div className="bg-sidebar text-sidebar-foreground px-4 pt-10 pb-6 border-b border-sidebar-border">
+        <div className="flex justify-center">
+          <AppLogo className="h-10 w-auto" />
+        </div>
+        <div className="flex items-center gap-4 mt-4">
           <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center text-accent font-black text-xl uppercase">
             {currentUser?.nickname?.slice(0, 2) ?? "U"}
           </div>
           <div>
             <h1 className="text-xl font-bold">{currentUser?.nickname}</h1>
-            <p className="text-sidebar-foreground/70 text-sm flex items-center gap-1">
+            <p className="text-sidebar-foreground/85 text-sm flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" />
               {currentUser?.area ?? "—"} — CAP {currentUser?.cap}
             </p>
           </div>
         </div>
-        <div className="mt-4">
+        <div className="mt-3">
           <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
         </div>
       </div>
