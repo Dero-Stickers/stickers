@@ -4,21 +4,17 @@ Incolla questo prompt nel tuo agente AI per continuare lo sviluppo:
 
 ---
 
-Sono nello stesso progetto **Sticker Matchbox PWA** (pnpm monorepo, React+Vite+TS, Express 5 + Drizzle, Supabase).
+Sono nel progetto **Sticker Matchbox** (PWA): monorepo pnpm · React + Vite + TS ·
+Express 5 + Drizzle · Supabase · deploy su Render.
 
-**Stato attuale (3 Maggio 2026 — Sessione 8 chiusa):**
-- ✅ Sistema Segnalazioni Errori opt-in (tabella `error_reports`, 4 endpoint, ErrorBoundary, Profile dialog, pagina admin `/admin/segnalazioni`)
-- ✅ Sanitizer PII: PIN/JWT/email/IPv4/IPv6/path Unix+Windows/codici recovery, context-aware su numeri
-- ✅ Cleanup enterprise: -67 file orfani UI, modularizzato `pages/admin/Errors.tsx`
-- ✅ Auth firmata HMAC-SHA256, password scrypt, CORS allowlist
-- ✅ Lazy loading routes (bundle iniziale ~152 KB gzip)
-- ✅ Supabase verificato via psql, 11 tabelle, 27 indici integri
+Prima di toccare qualcosa, leggi `DNA/00_INDICE.md` e in particolare
+`DNA/11_STATO_SVILUPPO.md` (stato attuale, cosa è fatto e cosa manca).
 
 **Cosa fare ora**: descrivi tu cosa vuoi.
 
-Se hai dubbi su cosa toccare, ricorda i vincoli enterprise:
-- max 350 righe per file funzionali
-- non modificare UX/layout senza richiesta esplicita
-- non duplicare logiche (centralizza in `lib/` o `middlewares/`)
-- aggiorna sempre `DNA/11_STATO_SVILUPPO.md`
-- a fine sessione: backup `.tar.gz` in `backups/` + `./deploy.sh "msg"`
+Vincoli operativi:
+- File funzionali ≤ 350 righe; non duplicare logica (centralizza in `lib/` o `middlewares/`)
+- Non modificare UX/layout senza richiesta esplicita
+- Nessun segreto nel codice; `.env`/`.agent/`/`CLAUDE.md` restano fuori da git
+- I dati nel DB sono di test/finti
+- A fine sessione: aggiorna `DNA/11_STATO_SVILUPPO.md`, backup `.tar.gz` in `backups/`, poi `./deploy.sh "messaggio"` (push su `main` = deploy)

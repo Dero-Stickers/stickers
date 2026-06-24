@@ -3,13 +3,13 @@
 ## Note Legali Importanti
 
 ⚠️ **AVVISO**: Sticker è un'app indipendente, NON ufficialmente affiliata con Panini S.p.A.
-Gli album e le figurine sono catalog manuali creati dall'admin.
+Gli album e le figurine sono cataloghi manuali creati dall'admin.
 Prima della pubblicazione ufficiale, verificare con un consulente legale.
 
 ## Pagine Legali da Preparare
 
 - Privacy Policy
-- Termini di Utilizzo  
+- Termini di Utilizzo
 - Cookie Policy
 
 I testi devono essere strutturati per Sticker ma contrassegnati con "DA REVISIONARE prima della pubblicazione".

@@ -1,346 +1,86 @@
 # DNA — Stato Sviluppo
 
-Ultimo aggiornamento: 3 Maggio 2026 — Sessione 8 (Audit Enterprise + Modularizzazione + Cleanup Orfani)
+Aggiornato: 24 giugno 2026
 
-## Fix Sessione 8 — Cleanup Enterprise & Modularizzazione ✅
+> Fotografia dello **stato attuale** (non un changelog). Tenere aggiornato questo
+> file a fine sessione. I dati nel DB sono di **test/finti**.
 
-### Audit completo (vincoli: niente refactor estetico, niente cambio business logic, niente cambio UX)
+## In sintesi
 
-**Codice morto eliminato (67 file, ~8600 righe)** 🧹
-- Rimossi 37 componenti shadcn/ui orfani da `artifacts/stickers-app/src/components/ui/`:
-  accordion, alert, aspect-ratio, avatar, breadcrumb, button-group, calendar,
-  carousel, chart, checkbox, collapsible, command, context-menu, drawer,
-  dropdown-menu, empty, field, hover-card, input-group, input-otp, item, kbd,
-  menubar, navigation-menu, pagination, popover, radio-group, resizable,
-  scroll-area, select, sidebar, slider, sonner, spinner, switch, table, tabs,
-  toggle-group. Nessuno era importato → zero rischio rottura.
-- Rimossi 30 componenti UI orfani analoghi da `artifacts/mockup-sandbox/`.
-- Restano solo i primitives effettivamente usati: alert-dialog, badge, button,
-  card, dialog, form, input, label, progress, separator, sheet, skeleton, toast,
-  toaster, toggle, tooltip, textarea (+ pochi altri dove usati).
+Sticker Matchbox è **funzionante in locale e live in produzione** su Render.
+Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
-**Modularizzazione `pages/admin/Errors.tsx`** (596 → 324 righe, sotto soglia 350)
-- Estratti tipi/costanti/helper in `pages/admin/errors/types.ts` (73 righe).
-- Estratta singola riga in `pages/admin/errors/ErrorRow.tsx` (72 righe).
-- Estratto dialog dettaglio in `pages/admin/errors/ErrorDetailDialog.tsx` (188 righe).
-- File principale ora orchestrator puro: stato, fetch, filtri, layout.
-- **Comportamento identico**: zero modifiche a logica, layout, classi CSS o UX.
+## Fatto
 
-**File NON modificati intenzionalmente** (rischio business/UX troppo alto per il vincolo del task):
-- `routes/auth.ts` (744 righe) — logica auth/recovery critica, già rivista in Sessione 6.
-- `pages/Profile.tsx` (621 righe) — layout utente, l'utente ha vietato modifiche UX.
-- `components/ui/sidebar.tsx` (727 righe) — primitive shadcn (già rimosso da stickers-app, restano solo gli usati).
-- `lib/api-client-react/src/generated/api.ts` (3546 righe) — codice generato da orval.
+### Infrastruttura & deploy
+- Monorepo: `artifacts/{stickers-app, api-server, mockup-sandbox}` + `lib/{api-spec, api-client-react, api-zod, db}`
+- Deploy unico su Render (`stickers-matchbox`), **autoDeploy** su push `main`
+  - build via **corepack** (`corepack pnpm …`), start con **node diretto** sul bundle
+- Supabase operativo: **11 tabelle**, indici integri, dati di test (6 utenti, 4 album, 120 figurine)
+- Keep-alive Supabase: `SELECT 1` periodico + GitHub Action `keepalive.yml`
 
-### Verifica diretta Supabase ✅
-- `psql` su `SUPABASE_DATABASE_URL`: 11 tabelle presenti, schema allineato.
-- Indici: 3 `error_reports` + tutti i 27 indici esistenti integri.
-- `pg_stat_user_indexes`: gli "indici non usati" sono tutti UNIQUE constraint
-  (ricovery code, nickname_cap, sticker hash, etc) o tabelle ancora vuote
-  (chat/messages/reports). **Nessun indice rimosso** — sono tutti corretti.
-- Pulita 1 riga di test residua da `error_reports` durante smoke test sanitizer.
-- **Nessuna anomalia rilevata**.
+### Backend (api-server)
+- Express 5 + pino. Route: auth, albums, stickers, matches, chats, admin, settings, demo, error-reports, health
+- **Auth sicura**: token firmato HMAC-SHA256 (`v1.<payload>.<firma>`, TTL 30 giorni); PIN e risposte di sicurezza con **scrypt** asincrono (salt per utente)
+- **Rate limiting** in-memory: login 8/5min, recover 5/15min (429 + Retry-After)
+- **CORS allowlist**: `*.onrender.com` (prod), `localhost`/`127.0.0.1` (dev), più `CORS_ORIGINS`
+- Middleware `requireAuth`/`requireAdmin` centralizzati
+- Match performanti: query in batch (no N+1), distanza CAP deterministica
+- In produzione serve anche il frontend statico (+ fallback SPA)
 
-### Verifica codice ✅
-- `pnpm -w run typecheck` → 4 progetti TS, **0 errori** dopo cleanup.
-- Nessun `TODO/FIXME/HACK/XXX` lasciato in codice di produzione.
-- Nessun `console.log/debug/warn` di debug residuo.
-- 3 workflow running (api-server, mockup-sandbox, stickers-app).
-- Browser console pulita (solo HMR vite messages).
-- Sanitizer error-reports: copertura estesa a IPv6 + path Windows + redazione
-  context-aware su PIN/OTP/code (no over-redaction su line numbers).
-- Upsert error_reports: ora aggiorna `messageClean/stackTop/page/uaClass/appVersion/userNote/ipPrefix` sull'ultima occorrenza (prima restavano i dati della prima volta).
+### Frontend (stickers-app)
+- **User**: login/registrazione (nickname, PIN, CAP, domanda sicurezza), codice recupero, Home, Album, Match (migliori/vicini + slider distanza), Chat (polling 5s + segnalazione), Profilo
+- **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Premium/Demo, Impostazioni, Segnalazioni errori
+- Lazy loading route (bundle iniziale ~152 KB gzip), ErrorBoundary
+- PWA mobile-first: manifest, icone, splash, safe-area
+- `DevQuickSwitch` (solo `import.meta.env.DEV`) per cambio rapido User/Admin
 
-### Stato finale enterprise ✅
-- **Modularità**: tutti i file funzionali ≤ 350 righe (eccetto i 4 sopra elencati con motivo documentato).
-- **Manutenibilità**: zero codice morto, dipendenze ridotte, struttura `errors/` riusabile.
-- **Performance**: bundle iniziale immutato (i file rimossi non erano nel bundle), tree-shaking ora più efficace.
-- **Sicurezza**: sanitizer rinforzato dopo code review architect.
-- **DB**: integrità Supabase verificata di persona via psql.
+### Qualità
+- `pnpm run typecheck` → **0 errori**; file funzionali ≤ 350 righe (eccezioni documentate: `routes/auth.ts`, `pages/Profile.tsx`, generati orval)
+- Sistema segnalazione errori con **sanitizer PII** (PIN/JWT/email/IP/path/codici)
 
----
+## Da fare
 
+### Alta priorità
+- [ ] Service worker PWA completo + test iOS Safari / Android Chrome
+- [ ] Onboarding interattivo (ora mostra un toast placeholder)
+- [ ] Upload copertina album (endpoint presente, manca UI admin)
 
-## Fix Sessione 6 — Security Hardening + Performance ✅
-
-### Sicurezza autenticazione (BLOCKER risolti) 🔐
-- **Token firmati HMAC-SHA256** ✅ — sostituito il vecchio
-  `base64(JSON({userId,isAdmin}))` con un token a 3 segmenti firmato:
-  `v1.<payload-base64url>.<HMAC-SHA256-base64url>`. Implementazione in
-  `artifacts/api-server/src/lib/auth.ts` usando `crypto.createHmac` (zero
-  dipendenze esterne) + `timingSafeEqual` per evitare timing attack. La chiave
-  di firma usa `SESSION_SECRET` (generato automaticamente come variabile d'ambiente, es. su Render).
-- **Backward-compat legacy rimossa** ✅ — il vecchio decoder base64 era una
-  vulnerabilità grave (qualunque utente poteva forgiare un token admin
-  scrivendo `base64('{"userId":6,"isAdmin":true}')`). Rimosso completamente
-  dopo il re-seed con i nuovi hash. Test di forgery: legacy base64 → 401,
-  v1 con firma errata → 401, token valido firmato → 200.
-- **Password hashing scrypt** ✅ — `pinHash` e `securityAnswerHash` ora usano
-  `crypto.scryptSync` (Node built-in, OWASP-compliant) con salt random per
-  utente. Formato: `scrypt$<salt-base64>$<hash-base64>`. Il vecchio
-  `Buffer.from(pin + "sticker_salt").toString("base64")` (insicuro: salt
-  costante, niente stretching) è stato sostituito sia nel server (`lib/auth.ts`)
-  sia nel seed (`lib/db/src/seed.ts`). DB re-seedato con i nuovi hash.
-- **CORS lockdown** ✅ — `app.use(cors())` permissivo sostituito con allowlist:
-  `RENDER_EXTERNAL_URL` + `*.onrender.com` (produzione), `localhost:*` e
-  `127.0.0.1:*` (solo dev), più `CORS_ORIGINS` env var per origini
-  custom in produzione. Test: origin valido → 204 + ACAO header, origin non
-  in allowlist → 200 senza ACAO (browser blocca, comportamento corretto).
-
-### Code consolidation 🧹
-- **Middleware `requireAuth`/`requireAdmin` centralizzato** ✅ — eliminate
-  6 copie duplicate del decoder base64 sparse fra `matches.ts`, `chats.ts`,
-  `albums.ts`, `user-albums.ts`, `admin.ts`, `settings.ts`. Tutto ora passa
-  per `artifacts/api-server/src/middlewares/auth.ts` (un'unica fonte di
-  verità). Legacy DRY violation chiusa.
-- **`lib/auth.ts`** ✅ — modulo unico per token signing, scrypt hashing e
-  verifica timing-safe. Riusabile, testabile, isolato.
-
-### Performance frontend ⚡
-- **Lazy loading route** ✅ — `App.tsx` ora carica le pagine pesanti via
-  `React.lazy` + `Suspense`: tutte le 7 pagine admin + le 5 pagine utente
-  non critiche (AlbumDetail, MatchList, MatchDetail, ChatRoom, Profile)
-  sono code-split. Login + Home + AlbumList restano eager (above-the-fold).
-  Fallback: `PageSkeleton` con shadcn `Skeleton` componente.
-- **Bundle size** ✅ — bundle iniziale ~493 KB (152 KB gzip), pagine
-  separate 2-7 KB ciascuna gzippate. Build production verificata
-  (`vite build`).
-
-### Hardening enterprise extra (review architect Sessione 6) ⚙️
-- **scrypt asincrono** ✅ — `hashPin`/`verifyPin`/`hashAnswer` sono ora
-  `async` e usano `crypto.scrypt` promisificato (`util.promisify`). In
-  precedenza `scryptSync` bloccava l'event-loop sotto burst di login,
-  creando un rischio DoS. Aggiornati tutti i call site in
-  `routes/auth.ts` (await + loop esplicito su `verifyPin` per supportare
-  più match nickname/CAP).
-- **Token TTL** ✅ — il payload firmato include ora `iat` + `exp` (default
-  30 giorni). `verifyToken` rifiuta i token con `exp` passato (401). Test
-  con token sintetico expired: 401 confermato.
-- **Rate limiting in-memory** ✅ — nuovo helper `checkRateLimit` /
-  `resetRateLimit` in `lib/auth.ts` (sliding-window per chiave). Applicato
-  a `POST /api/auth/login` (8 tentativi / 5 min per IP+nickname) e
-  `POST /api/auth/recover` (5 tentativi / 15 min per IP). Il limit reset
-  al primo login riuscito. Risponde `429` con header `Retry-After`.
-  Cleanup automatico del Map ogni 60s. Test verificato: 8 tentativi
-  errati → 401, dal nono → 429.
-
----
-
-Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 5 (E2E Testing + Enterprise Cleanup)
-
-## Fix Sessione 5 — E2E Testing + Enterprise Cleanup ✅
-
-### Bug critici corretti (scoperti via E2E testing)
-- **Auth race condition** ✅ — `AuthContext.tsx` ora idrata sincronamente da
-  localStorage tramite `readInitialAuth()` chiamata nello stato iniziale.
-  Le route protette vedono `isAuthenticated=true` al primo render, niente più
-  flash su `/login` su deep-link/refresh.
-- **Hardening refresh sessione** ✅ — `/api/auth/me` ora pulisce la sessione
-  **solo** su 401/403 (non più su 5xx). `AbortController` scope il fetch al
-  ciclo di vita del componente. Guard `localStorage.getItem(TOKEN_KEY) === token`
-  previene overwrite da risposte stale dopo user switch.
-- **`useAuthRedirect` hook** ✅ — `setLocation` chiamato durante il render era
-  un anti-pattern; ora wrappato in `useEffect` tramite hook dedicato in `App.tsx`.
-- **Demo gating mancante** ✅ — utenti `demo_expired` ora vedono
-  `DemoExpiredScreen` su `/match`, `/match/:userId`, `/chat/:chatId`. Le route
-  `/`, `/album`, `/profilo` restano accessibili (visibilità + upgrade).
-- **Hydration warning Home.tsx** ✅ — `<p>` che avvolgeva `<Skeleton>` (un `<div>`)
-  cambiato in `<div>` (linea 92).
-
-### Code governance ✅
-- **Dead code rimosso** ✅ — eliminata cartella `artifacts/stickers-app/src/mock/`
-  (6 file: albums, chats, matches, settings, stickers, users) — zero referenze
-  nel codice attivo, era residuo della Fase 1.
-- **TypeScript pulito** ✅ — `pnpm run typecheck` ora passa interamente.
-  Le declarations dei lib (`lib/db`, `lib/api-zod`, `lib/api-client-react`)
-  sono buildate; lo script `typecheck` root le rigenera automaticamente.
-- **Workflow consolidation** ✅ — rimossi i workflow custom duplicati
-  `API Server` / `Stickers App`. Ora gestiti dagli artifact registrati:
-  `artifacts/api-server: API Server` e `artifacts/stickers-app: web`.
-
-### Database (Sessione 4)
-- **search_path Supabase** ✅ — `lib/db/src/index.ts` usa
-  `pool.on("connect", c => c.query("SET search_path TO public"))`. Il vecchio
-  `options: "--search_path=public"` era sintassi sbagliata e causava
-  `relation "users" does not exist`.
-- **Doppio DB allineato** ✅ — schema + seed pushati sia su Supabase (via
-  `SUPABASE_DATABASE_URL`) sia su un PostgreSQL locale
-  (`DATABASE_URL`, fallback dev).
-- **DB Setup workflow** rimosso dall'avvio automatico — manuale via
-  `cd lib/db && pnpm push-force && pnpm seed`.
-
----
-
-Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 3 (Production Readiness Pass)
-
-## Completato ✅
-
-### Infrastruttura
-- Struttura monorepo (artifacts/stickers-app + artifacts/api-server)
-- Specifica funzionale completa (consolidata in DNA)
-- DNA folder con documentazione aggiornata (00-06)
-- OpenAPI spec per tutti gli endpoint
-- Codegen (React Query hooks + Zod schemas)
-- Schema DB (Drizzle ORM, type-safe)
-
-### Database
-- Schema Drizzle pushato su **Supabase** ✅
-- Seed realistico su Supabase: 6 utenti, 4 album, 120 figurine, match, chat ✅
-- `lib/db/src/index.ts` → usa `SUPABASE_DATABASE_URL` (con trim automatico) ✅
-- `lib/db/drizzle.config.ts` → configurato per Supabase ✅
-
-### Backend (API Server)
-- Express 5 + TypeScript + pino logger
-- Route complete: auth, albums, stickers, matches, chats, admin, settings, health
-- Demo attivazione (configurabile dall'admin, non hardcoded)
-- `app.ts` → serving file statici frontend in produzione (per Render) ✅
-
-### Frontend (User App)
-- Login + Registrazione (nickname, PIN, CAP, domanda sicurezza)
-- Codice di recupero mostrato post-registrazione
-- Home dashboard (album, match, stato demo)
-- Album: I miei album + Album disponibili + griglia figurine + filtri
-- Match: Migliori / Vicini a te + slider distanza + dettaglio multi-album
-- Chat: polling 5s, segnalazione, avviso moderazione
-- Profilo: codice recupero protetto da PIN, supporto, logout
-
-### Frontend (Admin Panel)
-- Dashboard con statistiche
-- Album: CRUD completo
-- Figurine: gestione per album
-- Utenti: lista con stato demo/premium, blocco
-- Messaggi: revisione e chiusura chat
-- Premium/Demo: configurazione durata demo
-- Impostazioni: email supporto, testi base
-- **Navigazione mobile** ✅ — hamburger menu top bar per admin su mobile
-
-### Dev Tools
-- **DevSwitcher** ✅ — pulsante floating in ogni pagina per switch rapido User↔Admin
-  - 6 utenti di test preconfigurati (mario75, luca_fan, giulia_stickers, sofia_ro, roberto_collector, admin)
-  - Un clic per cambiare utente senza logout manuale
-
-### Deploy
-- `DNA/13_DEPLOY_RENDER.md` ✅ — guida completa per Render
-- Serving file statici React in produzione configurato in `api-server/src/app.ts`
-- BASE_PATH configurato via env var
-
----
-
-## Fix Sessione 3 — Production Readiness Pass ✅
-
-### Performance (Critica)
-- **N+1 queries eliminato** ✅ — `getBestMatches` / `getNearbyMatches` ora eseguono
-  esattamente **5 query DB** indipendentemente dal numero di utenti (era O(4N))
-- **Distanza deterministica** ✅ — `estimateDistance()` ora usa formula stabile basata
-  su differenza numerica CAP; niente più `Math.random()` (risultati inconsistenti)
-- **`getMatchDetail` ottimizzato** ✅ — 4 query parallele invece di N×4 query sequenziali
-  (sticker details ora con `inArray` batch, non `.slice(0, 10)` + N queries per sticker)
-
-### Correttezza Dati
-- **`batchInsertStickers` totalStickers** ✅ — ora conta TUTTE le figurine nell'album
-  dopo l'inserimento (era solo il batch corrente → valore sbagliato su inserimenti multipli)
-
-### UX / Layout
-- **Chat room layout** ✅ — ChatRoom non è più dentro MobileLayout (che aveva una nav bar
-  fissa in fondo che si sovrapponeva all'input chat); ora usa `ProtectedChatRoute` dedicato
-- **Back button chat** ✅ — `window.history.back()` invece di hardcoded `/match`
-- **Admin navigazione mobile** ✅ — hamburger menu con dropdown per tutte le sezioni admin
-- **Badge messaggi non letti** ✅ — icona Match nella bottom nav mostra badge rosso
-  con contatore messaggi non letti
-
-### Resilienza
-- **React Error Boundary** ✅ — `<ErrorBoundary>` avvolge l'intera app; qualsiasi
-  errore non gestito mostra una schermata di recupero invece di crashare
-- **Supabase keep-alive** ✅ — `keepalive.ts` esegue `SELECT 1` ogni 12 ore per
-  mantenere il progetto Supabase Free attivo
-
----
-
-## In Progresso 🔄
-
-- Test navigazione completa su tutti i flussi post-fix
-- GitHub push operativo dal terminale locale; ogni push su `main` triggera il deploy su Render
-
-## Da Fare (Prossime Sessioni) 📋
-
-### Alta Priorità
-- [ ] PWA manifest + service worker (Fase 3 roadmap)
-- [ ] Test su iOS Safari e Android Chrome
-- [ ] Onboarding guide interattiva (attualmente mostra toast "in arrivo")
-- [ ] Upload copertina album (admin — endpoint presente, UI mancante)
-- [ ] Auth: passare a bcrypt + JWT firmato (attualmente base64 JSON — noto, per produzione)
-
-### Media Priorità
-- [ ] Rate limiting sulle API (attualmente nessun throttling)
-- [ ] Notifiche push (futuro)
-- [ ] Pagamenti reali (Stripe o RevenueCat — scelta modello da definire)
+### Media priorità
+- [ ] Notifiche push
+- [ ] Pagamenti reali (modello da scegliere — struttura dati già pronta)
 - [ ] Landing page pubblica con dominio
-- [ ] CORS ristretto a domini di produzione (attualmente `cors()` aperto)
 
-### Bassa Priorità
-- [ ] `adminActionsTable` tracking (schema definito, mai popolato)
-- [ ] Statistiche avanzate admin (grafici)
-- [ ] Esportazione dati utente (GDPR)
-- [ ] Multilingua (mai nella v1)
+### Bassa priorità
+- [ ] `admin_actions` tracking (schema definito, non popolato)
+- [ ] Statistiche admin avanzate (grafici), export dati GDPR, multilingua (post-v1)
 
----
-
-## Utenti di Test (Supabase) 🔑
-
-| Nickname | PIN | Stato | Note |
-|----------|-----|-------|------|
-| mario75 | 1234 | demo_active | ~20h rimaste |
-| luca_fan | 5678 | premium | — |
-| giulia_stickers | 9999 | free | — |
-| sofia_ro | 1111 | demo_expired | — |
-| roberto_collector | 2222 | premium | — |
-| admin | 0000 | admin | Accesso pannello admin |
-
-## Secrets Configurati
-
-| Variabile | Dove | Note |
-|-----------|------|------|
-| `SUPABASE_DATABASE_URL` | Render / `.env` | Connessione DB Supabase (con SSL) |
-| `SUPABASE_ANON_KEY` | Render / `.env` | Chiave pubblica Supabase |
-| `GITHUB_TOKEN` | `.env` locale | Push su github.com/Dero-Stickers/stickers |
-| `SUPABASE_URL` | Render / `.env` | https://kuigzaqaewgcosfhahkv.supabase.co |
-
-## Blocchi Aperti ⚠️
-
-- GitHub push: operativo dal terminale locale; ogni push su `main` triggera il deploy automatico su Render.
-- PIN hash: attualmente usa base64 + salt (dev). In produzione → usare bcrypt + JWT firmato.
-- Auth token: `base64(JSON{userId,isAdmin})` è forgiabile; non adatto a produzione.
-  **Soluzione pianificata**: migrare a `jsonwebtoken` con secret env var.
-
-## Decisioni da Prendere
-
-- Modello pagamento (una tantum / mensile / annuale)
-- Soglia affidabilità utente (quanti scambi = affidabile?)
+## Decisioni aperte
+- Modello di pagamento (una tantum / mensile / annuale)
+- Soglia di affidabilità utente (quanti scambi = affidabile?)
 - Gestione minori (serve verifica età?)
 
-## Sessione 7 (2026-05-02)
+## Utenti di test (Supabase)
 
-### Bug fix
-- Risolto "Errore di connessione" su login: aggiunto Vite proxy `/api -> http://localhost:8080`.
+| Nickname | PIN | Stato |
+|----------|-----|-------|
+| mario75 | 1234 | demo_active |
+| luca_fan | 5678 | premium |
+| giulia_stickers | 9999 | free |
+| sofia_ro | 1111 | demo_expired |
+| roberto_collector | 2222 | premium |
+| admin | 0000 | admin |
 
-### Frontend cleanup mock
-- Cancellato `DevSwitcher.tsx` con array hardcoded utenti.
-- Rimosso hint "Demo: mario75/1234 — Admin: admin/0000" dalla Login.
-- Tutti i dati ora arrivano esclusivamente da Supabase via API.
+## Dove stanno i segreti
 
-### Dev tooling
-- Aggiunto `DevQuickSwitch` (cerchio U/A) bottom-right su tutte le pagine, attivo solo `import.meta.env.DEV`.
+| Variabile | Dove |
+|-----------|------|
+| `SUPABASE_DATABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_URL` | Render + `.env` locale |
+| `SESSION_SECRET` | Render (auto) + `.env` locale |
+| `GITHUB_TOKEN`, `RENDER_API_KEY` | `.env` locale |
 
-### PWA mobile-first
-- `index.html` con viewport-fit=cover, theme-color, apple-mobile-web-app-* meta, OG tags.
-- `manifest.webmanifest` completo (display standalone, orientation portrait, icons any+maskable).
-- Set icone ottimizzato: favicon.ico, favicon-16/32, apple-touch-icon 180, icon-192, icon-512, icon-maskable-512 (~120KB totali).
-- CSS mobile: 100dvh, safe-area, overscroll, no auto-zoom iOS, utility pb-safe/pt-safe/mb-safe.
+> `.env`, `.agent/`, `CLAUDE.md` sono in `.gitignore` — mai committarli.
 
-### Brand
-- Logo `logo.svg` integrato via componente `<AppLogo />` in Login, Home, AdminLayout (sostituite scritte STICKERS/MATCHBOX).
-- Splash screen 4.5s con fade in/out, gestito da sessionStorage (1 volta per sessione).
-
-### E2E + review
-- runTest E2E completo PASS: auth, user flows (album, match, profilo), admin flows, isolamento sessioni multi-utente, nessun errore connessione/CORS.
-- Architect review PASS round 4: typecheck + build OK, nessun import rotto, proxy corretto.
+## Note operative
+- Fine sessione: aggiornare questo file; backup `.tar.gz` in `backups/` (vedi `14_BACKUP_PROCESSO.md`)
+- Deploy: `./deploy.sh "messaggio"` oppure `git push` su `main` (= deploy automatico su Render)

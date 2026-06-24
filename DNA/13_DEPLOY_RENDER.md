@@ -1,6 +1,11 @@
 # DNA — Guida Deploy su Render (100% Sicuro)
 
-Ultimo aggiornamento: 2 Maggio 2026 — Sessione 6
+Ultimo aggiornamento: 24 giugno 2026
+
+> **Stato attuale**: il servizio `stickers-matchbox` è già creato e **live** su
+> Render, con **autoDeploy** sul branch `main`. Questa guida resta come
+> riferimento per configurazione/ricreazione. Per pubblicare basta `git push`
+> su `main` (oppure `./deploy.sh "messaggio"`).
 
 ---
 
@@ -63,14 +68,19 @@ Il file `artifacts/api-server/src/app.ts` deve includere il serving dei file sta
 
 ### 2c. Build Command
 
+Usa **corepack** (incluso in Node): l'immagine Node 24 di Render ha la cartella
+globale in sola lettura, quindi `npm install -g pnpm` fallisce.
+
 ```bash
-npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/stickers-app run build && pnpm --filter @workspace/api-server run build
+corepack pnpm install --frozen-lockfile=false && corepack pnpm --filter @workspace/stickers-app run build && corepack pnpm --filter @workspace/api-server run build
 ```
 
 ### 2d. Start Command
 
+Avvio diretto con `node` (nessun pnpm a runtime, più veloce):
+
 ```bash
-pnpm --filter @workspace/api-server run start
+node --enable-source-maps artifacts/api-server/dist/index.mjs
 ```
 
 ---
@@ -163,7 +173,7 @@ https://stickers-matchbox.onrender.com/
 Render può fare deploy automatico ad ogni push su `main`:
 
 1. Render → Settings → **Auto-Deploy** → `Yes`
-2. Ogni `git push origin main` trigghera un nuovo deploy
+2. Ogni `git push origin main` triggera un nuovo deploy
 
 ---
 

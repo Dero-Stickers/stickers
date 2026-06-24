@@ -21,9 +21,9 @@ Permette di riprendere il progetto senza dover ricostruire mentalmente le decisi
 
 ### Formato Backup
 
-Nome file: `Backup_DAY MONTH_HH.MM.tar.xz`
+Nome file: `Backup_DAY MONTH_HH.MM.tar.gz`
 
-Esempio: `Backup_1 Maggio_23.13.tar.xz`
+Esempio: `Backup_1 Maggio_23.13.tar.gz`
 
 Contenuto: tutto il necessario per riprendere il progetto.
 
@@ -32,7 +32,7 @@ Esclusi: `node_modules/`, cache, build temporanei, log inutili, file rigenerabil
 ### Procedura Backup Manuale
 
 ```bash
-tar -cJf "backup/Backup_$(date '+%e %B_%H.%M').tar.xz" \
+tar -czf "backups/Backup_$(date '+%e %B_%H.%M').tar.gz" \
   --exclude='*/node_modules' \
   --exclude='*/dist' \
   --exclude='*/.turbo' \
