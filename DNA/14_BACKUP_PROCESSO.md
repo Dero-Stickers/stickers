@@ -6,14 +6,7 @@ Contiene documentazione architetturale viva, aggiornata dopo ogni decisione impo
 
 ### File DNA principali
 
-| File | Contenuto |
-|------|-----------|
-| `00_ARCHITETTURA.md` | Stack, struttura, decisioni architetturali |
-| `01_STATO_SVILUPPO.md` | Cosa è stato fatto, cosa manca, blocchi aperti |
-| `02_DATABASE_SCHEMA.md` | Schema DB completo e SQL Supabase |
-| `03_ROADMAP.md` | Roadmap e priorità |
-| `04_REPORT_FINALE.md` | Report di fine sessione |
-| `05_PROSSIMO_PROMPT.md` | Prompt operativo per continuare |
+L'elenco completo dei file e l'ordine di lettura sono in `00_INDICE.md`.
 
 ### Regola DNA
 

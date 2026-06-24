@@ -118,3 +118,23 @@ export const appSettingsTable = pgTable("app_settings", {
 
 Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 (Script generato da Drizzle con `pnpm --filter @workspace/db run push`)
+
+## Supabase — note operative
+
+- **Produzione**: PostgreSQL su Supabase, connessione via `SUPABASE_DATABASE_URL`
+  (SSL abilitato). Il client (`lib/db/src/index.ts`) imposta `search_path=public`.
+- **Push schema**: `cd lib/db && pnpm push-force` (Drizzle Kit).
+- **Seed**: `pnpm --filter @workspace/db run seed`.
+- Stato attuale: 11 tabelle con indici integri (dati di test/finti).
+
+### cap_zones (futuro)
+```sql
+cap, area_name, lat_approx, lng_approx, region
+```
+Tabella per il calcolo distanza tra CAP.
+
+## Calcolo distanza CAP
+
+- Fase iniziale: distanza approssimata su un dataset di CAP italiani con
+  coordinate indicative (distanza euclidea, sufficiente per i match per vicinanza).
+- Produzione: funzione Haversine o PostGIS su Supabase.

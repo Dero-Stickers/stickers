@@ -3,7 +3,7 @@
 ## Fase 1 — Fondazione (Sessione corrente) ✅
 
 - Setup monorepo e struttura progetto
-- PROJECT_SPEC e DNA
+- Documentazione (DNA)
 - OpenAPI + codegen
 - Schema DB (Drizzle)
 - Backend Express (route complete)

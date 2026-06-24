@@ -177,7 +177,7 @@ Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 3 (Production Readin
 
 ### Infrastruttura
 - Struttura monorepo (artifacts/stickers-app + artifacts/api-server)
-- PROJECT_SPEC completo (00-11)
+- Specifica funzionale completa (consolidata in DNA)
 - DNA folder con documentazione aggiornata (00-06)
 - OpenAPI spec per tutti gli endpoint
 - Codegen (React Query hooks + Zod schemas)
@@ -220,7 +220,7 @@ Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 3 (Production Readin
   - Un clic per cambiare utente senza logout manuale
 
 ### Deploy
-- `DNA/06_RENDER_DEPLOY.md` ✅ — guida completa per Render
+- `DNA/13_DEPLOY_RENDER.md` ✅ — guida completa per Render
 - Serving file statici React in produzione configurato in `api-server/src/app.ts`
 - BASE_PATH configurato via env var
 
