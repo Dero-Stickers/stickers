@@ -53,7 +53,7 @@ professionale, organizzata, scalabile, pulita e realmente utilizzabile.
 ### Struttura frontend (`artifacts/stickers-app/src/`)
 
 ```
-components/  → ui (shadcn), layout, album, match, dev (DevSwitcher)
+components/  → ui (shadcn), layout, album, match, dev (DevQuickSwitch)
 pages/       → user (Home, Album, Match, Profilo) e admin (Dashboard, …)
 services/    → layer servizi verso l'API
 contexts/    → React Context (Auth, …)
