@@ -4,8 +4,8 @@ services:
     runtime: node
     plan: free
     rootDir: .
-    buildCommand: npm install -g pnpm@10.26.1 && pnpm install --frozen-lockfile=false && pnpm --filter @workspace/stickers-app build && pnpm --filter @workspace/api-server build
-    startCommand: pnpm --filter @workspace/api-server run start
+    buildCommand: corepack pnpm install --frozen-lockfile=false && corepack pnpm --filter @workspace/stickers-app run build && corepack pnpm --filter @workspace/api-server run build
+    startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
     autoDeploy: true
     envVars:
       - key: NODE_ENV
