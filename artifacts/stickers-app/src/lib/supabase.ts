@@ -26,3 +26,11 @@ export function getSupabaseClient(): SupabaseClient | null {
   });
   return client;
 }
+
+/**
+ * True se il Realtime è configurato (env presenti). Usato per dimensionare il
+ * polling di fallback: raro quando il realtime è attivo, più frequente quando no.
+ */
+export function isRealtimeAvailable(): boolean {
+  return getSupabaseClient() !== null;
+}

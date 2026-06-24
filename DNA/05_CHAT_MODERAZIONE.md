@@ -49,7 +49,8 @@ Testo mostrato in chat:
   - `user:{recipientId}` → il destinatario aggiorna il badge non-letti
 - Il client (`lib/supabase.ts` + hook `useRealtimeSignal.ts`) si iscrive al topic e al
   segnale ricarica i dati **dall'API Express autenticata** (unico gatekeeper del contenuto).
-- **Fallback**: se le env Supabase mancano o il realtime non è disponibile, la chat resta
-  funzionante via polling lento (30s) + refetch al focus. Degradazione senza crash.
+- **Fallback adattivo**: con realtime attivo il polling è raro (30s, rete di sicurezza); se
+  le env Supabase mancano o il realtime non è disponibile, il polling diventa il meccanismo
+  primario e più frequente (8s) + refetch al focus. Degradazione senza crash.
 - Broadcast lato server con `SUPABASE_SERVICE_ROLE_KEY` (mai esposta al client); il client
   usa solo `VITE_SUPABASE_ANON_KEY`.

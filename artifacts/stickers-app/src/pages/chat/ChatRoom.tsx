@@ -15,6 +15,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRealtimeSignal } from "@/hooks/useRealtimeSignal";
+import { isRealtimeAvailable } from "@/lib/supabase";
 
 export function ChatRoom() {
   const { chatId } = useParams<{ chatId: string }>();
@@ -33,9 +34,9 @@ export function ChatRoom() {
   const { data: messages, isLoading } = useGetChatMessages(chatIdNum, {
     query: {
       queryKey: getGetChatMessagesQueryKey(chatIdNum),
-      // Fallback lento: di norma è il segnale realtime ad aggiornare i messaggi;
-      // il polling a 30s e il refetch al focus sono solo reti di sicurezza.
-      refetchInterval: 30000,
+      // Fallback: col realtime attivo è raro (30s, solo rete di sicurezza);
+      // senza realtime fa da meccanismo primario, quindi più frequente (8s).
+      refetchInterval: isRealtimeAvailable() ? 30000 : 8000,
       refetchOnWindowFocus: true,
     },
   });
