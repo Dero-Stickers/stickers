@@ -1,6 +1,6 @@
 # Prompt Operativo — Prossima Sessione
 
-Incolla questo prompt in Replit Agent per continuare lo sviluppo:
+Incolla questo prompt nel tuo agente AI per continuare lo sviluppo:
 
 ---
 
@@ -20,5 +20,5 @@ Se hai dubbi su cosa toccare, ricorda i vincoli enterprise:
 - max 350 righe per file funzionali
 - non modificare UX/layout senza richiesta esplicita
 - non duplicare logiche (centralizza in `lib/` o `middlewares/`)
-- aggiorna sempre `replit.md`, `DNA/01_STATO_SVILUPPO.md`
+- aggiorna sempre `DNA/01_STATO_SVILUPPO.md`
 - a fine sessione: backup `.tar.gz` in `backups/` + `./deploy.sh "msg"`

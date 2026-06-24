@@ -4,7 +4,7 @@
 #   ./deploy.sh                       # messaggio commit auto-generato
 #   ./deploy.sh "il mio messaggio"    # messaggio commit personalizzato
 #
-# Richiede: GITHUB_TOKEN nelle env (già presente in Replit Secrets).
+# Richiede: GITHUB_TOKEN nelle env (presente nel file .env).
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ warn()  { echo -e "${YLW}⚠${NC} $*"; }
 fail()  { echo -e "${RED}✗${NC} $*" >&2; exit 1; }
 
 # 1. Controlli pre-volo
-[ -n "${GITHUB_TOKEN:-}" ] || fail "GITHUB_TOKEN non impostato. Aggiungilo nei Secrets."
+[ -n "${GITHUB_TOKEN:-}" ] || fail "GITHUB_TOKEN non impostato. Aggiungilo nel file .env."
 git rev-parse --git-dir >/dev/null 2>&1 || fail "Non sei dentro un repo git."
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -78,7 +78,7 @@ if [ -n "$WORKFLOW_CHANGES" ]; then
   echo "    1. Vai su https://github.com/settings/tokens"
   echo "    2. Modifica il token esistente (o creane uno nuovo)"
   echo "    3. Spunta lo scope 'workflow' (oltre a 'repo')"
-  echo "    4. Salva il nuovo token in Replit Secrets come GITHUB_TOKEN"
+  echo "    4. Salva il nuovo token come GITHUB_TOKEN nel file .env"
   echo "    5. Rilancia ./deploy.sh"
 fi
 

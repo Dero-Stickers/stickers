@@ -1,4 +1,4 @@
-# Sticker — Final Technical Specification for Replit Agent
+# Sticker — Final Technical Specification
 
 ## Project Objective
 
@@ -8,11 +8,11 @@ Sticker is a web app/PWA that allows users to manage, share, and exchange Panini
 
 The goal is not to create a simple draft, but to build a professional, organized, scalable, clean, and genuinely usable technical foundation.
 
-The first development session will use Replit Agent in Power Mode to build a complete user-side demo, a working admin foundation, realistic mock data, technical documentation, and a structure ready for future evolution.
+The first development session will build a complete user-side demo, a working admin foundation, realistic mock data, technical documentation, and a structure ready for future evolution.
 
-The app must be portable from the beginning, not locked to Replit, continueable in other development environments, and prepared for future deployment on Render.
+The app must be portable from the beginning, not locked to any single platform, continueable in other development environments, and prepared for future deployment on Render.
 
-## Required Working Method for Replit Agent
+## Required Working Method
 
 Work with technical autonomy.
 
@@ -319,7 +319,7 @@ When the user removes an album from their profile:
 - matches are recalculated without that album;
 - the match detail must no longer show stickers from that album;
 - the chat between two users must not be automatically deleted if other compatible albums remain between the same users;
-- if after removal there is no longer any valid match between those two users, the chat may be hidden, closed, or kept only as technical history, according to the cleanest solution chosen by Replit Agent.
+- if after removal there is no longer any valid match between those two users, the chat may be hidden, closed, or kept only as technical history, according to the cleanest solution chosen during development.
 
 ## Onboarding
 
@@ -549,7 +549,7 @@ The user must not lose premium rights if they change device or recover the profi
 
 Supabase will be the main future database.
 
-In the first phase on Replit, the app must work with mock/example data.
+In the first phase, the app must work with mock/example data.
 
 Mock data is used to build and test:
 - interface;
@@ -565,7 +565,7 @@ Mock data is used to build and test:
 
 Mocks must be temporary, separated, and easy to remove.
 
-During the first phase, Replit must prepare:
+During the first phase, the project must prepare:
 - complete database schema;
 - database documentation;
 - SQL script ready for Supabase SQL Editor;
@@ -867,7 +867,7 @@ Avoid where possible:
 
 ## Testing and Quality Control
 
-Replit Agent must actually test the app during development.
+The development process must include actually testing the app.
 
 Minimum user-side tests:
 - nickname/PIN/ZIP registration;
@@ -951,9 +951,9 @@ The final report must indicate:
 - which architecture was chosen;
 - how to proceed in the next step.
 
-The next operational prompt must be ready to paste into Replit.
+The next operational prompt must be ready to paste into the development agent.
 
-## Replit Agent Session Priorities
+## Development Session Priorities
 
 Top priorities:
 - correct technical foundation;

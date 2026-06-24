@@ -57,4 +57,4 @@ Deploy:    Render (futuro) — unico servizio frontend+backend
 - Il frontend viene buildato in `dist/public/` e servito dal backend Express
 - Un unico processo Node gestisce sia le API (`/api/*`) che il frontend statico
 - Variabili d'ambiente via `.env` (non hardcoded)
-- `SESSION_SECRET` già disponibile come secret Replit
+- `SESSION_SECRET` generato automaticamente come variabile d'ambiente

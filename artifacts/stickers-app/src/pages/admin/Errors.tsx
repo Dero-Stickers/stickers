@@ -122,7 +122,7 @@ export function AdminErrors() {
         toast({
           title: "Report copiato",
           description:
-            "Ora incollalo in ChatGPT, Codex o Replit Agent per farti aiutare.",
+            "Ora incollalo nel tuo assistente AI (es. ChatGPT o Codex) per farti aiutare.",
         });
       } catch {
         const w = window.open("", "_blank");

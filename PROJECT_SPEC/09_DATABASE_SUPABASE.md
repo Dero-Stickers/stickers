@@ -2,7 +2,7 @@
 
 ## Stack Database
 
-- **Sviluppo**: PostgreSQL su Replit (Drizzle ORM)
+- **Sviluppo**: PostgreSQL locale (Drizzle ORM)
 - **Futuro**: Supabase (PostgreSQL-compatible, drop-in replacement)
 
 ## Schema Principale

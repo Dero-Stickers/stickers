@@ -42,9 +42,11 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
+# Cache e cartelle temporanee locali
 .cache/
 .local/
+.config/
+.upm/
 
 # Asset di riferimento (immagini/screenshot caricati durante sviluppo, non usati nel codice)
 attached_assets/
@@ -58,3 +60,12 @@ output/
 # Backup tarball locali (creati da agente, non versionare)
 backups/
 *.tar.gz
+
+# Sicurezza — segreti e config locali (mai su GitHub)
+.env
+.env.*
+!.env.example
+.mcp.json
+.agent/
+# Regole operative scaricate da App Control (rigenerate a ogni sessione)
+CLAUDE.md

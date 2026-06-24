@@ -95,7 +95,7 @@ Vai su **Environment** del servizio Render e aggiungi:
 
 | Variabile | Valore | Note |
 |-----------|--------|------|
-| `CORS_ORIGINS` | `https://app1.example.com,https://app2.example.com` | Lista CSV di origini autorizzate aggiuntive (oltre a `*.replit.app`). Lascia vuota se l'app è raggiunta solo dal proprio dominio Render. |
+| `CORS_ORIGINS` | `https://app1.example.com,https://app2.example.com` | Lista CSV di origini autorizzate aggiuntive (oltre a `*.onrender.com`). Lascia vuota se l'app è raggiunta solo dal proprio dominio Render. |
 | `AUTH_SECRET` | *(alias di `SESSION_SECRET`)* | Solo per back-compat. Usa `SESSION_SECRET`. |
 
 ### Come trovare i valori Supabase

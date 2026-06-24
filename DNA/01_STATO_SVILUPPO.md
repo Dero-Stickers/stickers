@@ -69,7 +69,7 @@ Ultimo aggiornamento: 3 Maggio 2026 — Sessione 8 (Audit Enterprise + Modulariz
   `v1.<payload-base64url>.<HMAC-SHA256-base64url>`. Implementazione in
   `artifacts/api-server/src/lib/auth.ts` usando `crypto.createHmac` (zero
   dipendenze esterne) + `timingSafeEqual` per evitare timing attack. La chiave
-  di firma usa `SESSION_SECRET` (già presente come Replit Secret).
+  di firma usa `SESSION_SECRET` (generato automaticamente come variabile d'ambiente, es. su Render).
 - **Backward-compat legacy rimossa** ✅ — il vecchio decoder base64 era una
   vulnerabilità grave (qualunque utente poteva forgiare un token admin
   scrivendo `base64('{"userId":6,"isAdmin":true}')`). Rimosso completamente
@@ -82,8 +82,8 @@ Ultimo aggiornamento: 3 Maggio 2026 — Sessione 8 (Audit Enterprise + Modulariz
   costante, niente stretching) è stato sostituito sia nel server (`lib/auth.ts`)
   sia nel seed (`lib/db/src/seed.ts`). DB re-seedato con i nuovi hash.
 - **CORS lockdown** ✅ — `app.use(cors())` permissivo sostituito con allowlist:
-  `REPLIT_DOMAINS`, `REPLIT_DEV_DOMAIN`, `*.replit.app` (sempre), `*.replit.dev`
-  (solo dev), `localhost:*` (solo dev), più `CORS_ORIGINS` env var per origini
+  `RENDER_EXTERNAL_URL` + `*.onrender.com` (produzione), `localhost:*` e
+  `127.0.0.1:*` (solo dev), più `CORS_ORIGINS` env var per origini
   custom in produzione. Test: origin valido → 204 + ACAO header, origin non
   in allowlist → 200 senza ACAO (browser blocca, comportamento corretto).
 
@@ -130,7 +130,7 @@ Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 5 (E2E Testing + Ent
 
 ## Fix Sessione 5 — E2E Testing + Enterprise Cleanup ✅
 
-### Bug critici corretti (scoperti via Replit App Testing)
+### Bug critici corretti (scoperti via E2E testing)
 - **Auth race condition** ✅ — `AuthContext.tsx` ora idrata sincronamente da
   localStorage tramite `readInitialAuth()` chiamata nello stato iniziale.
   Le route protette vedono `isAuthenticated=true` al primo render, niente più
@@ -164,7 +164,7 @@ Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 5 (E2E Testing + Ent
   `options: "--search_path=public"` era sintassi sbagliata e causava
   `relation "users" does not exist`.
 - **Doppio DB allineato** ✅ — schema + seed pushati sia su Supabase (via
-  `SUPABASE_DATABASE_URL` Replit Secret) sia sul Replit PostgreSQL locale
+  `SUPABASE_DATABASE_URL`) sia su un PostgreSQL locale
   (`DATABASE_URL`, fallback dev).
 - **DB Setup workflow** rimosso dall'avvio automatico — manuale via
   `cd lib/db && pnpm push-force && pnpm seed`.
@@ -259,7 +259,7 @@ Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 3 (Production Readin
 ## In Progresso 🔄
 
 - Test navigazione completa su tutti i flussi post-fix
-- GitHub push (bloccato in sandbox Replit — richiede azione manuale o project task)
+- GitHub push operativo dal terminale locale; ogni push su `main` triggera il deploy su Render
 
 ## Da Fare (Prossime Sessioni) 📋
 
@@ -300,15 +300,14 @@ Ultimo aggiornamento precedente: 2 Maggio 2026 — Sessione 3 (Production Readin
 
 | Variabile | Dove | Note |
 |-----------|------|------|
-| `SUPABASE_DATABASE_URL` | Replit Secrets | Connessione DB Supabase (con SSL) |
-| `SUPABASE_ANON_KEY` | Replit Secrets | Chiave pubblica Supabase |
-| `GITHUB_TOKEN` | Replit Secrets | Push su github.com/Dero-Stickers/stickers |
-| `SUPABASE_URL` | Replit Env | https://kuigzaqaewgcosfhahkv.supabase.co |
+| `SUPABASE_DATABASE_URL` | Render / `.env` | Connessione DB Supabase (con SSL) |
+| `SUPABASE_ANON_KEY` | Render / `.env` | Chiave pubblica Supabase |
+| `GITHUB_TOKEN` | `.env` locale | Push su github.com/Dero-Stickers/stickers |
+| `SUPABASE_URL` | Render / `.env` | https://kuigzaqaewgcosfhahkv.supabase.co |
 
 ## Blocchi Aperti ⚠️
 
-- GitHub push: `git push` è bloccato nel sandbox Replit principale.
-  **Soluzione**: usare il progetto task di Replit o pushare manualmente dal terminale locale.
+- GitHub push: operativo dal terminale locale; ogni push su `main` triggera il deploy automatico su Render.
 - PIN hash: attualmente usa base64 + salt (dev). In produzione → usare bcrypt + JWT firmato.
 - Auth token: `base64(JSON{userId,isAdmin})` è forgiabile; non adatto a produzione.
   **Soluzione pianificata**: migrare a `jsonwebtoken` con secret env var.

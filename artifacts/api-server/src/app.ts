@@ -14,7 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Express = express();
 
-// Trust the first reverse proxy (Render, Replit) so req.ip resolves to the
+// Trust the first reverse proxy (Render) so req.ip resolves to the
 // real client IP from x-forwarded-for. Required for the auth rate limiter to
 // avoid bypass via header spoofing.
 app.set("trust proxy", 1);
@@ -46,28 +46,16 @@ function buildAllowedOrigins(): (string | RegExp)[] {
       origins.push(o);
     }
   }
-  const replitDomains = process.env["REPLIT_DOMAINS"];
-  if (replitDomains) {
-    for (const d of replitDomains.split(",").map((s) => s.trim()).filter(Boolean)) {
-      origins.push(`https://${d}`);
-    }
-  }
-  const devDomain = process.env["REPLIT_DEV_DOMAIN"];
-  if (devDomain) {
-    origins.push(`https://${devDomain}`);
-    origins.push(new RegExp(`^https://[a-z0-9-]+-\\d+\\.${devDomain.replace(/\./g, "\\.")}$`));
+  // Render expose automaticamente l'URL pubblico del servizio.
+  const renderUrl = process.env["RENDER_EXTERNAL_URL"];
+  if (renderUrl) {
+    origins.push(renderUrl.replace(/\/$/, ""));
   }
   if (process.env["NODE_ENV"] !== "production") {
     origins.push(/^https?:\/\/localhost(:\d+)?$/);
     origins.push(/^https?:\/\/127\.0\.0\.1(:\d+)?$/);
-    origins.push(/\.replit\.dev$/);
-    origins.push(/\.repl\.co$/);
-    origins.push(/\.janeway\.replit\.dev$/);
-    origins.push(/\.kirk\.replit\.dev$/);
-    origins.push(/\.picard\.replit\.dev$/);
-    origins.push(/\.replit\.app$/);
   } else {
-    origins.push(/\.replit\.app$/);
+    origins.push(/\.onrender\.com$/);
   }
   return origins;
 }
