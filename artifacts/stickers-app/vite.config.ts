@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
 const rawPort = process.env.PORT;
@@ -30,6 +31,46 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    VitePWA({
+      registerType: "autoUpdate",
+      injectRegister: "auto",
+      // Riusa il manifest statico esistente in public/manifest.webmanifest
+      // (già linkato in index.html). NON generarne un secondo.
+      manifest: false,
+      workbox: {
+        // Precache degli asset statici buildati. index.html serve da app-shell.
+        globPatterns: ["**/*.{js,css,html,webp,png,svg,ico,woff2}"],
+        navigateFallback: "index.html",
+        // Le richieste alle API NON devono mai cadere sull'app-shell offline.
+        navigateFallbackDenylist: [/^\/api/],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        // Bundle React+Radix può superare il default di 2 MiB.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // Runtime caching SOLO per i font Google (cross-origin). Nessuna
+        // regola intercetta /api: il contenuto resta sempre dalla rete.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.origin === "https://fonts.googleapis.com",
+            handler: "StaleWhileRevalidate",
+            options: { cacheName: "google-fonts-stylesheets" },
+          },
+          {
+            urlPattern: ({ url }) => url.origin === "https://fonts.gstatic.com",
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-webfonts",
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
+      devOptions: {
+        // Niente service worker durante lo sviluppo (evita cache fastidiose).
+        enabled: false,
+      },
+    }),
   ],
   resolve: {
     alias: {

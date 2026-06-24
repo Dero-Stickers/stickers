@@ -18,6 +18,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
   - build via **corepack** (`corepack pnpm …`), start con **node diretto** sul bundle
 - Supabase operativo: **11 tabelle**, indici integri, dati di test (6 utenti, 4 album, 120 figurine)
 - Keep-alive Supabase: `SELECT 1` periodico + GitHub Action `keepalive.yml`
+- **CI GitHub Actions** (`ci.yml`): typecheck + build su ogni push/PR su `main` (nessun deploy, zero costi)
 
 ### Backend (api-server)
 - Express 5 + pino. Route: auth, albums, stickers, matches, chats, admin, settings, demo, error-reports, health
@@ -29,12 +30,12 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - In produzione serve anche il frontend statico (+ fallback SPA)
 
 ### Frontend (stickers-app)
-- **User**: login/registrazione (nickname, PIN, CAP, domanda sicurezza), codice recupero, Home, Album, Match (migliori/vicini + slider distanza), Chat (polling 5s + segnalazione), Profilo
+- **User**: login/registrazione (nickname, PIN, CAP, domanda sicurezza), codice recupero, Home, Album, Match (migliori/vicini + slider distanza), Chat (**realtime** via Supabase Broadcast, fallback polling 30s, + segnalazione), Profilo
 - **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Premium/Demo, Impostazioni, Segnalazioni errori
 - **Interruttore globale Premium/Demo** (admin → Premium/Demo): setting `premium_demo_enabled` in `app_settings`. Se OFF, l'app funziona come se Premium/Demo non esistesse (accesso pieno, niente blocco chat/scadenza demo/etichette). Flag esposto nel profilo (`UserProfile.premiumDemoEnabled`); gate backend in `chats.requirePremium`. Default ON.
 - Lazy loading route (bundle iniziale ~152 KB gzip), ErrorBoundary
-- PWA mobile-first: manifest, icone, splash, safe-area (icone PNG ottimizzate con pngquant, ~−50% peso senza perdita visibile; logo `.webp`)
-- `DevQuickSwitch` — pulsante tondo (mostra **U** in vista utente, **A** in admin), colore navy `#1a2d45`, fisso in alto a sinistra, cambia vista in un clic. Solo `import.meta.env.DEV` (fuori dal bundle di produzione). ⚠️ Strumento di sviluppo: **da rimuovere a fine sviluppo** ed **escluso da analisi/valutazioni di sicurezza**.
+- PWA mobile-first: manifest, icone, splash, safe-area (icone PNG ottimizzate con pngquant, ~−50% peso senza perdita visibile; logo `.webp`). **Service worker** via `vite-plugin-pwa` (registerType autoUpdate): precache dell'app-shell, **mai** in cache le `/api`, runtime cache solo font Google → app **installabile e con caricamento offline**. Manifest e `index.html` con `theme-color` uniformato (`#9DC9E8`).
+- `DevQuickSwitch` — pulsante tondo (mostra **U** in vista utente, **A** in admin), colore navy `#1a2d45`, fisso in alto a sinistra, cambia vista in un clic (login automatico con account demo, **senza autenticazione manuale**). **Sempre visibile, anche in produzione/deploy** (scelta demo intenzionale). ⚠️ Strumento, non feature: **escluso da analisi/valutazioni di sicurezza**; al passaggio a utenti reali va rimosso da `App.tsx` e va cambiato il PIN admin.
 
 ### Qualità
 - `pnpm run typecheck` → **0 errori**; file funzionali ≤ 350 righe (eccezioni documentate: `routes/auth.ts`, `pages/Profile.tsx`, generati orval)
@@ -44,7 +45,8 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 ## Da fare
 
 ### Alta priorità
-- [ ] Service worker PWA completo + test iOS Safari / Android Chrome
+- [ ] Test PWA installata su iOS Safari / Android Chrome reali (service worker già attivo)
+- [ ] Attivare il realtime in produzione: aggiungere su Render `SUPABASE_SERVICE_ROLE_KEY` (backend) e `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (build frontend). Senza queste, la chat resta in fallback polling 30s.
 - [ ] Onboarding interattivo (ora mostra un toast placeholder)
 - [ ] Upload copertina album (endpoint presente, manca UI admin)
 
@@ -78,6 +80,8 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 | Variabile | Dove |
 |-----------|------|
 | `SUPABASE_DATABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_URL` | Render + `.env` locale |
+| `SUPABASE_SERVICE_ROLE_KEY` (broadcast realtime, backend) | `.env` locale — **da aggiungere su Render** |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (realtime, build frontend) | `.env` locale — **da aggiungere su Render** |
 | `SESSION_SECRET` | Render (auto) + `.env` locale |
 | `GITHUB_TOKEN`, `RENDER_API_KEY` | `.env` locale |
 

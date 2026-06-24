@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { RequestHandler } from "express";
 import { eq, and, or, desc, sql } from "drizzle-orm";
 import { getSession } from "../middlewares/auth";
+import { broadcast } from "../lib/realtime";
 
 const router = Router();
 
@@ -222,6 +223,12 @@ const sendMessage: RequestHandler = async (req, res) => {
 
     const [msg] = await db.insert(messagesTable).values({ chatId, senderId: session.userId, text: text.trim() }).returning();
     const [u] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+
+    // Segnale realtime (fire-and-forget, nessun contenuto): aggiorna la stanza
+    // aperta e il badge non-letti del destinatario. Il polling resta da fallback.
+    const recipientId = chat.user1Id === session.userId ? chat.user2Id : chat.user1Id;
+    broadcast(`chat:${chatId}`, { chatId });
+    broadcast(`user:${recipientId}`, { chatId });
 
     res.status(201).json({ id: msg.id, chatId: msg.chatId, senderId: msg.senderId, senderNickname: u.nickname, text: msg.text, isRead: msg.isRead, createdAt: msg.createdAt.toISOString() });
   } catch (err) {

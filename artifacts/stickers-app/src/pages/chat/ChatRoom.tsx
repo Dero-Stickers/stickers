@@ -14,6 +14,7 @@ import {
   getGetChatMessagesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRealtimeSignal } from "@/hooks/useRealtimeSignal";
 
 export function ChatRoom() {
   const { chatId } = useParams<{ chatId: string }>();
@@ -32,9 +33,18 @@ export function ChatRoom() {
   const { data: messages, isLoading } = useGetChatMessages(chatIdNum, {
     query: {
       queryKey: getGetChatMessagesQueryKey(chatIdNum),
-      refetchInterval: 5000,
+      // Fallback lento: di norma è il segnale realtime ad aggiornare i messaggi;
+      // il polling a 30s e il refetch al focus sono solo reti di sicurezza.
+      refetchInterval: 30000,
+      refetchOnWindowFocus: true,
     },
   });
+
+  // Realtime: a ogni nuovo messaggio nella chat, ricarica subito dall'API.
+  useRealtimeSignal(
+    Number.isFinite(chatIdNum) ? `chat:${chatIdNum}` : null,
+    () => queryClient.invalidateQueries({ queryKey: getGetChatMessagesQueryKey(chatIdNum) }),
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

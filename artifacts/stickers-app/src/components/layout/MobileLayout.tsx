@@ -2,12 +2,24 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Home, BookOpen, Users, User } from "lucide-react";
 import { useListChats, getListChatsQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSignal } from "@/hooks/useRealtimeSignal";
 
 export function MobileLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
+  const { currentUser } = useAuth();
+  const queryClient = useQueryClient();
   const { data: chats } = useListChats({
     query: { staleTime: 15000, queryKey: getListChatsQueryKey() },
   });
+
+  // Realtime: a ogni nuovo messaggio ricevuto in una qualsiasi chat, aggiorna
+  // la lista (badge non-letti). Topic per-utente, segnale senza contenuto.
+  useRealtimeSignal(
+    currentUser ? `user:${currentUser.id}` : null,
+    () => queryClient.invalidateQueries({ queryKey: getListChatsQueryKey() }),
+  );
 
   const unreadCount = chats?.reduce((sum, c) => sum + ((c as any).unreadCount ?? 0), 0) ?? 0;
 

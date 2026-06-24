@@ -5,12 +5,14 @@
  * vista admin; in un clic passa da una all'altra. Nessun prompt, nessuna
  * autenticazione manuale: usa account di test predefiniti solo in dev.
  *
- * Attivo unicamente con `import.meta.env.DEV` → NON entra nel bundle di
- * produzione (in build viene eliminato dal tree-shaking).
+ * SEMPRE visibile, anche in produzione/deploy (scelta demo intenzionale).
+ * Nessuna autenticazione manuale: al clic fa login automatico con gli account
+ * demo predefiniti e passa istantaneamente da vista utente a vista admin.
  *
- * ⚠️ DA RIMUOVERE a fine sviluppo.
- * ⚠️ NON è una funzionalità di prodotto: va ESCLUSO da analisi, diagnosi e
- *    valutazioni di sicurezza.
+ * ⚠️ Strumento, NON una funzionalità di prodotto: va ESCLUSO da analisi,
+ *    diagnosi e valutazioni di sicurezza.
+ * ⚠️ Al passaggio a utenti reali: rimuovere questo componente da App.tsx e
+ *    cambiare il PIN dell'account admin.
  */
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -25,8 +27,7 @@ export function DevQuickSwitch() {
   const [, setLocation] = useLocation();
   const [busy, setBusy] = useState(false);
 
-  if (!import.meta.env.DEV) return null;
-
+  // Sempre attivo: nessun gate su ambiente o variabili — vedi commento in testa.
   const switchView = async () => {
     if (busy) return;
     setBusy(true);

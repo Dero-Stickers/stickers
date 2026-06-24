@@ -37,3 +37,19 @@ Testo mostrato in chat:
 - Campanella nella UI con badge
 - Badge = numero di chat con nuovi messaggi NON LETTI (non il totale messaggi)
 - Es. 3 chat con nuovi messaggi → badge mostra 3
+
+## Aggiornamento in tempo reale (Supabase Realtime — Broadcast)
+
+- I messaggi si aggiornano via **Supabase Realtime Broadcast**, non più con polling a 5s.
+- Architettura sicura: l'app usa auth custom (HMAC), non Supabase Auth → niente
+  `postgres_changes`. Il backend (`lib/realtime.ts`) invia un **segnale leggero**
+  (`event: refresh`, **nessun contenuto del messaggio**) su due topic, all'invio di
+  ogni messaggio in `routes/chats.ts`:
+  - `chat:{chatId}` → la stanza aperta ricarica i messaggi
+  - `user:{recipientId}` → il destinatario aggiorna il badge non-letti
+- Il client (`lib/supabase.ts` + hook `useRealtimeSignal.ts`) si iscrive al topic e al
+  segnale ricarica i dati **dall'API Express autenticata** (unico gatekeeper del contenuto).
+- **Fallback**: se le env Supabase mancano o il realtime non è disponibile, la chat resta
+  funzionante via polling lento (30s) + refetch al focus. Degradazione senza crash.
+- Broadcast lato server con `SUPABASE_SERVICE_ROLE_KEY` (mai esposta al client); il client
+  usa solo `VITE_SUPABASE_ANON_KEY`.
