@@ -71,8 +71,9 @@ hooks/ lib/ types/  → utilità condivise
    (`sticker_token` + `sticker_user`); al logout viene ripulito.
 4. **API type-safe end-to-end** — l'OpenAPI spec in `lib/api-spec` genera (Orval)
    gli hook React Query e gli schemi Zod, condivisi tra frontend e backend.
-5. **Dati reali su Supabase** — i vecchi mock (`src/mock/`) sono stati rimossi; i
-   servizi parlano con l'API, che usa Drizzle su Supabase.
+5. **Solo dati Supabase (standard enterprise)** — nessun mock né dato locale: il
+   frontend usa solo l'API, che legge/scrive su Supabase via Drizzle. I vecchi
+   mock (`src/mock/`) sono già stati rimossi.
 6. **Matching 1:1 multi-album** — calcolato lato backend con JOIN sul DB.
 7. **Chat** — polling ogni 5s (futuro: WebSocket o Supabase Realtime).
 8. **PWA** — manifest + service worker previsti (Fase 3 roadmap).

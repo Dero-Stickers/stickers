@@ -56,6 +56,7 @@ output/
 
 # Backup tarball locali (creati da agente, non versionare)
 backups/
+BACKUP/
 *.tar.gz
 
 # Sicurezza — segreti e config locali (mai su GitHub)
