@@ -33,11 +33,12 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Premium/Demo, Impostazioni, Segnalazioni errori
 - Lazy loading route (bundle iniziale ~152 KB gzip), ErrorBoundary
 - PWA mobile-first: manifest, icone, splash, safe-area
-- `DevQuickSwitch` — pulsante tondo **U/A** fisso in alto a sinistra, cambia in un clic vista User/Admin. Solo `import.meta.env.DEV` (fuori dal bundle di produzione). ⚠️ Strumento di sviluppo: **da rimuovere a fine sviluppo** ed **escluso da analisi/valutazioni di sicurezza**.
+- `DevQuickSwitch` — pulsante tondo (mostra **U** in vista utente, **A** in admin), colore navy `#1a2d45`, fisso in alto a sinistra, cambia vista in un clic. Solo `import.meta.env.DEV` (fuori dal bundle di produzione). ⚠️ Strumento di sviluppo: **da rimuovere a fine sviluppo** ed **escluso da analisi/valutazioni di sicurezza**.
 
 ### Qualità
 - `pnpm run typecheck` → **0 errori**; file funzionali ≤ 350 righe (eccezioni documentate: `routes/auth.ts`, `pages/Profile.tsx`, generati orval)
 - Sistema segnalazione errori con **sanitizer PII** (PIN/JWT/email/IP/path/codici)
+- E2E Playwright in `artifacts/stickers-app/` (config + Chromium pronti; suite di test in completamento)
 
 ## Da fare
 
