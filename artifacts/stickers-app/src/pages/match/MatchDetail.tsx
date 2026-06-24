@@ -20,7 +20,7 @@ export function MatchDetail() {
   const { userId } = useParams<{ userId: string }>();
   const matchUserId = parseInt(userId, 10);
   const [, setLocation] = useLocation();
-  const { currentUser, demoStatus } = useAuth();
+  const { currentUser, demoStatus, premiumDemoEnabled } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -54,7 +54,7 @@ export function MatchDetail() {
     },
   });
 
-  const canChat = demoStatus === "premium" || demoStatus === "demo_active";
+  const canChat = !premiumDemoEnabled || demoStatus === "premium" || demoStatus === "demo_active";
 
   const handleOpenChat = () => {
     if (canChat) {

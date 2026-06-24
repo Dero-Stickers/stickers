@@ -45,6 +45,12 @@ export const LoginResponse = zod.object({
     demoExpiresAt: zod.string().nullish(),
     exchangesCompleted: zod.number(),
     isAdmin: zod.boolean(),
+    premiumDemoEnabled: zod
+      .boolean()
+      .optional()
+      .describe(
+        "Se false, il sistema Premium\/Demo e disattivato globalmente (accesso pieno per tutti).",
+      ),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -78,6 +84,12 @@ export const RecoverAccountResponse = zod.object({
     demoExpiresAt: zod.string().nullish(),
     exchangesCompleted: zod.number(),
     isAdmin: zod.boolean(),
+    premiumDemoEnabled: zod
+      .boolean()
+      .optional()
+      .describe(
+        "Se false, il sistema Premium\/Demo e disattivato globalmente (accesso pieno per tutti).",
+      ),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -97,6 +109,12 @@ export const GetMeResponse = zod.object({
   demoExpiresAt: zod.string().nullish(),
   exchangesCompleted: zod.number(),
   isAdmin: zod.boolean(),
+  premiumDemoEnabled: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Se false, il sistema Premium\/Demo e disattivato globalmente (accesso pieno per tutti).",
+    ),
   createdAt: zod.string().optional(),
 });
 
@@ -665,6 +683,10 @@ export const AdminListReportsResponse = zod.array(AdminListReportsResponseItem);
 export const GetDemoConfigResponse = zod.object({
   demoHours: zod.number(),
   demoEnabled: zod.boolean(),
+  premiumDemoEnabled: zod
+    .boolean()
+    .optional()
+    .describe("Interruttore globale del sistema Premium\/Demo."),
 });
 
 /**
@@ -673,11 +695,19 @@ export const GetDemoConfigResponse = zod.object({
 export const UpdateDemoConfigBody = zod.object({
   demoHours: zod.number(),
   demoEnabled: zod.boolean(),
+  premiumDemoEnabled: zod
+    .boolean()
+    .optional()
+    .describe("Interruttore globale del sistema Premium\/Demo."),
 });
 
 export const UpdateDemoConfigResponse = zod.object({
   demoHours: zod.number(),
   demoEnabled: zod.boolean(),
+  premiumDemoEnabled: zod
+    .boolean()
+    .optional()
+    .describe("Interruttore globale del sistema Premium\/Demo."),
 });
 
 /**

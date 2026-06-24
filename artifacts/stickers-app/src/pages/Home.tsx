@@ -22,7 +22,7 @@ function DemoStatusBadge({ status, expiresAt }: { status: string | null; expires
 }
 
 export function Home() {
-  const { currentUser } = useAuth();
+  const { currentUser, premiumDemoEnabled } = useAuth();
 
   const { data: myAlbums, isLoading: loadingAlbums } = useGetUserAlbums();
   const { data: bestMatches, isLoading: loadingMatches } = useGetBestMatches();
@@ -42,7 +42,9 @@ export function Home() {
             <p className="text-sidebar-foreground/80 text-sm">
               Ciao, <span className="font-semibold text-sidebar-foreground">{currentUser?.nickname}</span>
             </p>
-            <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
+            {premiumDemoEnabled && (
+              <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
+            )}
           </div>
         </div>
       </div>

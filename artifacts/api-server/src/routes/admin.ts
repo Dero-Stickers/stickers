@@ -221,9 +221,11 @@ const getDemoConfig: RequestHandler = async (req, res) => {
     const { eq } = await import("drizzle-orm");
     const [hours] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_hours")).limit(1);
     const [enabled] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_enabled")).limit(1);
+    const [masterEnabled] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "premium_demo_enabled")).limit(1);
     res.json({
       demoHours: parseInt(hours?.value ?? "24", 10),
       demoEnabled: enabled?.value !== "false",
+      premiumDemoEnabled: masterEnabled?.value !== "false",
     });
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
@@ -250,12 +252,15 @@ const updateDemoConfig: RequestHandler = async (req, res) => {
 
     if (req.body.demoHours !== undefined) await upsert("demo_hours", String(req.body.demoHours));
     if (req.body.demoEnabled !== undefined) await upsert("demo_enabled", String(req.body.demoEnabled));
+    if (req.body.premiumDemoEnabled !== undefined) await upsert("premium_demo_enabled", String(req.body.premiumDemoEnabled));
 
     const [hours] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_hours")).limit(1);
     const [enabled] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_enabled")).limit(1);
+    const [masterEnabled] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "premium_demo_enabled")).limit(1);
     res.json({
       demoHours: parseInt(hours?.value ?? "24", 10),
       demoEnabled: enabled?.value !== "false",
+      premiumDemoEnabled: masterEnabled?.value !== "false",
     });
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });

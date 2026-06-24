@@ -17,6 +17,7 @@ import {
 } from "../lib/auth";
 import { z } from "zod";
 import { requireAuth, getSession } from "../middlewares/auth";
+import { isPremiumDemoEnabled } from "../lib/appState";
 
 const PIN_REGEX = /^\d{4,6}$/;
 
@@ -98,7 +99,8 @@ function computeDemoStatus(user: {
   return "demo_active";
 }
 
-function userPayload(user: any) {
+async function userPayload(user: any) {
+  const premiumDemoEnabled = await isPremiumDemoEnabled();
   return {
     id: user.id,
     nickname: user.nickname,
@@ -109,6 +111,7 @@ function userPayload(user: any) {
     demoExpiresAt: user.demoExpiresAt?.toISOString() ?? null,
     exchangesCompleted: user.exchangesCompleted,
     isAdmin: user.isAdmin,
+    premiumDemoEnabled,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -168,7 +171,7 @@ const register: RequestHandler = async (req, res) => {
       .returning();
 
     res.status(201).json({
-      user: userPayload(user),
+      user: await userPayload(user),
       token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
       recoveryCode,
     });
@@ -245,7 +248,7 @@ const login: RequestHandler = async (req, res) => {
     resetRateLimit(rateKey);
 
     res.json({
-      user: userPayload(user),
+      user: await userPayload(user),
       token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
     });
   } catch (err) {
@@ -303,7 +306,7 @@ const recover: RequestHandler = async (req, res) => {
     resetRateLimit(rateKey);
 
     res.json({
-      user: userPayload(user),
+      user: await userPayload(user),
       token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
     });
   } catch (err) {
@@ -335,7 +338,7 @@ const getMe: RequestHandler = async (req, res) => {
       return;
     }
 
-    res.json(userPayload(user));
+    res.json(await userPayload(user));
   } catch (err) {
     req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
@@ -637,7 +640,7 @@ const recoverAnswer: RequestHandler = async (req, res) => {
     resetRateLimit(rateKey);
 
     res.json({
-      user: userPayload(user),
+      user: await userPayload(user),
       token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
     });
   } catch (err) {
@@ -685,7 +688,7 @@ const changeNickname: RequestHandler = async (req, res) => {
 
     // body.newNickname is already normalized (lowercase) by NicknameSchema.
     if (body.newNickname === user.nickname.toLowerCase()) {
-      res.json({ user: userPayload(user) });
+      res.json({ user: await userPayload(user) });
       return;
     }
 
@@ -710,7 +713,7 @@ const changeNickname: RequestHandler = async (req, res) => {
         .set({ nickname: body.newNickname })
         .where(eq(usersTable.id, user.id))
         .returning();
-      res.json({ user: userPayload(updated) });
+      res.json({ user: await userPayload(updated) });
     } catch (e: any) {
       // Race-safe: catch unique-violation from DB-level (cap, nickname) index
       if (e?.code === "23505") {

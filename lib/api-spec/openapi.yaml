@@ -951,6 +951,9 @@ components:
           type: integer
         isAdmin:
           type: boolean
+        premiumDemoEnabled:
+          type: boolean
+          description: Se false, il sistema Premium/Demo e disattivato globalmente (accesso pieno per tutti).
         createdAt:
           type: string
       required: [id, nickname, cap, isPremium, demoStatus, exchangesCompleted, isAdmin]
@@ -1373,6 +1376,9 @@ components:
           type: integer
         demoEnabled:
           type: boolean
+        premiumDemoEnabled:
+          type: boolean
+          description: Interruttore globale del sistema Premium/Demo.
       required: [demoHours, demoEnabled]
 
     AppSettings:

@@ -11,6 +11,8 @@ interface AuthContextType {
   login: (user: UserProfile, token: string) => void;
   logout: () => void;
   demoStatus: UserProfileDemoStatus | null;
+  /** false solo se l'admin ha disattivato globalmente il sistema Premium/Demo. */
+  premiumDemoEnabled: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -109,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         demoStatus: currentUser?.demoStatus ?? null,
+        premiumDemoEnabled: currentUser?.premiumDemoEnabled !== false,
       }}
     >
       {children}

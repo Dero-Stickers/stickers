@@ -17,5 +17,7 @@ export interface UserProfile {
   demoExpiresAt?: string | null;
   exchangesCompleted: number;
   isAdmin: boolean;
+  /** Se false, il sistema Premium/Demo e disattivato globalmente (accesso pieno per tutti). */
+  premiumDemoEnabled?: boolean;
   createdAt?: string;
 }

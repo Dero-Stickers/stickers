@@ -9,4 +9,6 @@
 export interface DemoConfig {
   demoHours: number;
   demoEnabled: boolean;
+  /** Interruttore globale del sistema Premium/Demo. */
+  premiumDemoEnabled?: boolean;
 }

@@ -36,6 +36,39 @@ export function AdminPremium() {
     },
   });
 
+  // Interruttore globale del sistema Premium/Demo.
+  const [masterEnabled, setMasterEnabled] = useState(true);
+  useEffect(() => {
+    if (demoConfig) setMasterEnabled(demoConfig.premiumDemoEnabled !== false);
+  }, [demoConfig]);
+
+  const toggleMaster = useUpdateDemoConfig();
+
+  const handleToggleMaster = () => {
+    const next = !masterEnabled;
+    toggleMaster.mutate(
+      {
+        data: {
+          demoHours: parseInt(demoHours, 10) || 24,
+          demoEnabled: demoConfig?.demoEnabled ?? true,
+          premiumDemoEnabled: next,
+        },
+      },
+      {
+        onSuccess: () => {
+          setMasterEnabled(next);
+          queryClient.invalidateQueries({ queryKey: getGetDemoConfigQueryKey() });
+          toast({
+            title: next ? "Premium / Demo ATTIVATO" : "Premium / Demo DISATTIVATO",
+            description: next
+              ? "Il sistema è di nuovo attivo."
+              : "L'app funziona come se Premium e Demo non esistessero.",
+          });
+        },
+      },
+    );
+  };
+
   const demoUsers = users?.filter(u => u.demoStatus === "demo_active") ?? [];
   const premiumUsers = users?.filter(u => u.demoStatus === "premium") ?? [];
 
@@ -45,6 +78,40 @@ export function AdminPremium() {
         <h1 className="text-2xl font-bold text-foreground">Premium / Demo</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Gestisci abbonamenti e configurazione demo</p>
       </div>
+
+      <Card className={`shadow-sm border-2 ${masterEnabled ? "border-emerald-200" : "border-muted"}`}>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Crown className={`h-4 w-4 ${masterEnabled ? "text-emerald-600" : "text-muted-foreground"}`} />
+            Sistema Premium / Demo
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm text-foreground">
+                Stato:{" "}
+                <span className={`font-bold ${masterEnabled ? "text-emerald-600" : "text-muted-foreground"}`}>
+                  {loadingConfig ? "…" : masterEnabled ? "ATTIVO" : "DISATTIVATO"}
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Se disattivato, l'app funziona come se Premium e Demo non esistessero: accesso pieno per tutti,
+                nessun blocco chat, nessuna scadenza demo, nessuna etichetta.
+              </p>
+            </div>
+            <Button
+              onClick={handleToggleMaster}
+              disabled={toggleMaster.isPending || loadingConfig}
+              className={masterEnabled
+                ? "bg-muted text-foreground hover:bg-muted/80 shrink-0"
+                : "bg-emerald-600 text-white hover:bg-emerald-700 shrink-0"}
+            >
+              {masterEnabled ? "Disattiva" : "Attiva"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="shadow-sm">
         <CardHeader className="pb-3">

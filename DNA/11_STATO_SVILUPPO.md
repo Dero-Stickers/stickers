@@ -31,6 +31,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 ### Frontend (stickers-app)
 - **User**: login/registrazione (nickname, PIN, CAP, domanda sicurezza), codice recupero, Home, Album, Match (migliori/vicini + slider distanza), Chat (polling 5s + segnalazione), Profilo
 - **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Premium/Demo, Impostazioni, Segnalazioni errori
+- **Interruttore globale Premium/Demo** (admin → Premium/Demo): setting `premium_demo_enabled` in `app_settings`. Se OFF, l'app funziona come se Premium/Demo non esistesse (accesso pieno, niente blocco chat/scadenza demo/etichette). Flag esposto nel profilo (`UserProfile.premiumDemoEnabled`); gate backend in `chats.requirePremium`. Default ON.
 - Lazy loading route (bundle iniziale ~152 KB gzip), ErrorBoundary
 - PWA mobile-first: manifest, icone, splash, safe-area (icone PNG ottimizzate con pngquant, ~−50% peso senza perdita visibile; logo `.webp`)
 - `DevQuickSwitch` — pulsante tondo (mostra **U** in vista utente, **A** in admin), colore navy `#1a2d45`, fisso in alto a sinistra, cambia vista in un clic. Solo `import.meta.env.DEV` (fuori dal bundle di produzione). ⚠️ Strumento di sviluppo: **da rimuovere a fine sviluppo** ed **escluso da analisi/valutazioni di sicurezza**.

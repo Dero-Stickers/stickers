@@ -27,7 +27,7 @@ function DemoStatusBadge({ status, expiresAt }: { status: string | null; expires
 }
 
 export function Profile() {
-  const { currentUser, logout, login } = useAuth();
+  const { currentUser, logout, login, premiumDemoEnabled } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -204,9 +204,11 @@ export function Profile() {
             </p>
           </div>
         </div>
-        <div className="mt-3">
-          <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
-        </div>
+        {premiumDemoEnabled && (
+          <div className="mt-3">
+            <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
+          </div>
+        )}
       </div>
 
       <div className="px-4 pt-4 pb-6 space-y-4">

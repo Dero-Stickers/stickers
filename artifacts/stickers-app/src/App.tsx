@@ -103,7 +103,7 @@ function ProtectedUserRoute({
   component: React.FC;
   requirePremium?: boolean;
 }) {
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated, currentUser, premiumDemoEnabled } = useAuth();
   const redirect = !isAuthenticated
     ? "/login"
     : currentUser?.isAdmin
@@ -113,7 +113,7 @@ function ProtectedUserRoute({
 
   if (redirect) return null;
 
-  if (requirePremium && currentUser?.demoStatus === "demo_expired") {
+  if (requirePremium && premiumDemoEnabled && currentUser?.demoStatus === "demo_expired") {
     return (
       <MobileLayout>
         <DemoExpiredScreen />
@@ -129,7 +129,7 @@ function ProtectedUserRoute({
 }
 
 function ProtectedChatRoute({ component: Component }: { component: React.FC }) {
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated, currentUser, premiumDemoEnabled } = useAuth();
   const redirect = !isAuthenticated
     ? "/login"
     : currentUser?.isAdmin
@@ -139,7 +139,7 @@ function ProtectedChatRoute({ component: Component }: { component: React.FC }) {
 
   if (redirect) return null;
 
-  if (currentUser?.demoStatus === "demo_expired") {
+  if (premiumDemoEnabled && currentUser?.demoStatus === "demo_expired") {
     return (
       <MobileLayout>
         <DemoExpiredScreen />

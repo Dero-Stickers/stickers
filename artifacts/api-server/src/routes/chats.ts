@@ -8,6 +8,10 @@ const router = Router();
 const requireAuth = async (req: any, res: any) => getSession(req, res);
 
 async function requirePremium(userId: number): Promise<boolean> {
+  // Sistema Premium/Demo disattivato globalmente: accesso pieno per tutti.
+  const { isPremiumDemoEnabled } = await import("../lib/appState");
+  if (!(await isPremiumDemoEnabled())) return true;
+
   const { db } = await import("@workspace/db");
   const { usersTable } = await import("@workspace/db");
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
