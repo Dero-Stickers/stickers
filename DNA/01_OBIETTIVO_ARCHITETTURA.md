@@ -36,8 +36,7 @@ professionale, organizzata, scalabile, pulita e realmente utilizzabile.
 /
 ├── artifacts/
 │   ├── stickers-app/     ← Frontend React+Vite (user app + pannello admin)
-│   ├── api-server/       ← Backend Express (API + serving statico in prod)
-│   └── mockup-sandbox/   ← Tool di sviluppo: anteprima componenti UI
+│   └── api-server/       ← Backend Express (API + serving statico in prod)
 ├── lib/
 │   ├── api-spec/         ← OpenAPI spec (fonte di verità API) + config Orval
 │   ├── api-client-react/ ← Hook React Query generati
@@ -45,7 +44,7 @@ professionale, organizzata, scalabile, pulita e realmente utilizzabile.
 │   └── db/               ← Schema Drizzle, client DB, seed
 ├── DNA/                  ← Documentazione viva (spec + stato + operatività)
 ├── scripts/              ← Script di utilità
-├── backups/              ← Backup .tar.gz locali (non versionati)
+├── BACKUP/               ← Backup locali compressi (non versionati, vedi DNA 14)
 ├── render.yaml           ← Configurazione deploy Render
 └── deploy.sh             ← Commit + push su main (= deploy)
 ```

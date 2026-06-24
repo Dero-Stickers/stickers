@@ -13,7 +13,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 ## Fatto
 
 ### Infrastruttura & deploy
-- Monorepo: `artifacts/{stickers-app, api-server, mockup-sandbox}` + `lib/{api-spec, api-client-react, api-zod, db}`
+- Monorepo: `artifacts/{stickers-app, api-server}` + `lib/{api-spec, api-client-react, api-zod, db}`
 - Deploy unico su Render (`stickers-matchbox`), **autoDeploy** su push `main`
   - build via **corepack** (`corepack pnpm …`), start con **node diretto** sul bundle
 - Supabase operativo: **11 tabelle**, indici integri, dati di test (6 utenti, 4 album, 120 figurine)
@@ -32,7 +32,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - **User**: login/registrazione (nickname, PIN, CAP, domanda sicurezza), codice recupero, Home, Album, Match (migliori/vicini + slider distanza), Chat (polling 5s + segnalazione), Profilo
 - **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Premium/Demo, Impostazioni, Segnalazioni errori
 - Lazy loading route (bundle iniziale ~152 KB gzip), ErrorBoundary
-- PWA mobile-first: manifest, icone, splash, safe-area
+- PWA mobile-first: manifest, icone, splash, safe-area (icone PNG ottimizzate con pngquant, ~−50% peso senza perdita visibile; logo `.webp`)
 - `DevQuickSwitch` — pulsante tondo (mostra **U** in vista utente, **A** in admin), colore navy `#1a2d45`, fisso in alto a sinistra, cambia vista in un clic. Solo `import.meta.env.DEV` (fuori dal bundle di produzione). ⚠️ Strumento di sviluppo: **da rimuovere a fine sviluppo** ed **escluso da analisi/valutazioni di sicurezza**.
 
 ### Qualità
@@ -83,5 +83,5 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 > `.env`, `.agent/`, `CLAUDE.md` sono in `.gitignore` — mai committarli.
 
 ## Note operative
-- Fine sessione: aggiornare questo file; backup `.tar.gz` in `backups/` (vedi `14_BACKUP_PROCESSO.md`)
+- Fine sessione: aggiornare questo file; backup compresso in `BACKUP/` (vedi `14_BACKUP_PROCESSO.md`)
 - Deploy: `./deploy.sh "messaggio"` oppure `git push` su `main` (= deploy automatico su Render)
