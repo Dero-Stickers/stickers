@@ -19,7 +19,7 @@ import { dirname, resolve } from "node:path";
 import pg from "pg";
 
 type SeedSticker = { number: number; code: string; name: string; description: string | null };
-type SeedAlbum = { title: string; coverUrl: string | null; isPublished: boolean; stickers: SeedSticker[] };
+type SeedAlbum = { title: string; isPublished: boolean; stickers: SeedSticker[] };
 
 const connectionString = (process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL || "").trim();
 if (!connectionString) throw new Error("SUPABASE_DATABASE_URL o DATABASE_URL non impostato");
@@ -65,9 +65,9 @@ async function main() {
       await client.query("begin");
       try {
         const ins = await client.query(
-          `insert into albums (title, cover_url, total_stickers, is_published)
-           values ($1,$2,$3,$4) returning id`,
-          [a.title, a.coverUrl, a.stickers.length, a.isPublished],
+          `insert into albums (title, total_stickers, is_published)
+           values ($1,$2,$3) returning id`,
+          [a.title, a.stickers.length, a.isPublished],
         );
         const albumId = ins.rows[0].id;
         await insertStickers(client, albumId, a.stickers);
@@ -81,13 +81,10 @@ async function main() {
     } else {
       const albumId = found.rows[0].id;
       const added = await insertStickers(client, albumId, a.stickers);
-      // copertina solo se mancante; pubblicazione e conteggio riallineati
+      // pubblicazione e conteggio riallineati
       await client.query(
-        `update albums set cover_url = coalesce(cover_url, $2),
-                           is_published = true,
-                           total_stickers = $3
-         where id = $1`,
-        [albumId, a.coverUrl, a.stickers.length],
+        `update albums set is_published = true, total_stickers = $2 where id = $1`,
+        [albumId, a.stickers.length],
       );
       if (added > 0) { filled++; console.log(`[restore] "${a.title}": aggiunte ${added} figurine mancanti`); }
       else { ok++; }

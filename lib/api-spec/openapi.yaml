@@ -968,9 +968,6 @@ components:
           type: integer
         title:
           type: string
-        coverUrl:
-          type: string
-          nullable: true
         totalStickers:
           type: integer
         isPublished:
@@ -1012,8 +1009,6 @@ components:
       type: object
       properties:
         title:
-          type: string
-        coverUrl:
           type: string
         isPublished:
           type: boolean

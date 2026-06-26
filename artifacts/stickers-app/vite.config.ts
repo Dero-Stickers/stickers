@@ -67,6 +67,20 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Split dei "vendor" stabili in chunk separati: a ogni deploy il service
+        // worker ri-scarica solo il codice app (cambia spesso), mentre React/
+        // Radix/Query restano in cache (cambiano di rado) → update più leggeri.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (/[\\/](react|react-dom|scheduler)@/.test(id)) return "react";
+          if (id.includes("@tanstack")) return "query";
+          if (id.includes("@radix-ui")) return "radix";
+          return "vendor";
+        },
+      },
+    },
   },
   server: {
     port,

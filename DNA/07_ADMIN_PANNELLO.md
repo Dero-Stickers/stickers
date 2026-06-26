@@ -25,9 +25,8 @@
 - Stato generale app
 
 ### Album
-- Crea album (titolo, descrizione, copertina)
+- Crea album (solo titolo) — nessuna copertina/immagine (feature rimossa)
 - Modifica album
-- Gestione copertina
 - Pubblica/nascondi album
 
 ### Figurine

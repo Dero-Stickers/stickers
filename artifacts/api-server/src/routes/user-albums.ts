@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, sql, inArray } from "drizzle-orm";
 import { getSession } from "../middlewares/auth";
 
 const router = Router();
@@ -23,35 +23,53 @@ const getUserAlbums: RequestHandler = async (req, res) => {
       .where(eq(userAlbumsTable.userId, session.userId))
       .orderBy(asc(userAlbumsTable.addedAt));
 
-    const result = await Promise.all(
-      userAlbums.map(async ({ album, ua }) => {
-        const stickers = await db
-          .select()
+    // Conteggi possedute/doppie in UNA sola query aggregata (no N+1, no
+    // over-fetch): prima si scaricavano tutte le righe user_stickers per album
+    // solo per contarle in JS. Ora il DB raggruppa per (album, stato).
+    const albumIds = userAlbums.map(({ album }) => album.id);
+    const counts = albumIds.length
+      ? await db
+          .select({
+            albumId: userStickersTable.albumId,
+            state: userStickersTable.state,
+            n: sql<number>`count(*)::int`,
+          })
           .from(userStickersTable)
-          .where(and(eq(userStickersTable.userId, session.userId), eq(userStickersTable.albumId, album.id)));
+          .where(and(
+            eq(userStickersTable.userId, session.userId),
+            inArray(userStickersTable.albumId, albumIds),
+          ))
+          .groupBy(userStickersTable.albumId, userStickersTable.state)
+      : [];
 
-        const owned = stickers.filter(s => s.state === "posseduta").length;
-        const duplicates = stickers.filter(s => s.state === "doppia").length;
-        const missing = album.totalStickers - owned - duplicates;
-        const completionPercent = album.totalStickers > 0
-          ? Math.round(((owned + duplicates) / album.totalStickers) * 100)
-          : 0;
+    const countByAlbum = new Map<number, { owned: number; duplicates: number }>();
+    for (const c of counts) {
+      const e = countByAlbum.get(c.albumId) ?? { owned: 0, duplicates: 0 };
+      if (c.state === "posseduta") e.owned = c.n;
+      else if (c.state === "doppia") e.duplicates = c.n;
+      countByAlbum.set(c.albumId, e);
+    }
 
-        return {
-          id: album.id,
-          title: album.title,
-          coverUrl: album.coverUrl,
-          totalStickers: album.totalStickers,
-          isPublished: album.isPublished,
-          createdAt: album.createdAt.toISOString(),
-          owned,
-          missing: Math.max(0, missing),
-          duplicates,
-          completionPercent,
-          addedAt: ua.addedAt.toISOString(),
-        };
-      })
-    );
+    const result = userAlbums.map(({ album, ua }) => {
+      const { owned, duplicates } = countByAlbum.get(album.id) ?? { owned: 0, duplicates: 0 };
+      const missing = album.totalStickers - owned - duplicates;
+      const completionPercent = album.totalStickers > 0
+        ? Math.round(((owned + duplicates) / album.totalStickers) * 100)
+        : 0;
+
+      return {
+        id: album.id,
+        title: album.title,
+        totalStickers: album.totalStickers,
+        isPublished: album.isPublished,
+        createdAt: album.createdAt.toISOString(),
+        owned,
+        missing: Math.max(0, missing),
+        duplicates,
+        completionPercent,
+        addedAt: ua.addedAt.toISOString(),
+      };
+    });
 
     res.json(result);
   } catch (err) {

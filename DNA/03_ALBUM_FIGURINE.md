@@ -5,7 +5,6 @@
 | Campo | Note |
 |-------|------|
 | Titolo breve | Es. "Calciatori 2024-2025" |
-| Poster/copertina | URL immagine |
 | Lista figurine completa | Inserita dall'admin |
 | Numero figurina | Identificativo unico nell'album |
 | Nome/descrizione figurina | |

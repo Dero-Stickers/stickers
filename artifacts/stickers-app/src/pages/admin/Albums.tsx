@@ -1,6 +1,5 @@
-import { useState, useRef, type ChangeEvent } from "react";
-import { Plus, Edit, Eye, EyeOff, Star, Upload } from "lucide-react";
-import { optimizeImage } from "@/lib/optimize-image";
+import { useState } from "react";
+import { Plus, Edit, Eye, EyeOff, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,9 +16,8 @@ import {
 import type { Album } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlbumStickersManager } from "@/components/admin/AlbumStickersManager";
-import { AlbumCover } from "@/components/album/AlbumCover";
 
-const EMPTY_FORM = { title: "", totalStickers: "", coverUrl: "" };
+const EMPTY_FORM = { title: "", totalStickers: "" };
 // Chiave di cache DEDICATA all'admin: la lista admin (TUTTI gli album, anche
 // nascosti) non deve condividere cache con la vista utente (solo pubblicati),
 // altrimenti gli album nascosti spariscono anche dall'admin.
@@ -34,34 +32,6 @@ export function AdminAlbums() {
   const [editAlbum, setEditAlbum] = useState<Album | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [stickersAlbum, setStickersAlbum] = useState<Album | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  const handleCoverFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // consente di ricaricare lo stesso file
-    if (!file) return;
-    setUploadError(null);
-    setUploading(true);
-    try {
-      const blob = await optimizeImage(file, { maxSize: 600, quality: 0.82 });
-      const token = localStorage.getItem("sticker_token");
-      const res = await fetch("/api/albums/cover", {
-        method: "POST",
-        headers: { "Content-Type": blob.type || "image/webp", Authorization: `Bearer ${token ?? ""}` },
-        body: blob,
-      });
-      if (!res.ok) throw new Error("upload");
-      const { url } = await res.json();
-      setForm(p => ({ ...p, coverUrl: url }));
-    } catch {
-      setUploadError("Caricamento non riuscito. Riprova con un'altra immagine.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ADMIN_ALBUMS_KEY });
 
   const createAlbum = useCreateAlbum({
@@ -100,7 +70,6 @@ export function AdminAlbums() {
     if (!form.title.trim()) return;
     const data = {
       title: form.title,
-      coverUrl: form.coverUrl.trim() || undefined,
     };
     if (editAlbum) {
       updateAlbum.mutate({ albumId: editAlbum.id, data });
@@ -111,7 +80,7 @@ export function AdminAlbums() {
 
   const openEdit = (album: Album) => {
     setEditAlbum(album);
-    setForm({ title: album.title, totalStickers: String(album.totalStickers), coverUrl: album.coverUrl ?? "" });
+    setForm({ title: album.title, totalStickers: String(album.totalStickers) });
     setShowCreate(true);
   };
 
@@ -154,10 +123,7 @@ export function AdminAlbums() {
                 {(albums ?? []).map((album, i) => (
                   <tr key={album.id} className={`${i < (albums?.length ?? 0) - 1 ? "border-b border-border/50" : ""}`}>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <AlbumCover url={album.coverUrl} title={album.title} className="h-9 w-9" />
-                        <p className="font-medium text-sm text-foreground">{album.title}</p>
-                      </div>
+                      <p className="font-medium text-sm text-foreground">{album.title}</p>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <span className="text-sm text-foreground">{album.totalStickers}</span>
@@ -216,34 +182,6 @@ export function AdminAlbums() {
             <div>
               <label className="text-sm font-medium text-foreground">Titolo</label>
               <Input className="mt-1" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Es. Calciatori 2025-2026" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Copertina</label>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleCoverFile} />
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={uploading} onClick={() => fileRef.current?.click()}>
-                  <Upload className="h-3.5 w-3.5" />
-                  {uploading ? "Carico…" : "Carica immagine"}
-                </Button>
-                {form.coverUrl.trim() && !uploading && (
-                  <Button type="button" variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setForm(p => ({ ...p, coverUrl: "" }))}>
-                    Rimuovi
-                  </Button>
-                )}
-              </div>
-              <Input className="mt-2" value={form.coverUrl} onChange={e => setForm(p => ({ ...p, coverUrl: e.target.value }))} placeholder="…oppure incolla il link di un'immagine" />
-              {uploadError && <p className="mt-1 text-xs text-destructive">{uploadError}</p>}
-              {form.coverUrl.trim() && (
-                <div className="mt-2 flex items-center gap-2">
-                  <img
-                    src={form.coverUrl}
-                    alt="Anteprima copertina"
-                    className="h-16 w-16 rounded-md object-cover border border-border"
-                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                  />
-                  <span className="text-xs text-muted-foreground">Anteprima</span>
-                </div>
-              )}
             </div>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => { setShowCreate(false); setEditAlbum(null); }}>Annulla</Button>

@@ -27,12 +27,11 @@ async function main() {
   await client.connect();
 
   const albums = (await client.query(
-    `select id, title, cover_url, is_published from albums order by title desc`,
+    `select id, title, is_published from albums order by title desc`,
   )).rows;
 
   const out: {
     title: string;
-    coverUrl: string | null;
     isPublished: boolean;
     stickers: { number: number; code: string; name: string; description: string | null }[];
   }[] = [];
@@ -44,7 +43,6 @@ async function main() {
     )).rows;
     out.push({
       title: a.title,
-      coverUrl: a.cover_url,
       isPublished: a.is_published,
       stickers: stickers.map(s => ({
         number: s.number,

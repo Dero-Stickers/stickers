@@ -9,7 +9,6 @@
 export interface Album {
   id: number;
   title: string;
-  coverUrl?: string | null;
   totalStickers: number;
   isPublished: boolean;
   createdAt?: string;

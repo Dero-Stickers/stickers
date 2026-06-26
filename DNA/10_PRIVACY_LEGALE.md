@@ -6,6 +6,17 @@
 Gli album e le figurine sono cataloghi manuali creati dall'admin.
 Prima della pubblicazione ufficiale, verificare con un consulente legale.
 
+### Nessun artwork di terzi (scelta consolidata)
+
+Per ridurre il rischio copyright/marchio, l'app **non riproduce immagini, copertine o loghi**
+di terzi. Si gestiscono **solo dati testuali fattuali** (numero, nome, squadra) e titoli album
+come testo. Copertine rimosse da UI, DB (`cover_url` NULL) e Storage (bucket svuotato); upload
+copertina in admin rimosso. Vedi `09_DATABASE.md`.
+
+**Disclaimer non-affiliazione** visibile in-app: footer fisso in `LegalPage` (Note legali) —
+"app indipendente, non affiliata né approvata da Panini S.p.A.; marchi dei rispettivi titolari,
+uso a soli fini descrittivi". Il logo dell'app è proprietario (non Panini) e resta.
+
 ## Pagine Legali (IMPLEMENTATE)
 
 Privacy Policy e Termini d'uso sono **live**, unica fonte = DB `app_settings`

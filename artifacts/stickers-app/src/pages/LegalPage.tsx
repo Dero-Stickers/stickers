@@ -87,6 +87,13 @@ export function LegalPage() {
             </section>
           ))
         )}
+
+        <div className="border-t border-border pt-4 text-xs text-muted-foreground leading-relaxed">
+          App indipendente, non affiliata né approvata da Panini S.p.A. o da altri editori.
+          Non riproduciamo immagini, copertine o loghi di terzi: gestiamo solo dati testuali
+          (numero, nome, squadra) a fini di collezione e scambio. I marchi e i nomi citati
+          appartengono ai rispettivi titolari e sono usati a soli fini descrittivi.
+        </div>
       </div>
     </div>
   );

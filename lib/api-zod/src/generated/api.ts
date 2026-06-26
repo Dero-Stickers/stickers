@@ -135,7 +135,6 @@ export const GetRecoveryCodeResponse = zod.object({
 export const ListAlbumsResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
-  coverUrl: zod.string().nullish(),
   totalStickers: zod.number(),
   isPublished: zod.boolean(),
   createdAt: zod.string().optional(),
@@ -147,7 +146,6 @@ export const ListAlbumsResponse = zod.array(ListAlbumsResponseItem);
  */
 export const CreateAlbumBody = zod.object({
   title: zod.string(),
-  coverUrl: zod.string().optional(),
   isPublished: zod.boolean().optional(),
 });
 
@@ -162,7 +160,6 @@ export const GetAlbumResponse = zod
   .object({
     id: zod.number(),
     title: zod.string(),
-    coverUrl: zod.string().nullish(),
     totalStickers: zod.number(),
     isPublished: zod.boolean(),
     createdAt: zod.string().optional(),
@@ -191,14 +188,12 @@ export const UpdateAlbumParams = zod.object({
 
 export const UpdateAlbumBody = zod.object({
   title: zod.string(),
-  coverUrl: zod.string().optional(),
   isPublished: zod.boolean().optional(),
 });
 
 export const UpdateAlbumResponse = zod.object({
   id: zod.number(),
   title: zod.string(),
-  coverUrl: zod.string().nullish(),
   totalStickers: zod.number(),
   isPublished: zod.boolean(),
   createdAt: zod.string().optional(),
@@ -218,7 +213,6 @@ export const ToggleAlbumPublishBody = zod.object({
 export const ToggleAlbumPublishResponse = zod.object({
   id: zod.number(),
   title: zod.string(),
-  coverUrl: zod.string().nullish(),
   totalStickers: zod.number(),
   isPublished: zod.boolean(),
   createdAt: zod.string().optional(),
@@ -296,7 +290,6 @@ export const GetUserAlbumsResponseItem = zod
   .object({
     id: zod.number(),
     title: zod.string(),
-    coverUrl: zod.string().nullish(),
     totalStickers: zod.number(),
     isPublished: zod.boolean(),
     createdAt: zod.string().optional(),

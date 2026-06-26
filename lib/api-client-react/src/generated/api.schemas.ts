@@ -80,7 +80,6 @@ export interface RecoveryCodeResponse {
 export interface Album {
   id: number;
   title: string;
-  coverUrl?: string | null;
   totalStickers: number;
   isPublished: boolean;
   createdAt?: string;
@@ -101,7 +100,6 @@ export type AlbumWithStickers = Album & {
 
 export interface CreateAlbumBody {
   title: string;
-  coverUrl?: string;
   isPublished?: boolean;
 }
 

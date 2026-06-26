@@ -16,7 +16,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - Monorepo: `artifacts/{stickers-app, api-server}` + `lib/{api-spec, api-client-react, api-zod, db}`
 - Deploy unico su Render (`stickers-matchbox`), **autoDeploy** su push `main`
   - build via **corepack** (`corepack pnpm …`), start con **node diretto** sul bundle
-- Supabase operativo: **11 tabelle**, indici integri. Dati **reali** caricati: **23 album Calciatori (2003-04→2025-26), 17.581 figurine** (import Panini via Playwright; pipeline in [[import-panini-collections]]); utenti: Dero975 (test) + admin. Copertine su Storage `album-covers`. DB a Londra (UK), hosting Render a Francoforte (UE)
+- Supabase operativo: **11 tabelle**, indici integri. Dati **reali** caricati: **23 album Calciatori (2003-04→2025-26), 17.581 figurine** (import Panini via Playwright; pipeline in [[import-panini-collections]]); utenti: Dero975 (test) + admin. **Nessuna copertina/artwork** (feature rimossa, scelta legale — vedi `09_DATABASE.md`). DB a Londra (UK), hosting Render a Francoforte (UE)
 - Keep-alive Supabase: `SELECT 1` periodico + GitHub Action `keepalive.yml`
 - **CI GitHub Actions** (`ci.yml`): typecheck + build su ogni push/PR su `main` (nessun deploy, zero costi)
 
@@ -45,7 +45,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - **RLS attiva su tutte le 11 tabelle** (deny-by-default; backend `postgres` bypassa, anon bloccato via PostgREST). Vedi `09_DATABASE.md` → Sicurezza accessi.
 - **Testi legali 100% da DB**: privacy/termini letti da `app_settings` (modificabili da admin); nessun testo legale hardcoded nel frontend (`LegalPage` mostra solo un messaggio neutro se il DB è vuoto).
 - **Banner cookie minimale** (`CookieBanner`): informativa una tantum (solo memoria tecnica, no profilazione) + link privacy; scelta salvata in localStorage.
-- **Copertina album con upload da dispositivo** (admin): immagine ottimizzata nel browser (WebP, resize) e caricata su Supabase Storage `album-covers`; nel DB solo l'URL. Vedi `09_DATABASE.md` → Storage.
+- **Copertine album RIMOSSE** (scelta legale/IP): nessun artwork di terzi. Feature eliminata da UI, API, schema, Storage e seed; card solo testo. Vedi `09_DATABASE.md` e `10_PRIVACY_LEGALE.md`.
 - **Figurine con `code` + ordine**: ogni figurina ha il codice esatto della raccolta (`001`, `UPD01`, anche alfanumerico) in `stickers.code`; `stickers.number` è la posizione/ordine. L'import (Inserimento rapido) preserva codice e ordine; l'app mostra il `code`.
 
 ## Da fare
@@ -54,7 +54,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - [ ] Test PWA installata su iOS Safari / Android Chrome reali (service worker già attivo)
 - [ ] Attivare il realtime in produzione: aggiungere su Render `SUPABASE_SERVICE_ROLE_KEY` (backend) e `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (build frontend). Senza queste, la chat resta in fallback polling 30s.
 - [ ] Onboarding interattivo (ora mostra un toast placeholder)
-- [ ] Upload copertina album (endpoint presente, manca UI admin)
+- [ ] Post-deploy: `ALTER TABLE albums DROP COLUMN cover_url` (colonna già azzerata; vedi `09_DATABASE.md`)
 
 ### Media priorità
 - [ ] Notifiche push

@@ -1,7 +1,6 @@
-import express, { Router } from "express";
+import { Router } from "express";
 import type { RequestHandler } from "express";
 import { and, eq } from "drizzle-orm";
-import { randomUUID } from "node:crypto";
 import { getSession, requireAdmin } from "../middlewares/auth";
 import { verifyToken } from "../lib/auth";
 
@@ -24,7 +23,7 @@ const listAlbums: RequestHandler = async (req, res) => {
       ? await db.select().from(albumsTable)
       : await db.select().from(albumsTable).where(eq(albumsTable.isPublished, true));
     res.json(albums.map(a => ({
-      id: a.id, title: a.title, coverUrl: a.coverUrl,
+      id: a.id, title: a.title,
       totalStickers: a.totalStickers, isPublished: a.isPublished, createdAt: a.createdAt.toISOString(),
     })));
   } catch (err) {
@@ -42,10 +41,9 @@ const createAlbum: RequestHandler = async (req, res) => {
     const { albumsTable } = await import("@workspace/db");
     const [album] = await db.insert(albumsTable).values({
       title: req.body.title,
-      coverUrl: req.body.coverUrl ?? null,
       isPublished: req.body.isPublished ?? false,
     }).returning();
-    res.status(201).json({ id: album.id, title: album.title, coverUrl: album.coverUrl, totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString() });
+    res.status(201).json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString() });
   } catch (err) {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
@@ -61,7 +59,7 @@ const getAlbum: RequestHandler = async (req, res) => {
     if (!album) { res.status(404).json({ error: "NOT_FOUND" }); return; }
     const stickers = await db.select().from(stickersTable).where(eq(stickersTable.albumId, albumId));
     res.json({
-      id: album.id, title: album.title, coverUrl: album.coverUrl,
+      id: album.id, title: album.title,
       totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString(),
       stickers: stickers.map(s => ({ id: s.id, albumId: s.albumId, number: s.number, code: s.code, name: s.name, description: s.description })),
     });
@@ -78,11 +76,10 @@ const updateAlbum: RequestHandler = async (req, res) => {
     const { albumsTable } = await import("@workspace/db");
     const [album] = await db.update(albumsTable).set({
       title: req.body.title,
-      coverUrl: req.body.coverUrl ?? null,
       isPublished: req.body.isPublished ?? undefined,
     }).where(eq(albumsTable.id, albumId)).returning();
     if (!album) { res.status(404).json({ error: "NOT_FOUND" }); return; }
-    res.json({ id: album.id, title: album.title, coverUrl: album.coverUrl, totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString() });
+    res.json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString() });
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
@@ -96,7 +93,7 @@ const togglePublish: RequestHandler = async (req, res) => {
     const { albumsTable } = await import("@workspace/db");
     const [album] = await db.update(albumsTable).set({ isPublished: req.body.isPublished }).where(eq(albumsTable.id, albumId)).returning();
     if (!album) { res.status(404).json({ error: "NOT_FOUND" }); return; }
-    res.json({ id: album.id, title: album.title, coverUrl: album.coverUrl, totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString() });
+    res.json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString() });
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
@@ -194,57 +191,8 @@ const updateSticker: RequestHandler = async (req, res) => {
   }
 };
 
-// POST /api/albums/cover — admin: carica una copertina (immagine già ottimizzata
-// dal client) su Supabase Storage e restituisce l'URL pubblico. Nel DB salviamo
-// solo l'URL: lo storage tiene i file, il DB resta leggero.
-const COVER_TYPES: Record<string, string> = {
-  "image/webp": "webp",
-  "image/jpeg": "jpg",
-  "image/png": "png",
-};
-
-const uploadCover: RequestHandler = async (req, res) => {
-  try {
-    const supabaseUrl = process.env["SUPABASE_URL"]?.trim();
-    const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"]?.trim();
-    if (!supabaseUrl || !serviceKey) {
-      res.status(503).json({ error: "STORAGE_NOT_CONFIGURED" });
-      return;
-    }
-    const contentType = (req.headers["content-type"] ?? "").split(";")[0]!.trim();
-    const ext = COVER_TYPES[contentType];
-    if (!ext) { res.status(415).json({ error: "UNSUPPORTED_MEDIA_TYPE" }); return; }
-    const body = req.body;
-    if (!Buffer.isBuffer(body) || body.length === 0) {
-      res.status(400).json({ error: "EMPTY_BODY" }); return;
-    }
-
-    const filename = `${randomUUID()}.${ext}`;
-    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/album-covers/${filename}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${serviceKey}`,
-        apikey: serviceKey,
-        "Content-Type": contentType,
-        "cache-control": "max-age=31536000, immutable",
-      },
-      body,
-    });
-    if (!uploadRes.ok) {
-      req.log?.error({ status: uploadRes.status }, "cover upload failed");
-      res.status(502).json({ error: "UPLOAD_FAILED" });
-      return;
-    }
-    res.status(201).json({ url: `${supabaseUrl}/storage/v1/object/public/album-covers/${filename}` });
-  } catch (err) {
-    req.log?.error(err);
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
 router.get("/", listAlbums);
 // Admin-only catalog mutations
-router.post("/cover", requireAdmin, express.raw({ type: ["image/webp", "image/jpeg", "image/png"], limit: "600kb" }), uploadCover);
 router.post("/", requireAdmin, createAlbum);
 router.get("/:albumId", getAlbum);
 router.put("/:albumId", requireAdmin, updateAlbum);

@@ -3,9 +3,7 @@ import { Link } from "wouter";
 import { BookOpen, Plus, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlbumCover } from "@/components/album/AlbumCover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +30,6 @@ export function AlbumList() {
   const [activeTab, setActiveTab] = useState<"my" | "available">("my");
   const [removeId, setRemoveId] = useState<number | null>(null);
   const [removeStep, setRemoveStep] = useState<1 | 2>(1);
-  const [previewAlbum, setPreviewAlbum] = useState<{ title: string; coverUrl?: string | null; totalStickers: number; id: number } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -118,7 +115,6 @@ export function AlbumList() {
                 <CardContent className="p-0">
                   <div className="flex items-center">
                     <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 p-3 cursor-pointer">
-                      <AlbumCover url={ua.coverUrl} title={ua.title} className="h-12 w-12 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-foreground truncate">{ua.title}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{ua.totalStickers} figurine</p>
@@ -154,20 +150,12 @@ export function AlbumList() {
               <Card key={album.id} className={`shadow-sm ${added ? "opacity-60" : ""}`}>
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
-                      onClick={() => setPreviewAlbum(album)}
-                      aria-label={`Anteprima ${album.title}`}
-                    >
-                      <AlbumCover url={album.coverUrl} title={album.title} className="h-12 w-12 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-foreground text-sm truncate">{album.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {album.totalStickers} figurine{added ? " · Già aggiunto" : ""}
-                        </p>
-                      </div>
-                    </button>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-foreground text-sm truncate">{album.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {album.totalStickers} figurine{added ? " · Già aggiunto" : ""}
+                      </p>
+                    </div>
                     {added ? (
                       <div
                         className="h-11 w-11 shrink-0 rounded-full p-0 flex items-center justify-center bg-muted text-muted-foreground"
@@ -194,40 +182,6 @@ export function AlbumList() {
           </div>
         )}
       </div>
-
-      <Dialog open={!!previewAlbum} onOpenChange={v => { if (!v) setPreviewAlbum(null); }}>
-        <DialogContent className="max-w-xs p-4">
-          <DialogHeader>
-            <DialogTitle className="text-base text-center">{previewAlbum?.title}</DialogTitle>
-          </DialogHeader>
-          {previewAlbum?.coverUrl ? (
-            <img
-              src={previewAlbum.coverUrl}
-              alt={`Copertina ${previewAlbum.title}`}
-              decoding="async"
-              className="w-full rounded-lg object-contain"
-            />
-          ) : (
-            <AlbumCover url={previewAlbum?.coverUrl} title={previewAlbum?.title ?? ""} className="w-full aspect-square" />
-          )}
-          <p className="text-sm text-muted-foreground text-center">{previewAlbum?.totalStickers} figurine</p>
-          {previewAlbum && myAlbumIds.has(previewAlbum.id) ? (
-            <div className="w-full flex items-center justify-center gap-2 rounded-md py-2.5 font-semibold bg-green-100 text-green-700 border border-green-200">
-              <Check className="h-4 w-4" />
-              Album aggiunto
-            </div>
-          ) : (
-            <Button
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold gap-2"
-              disabled={addAlbum.isPending}
-              onClick={() => { if (previewAlbum) addAlbum.mutate({ albumId: previewAlbum.id }); setPreviewAlbum(null); }}
-            >
-              <Plus className="h-4 w-4" />
-              Aggiungi album
-            </Button>
-          )}
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={removeId !== null} onOpenChange={v => { if (!v) { setRemoveId(null); setRemoveStep(1); } }}>
         <AlertDialogContent>

@@ -64,10 +64,26 @@ export function AlbumDetail() {
 
   const { data: stickers, isLoading } = useGetUserAlbumStickers(albumId);
 
+  const stickersKey = getGetUserAlbumStickersQueryKey(albumId);
   const updateState = useUpdateUserStickerState({
     mutation: {
+      // Aggiornamento OTTIMISTICO: la cella cambia stato subito, senza rifare la
+      // query e senza ri-scaricare/ri-renderizzare tutte le ~900 figurine.
+      onMutate: async (vars: { albumId: number; stickerId: number; data: { state: string } }) => {
+        await queryClient.cancelQueries({ queryKey: stickersKey });
+        const prev = queryClient.getQueryData<UserSticker[]>(stickersKey);
+        queryClient.setQueryData<UserSticker[]>(stickersKey, old =>
+          old?.map(s => (s.stickerId === vars.stickerId ? { ...s, state: vars.data.state as UserSticker["state"] } : s)),
+        );
+        return { prev };
+      },
+      onError: (_err, _vars, ctx) => {
+        const prev = (ctx as { prev?: UserSticker[] } | undefined)?.prev;
+        if (prev) queryClient.setQueryData(stickersKey, prev);
+      },
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetUserAlbumStickersQueryKey(albumId) });
+        // I conteggi (percentuale, possedute…) vivono in getUserAlbums: basta
+        // aggiornare quello (query leggera), non l'intera griglia.
         queryClient.invalidateQueries({ queryKey: getGetUserAlbumsQueryKey() });
       },
     },
@@ -198,7 +214,7 @@ export function AlbumDetail() {
             return (
               <button
                 key={s.stickerId}
-                className={`aspect-square rounded-md flex items-center justify-center text-xs font-bold select-none transition-transform active:scale-95 ${stateColors[st]}`}
+                className={`cv-cell aspect-square rounded-md flex items-center justify-center text-xs font-bold select-none transition-transform active:scale-95 ${stateColors[st]}`}
                 onClick={() => tapSticker(s)}
                 onPointerDown={() => handlePointerDown(s)}
                 onPointerUp={handlePointerUp}
