@@ -19,12 +19,30 @@ const listAlbums: RequestHandler = async (req, res) => {
     const session = authHeader?.startsWith("Bearer ")
       ? verifyToken(authHeader.slice(7).trim())
       : null;
-    const albums = session?.isAdmin
-      ? await db.select().from(albumsTable)
-      : await db.select().from(albumsTable).where(eq(albumsTable.isPublished, true));
+    const isAdmin = !!session?.isAdmin;
+    // Ordine stabile per id (cronologico-discendente per come sono importati):
+    // un album messo Off Line NON cambia posizione in lista.
+    const albums = isAdmin
+      ? await db.select().from(albumsTable).orderBy(albumsTable.id)
+      : await db.select().from(albumsTable).where(eq(albumsTable.isPublished, true)).orderBy(albumsTable.id);
+
+    // Solo lato admin: quanti utenti hanno l'album tra "I miei album".
+    // Una sola query aggregata (niente N+1).
+    let userCounts: Record<number, number> = {};
+    if (isAdmin) {
+      const { userAlbumsTable } = await import("@workspace/db");
+      const { sql } = await import("drizzle-orm");
+      const rows = await db
+        .select({ albumId: userAlbumsTable.albumId, n: sql<number>`count(*)::int` })
+        .from(userAlbumsTable)
+        .groupBy(userAlbumsTable.albumId);
+      userCounts = Object.fromEntries(rows.map(r => [r.albumId, Number(r.n)]));
+    }
+
     res.json(albums.map(a => ({
       id: a.id, title: a.title,
       totalStickers: a.totalStickers, isPublished: a.isPublished, createdAt: a.createdAt.toISOString(),
+      ...(isAdmin ? { userCount: userCounts[a.id] ?? 0 } : {}),
     })));
   } catch (err) {
     req.log?.error(err);

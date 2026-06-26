@@ -74,51 +74,7 @@ const updateSettings: RequestHandler = async (req, res) => {
   }
 };
 
-// GET /api/settings/demo
-const getDemoConfig: RequestHandler = async (req, res) => {
-  try {
-    const { db } = await import("@workspace/db");
-    const { appSettingsTable } = await import("@workspace/db");
-    const [hours] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_hours")).limit(1);
-    const [enabled] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_enabled")).limit(1);
-    res.json({
-      demoHours: parseInt(hours?.value ?? "24", 10),
-      demoEnabled: enabled?.value !== "false",
-    });
-  } catch {
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
-// PUT /api/settings/demo
-const updateDemoConfig: RequestHandler = async (req, res) => {
-  try {
-    const session = await requireAdmin(req, res);
-    if (!session) return;
-    const { db } = await import("@workspace/db");
-    const { appSettingsTable } = await import("@workspace/db");
-
-    const upsert = async (key: string, value: string) => {
-      const existing = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, key)).limit(1);
-      if (existing.length) {
-        await db.update(appSettingsTable).set({ value, updatedAt: new Date() }).where(eq(appSettingsTable.key, key));
-      } else {
-        await db.insert(appSettingsTable).values({ key, value });
-      }
-    };
-
-    if (req.body.demoHours !== undefined) await upsert("demo_hours", String(req.body.demoHours));
-    if (req.body.demoEnabled !== undefined) await upsert("demo_enabled", String(req.body.demoEnabled));
-
-    res.json({ success: true, message: "Configurazione demo aggiornata" });
-  } catch {
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
 router.get("/", getSettings);
 router.put("/", updateSettings);
-router.get("/demo", getDemoConfig);
-router.put("/demo", updateDemoConfig);
 
 export default router;

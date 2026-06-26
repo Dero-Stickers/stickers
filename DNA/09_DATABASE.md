@@ -162,8 +162,8 @@ di terzi: l'app gestisce solo dati testuali — numero, nome, squadra):
   `AlbumCover` **eliminato**; nessuna tessera/placeholder/modale-anteprima: le card mostrano
   solo testo (titolo + figurine + %). UI upload copertina in admin rimossa; `lib/optimize-image.ts`
   e il route `POST /api/albums/cover` **eliminati**.
-- **Dati**: bucket Storage `album-covers` **svuotato** (24→0); seed `calciatori.json.gz`
-  rigenerato senza copertine.
+- **Dati**: bucket Storage `album-covers` **eliminato** (svuotato 24→0, poi rimosso via
+  Storage API — nessun bucket residuo); seed `calciatori.json.gz` rigenerato senza copertine.
 - **Colonna DB** `albums.cover_url`: **RIMOSSA** (`ALTER TABLE ... DROP COLUMN`, eseguito
   dopo il deploy del nuovo codice e verificato in produzione). `albums` = id, title,
   total_stickers, is_published, created_at.

@@ -2,6 +2,7 @@ import { Users, BookOpen, MessageSquare, Crown, Star, Flag } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetAdminStats } from "@workspace/api-client-react";
+import { AdminPage, AdminScrollArea } from "@/components/admin/AdminPage";
 
 export function AdminDashboard() {
   const { data: stats, isLoading } = useGetAdminStats();
@@ -16,12 +17,8 @@ export function AdminDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Panoramica dell'applicazione</p>
-      </div>
-
+    <AdminPage title="Dashboard" subtitle="Panoramica dell'applicazione">
+      <AdminScrollArea className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {statCards.map(card => (
           <Card key={card.label} className="shadow-sm">
@@ -58,6 +55,7 @@ export function AdminDashboard() {
           ))}
         </CardContent>
       </Card>
-    </div>
+      </AdminScrollArea>
+    </AdminPage>
   );
 }

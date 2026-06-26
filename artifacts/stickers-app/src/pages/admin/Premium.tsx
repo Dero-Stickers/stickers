@@ -13,6 +13,7 @@ import {
   getGetDemoConfigQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AdminPage, AdminScrollArea } from "@/components/admin/AdminPage";
 
 export function AdminPremium() {
   const { toast } = useToast();
@@ -50,7 +51,6 @@ export function AdminPremium() {
       {
         data: {
           demoHours: parseInt(demoHours, 10) || 24,
-          demoEnabled: demoConfig?.demoEnabled ?? true,
           premiumDemoEnabled: next,
         },
       },
@@ -73,12 +73,8 @@ export function AdminPremium() {
   const premiumUsers = users?.filter(u => u.demoStatus === "premium") ?? [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Premium / Demo</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Gestisci abbonamenti e configurazione demo</p>
-      </div>
-
+    <AdminPage title="Premium / Demo" subtitle="Gestisci abbonamenti e configurazione demo">
+      <AdminScrollArea className="space-y-6">
       <Card className={`shadow-sm border-2 ${masterEnabled ? "border-emerald-200" : "border-muted"}`}>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -138,7 +134,7 @@ export function AdminPremium() {
                   <Button
                     className="bg-primary text-primary-foreground"
                     disabled={updateConfig.isPending}
-                    onClick={() => updateConfig.mutate({ data: { demoHours: parseInt(demoHours, 10) || 24, demoEnabled: true } })}
+                    onClick={() => updateConfig.mutate({ data: { demoHours: parseInt(demoHours, 10) || 24 } })}
                   >
                     Salva
                   </Button>
@@ -229,6 +225,7 @@ export function AdminPremium() {
           </table>
         </div>
       </Card>
-    </div>
+      </AdminScrollArea>
+    </AdminPage>
   );
 }

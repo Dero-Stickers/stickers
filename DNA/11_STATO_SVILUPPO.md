@@ -32,6 +32,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 ### Frontend (stickers-app)
 - **User**: login/registrazione (nickname, PIN, CAP, domanda sicurezza), codice recupero, Home, Album, Match (migliori/vicini + slider distanza), Chat (**realtime** via Supabase Broadcast, fallback polling adattivo 8s/30s, + segnalazione), Profilo
 - **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Premium/Demo, Impostazioni, Segnalazioni errori
+- **Layout admin consolidato** (`components/admin/AdminPage` + `AdminTable` + `AdminScrollArea`): testata di pagina fissa, **solo il contenuto/lista scorre**; tabelle con intestazioni centrate e sticky, griglia verticale, righe a colorazione alternata, densità compatta. Album: azione unica **Gestisci** (rinomina + figurine), stato **On Line/Off Line**, colonna **Utenti** (`userCount` lato admin), ordine stabile per id (Off Line non sposta la riga). Vedi `07_ADMIN_PANNELLO.md`.
 - **Interruttore globale Premium/Demo** (admin → Premium/Demo): setting `premium_demo_enabled` in `app_settings`. Se OFF, l'app funziona come se Premium/Demo non esistesse (accesso pieno, niente blocco chat/scadenza demo/etichette). Flag esposto nel profilo (`UserProfile.premiumDemoEnabled`); gate backend in `chats.requirePremium`. Default ON.
 - Lazy loading route (bundle iniziale ~152 KB gzip), ErrorBoundary
 - PWA mobile-first: manifest, icone, splash, safe-area (icone PNG ottimizzate con pngquant, ~−50% peso senza perdita visibile; logo `.webp`). **Service worker** via `vite-plugin-pwa` (registerType autoUpdate): precache dell'app-shell, **mai** in cache le `/api`, font **Inter self-hosted** via `@fontsource/inter` (nessuna connessione a Google → conforme GDPR), nel precache → app **installabile e con caricamento offline**. Manifest e `index.html` con `theme-color` uniformato (`#9DC9E8`).
@@ -69,16 +70,17 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - Soglia di affidabilità utente (quanti scambi = affidabile?)
 - Gestione minori (serve verifica età?)
 
-## Utenti di test (Supabase)
+## Utenti nel DB (Supabase)
 
-| Nickname | PIN | Stato |
-|----------|-----|-------|
-| mario75 | 1234 | demo_active |
-| luca_fan | 5678 | premium |
-| giulia_stickers | 9999 | free |
-| sofia_ro | 1111 | demo_expired |
-| roberto_collector | 2222 | premium |
-| admin | 0000 | admin |
+Solo **2 account reali** (il vecchio set di 6 utenti di test seed non è più presente):
+
+| Nickname | Ruolo |
+|----------|-------|
+| admin | admin |
+| Dero975 | free (utente di test) |
+
+> I PIN non sono documentati qui (hash scrypt nel DB). In locale il `DevQuickSwitch`
+> cambia vista U/A senza PIN.
 
 ## Dove stanno i segreti
 

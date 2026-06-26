@@ -82,6 +82,8 @@ export interface Album {
   title: string;
   totalStickers: number;
   isPublished: boolean;
+  /** Solo lato admin — utenti che hanno l'album tra "I miei album". */
+  userCount?: number;
   createdAt?: string;
 }
 
@@ -347,7 +349,6 @@ export interface Report {
 
 export interface DemoConfig {
   demoHours: number;
-  demoEnabled: boolean;
   /** Interruttore globale del sistema Premium/Demo. */
   premiumDemoEnabled?: boolean;
 }

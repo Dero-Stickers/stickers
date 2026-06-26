@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorRow } from "./errors/ErrorRow";
 import { ErrorDetailDialog } from "./errors/ErrorDetailDialog";
+import { AdminPage } from "@/components/admin/AdminPage";
 import {
   authHeaders,
   PRIORITY_LABEL,
@@ -149,17 +150,12 @@ export function AdminErrors() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <AlertTriangle className="h-6 w-6 text-amber-500" />
-          Segnalazioni
-        </h1>
-        <p className="text-muted-foreground text-sm mt-0.5">
-          Errori e problemi segnalati dagli utenti o catturati dall'app.
-        </p>
-      </div>
-
+    <AdminPage
+      title="Segnalazioni"
+      icon={<AlertTriangle className="h-6 w-6 text-amber-500" />}
+      subtitle="Errori e problemi segnalati dagli utenti o catturati dall'app."
+    >
+      <div className="shrink-0 space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="shadow-sm">
           <CardContent className="p-4">
@@ -277,8 +273,9 @@ export function AdminErrors() {
           )}
         </CardContent>
       </Card>
+      </div>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
         {loading && (
           <div className="p-4 space-y-3">
             {[1, 2, 3].map((i) => (
@@ -298,7 +295,7 @@ export function AdminErrors() {
           </div>
         )}
         {!loading && filtered.length > 0 && (
-          <div className="divide-y divide-border">
+          <div className="flex-1 min-h-0 overflow-auto divide-y divide-border">
             {filtered.map((r) => (
               <ErrorRow
                 key={r.id}
@@ -319,6 +316,6 @@ export function AdminErrors() {
         onUpdate={updateRow}
         onGenerateReport={generateReport}
       />
-    </div>
+    </AdminPage>
   );
 }

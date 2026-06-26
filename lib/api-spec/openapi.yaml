@@ -972,6 +972,9 @@ components:
           type: integer
         isPublished:
           type: boolean
+        userCount:
+          type: integer
+          description: Solo lato admin — utenti che hanno l'album tra "I miei album".
         createdAt:
           type: string
       required: [id, title, totalStickers, isPublished]
@@ -1371,12 +1374,10 @@ components:
       properties:
         demoHours:
           type: integer
-        demoEnabled:
-          type: boolean
         premiumDemoEnabled:
           type: boolean
           description: Interruttore globale del sistema Premium/Demo.
-      required: [demoHours, demoEnabled]
+      required: [demoHours]
 
     AppSettings:
       type: object

@@ -15,6 +15,21 @@
 - Voce attiva evidenziata
 - Contenuto principale a destra
 
+## Layout tabelle (standard condiviso, enterprise)
+
+Componenti riusabili in `components/admin/` — fonte unica dello stile, applicata a
+TUTTE le sezioni admin per coerenza:
+
+- `AdminPage` — shell con **testata FISSA** (titolo + azioni) e corpo che riempie
+  l'altezza disponibile. **Scorre solo il contenuto**: sidebar e testata restano
+  ferme (`AdminLayout` ha altezza piena e `overflow-hidden`).
+- `AdminTable` — tabella standard: intestazioni **centrate e sticky**, **griglia
+  verticale** tra le colonne, righe a **colorazione alternata fissa**, **densità
+  compatta**. Le pagine passano solo gli `<th>` (`head`) e le righe; lo stile è
+  centralizzato nel componente.
+- `AdminScrollArea` — area scrollabile per pagine non tabellari (form/card:
+  Dashboard, Premium/Demo, Impostazioni); solo questo blocco scorre.
+
 ## Sezioni Admin
 
 ### Dashboard
@@ -26,12 +41,18 @@
 
 ### Album
 - Crea album (solo titolo) — nessuna copertina/immagine (feature rimossa)
-- Modifica album
-- Pubblica/nascondi album
+- Tabella standard (vedi "Layout tabelle"): colonne **Titolo · Figurine · Stato
+  (On Line / Off Line) · Utenti · Azioni**. "Utenti" = quanti hanno l'album tra
+  "I miei album" (`userCount`, calcolato lato backend solo per l'admin)
+- **Ordine stabile per id**: un album messo Off Line NON cambia posizione in lista
+  (il backend ordina per `id`)
+- Azione **unica "Gestisci"** (un solo pulsante): apre un dialog che permette di
+  **rinominare** l'album (l'unico dato che "Modifica" gestiva) **e** gestire le sue
+  figurine. Prima erano due pulsanti separati (Figurine + Modifica), ora consolidati
+- Pulsante **On Line / Off Line** per pubblicare/nascondere
 
-### Figurine
-- Seleziona album
-- Inserisci lista figurine (copy/paste)
+### Figurine (dentro "Gestisci")
+- Inserisci lista figurine (copy/paste, codice + ordine preservati)
 - Modifica singole figurine (numero/nome/descrizione)
 
 ### Utenti

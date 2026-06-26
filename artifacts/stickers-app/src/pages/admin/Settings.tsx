@@ -12,6 +12,7 @@ import {
   getGetAppSettingsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AdminPage, AdminScrollArea } from "@/components/admin/AdminPage";
 
 export function AdminSettings() {
   const { toast } = useToast();
@@ -62,20 +63,17 @@ export function AdminSettings() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
+      <AdminPage title="Impostazioni" subtitle="Configurazione generale dell'applicazione">
+        <AdminScrollArea className="space-y-6">
+          <Skeleton className="h-48 rounded-xl" />
+        </AdminScrollArea>
+      </AdminPage>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Impostazioni</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Configurazione generale dell'applicazione</p>
-      </div>
-
+    <AdminPage title="Impostazioni" subtitle="Configurazione generale dell'applicazione">
+      <AdminScrollArea className="space-y-6">
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Configurazione generale</CardTitle>
@@ -147,6 +145,7 @@ export function AdminSettings() {
         <Save className="h-4 w-4" />
         {updateSettings.isPending ? "Salvataggio..." : "Salva tutte le impostazioni"}
       </Button>
-    </div>
+      </AdminScrollArea>
+    </AdminPage>
   );
 }

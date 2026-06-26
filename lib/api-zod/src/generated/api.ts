@@ -137,6 +137,12 @@ export const ListAlbumsResponseItem = zod.object({
   title: zod.string(),
   totalStickers: zod.number(),
   isPublished: zod.boolean(),
+  userCount: zod
+    .number()
+    .optional()
+    .describe(
+      'Solo lato admin — utenti che hanno l\'album tra \"I miei album\".',
+    ),
   createdAt: zod.string().optional(),
 });
 export const ListAlbumsResponse = zod.array(ListAlbumsResponseItem);
@@ -162,6 +168,12 @@ export const GetAlbumResponse = zod
     title: zod.string(),
     totalStickers: zod.number(),
     isPublished: zod.boolean(),
+    userCount: zod
+      .number()
+      .optional()
+      .describe(
+        'Solo lato admin — utenti che hanno l\'album tra \"I miei album\".',
+      ),
     createdAt: zod.string().optional(),
   })
   .and(
@@ -196,6 +208,12 @@ export const UpdateAlbumResponse = zod.object({
   title: zod.string(),
   totalStickers: zod.number(),
   isPublished: zod.boolean(),
+  userCount: zod
+    .number()
+    .optional()
+    .describe(
+      'Solo lato admin — utenti che hanno l\'album tra \"I miei album\".',
+    ),
   createdAt: zod.string().optional(),
 });
 
@@ -215,6 +233,12 @@ export const ToggleAlbumPublishResponse = zod.object({
   title: zod.string(),
   totalStickers: zod.number(),
   isPublished: zod.boolean(),
+  userCount: zod
+    .number()
+    .optional()
+    .describe(
+      'Solo lato admin — utenti che hanno l\'album tra \"I miei album\".',
+    ),
   createdAt: zod.string().optional(),
 });
 
@@ -292,6 +316,12 @@ export const GetUserAlbumsResponseItem = zod
     title: zod.string(),
     totalStickers: zod.number(),
     isPublished: zod.boolean(),
+    userCount: zod
+      .number()
+      .optional()
+      .describe(
+        'Solo lato admin — utenti che hanno l\'album tra \"I miei album\".',
+      ),
     createdAt: zod.string().optional(),
   })
   .and(
@@ -675,7 +705,6 @@ export const AdminListReportsResponse = zod.array(AdminListReportsResponseItem);
  */
 export const GetDemoConfigResponse = zod.object({
   demoHours: zod.number(),
-  demoEnabled: zod.boolean(),
   premiumDemoEnabled: zod
     .boolean()
     .optional()
@@ -687,7 +716,6 @@ export const GetDemoConfigResponse = zod.object({
  */
 export const UpdateDemoConfigBody = zod.object({
   demoHours: zod.number(),
-  demoEnabled: zod.boolean(),
   premiumDemoEnabled: zod
     .boolean()
     .optional()
@@ -696,7 +724,6 @@ export const UpdateDemoConfigBody = zod.object({
 
 export const UpdateDemoConfigResponse = zod.object({
   demoHours: zod.number(),
-  demoEnabled: zod.boolean(),
   premiumDemoEnabled: zod
     .boolean()
     .optional()

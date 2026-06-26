@@ -10,8 +10,8 @@ Prima della pubblicazione ufficiale, verificare con un consulente legale.
 
 Per ridurre il rischio copyright/marchio, l'app **non riproduce immagini, copertine o loghi**
 di terzi. Si gestiscono **solo dati testuali fattuali** (numero, nome, squadra) e titoli album
-come testo. Copertine rimosse da UI, DB (`cover_url` NULL) e Storage (bucket svuotato); upload
-copertina in admin rimosso. Vedi `09_DATABASE.md`.
+come testo. Copertine rimosse da UI, DB (colonna `cover_url` rimossa) e Storage (bucket
+`album-covers` eliminato); upload copertina in admin rimosso. Vedi `09_DATABASE.md`.
 
 **Disclaimer non-affiliazione** visibile in-app: footer fisso in `LegalPage` (Note legali) —
 "app indipendente, non affiliata né approvata da Panini S.p.A.; marchi dei rispettivi titolari,

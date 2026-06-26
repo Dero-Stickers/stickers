@@ -1,9 +1,7 @@
 import { useState, useMemo } from "react";
 import { Shield, ShieldOff, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   useAdminListUsers,
@@ -11,6 +9,8 @@ import {
   getAdminListUsersQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AdminPage } from "@/components/admin/AdminPage";
+import { AdminTable } from "@/components/admin/AdminTable";
 
 type SortDir = "asc" | "desc";
 
@@ -29,7 +29,7 @@ export function AdminUsers() {
   const { data: users, isLoading } = useAdminListUsers();
 
   const regularUsers = useMemo(() => {
-    const list = users?.filter(u => !u.isBlocked || true) ?? [];
+    const list = users ?? [];
     const sorted = [...list].sort((a, b) =>
       a.nickname.toLowerCase().localeCompare(b.nickname.toLowerCase(), "it"),
     );
@@ -49,104 +49,90 @@ export function AdminUsers() {
   const SortIcon = sortDir === "asc" ? ArrowDownAZ : ArrowUpAZ;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Gestione Utenti</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Visualizza e gestisci gli utenti registrati</p>
-        </div>
+    <AdminPage
+      title="Gestione Utenti"
+      subtitle="Visualizza e gestisci gli utenti registrati"
+      actions={
         <div className="bg-primary text-primary-foreground text-sm font-bold px-3 py-1.5 rounded-lg">
           {isLoading ? "..." : `${regularUsers.length} utenti`}
         </div>
-      </div>
-
-      <Card className="shadow-sm">
-        {isLoading && (
-          <div className="p-4 space-y-3">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-lg" />)}
-          </div>
+      }
+    >
+      <AdminTable
+        isLoading={isLoading}
+        head={
+          <>
+            <th>
+              <button
+                type="button"
+                onClick={toggleSort}
+                className="inline-flex items-center gap-1.5 mx-auto hover:text-foreground transition-colors uppercase tracking-wide"
+                aria-label={`Ordina utenti ${sortDir === "asc" ? "Z-A" : "A-Z"}`}
+                title={sortDir === "asc" ? "Ordinato A → Z (clicca per Z → A)" : "Ordinato Z → A (clicca per A → Z)"}
+                data-testid="sort-users-nickname"
+              >
+                Utente
+                <SortIcon className="h-3.5 w-3.5" />
+                <span className="font-semibold text-[10px] text-primary">
+                  {sortDir === "asc" ? "A→Z" : "Z→A"}
+                </span>
+              </button>
+            </th>
+            <th className="hidden sm:table-cell">CAP / Area</th>
+            <th>Stato</th>
+            <th className="hidden md:table-cell">Scambi</th>
+            <th>Azioni</th>
+          </>
+        }
+      >
+        {regularUsers.length === 0 && (
+          <tr>
+            <td colSpan={5} className="text-center text-muted-foreground">
+              <div className="py-8">Nessun utente da mostrare.</div>
+            </td>
+          </tr>
         )}
-        {!isLoading && (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                  <th className="text-left px-4 py-3 font-medium">
-                    <button
-                      type="button"
-                      onClick={toggleSort}
-                      className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors uppercase tracking-wide"
-                      aria-label={`Ordina utenti ${sortDir === "asc" ? "Z-A" : "A-Z"}`}
-                      title={sortDir === "asc" ? "Ordinato A → Z (clicca per Z → A)" : "Ordinato Z → A (clicca per A → Z)"}
-                      data-testid="sort-users-nickname"
-                    >
-                      Utente
-                      <SortIcon className="h-3.5 w-3.5" />
-                      <span className="font-semibold text-[10px] text-primary">
-                        {sortDir === "asc" ? "A→Z" : "Z→A"}
-                      </span>
-                    </button>
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">CAP / Area</th>
-                  <th className="text-left px-4 py-3 font-medium">Stato</th>
-                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Scambi</th>
-                  <th className="text-right px-4 py-3 font-medium">Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {regularUsers.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                      Nessun utente da mostrare.
-                    </td>
-                  </tr>
-                )}
-                {regularUsers.map((user, i) => {
-                  const nick = user.nickname.toLowerCase();
-                  return (
-                  <tr key={user.id} className={`${i < regularUsers.length - 1 ? "border-b border-border/50" : ""} ${user.isBlocked ? "opacity-60" : ""}`}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary uppercase flex-shrink-0">
-                          {nick.slice(0, 2)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm text-foreground lowercase">{nick}</p>
-                          {user.isBlocked && <p className="text-xs text-destructive">Bloccato</p>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <p className="text-sm text-foreground">{user.cap}</p>
-                      <p className="text-xs text-muted-foreground">{user.area}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <DemoStatusBadge status={user.demoStatus} />
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <span className="text-sm text-foreground">{user.exchangesCompleted}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className={`h-7 px-2 gap-1 text-xs ${user.isBlocked ? "text-green-600 hover:text-green-700" : "text-destructive hover:text-destructive/80"}`}
-                        disabled={toggleBlock.isPending}
-                        onClick={() => toggleBlock.mutate({ userId: user.id, data: { isBlocked: !user.isBlocked } })}
-                      >
-                        {user.isBlocked ? <ShieldOff className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
-                        <span className="hidden sm:inline">{user.isBlocked ? "Sblocca" : "Blocca"}</span>
-                      </Button>
-                    </td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-    </div>
+        {regularUsers.map(user => {
+          const nick = user.nickname.toLowerCase();
+          return (
+            <tr key={user.id} className={user.isBlocked ? "opacity-60" : ""}>
+              <td>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary uppercase shrink-0">
+                    {nick.slice(0, 2)}
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground lowercase">{nick}</p>
+                    {user.isBlocked && <p className="text-xs text-destructive">Bloccato</p>}
+                  </div>
+                </div>
+              </td>
+              <td className="hidden sm:table-cell">
+                <p className="text-foreground">{user.cap}</p>
+                <p className="text-xs text-muted-foreground">{user.area}</p>
+              </td>
+              <td className="text-center">
+                <DemoStatusBadge status={user.demoStatus} />
+              </td>
+              <td className="hidden md:table-cell text-center text-foreground">{user.exchangesCompleted}</td>
+              <td>
+                <div className="flex justify-center">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 px-2 gap-1 text-xs ${user.isBlocked ? "text-green-600 hover:text-green-700" : "text-destructive hover:text-destructive/80"}`}
+                    disabled={toggleBlock.isPending}
+                    onClick={() => toggleBlock.mutate({ userId: user.id, data: { isBlocked: !user.isBlocked } })}
+                  >
+                    {user.isBlocked ? <ShieldOff className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
+                    <span className="hidden sm:inline">{user.isBlocked ? "Sblocca" : "Blocca"}</span>
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </AdminTable>
+    </AdminPage>
   );
 }
-
