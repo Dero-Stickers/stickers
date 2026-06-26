@@ -164,8 +164,9 @@ di terzi: l'app gestisce solo dati testuali — numero, nome, squadra):
   e il route `POST /api/albums/cover` **eliminati**.
 - **Dati**: bucket Storage `album-covers` **svuotato** (24→0); seed `calciatori.json.gz`
   rigenerato senza copertine.
-- **Colonna DB** `albums.cover_url`: già azzerata; **DROP COLUMN da eseguire DOPO il deploy**
-  del nuovo codice (il backend live vecchio la seleziona ancora — droparla prima lo romperebbe).
+- **Colonna DB** `albums.cover_url`: **RIMOSSA** (`ALTER TABLE ... DROP COLUMN`, eseguito
+  dopo il deploy del nuovo codice e verificato in produzione). `albums` = id, title,
+  total_stickers, is_published, created_at.
 - Vecchie immagini locali in `album-source/immagini/` (git-ignored, non servite): archivio.
 
 ### cap_zones (futuro)

@@ -54,7 +54,6 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - [ ] Test PWA installata su iOS Safari / Android Chrome reali (service worker già attivo)
 - [ ] Attivare il realtime in produzione: aggiungere su Render `SUPABASE_SERVICE_ROLE_KEY` (backend) e `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (build frontend). Senza queste, la chat resta in fallback polling 30s.
 - [ ] Onboarding interattivo (ora mostra un toast placeholder)
-- [ ] Post-deploy: `ALTER TABLE albums DROP COLUMN cover_url` (colonna già azzerata; vedi `09_DATABASE.md`)
 
 ### Media priorità
 - [ ] Notifiche push
