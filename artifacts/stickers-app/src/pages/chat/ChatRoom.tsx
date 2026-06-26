@@ -116,6 +116,7 @@ export function ChatRoom() {
         <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-amber-700">
           Per sicurezza e moderazione, i messaggi possono essere verificati dall'admin in caso di necessità o segnalazione.
+          {" "}Si consiglia di incontrarsi in luoghi pubblici e, per i più giovani, in compagnia di un adulto.
         </p>
       </div>
 

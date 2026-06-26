@@ -192,7 +192,7 @@ export function MatchDetail() {
                   <Button disabled className="w-full" variant="outline">Una tantum — €34,99</Button>
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  Pagamenti in arrivo. Contatta <a href="mailto:dero975@gmail.com" className="text-primary underline">dero975@gmail.com</a>
+                  Pagamenti in arrivo. Contatta <a href="mailto:stickersmatchbox@hotmail.com" className="text-primary underline">stickersmatchbox@hotmail.com</a>
                 </p>
               </>
             )}

@@ -72,15 +72,34 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Utenti nel DB (Supabase)
 
-Solo **2 account reali** (il vecchio set di 6 utenti di test seed non è più presente):
+Account base: **admin** (id 2) e **Dero975** (id 1, free, CAP 40138 Bologna).
 
-| Nickname | Ruolo |
-|----------|-------|
-| admin | admin |
-| Dero975 | free (utente di test) |
+**Dati di test PERSISTENTI** (giu 2026) — creati per provare l'app popolata da telefono.
+Utenti id 7-12, tutti vicino a Bologna, registrati via API (PIN reali, login funzionante).
+Album match: **11** (Calciatori 2025-2026, 624 fig). Range per `number`: A=1-150, B=151-300, C=301-450, D=451-624.
 
-> I PIN non sono documentati qui (hash scrypt nel DB). In locale il `DevQuickSwitch`
-> cambia vista U/A senza PIN.
+| id | Nickname | CAP | Stato | Collezione album 11 | Note |
+|----|----------|-----|-------|---------------------|------|
+| 7  | marcobo  | 40139 | premium | doppia C, manc. A, poss. B+D | +album 12 completo |
+| 8  | giuliabo | 40136 | demo attiva | doppia A+B, manc. C+D | +album 12 vuoto |
+| 9  | sarabo   | 40138 | demo scaduta | doppia C, manc. A, poss. B+D | match forte con Dero975 |
+| 10 | lucabo   | 40141 | free | doppia D, manc. B, poss. A+C | |
+| 11 | annamo   | 41100 | free (Modena) | doppia C, manc. A, poss. B+D | lontano: nei "migliori", non "vicini" |
+| 12 | blockme  | 40140 | **bloccato** | doppia C, manc. A | escluso dai match |
+
+Dero975 (id 1) album 11 impostato: doppia A, mancante C, posseduta B+D (così ha match).
+Chat di test: Dero975↔marcobo (attiva), Dero975↔sarabo (attiva + **segnalazione** pending), giuliabo↔lucabo (chiusa).
+
+> I PIN dei test NON sono in repo (account usa e getta; le credenziali sono state passate
+> all'utente in chat). In locale il `DevQuickSwitch` cambia vista U/A senza PIN.
+
+**Rimozione pulita dei dati di test** (quando non servono più):
+```sql
+DELETE FROM reports WHERE reporter_id BETWEEN 7 AND 12 OR reported_user_id BETWEEN 7 AND 12;
+DELETE FROM users   WHERE id BETWEEN 7 AND 12;  -- cascade: user_albums/stickers/chats/messages
+-- opzionale, riportare Dero975 album 11 a "tutte mancanti":
+-- UPDATE user_stickers SET state='mancante' WHERE user_id=1 AND album_id=11;
+```
 
 ## Dove stanno i segreti
 

@@ -25,13 +25,17 @@ Privacy Policy e Termini d'uso sono **live**, unica fonte = DB `app_settings`
 La Cookie Policy è inglobata nella Privacy (solo storage tecnico, nessun cookie di profilazione).
 
 **Conformità GDPR allineata (giu 2026):**
-- Fornitori/responsabili dichiarati: Supabase (DB, AWS Londra/UK) + Render (hosting, Francoforte/UE) → dati **interamente in UE/UK**, nessun trasferimento USA.
+- **Titolare del trattamento: Davide De Rose** — contatto dati/supporto unificato su **stickersmatchbox@hotmail.com** (DB `support_email` + Profilo + MatchDetail).
+- Fornitori/responsabili: Supabase (DB, **UK** — AWS Londra) + Render (hosting, **UE** — Francoforte). Il Regno Unito è coperto da **decisione di adeguatezza UE** (tutele equivalenti); nessun trasferimento USA.
 - Font **Inter self-hosted** (niente Google Fonts → nessun trasferimento IP a terzi).
 - Età **14 anni** + lettura Privacy/Termini: conferma esplicita obbligatoria alla registrazione (checkbox in `Login.tsx`, validata lato schema).
 - Diritti: cancellazione self-service (elimina account); accesso/portabilità **su richiesta al supporto** (export JSON self-service rimosso).
+- **Conservazione**: alla cancellazione account i dati personali sono eliminati; i **messaggi chat possono essere conservati in forma anonimizzata** per sicurezza/moderazione.
+- **Sicurezza incontri**: avviso "incontrarsi in luoghi pubblici, per i più giovani con un adulto" in Privacy (Minori), Termini (Scambi) e **in chat** all'apertura.
 - Base giuridica: contratto (6.1.b) + legittimo interesse sicurezza (6.1.f).
+- I testi Privacy/Termini vivono in `app_settings` (DB), modificabili da admin → **unica fonte**, nessun hardcode nel frontend.
 
-⚠️ Resta consigliata una **revisione legale professionale** + un titolare nominato (persona/entità) prima della pubblicazione commerciale.
+⚠️ Resta consigliata una **revisione legale professionale** prima della pubblicazione commerciale.
 
 ## Dati Raccolti
 

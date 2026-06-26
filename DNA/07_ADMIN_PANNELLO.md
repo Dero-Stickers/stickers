@@ -74,7 +74,7 @@ TUTTE le sezioni admin per coerenza:
 - Prepara piani futuri
 
 ### Impostazioni
-- Email di supporto (default: dero975@gmail.com)
+- Email di supporto (default: stickersmatchbox@hotmail.com)
 - Durata demo
 - Testi base app
 - Impostazioni privacy/supporto
