@@ -138,9 +138,18 @@ const batchInsertStickers: RequestHandler = async (req, res) => {
         // "<codice> - Nome" o "<codice>. Nome". Il codice può essere
         // alfanumerico ("001", "UPD01"); l'ordine = ordine della lista.
         const match = line.match(/^(\S+?)\s*[.\-]\s+(.+)$/);
-        if (!match) continue;
-        pos += 1;
-        stickersToInsert.push({ albumId, number: pos, code: match[1].trim(), name: match[2].trim() });
+        if (match) {
+          pos += 1;
+          stickersToInsert.push({ albumId, number: pos, code: match[1].trim(), name: match[2].trim() });
+          continue;
+        }
+        // Album vecchi: la fonte espone SOLO il numero, senza nome (es. "001").
+        // Accetta la riga come codice puro (nome vuoto) se è un identificatore
+        // breve alfanumerico; altrimenti scartala.
+        if (/^[A-Za-z0-9]{1,8}$/.test(line)) {
+          pos += 1;
+          stickersToInsert.push({ albumId, number: pos, code: line, name: "" });
+        }
       }
     } else if (req.body.stickers) {
       stickersToInsert = req.body.stickers.map((s: any) => ({ albumId, ...s, code: s.code ?? String(s.number ?? "") }));

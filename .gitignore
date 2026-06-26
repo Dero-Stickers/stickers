@@ -67,3 +67,6 @@ BACKUP/
 .agent/
 # Regole operative scaricate da App Control (rigenerate a ogni sessione)
 CLAUDE.md
+
+# Cartella di lavoro import album (immagini su Storage, dati nel DB)
+INFO ALBUM/
