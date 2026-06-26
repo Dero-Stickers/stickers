@@ -47,24 +47,9 @@ export default defineConfig({
         clientsClaim: true,
         // Bundle React+Radix può superare il default di 2 MiB.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        // Runtime caching SOLO per i font Google (cross-origin). Nessuna
-        // regola intercetta /api: il contenuto resta sempre dalla rete.
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.origin === "https://fonts.googleapis.com",
-            handler: "StaleWhileRevalidate",
-            options: { cacheName: "google-fonts-stylesheets" },
-          },
-          {
-            urlPattern: ({ url }) => url.origin === "https://fonts.gstatic.com",
-            handler: "CacheFirst",
-            options: {
-              cacheName: "google-fonts-webfonts",
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
+        // Nessun runtime caching cross-origin: i font Inter sono self-hosted e
+        // rientrano nel precache (globPatterns include woff2). Nessuna regola
+        // intercetta /api: il contenuto resta sempre dalla rete.
       },
       devOptions: {
         // Niente service worker durante lo sviluppo (evita cache fastidiose).

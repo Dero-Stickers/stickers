@@ -10,31 +10,50 @@ import { Button } from "@/components/ui/button";
 const UNAVAILABLE =
   "Documento non ancora disponibile. Riprova più tardi o contatta il supporto.";
 
-type LegalDoc = "privacy" | "termini";
+// "privacy" e "termini" restano viste singole (usate da Login e cookie banner).
+// "note" è la vista combinata (Privacy + Termini), usata dal Profilo.
+type LegalDoc = "privacy" | "termini" | "note";
 
 export function LegalPage() {
   const [, setLocation] = useLocation();
   const [, params] = useRoute<{ doc: string }>("/legal/:doc");
-  const doc = (params?.doc === "termini" ? "termini" : "privacy") as LegalDoc;
+  const doc: LegalDoc =
+    params?.doc === "termini" ? "termini" : params?.doc === "note" ? "note" : "privacy";
 
-  const [text, setText] = useState<string | null>(null);
+  const [privacy, setPrivacy] = useState<string | null>(null);
+  const [terms, setTerms] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/settings")
-      .then(r => r.ok ? r.json() : null)
+      .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (cancelled) return;
-        const fromDb = doc === "privacy" ? data?.privacyPolicyText : data?.termsText;
-        setText(fromDb && fromDb.trim().length > 0 ? fromDb : UNAVAILABLE);
+        const p = data?.privacyPolicyText;
+        const t = data?.termsText;
+        setPrivacy(p && p.trim().length > 0 ? p : UNAVAILABLE);
+        setTerms(t && t.trim().length > 0 ? t : UNAVAILABLE);
       })
       .catch(() => {
-        if (!cancelled) setText(UNAVAILABLE);
+        if (!cancelled) { setPrivacy(UNAVAILABLE); setTerms(UNAVAILABLE); }
       });
     return () => { cancelled = true; };
-  }, [doc]);
+  }, []);
 
-  const title = doc === "privacy" ? "Privacy Policy" : "Termini e Condizioni";
+  const title =
+    doc === "termini" ? "Termini e Condizioni" : doc === "note" ? "Note legali" : "Privacy Policy";
+
+  const sections =
+    doc === "privacy"
+      ? [{ heading: "Privacy Policy", body: privacy }]
+      : doc === "termini"
+        ? [{ heading: "Termini e Condizioni", body: terms }]
+        : [
+            { heading: "Privacy Policy", body: privacy },
+            { heading: "Termini e Condizioni", body: terms },
+          ];
+
+  const loading = privacy === null || terms === null;
 
   return (
     <div className="min-h-[100dvh] bg-background">
@@ -44,7 +63,7 @@ export function LegalPage() {
             variant="ghost"
             size="icon"
             className="text-sidebar-foreground hover:bg-sidebar-foreground/10"
-            onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/login")}
+            onClick={() => (window.history.length > 1 ? window.history.back() : setLocation("/login"))}
             aria-label="Indietro"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -53,11 +72,20 @@ export function LegalPage() {
         </div>
         <h1 className="text-xl font-bold mt-3">{title}</h1>
       </div>
-      <div className="px-4 py-5 max-w-2xl mx-auto">
-        {text === null ? (
+      <div className="px-4 py-5 max-w-2xl mx-auto space-y-8">
+        {loading ? (
           <p className="text-sm text-muted-foreground">Caricamento…</p>
         ) : (
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">{text}</pre>
+          sections.map((s, i) => (
+            <section key={i}>
+              {doc === "note" && (
+                <h2 className="text-lg font-bold mb-2 text-foreground">{s.heading}</h2>
+              )}
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                {s.body}
+              </pre>
+            </section>
+          ))
         )}
       </div>
     </div>

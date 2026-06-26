@@ -10,7 +10,7 @@ import {
   GetNearbyMatchesRadius,
   getGetNearbyMatchesQueryKey,
 } from "@workspace/api-client-react";
-import { AppLogo } from "@/components/brand/AppLogo";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 const RADIUS_OPTIONS = [5, 10, 20, 50, 100] as const;
 type RadiusValue = typeof RADIUS_OPTIONS[number];
@@ -30,15 +30,15 @@ export function MatchList() {
   const matches = activeTab === "best" ? (bestMatches ?? []) : (nearbyMatches ?? []);
 
   return (
-    <div className="min-h-full">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-10 pb-6 border-b border-sidebar-border flex flex-col items-center text-center">
-        <AppLogo className="h-10 w-auto" />
-        <h1 className="text-base font-bold mt-2">Match</h1>
-        <p className="text-sidebar-foreground/85 text-xs">Trova collezionisti per scambiare</p>
+    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+      <AppHeader />
+      <div className="px-4 pt-3 text-center shrink-0">
+        <h1 className="text-base font-bold text-foreground">Match</h1>
+        <p className="text-muted-foreground text-xs">Trova collezionisti per scambiare</p>
       </div>
 
-      <div className="px-4 pt-4 pb-4">
-        <div className="flex rounded-lg bg-muted p-1 mb-4">
+      <div className="px-4 pt-4 shrink-0">
+        <div className="flex rounded-lg bg-muted p-1">
           <button
             className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === "best" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
             onClick={() => setActiveTab("best")}
@@ -52,7 +52,9 @@ export function MatchList() {
             Vicini a te
           </button>
         </div>
+      </div>
 
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 min-h-0">
         {activeTab === "nearby" && (
           <div className="mb-4 p-4 bg-card rounded-xl border border-border">
             <div className="flex items-center justify-between mb-3">

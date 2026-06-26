@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { MapPin, Star, Key, HelpCircle, Mail, LogOut, Shield, Download, Trash2, FileText, UserCog, ArrowRight, Check, X, Lock, AlertTriangle, Send } from "lucide-react";
+import { MapPin, Key, HelpCircle, Mail, LogOut, Shield, Trash2, UserCog, ArrowRight, Check, X, Lock, AlertTriangle, Send } from "lucide-react";
 import { reportError } from "@/lib/report-error";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { AppLogo } from "@/components/brand/AppLogo";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 function DemoStatusBadge({ status, expiresAt }: { status: string | null; expiresAt?: string | null }) {
   if (status === "premium") return <Badge className="bg-amber-500 text-white">PREMIUM</Badge>;
@@ -137,28 +137,6 @@ export function Profile() {
     }
   };
 
-  const handleExportData = async () => {
-    try {
-      const token = localStorage.getItem("sticker_token");
-      const res = await fetch("/api/auth/me/export", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error("export failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `stickers-i-miei-dati-${currentUser?.nickname ?? "utente"}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast({ title: "Download avviato", description: "Il file con i tuoi dati è stato scaricato." });
-    } catch {
-      toast({ title: "Errore", description: "Impossibile esportare i dati. Riprova.", variant: "destructive" });
-    }
-  };
-
   const handleDeleteAccount = async () => {
     setDeleteError(null);
     setDeleteLoading(true);
@@ -187,53 +165,22 @@ export function Profile() {
   };
 
   return (
-    <div className="min-h-full">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-10 pb-6 border-b border-sidebar-border">
-        <div className="flex justify-center">
-          <AppLogo className="h-10 w-auto" />
-        </div>
-        <div className="flex items-center gap-4 mt-4">
-          <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center text-accent font-black text-xl uppercase">
-            {currentUser?.nickname?.slice(0, 2) ?? "U"}
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">{currentUser?.nickname}</h1>
-            <p className="text-sidebar-foreground/85 text-sm flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" />
-              {currentUser?.area ?? "—"} — CAP {currentUser?.cap}
-            </p>
-          </div>
-        </div>
+    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+      <AppHeader />
+      <div className="px-4 pt-4 flex flex-col items-center text-center shrink-0">
+        <h1 className="text-xl font-bold text-foreground">{currentUser?.nickname}</h1>
+        <p className="text-muted-foreground text-sm flex items-center justify-center gap-1">
+          <MapPin className="h-3.5 w-3.5" />
+          {currentUser?.area ?? "—"} — CAP {currentUser?.cap}
+        </p>
         {premiumDemoEnabled && (
-          <div className="mt-3">
+          <div className="mt-2">
             <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
           </div>
         )}
       </div>
 
-      <div className="px-4 pt-4 pb-6 space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="shadow-sm">
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-primary">{currentUser?.exchangesCompleted ?? 0}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Scambi completati</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm">
-            <CardContent className="p-3 text-center">
-              <div className="flex items-center justify-center gap-1 mb-0.5">
-                <Star className="h-4 w-4 text-amber-500" />
-                <p className="text-2xl font-bold text-amber-500">
-                  {/* Nessun punteggio finto: l'affidabilità reale arriverà con il
-                      sistema di valutazioni. Fino ad allora "—". */}
-                  —
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground">Affidabilità</p>
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 min-h-0">
         <Card className="shadow-sm">
           <CardContent className="p-0 divide-y divide-border">
             <button
@@ -278,7 +225,7 @@ export function Profile() {
               }}
               className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
             >
-              <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+              <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
               <div>
                 <p className="font-medium text-sm text-foreground">Segnala un problema</p>
                 <p className="text-xs text-muted-foreground">Qualcosa non funziona? Faccelo sapere</p>
@@ -297,35 +244,13 @@ export function Profile() {
             </a>
 
             <button
-              onClick={() => setLocation("/legal/privacy")}
+              onClick={() => setLocation("/legal/note")}
               className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
             >
               <Shield className="h-5 w-5 text-primary flex-shrink-0" />
               <div>
-                <p className="font-medium text-sm text-foreground">Privacy Policy</p>
-                <p className="text-xs text-muted-foreground">Come trattiamo i tuoi dati</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setLocation("/legal/termini")}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-            >
-              <FileText className="h-5 w-5 text-primary flex-shrink-0" />
-              <div>
-                <p className="font-medium text-sm text-foreground">Termini d'uso</p>
-                <p className="text-xs text-muted-foreground">Regole di utilizzo dell'app</p>
-              </div>
-            </button>
-
-            <button
-              onClick={handleExportData}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-            >
-              <Download className="h-5 w-5 text-primary flex-shrink-0" />
-              <div>
-                <p className="font-medium text-sm text-foreground">Scarica i miei dati</p>
-                <p className="text-xs text-muted-foreground">File JSON con tutti i tuoi dati personali</p>
+                <p className="font-medium text-sm text-foreground">Privacy e Termini d'uso</p>
+                <p className="text-xs text-muted-foreground">Informativa privacy e condizioni d'uso</p>
               </div>
             </button>
           </CardContent>
@@ -496,10 +421,10 @@ export function Profile() {
       </Dialog>
 
       <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-red-500" />
               Segnala un problema
             </DialogTitle>
           </DialogHeader>
@@ -512,15 +437,20 @@ export function Profile() {
 
             <div className="space-y-2">
               <label className="text-xs font-semibold text-foreground">
-                Cosa stavi facendo? <span className="text-muted-foreground font-normal">(facoltativo)</span>
+                In quale sezione eri? <span className="text-muted-foreground font-normal">(facoltativo)</span>
               </label>
-              <Input
-                placeholder="es. /album/123 o lascia vuoto"
+              <select
                 value={reportPage}
                 onChange={(e) => setReportPage(e.target.value)}
-                maxLength={200}
-                className="text-xs font-mono"
-              />
+                className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">— Seleziona la sezione —</option>
+                <option value="Home">Home</option>
+                <option value="Album">Album</option>
+                <option value="Match">Match</option>
+                <option value="Profilo">Profilo</option>
+                <option value="Altro">Altro</option>
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -528,24 +458,13 @@ export function Profile() {
                 Cosa è andato storto?
               </label>
               <textarea
-                placeholder="es. Quando clicco 'Aggiungi figurina' non succede niente"
+                placeholder="es. Quando clicco 'Aggiungi figurina' non succede niente. Più dettagli ci dai, meglio è."
                 value={reportNote}
-                onChange={(e) => setReportNote(e.target.value.slice(0, 500))}
-                rows={4}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onChange={(e) => setReportNote(e.target.value)}
+                rows={8}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-32 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 autoFocus
               />
-              <p className="text-[11px] text-muted-foreground text-right">
-                {reportNote.length}/500
-              </p>
-            </div>
-
-            <div className="rounded-md bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground flex items-start gap-2">
-              <Shield className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-              <span>
-                Inviamo solo: pagina visitata, tipo dispositivo (es. mobile-chrome), versione app.
-                Niente PIN, password, email.
-              </span>
             </div>
 
             <div className="flex gap-2 pt-1">

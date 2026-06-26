@@ -47,7 +47,7 @@ const reportInput = z.object({
   errorType: z.enum(TYPES).default("user_report"),
   messageClean: z.string().max(2000).optional(),
   stackTop: z.string().max(2000).optional(),
-  userNote: z.string().max(500).optional(),
+  userNote: z.string().max(5000).optional(),
   appVersion: z.string().max(40).optional(),
 });
 
@@ -94,7 +94,7 @@ const submitReport: RequestHandler = async (req, res) => {
     const page = normalizePage(body.page ?? "");
     const messageClean = sanitizeText(body.messageClean ?? "", 1000);
     const stackTop = sanitizeText(body.stackTop ?? "", 1500);
-    const userNote = sanitizeText(body.userNote ?? "", 500);
+    const userNote = sanitizeText(body.userNote ?? "", 5000);
 
     if (!messageClean && !userNote) {
       res.status(400).json({ error: "EMPTY_REPORT" });

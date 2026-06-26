@@ -6,13 +6,21 @@
 Gli album e le figurine sono cataloghi manuali creati dall'admin.
 Prima della pubblicazione ufficiale, verificare con un consulente legale.
 
-## Pagine Legali da Preparare
+## Pagine Legali (IMPLEMENTATE)
 
-- Privacy Policy
-- Termini di Utilizzo
-- Cookie Policy
+Privacy Policy e Termini d'uso sono **live**, unica fonte = DB `app_settings`
+(`privacy_policy`, `terms`), modificabili da admin → `/api/settings`. Viste:
+`/legal/privacy`, `/legal/termini`, e `/legal/note` (combinata, usata dal Profilo).
+La Cookie Policy è inglobata nella Privacy (solo storage tecnico, nessun cookie di profilazione).
 
-I testi devono essere strutturati per Sticker ma contrassegnati con "DA REVISIONARE prima della pubblicazione".
+**Conformità GDPR allineata (giu 2026):**
+- Fornitori/responsabili dichiarati: Supabase (DB, AWS Londra/UK) + Render (hosting, Francoforte/UE) → dati **interamente in UE/UK**, nessun trasferimento USA.
+- Font **Inter self-hosted** (niente Google Fonts → nessun trasferimento IP a terzi).
+- Età **14 anni** + lettura Privacy/Termini: conferma esplicita obbligatoria alla registrazione (checkbox in `Login.tsx`, validata lato schema).
+- Diritti: cancellazione self-service (elimina account); accesso/portabilità **su richiesta al supporto** (export JSON self-service rimosso).
+- Base giuridica: contratto (6.1.b) + legittimo interesse sicurezza (6.1.f).
+
+⚠️ Resta consigliata una **revisione legale professionale** + un titolare nominato (persona/entità) prima della pubblicazione commerciale.
 
 ## Dati Raccolti
 

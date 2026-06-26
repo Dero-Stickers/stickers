@@ -11,7 +11,7 @@ import {
   useGetUserAlbums,
   useGetBestMatches,
 } from "@workspace/api-client-react";
-import { AppLogo } from "@/components/brand/AppLogo";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 function DemoStatusBadge({ status, expiresAt }: { status: string | null; expiresAt?: string | null }) {
   if (status === "premium") return <Badge className="bg-amber-500 text-white text-xs font-bold">PREMIUM</Badge>;
@@ -35,22 +35,18 @@ export function Home() {
     .sort((a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99))[0] ?? null;
 
   return (
-    <div className="min-h-full">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-10 pb-8 border-b border-sidebar-border">
-        <div className="flex flex-col items-center gap-2">
-          <AppLogo className="h-14 w-auto" />
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <p className="text-sidebar-foreground/80 text-sm">
-              Ciao, <span className="font-semibold text-sidebar-foreground">{currentUser?.nickname}</span>
-            </p>
-            {premiumDemoEnabled && (
-              <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
-            )}
-          </div>
-        </div>
+    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+      <AppHeader />
+      <div className="px-4 pt-3 flex items-center justify-center gap-2 shrink-0">
+        <p className="text-sm text-muted-foreground">
+          Ciao, <span className="font-semibold text-foreground">{currentUser?.nickname}</span>
+        </p>
+        {premiumDemoEnabled && (
+          <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
+        )}
       </div>
 
-      <div className="px-4 -mt-4 space-y-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 space-y-4 pb-4 min-h-0">
         {/* Best album card */}
         {loadingAlbums && <Skeleton className="h-24 rounded-xl" />}
         {!loadingAlbums && bestAlbum && (

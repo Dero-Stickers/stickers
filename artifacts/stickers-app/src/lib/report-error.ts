@@ -38,7 +38,7 @@ export async function reportError(input: ReportInput): Promise<boolean> {
       page: input.page ?? currentPage(),
       messageClean: (input.messageClean ?? "").slice(0, 1500),
       stackTop: (input.stackTop ?? "").slice(0, 1500),
-      userNote: (input.userNote ?? "").slice(0, 500),
+      userNote: (input.userNote ?? "").slice(0, 5000),
       appVersion: APP_VERSION,
     };
 
