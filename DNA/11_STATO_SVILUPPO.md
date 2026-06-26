@@ -41,6 +41,8 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - `pnpm run typecheck` → **0 errori**; file funzionali ≤ 350 righe (eccezioni documentate: `routes/auth.ts`, `pages/Profile.tsx`, generati orval)
 - Sistema segnalazione errori con **sanitizer PII** (PIN/JWT/email/IP/path/codici)
 - E2E Playwright in `artifacts/stickers-app/` (config + Chromium pronti; suite di test in completamento)
+- **RLS attiva su tutte le 11 tabelle** (deny-by-default; backend `postgres` bypassa, anon bloccato via PostgREST). Vedi `09_DATABASE.md` → Sicurezza accessi.
+- **Testi legali 100% da DB**: privacy/termini letti da `app_settings` (modificabili da admin); nessun testo legale hardcoded nel frontend (`LegalPage` mostra solo un messaggio neutro se il DB è vuoto).
 
 ## Da fare
 

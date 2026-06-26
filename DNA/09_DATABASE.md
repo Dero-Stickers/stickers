@@ -127,6 +127,13 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - **Seed**: `pnpm --filter @workspace/db run seed`.
 - Stato attuale: 11 tabelle con indici integri (dati di test/finti).
 
+### Sicurezza accessi (RLS)
+
+- **RLS attiva su tutte le 11 tabelle** (`ENABLE ROW LEVEL SECURITY`), **deny-by-default**: nessuna policy → i ruoli `anon`/`authenticated` (chiave pubblica nel frontend) **non possono leggere/scrivere** via PostgREST `/rest/v1`.
+- Il backend si connette come ruolo **`postgres`** (proprietario delle tabelle, `rolbypassrls=true`): **bypassa RLS**, quindi tutte le API continuano a funzionare. Tutti i dati passano **solo** dal backend.
+- La chiave anon nel frontend serve **esclusivamente** al Realtime **broadcast** della chat (non legge tabelle): RLS non lo tocca.
+- ⚠️ Se in futuro un client dovesse leggere tabelle **direttamente** con la chiave anon, servirà aggiungere **policy esplicite** (oggi non necessarie).
+
 ### cap_zones (futuro)
 ```sql
 cap, area_name, lat_approx, lng_approx, region
