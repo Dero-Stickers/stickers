@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlbumCover } from "@/components/album/AlbumCover";
 import {
   useGetUserAlbums,
   useGetBestMatches,
@@ -57,8 +58,8 @@ export function Home() {
             <Card className="shadow-sm cursor-pointer hover:border-primary transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <AlbumCover url={bestAlbum.coverUrl} title={bestAlbum.title} className="h-10 w-10" />
                     <span className="text-sm font-semibold text-foreground truncate max-w-[180px]">{bestAlbum.title}</span>
                   </div>
                   <span className="text-primary font-bold text-sm">{bestAlbum.completionPercent}%</span>

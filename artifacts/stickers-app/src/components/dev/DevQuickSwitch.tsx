@@ -19,7 +19,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Account di test, usati solo in sviluppo per lo switch rapido.
-const USER = { nickname: "mario75", pin: "1234" };
+const USER = { nickname: "Dero975", pin: "1234" };
 const ADMIN = { nickname: "admin", pin: "0000" };
 
 export function DevQuickSwitch() {

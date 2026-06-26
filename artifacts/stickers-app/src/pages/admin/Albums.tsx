@@ -17,6 +17,7 @@ import {
 import type { Album } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlbumStickersManager } from "@/components/admin/AlbumStickersManager";
+import { AlbumCover } from "@/components/album/AlbumCover";
 
 const EMPTY_FORM = { title: "", totalStickers: "", coverUrl: "" };
 // Chiave di cache DEDICATA all'admin: la lista admin (TUTTI gli album, anche
@@ -153,7 +154,10 @@ export function AdminAlbums() {
                 {(albums ?? []).map((album, i) => (
                   <tr key={album.id} className={`${i < (albums?.length ?? 0) - 1 ? "border-b border-border/50" : ""}`}>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-sm text-foreground">{album.title}</p>
+                      <div className="flex items-center gap-2.5">
+                        <AlbumCover url={album.coverUrl} title={album.title} className="h-9 w-9" />
+                        <p className="font-medium text-sm text-foreground">{album.title}</p>
+                      </div>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <span className="text-sm text-foreground">{album.totalStickers}</span>

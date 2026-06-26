@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlbumCover } from "@/components/album/AlbumCover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,9 +102,12 @@ export function AlbumList() {
                   <Link href={`/album/${ua.id}`}>
                     <div className="p-4 cursor-pointer">
                       <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1 min-w-0 mr-3">
-                          <p className="font-semibold text-foreground truncate">{ua.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{ua.totalStickers} figurine totali</p>
+                        <div className="flex flex-1 min-w-0 mr-3 gap-3">
+                          <AlbumCover url={ua.coverUrl} title={ua.title} className="h-12 w-12" />
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground truncate">{ua.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{ua.totalStickers} figurine totali</p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-primary font-bold text-sm">{ua.completionPercent}%</span>
@@ -155,9 +159,12 @@ export function AlbumList() {
               <Card key={album.id} className="shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1 min-w-0 mr-3">
-                      <p className="font-semibold text-foreground">{album.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{album.totalStickers} figurine</p>
+                    <div className="flex flex-1 min-w-0 mr-3 gap-3">
+                      <AlbumCover url={album.coverUrl} title={album.title} className="h-12 w-12" />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground">{album.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{album.totalStickers} figurine</p>
+                      </div>
                     </div>
                     <Badge variant="outline" className="text-xs flex-shrink-0">Disponibile</Badge>
                   </div>

@@ -224,7 +224,9 @@ export function Profile() {
               <div className="flex items-center justify-center gap-1 mb-0.5">
                 <Star className="h-4 w-4 text-amber-500" />
                 <p className="text-2xl font-bold text-amber-500">
-                  {currentUser?.exchangesCompleted && currentUser.exchangesCompleted >= 10 ? "4.8" : "—"}
+                  {/* Nessun punteggio finto: l'affidabilità reale arriverà con il
+                      sistema di valutazioni. Fino ad allora "—". */}
+                  —
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">Affidabilità</p>

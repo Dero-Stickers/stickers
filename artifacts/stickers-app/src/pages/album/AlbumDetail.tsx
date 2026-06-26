@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
+import { AlbumCover } from "@/components/album/AlbumCover";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -56,6 +57,7 @@ export function AlbumDetail() {
   const [filter, setFilter] = useState<FilterType>("tutte");
   const [selectedSticker, setSelectedSticker] = useState<UserSticker | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [showCover, setShowCover] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: userAlbums } = useGetUserAlbums();
@@ -140,7 +142,21 @@ export function AlbumDetail() {
           <ArrowLeft className="h-4 w-4" />
           Album
         </button>
-        <h1 className="text-lg font-bold leading-tight mb-3">{albumTitle}</h1>
+        <div className="flex items-center gap-3 mb-3">
+          {albumInfo?.coverUrl ? (
+            <button
+              type="button"
+              onClick={() => setShowCover(true)}
+              className="relative shrink-0 rounded-lg"
+              aria-label="Ingrandisci copertina"
+            >
+              <AlbumCover url={albumInfo.coverUrl} title={albumTitle} className="h-18 w-18" />
+            </button>
+          ) : (
+            <AlbumCover url={albumInfo?.coverUrl} title={albumTitle} className="h-18 w-18" />
+          )}
+          <h1 className="text-lg font-bold leading-tight">{albumTitle}</h1>
+        </div>
         <div className="grid grid-cols-4 gap-2 text-center">
           <div>
             <p className="text-xl font-bold">{total}</p>
@@ -233,6 +249,22 @@ export function AlbumDetail() {
                 ))}
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCover} onOpenChange={setShowCover}>
+        <DialogContent className="max-w-xs p-3">
+          <DialogHeader>
+            <DialogTitle className="text-base">{albumTitle}</DialogTitle>
+          </DialogHeader>
+          {albumInfo?.coverUrl && (
+            <img
+              src={albumInfo.coverUrl}
+              alt={`Copertina ${albumTitle}`}
+              decoding="async"
+              className="w-full rounded-lg object-contain"
+            />
           )}
         </DialogContent>
       </Dialog>
