@@ -12,7 +12,6 @@ import { eq } from "drizzle-orm";
 import { db, albumsTable, stickersTable } from "./index";
 
 const TITLE = "Calciatori 2025-2026";
-const DESCRIPTION = "Collezione ufficiale Panini Serie A — 624 figurine";
 const SOURCE = resolve(
   process.cwd(),
   "../../attached_assets/Pasted-001-Trofeo-Serie-A-Enilive-002-Trofeo-Coppa-Italia-Frec_1777769415376.txt",
@@ -74,7 +73,6 @@ async function main() {
   await db.transaction(async (tx) => {
     const [album] = await tx.insert(albumsTable).values({
       title: TITLE,
-      description: DESCRIPTION,
       totalStickers: stickers.length,
       isPublished: true,
     }).returning();

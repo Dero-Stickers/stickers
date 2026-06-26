@@ -157,7 +157,6 @@ export function AlbumList() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0 mr-3">
                       <p className="font-semibold text-foreground">{album.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{album.description}</p>
                       <p className="text-xs text-muted-foreground mt-1">{album.totalStickers} figurine</p>
                     </div>
                     <Badge variant="outline" className="text-xs flex-shrink-0">Disponibile</Badge>

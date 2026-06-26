@@ -134,6 +134,12 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - La chiave anon nel frontend serve **esclusivamente** al Realtime **broadcast** della chat (non legge tabelle): RLS non lo tocca.
 - ⚠️ Se in futuro un client dovesse leggere tabelle **direttamente** con la chiave anon, servirà aggiungere **policy esplicite** (oggi non necessarie).
 
+### Storage (copertine album)
+
+- Bucket Supabase Storage **`album-covers`**: pubblico in lettura, `file_size_limit` 512 KB, mime ammessi `image/webp|jpeg|png`.
+- Upload **solo admin** via backend `POST /api/albums/cover` (chiave service role, body binario). Il client **ottimizza prima** l'immagine (resize lato lungo ≤ 600px + WebP qualità ~0.82, `lib/optimize-image.ts`).
+- Nel DB si salva **solo l'URL** in `albums.coverUrl` → il database resta leggero, la visualizzazione veloce. (Le vecchie copertine sostituite restano nello storage: pulizia eventuale futura.)
+
 ### cap_zones (futuro)
 ```sql
 cap, area_name, lat_approx, lng_approx, region

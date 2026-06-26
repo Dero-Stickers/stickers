@@ -8,7 +8,11 @@ export const stickersTable = pgTable(
   {
     id: serial("id").primaryKey(),
     albumId: integer("album_id").references(() => albumsTable.id, { onDelete: "cascade" }).notNull(),
+    // `number` = posizione/ordine deterministico nella raccolta (1..N).
     number: integer("number").notNull(),
+    // `code` = codice ESATTO come stampato ("001", "UPD01"): è ciò che l'app
+    // mostra e può essere alfanumerico. Default "" solo per i dati pre-esistenti.
+    code: text("code").notNull().default(""),
     name: text("name").notNull(),
     description: text("description"),
   },

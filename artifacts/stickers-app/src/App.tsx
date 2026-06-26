@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/not-found";
 import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
+import { CookieBanner } from "@/components/CookieBanner";
 import { dismissBootSplash } from "@/components/brand/SplashScreen";
 
 import { MobileLayout } from "@/components/layout/MobileLayout";
@@ -231,6 +232,7 @@ function App() {
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <Router />
               <DevQuickSwitch />
+              <CookieBanner />
             </WouterRouter>
             <Toaster />
           </AuthProvider>

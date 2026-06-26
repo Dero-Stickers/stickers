@@ -5,7 +5,6 @@ import { z } from "zod/v4";
 export const albumsTable = pgTable("albums", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  description: text("description"),
   coverUrl: text("cover_url"),
   totalStickers: integer("total_stickers").default(0).notNull(),
   isPublished: boolean("is_published").default(false).notNull(),

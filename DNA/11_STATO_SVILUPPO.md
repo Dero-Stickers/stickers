@@ -43,6 +43,9 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - E2E Playwright in `artifacts/stickers-app/` (config + Chromium pronti; suite di test in completamento)
 - **RLS attiva su tutte le 11 tabelle** (deny-by-default; backend `postgres` bypassa, anon bloccato via PostgREST). Vedi `09_DATABASE.md` → Sicurezza accessi.
 - **Testi legali 100% da DB**: privacy/termini letti da `app_settings` (modificabili da admin); nessun testo legale hardcoded nel frontend (`LegalPage` mostra solo un messaggio neutro se il DB è vuoto).
+- **Banner cookie minimale** (`CookieBanner`): informativa una tantum (solo memoria tecnica, no profilazione) + link privacy; scelta salvata in localStorage.
+- **Copertina album con upload da dispositivo** (admin): immagine ottimizzata nel browser (WebP, resize) e caricata su Supabase Storage `album-covers`; nel DB solo l'URL. Vedi `09_DATABASE.md` → Storage.
+- **Figurine con `code` + ordine**: ogni figurina ha il codice esatto della raccolta (`001`, `UPD01`, anche alfanumerico) in `stickers.code`; `stickers.number` è la posizione/ordine. L'import (Inserimento rapido) preserva codice e ordine; l'app mostra il `code`.
 
 ## Da fare
 

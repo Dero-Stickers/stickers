@@ -154,10 +154,10 @@ async function main() {
 
   // 2. Album
   const albumsInserted = await db.insert(albumsTable).values([
-    { title: "Calciatori 2024-2025", description: "La collezione ufficiale dei Calciatori 2024-2025", totalStickers: 0, isPublished: true },
-    { title: "UEFA Champions League 2024-25", description: "Collezione ufficiale UEFA Champions League", totalStickers: 0, isPublished: true },
-    { title: "Mondiali Qatar 2022", description: "La storica collezione del Mondiale", totalStickers: 0, isPublished: true },
-    { title: "Serie A 2023-2024", description: "Edizione precedente Serie A", totalStickers: 0, isPublished: false },
+    { title: "Calciatori 2024-2025", totalStickers: 0, isPublished: true },
+    { title: "UEFA Champions League 2024-25", totalStickers: 0, isPublished: true },
+    { title: "Mondiali Qatar 2022", totalStickers: 0, isPublished: true },
+    { title: "Serie A 2023-2024", totalStickers: 0, isPublished: false },
   ]).returning();
   console.log(`✓ ${albumsInserted.length} album creati`);
 

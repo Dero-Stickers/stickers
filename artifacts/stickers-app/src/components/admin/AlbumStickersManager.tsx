@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -82,13 +82,30 @@ export function AlbumStickersManager({ albumId }: Props) {
           <CardTitle className="text-base">Inserimento rapido</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Incolla un elenco numerato: ogni riga nel formato &quot;1. Nome&quot; o &quot;1 - Nome&quot;
-          </p>
+          <div className="space-y-2 text-xs text-muted-foreground">
+            <p>
+              1. Apri la pagina della raccolta sul sito Panini e clicca <strong>&quot;checklist completa&quot;</strong>.<br />
+              2. Seleziona tutta la lista, <strong>copiala</strong> e incollala qui sotto.<br />
+              3. Clicca <strong>Inserisci figurine</strong>: vengono importate mantenendo <strong>codice e ordine</strong> originali.
+            </p>
+            <p>
+              Ogni riga nel formato <span className="font-mono">codice - Nome</span> — il codice può essere
+              numerico o speciale (es. <span className="font-mono">001 - Trofeo Serie A</span>,
+              <span className="font-mono"> UPD01 - Milan</span>).
+            </p>
+            <a
+              href="https://www.panini.it/shp_ita_it/figurine-panini/sport/calciatori/figurine-e-card-mancanti.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-primary underline"
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> Trova l&apos;album sul sito Panini
+            </a>
+          </div>
           <Textarea
             value={rawList}
             onChange={e => setRawList(e.target.value)}
-            placeholder={"1. Copertina\n2. Lionel Messi\n3. Cristiano Ronaldo\n..."}
+            placeholder={"001 - Trofeo Serie A\n002 - Player of the Match\n003 - Atalanta\n…\nUPD01 - Milan - Vincitrice Supercup"}
             rows={6}
           />
           <Button
@@ -124,7 +141,7 @@ export function AlbumStickersManager({ albumId }: Props) {
                 {(stickers ?? []).map((s, i) => (
                   <tr key={s.id} className={`${i < (stickers?.length ?? 0) - 1 ? "border-b border-border/40" : ""}`}>
                     <td className="px-4 py-2">
-                      <span className="text-sm font-mono text-muted-foreground">{s.number}</span>
+                      <span className="text-sm font-mono text-muted-foreground">{s.code || s.number}</span>
                     </td>
                     <td className="px-4 py-2">
                       {editingId === s.id ? (

@@ -8,7 +8,6 @@
 
 export interface CreateAlbumBody {
   title: string;
-  description?: string;
   coverUrl?: string;
   isPublished?: boolean;
 }

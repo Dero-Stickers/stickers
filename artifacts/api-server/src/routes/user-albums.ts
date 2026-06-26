@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { getSession } from "../middlewares/auth";
 
 const router = Router();
@@ -20,7 +20,8 @@ const getUserAlbums: RequestHandler = async (req, res) => {
       .select({ album: albumsTable, ua: userAlbumsTable })
       .from(userAlbumsTable)
       .innerJoin(albumsTable, eq(albumsTable.id, userAlbumsTable.albumId))
-      .where(eq(userAlbumsTable.userId, session.userId));
+      .where(eq(userAlbumsTable.userId, session.userId))
+      .orderBy(asc(userAlbumsTable.addedAt));
 
     const result = await Promise.all(
       userAlbums.map(async ({ album, ua }) => {
@@ -39,7 +40,6 @@ const getUserAlbums: RequestHandler = async (req, res) => {
         return {
           id: album.id,
           title: album.title,
-          description: album.description,
           coverUrl: album.coverUrl,
           totalStickers: album.totalStickers,
           isPublished: album.isPublished,
@@ -144,13 +144,18 @@ const getUserAlbumStickers: RequestHandler = async (req, res) => {
       .select({ us: userStickersTable, s: stickersTable })
       .from(userStickersTable)
       .innerJoin(stickersTable, eq(stickersTable.id, userStickersTable.stickerId))
-      .where(and(eq(userStickersTable.userId, session.userId), eq(userStickersTable.albumId, albumId)));
+      .where(and(eq(userStickersTable.userId, session.userId), eq(userStickersTable.albumId, albumId)))
+      // Ordine deterministico per numero figurina: senza ORDER BY le righe
+      // aggiornate (cambio stato) "scivolano" in fondo e in vista Tutte
+      // sembrano mancanti / saltano di posizione al tap.
+      .orderBy(asc(stickersTable.number));
 
     res.json(rows.map(r => ({
       stickerId: r.s.id,
       albumId: r.s.albumId,
       state: r.us.state,
       number: r.s.number,
+      code: r.s.code,
       name: r.s.name,
       description: r.s.description,
     })));
@@ -195,6 +200,7 @@ const updateStickerState: RequestHandler = async (req, res) => {
       albumId: row.albumId,
       state: row.state,
       number: s?.number ?? 0,
+      code: s?.code ?? "",
       name: s?.name ?? "",
       description: s?.description ?? null,
     });

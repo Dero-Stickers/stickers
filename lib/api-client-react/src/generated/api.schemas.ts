@@ -80,7 +80,6 @@ export interface RecoveryCodeResponse {
 export interface Album {
   id: number;
   title: string;
-  description?: string | null;
   coverUrl?: string | null;
   totalStickers: number;
   isPublished: boolean;
@@ -91,6 +90,7 @@ export interface Sticker {
   id: number;
   albumId: number;
   number: number;
+  code: string;
   name: string;
   description?: string | null;
 }
@@ -101,7 +101,6 @@ export type AlbumWithStickers = Album & {
 
 export interface CreateAlbumBody {
   title: string;
-  description?: string;
   coverUrl?: string;
   isPublished?: boolean;
 }
@@ -149,6 +148,7 @@ export interface UserSticker {
   albumId: number;
   state: UserStickerState;
   number: number;
+  code: string;
   name: string;
   description?: string | null;
 }

@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Plus, Edit, Eye, EyeOff, Star } from "lucide-react";
+import { useState, useRef, type ChangeEvent } from "react";
+import { Plus, Edit, Eye, EyeOff, Star, Upload } from "lucide-react";
+import { optimizeImage } from "@/lib/optimize-image";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,30 +13,62 @@ import {
   useCreateAlbum,
   useUpdateAlbum,
   useToggleAlbumPublish,
-  getListAlbumsQueryKey,
 } from "@workspace/api-client-react";
 import type { Album } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlbumStickersManager } from "@/components/admin/AlbumStickersManager";
 
+const EMPTY_FORM = { title: "", totalStickers: "", coverUrl: "" };
+// Chiave di cache DEDICATA all'admin: la lista admin (TUTTI gli album, anche
+// nascosti) non deve condividere cache con la vista utente (solo pubblicati),
+// altrimenti gli album nascosti spariscono anche dall'admin.
+const ADMIN_ALBUMS_KEY = ["admin", "albums"] as const;
+
 export function AdminAlbums() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: albums, isLoading } = useListAlbums();
+  const { data: albums, isLoading } = useListAlbums({ query: { queryKey: ADMIN_ALBUMS_KEY } });
   const [showCreate, setShowCreate] = useState(false);
   const [editAlbum, setEditAlbum] = useState<Album | null>(null);
-  const [form, setForm] = useState({ title: "", description: "", totalStickers: "" });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [stickersAlbum, setStickersAlbum] = useState<Album | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: getListAlbumsQueryKey() });
+  const handleCoverFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // consente di ricaricare lo stesso file
+    if (!file) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const blob = await optimizeImage(file, { maxSize: 600, quality: 0.82 });
+      const token = localStorage.getItem("sticker_token");
+      const res = await fetch("/api/albums/cover", {
+        method: "POST",
+        headers: { "Content-Type": blob.type || "image/webp", Authorization: `Bearer ${token ?? ""}` },
+        body: blob,
+      });
+      if (!res.ok) throw new Error("upload");
+      const { url } = await res.json();
+      setForm(p => ({ ...p, coverUrl: url }));
+    } catch {
+      setUploadError("Caricamento non riuscito. Riprova con un'altra immagine.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ADMIN_ALBUMS_KEY });
 
   const createAlbum = useCreateAlbum({
     mutation: {
       onSuccess: () => {
         invalidate();
         setShowCreate(false);
-        setForm({ title: "", description: "", totalStickers: "" });
+        setForm(EMPTY_FORM);
         toast({ title: "Album creato" });
       },
     },
@@ -47,7 +80,7 @@ export function AdminAlbums() {
         invalidate();
         setShowCreate(false);
         setEditAlbum(null);
-        setForm({ title: "", description: "", totalStickers: "" });
+        setForm(EMPTY_FORM);
         toast({ title: "Album aggiornato" });
       },
     },
@@ -66,7 +99,7 @@ export function AdminAlbums() {
     if (!form.title.trim()) return;
     const data = {
       title: form.title,
-      description: form.description || undefined,
+      coverUrl: form.coverUrl.trim() || undefined,
     };
     if (editAlbum) {
       updateAlbum.mutate({ albumId: editAlbum.id, data });
@@ -77,7 +110,7 @@ export function AdminAlbums() {
 
   const openEdit = (album: Album) => {
     setEditAlbum(album);
-    setForm({ title: album.title, description: album.description ?? "", totalStickers: String(album.totalStickers) });
+    setForm({ title: album.title, totalStickers: String(album.totalStickers), coverUrl: album.coverUrl ?? "" });
     setShowCreate(true);
   };
 
@@ -92,7 +125,7 @@ export function AdminAlbums() {
         </div>
         <Button
           className="gap-2 bg-primary text-primary-foreground"
-          onClick={() => { setEditAlbum(null); setForm({ title: "", description: "", totalStickers: "" }); setShowCreate(true); }}
+          onClick={() => { setEditAlbum(null); setForm(EMPTY_FORM); setShowCreate(true); }}
         >
           <Plus className="h-4 w-4" />
           Crea album
@@ -121,7 +154,6 @@ export function AdminAlbums() {
                   <tr key={album.id} className={`${i < (albums?.length ?? 0) - 1 ? "border-b border-border/50" : ""}`}>
                     <td className="px-4 py-3">
                       <p className="font-medium text-sm text-foreground">{album.title}</p>
-                      <p className="text-xs text-muted-foreground hidden sm:block">{album.description}</p>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <span className="text-sm text-foreground">{album.totalStickers}</span>
@@ -182,8 +214,32 @@ export function AdminAlbums() {
               <Input className="mt-1" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Es. Calciatori 2025-2026" />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Descrizione</label>
-              <Input className="mt-1" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Descrizione breve" />
+              <label className="text-sm font-medium text-foreground">Copertina</label>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleCoverFile} />
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                  <Upload className="h-3.5 w-3.5" />
+                  {uploading ? "Carico…" : "Carica immagine"}
+                </Button>
+                {form.coverUrl.trim() && !uploading && (
+                  <Button type="button" variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setForm(p => ({ ...p, coverUrl: "" }))}>
+                    Rimuovi
+                  </Button>
+                )}
+              </div>
+              <Input className="mt-2" value={form.coverUrl} onChange={e => setForm(p => ({ ...p, coverUrl: e.target.value }))} placeholder="…oppure incolla il link di un'immagine" />
+              {uploadError && <p className="mt-1 text-xs text-destructive">{uploadError}</p>}
+              {form.coverUrl.trim() && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img
+                    src={form.coverUrl}
+                    alt="Anteprima copertina"
+                    className="h-16 w-16 rounded-md object-cover border border-border"
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                  <span className="text-xs text-muted-foreground">Anteprima</span>
+                </div>
+              )}
             </div>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => { setShowCreate(false); setEditAlbum(null); }}>Annulla</Button>

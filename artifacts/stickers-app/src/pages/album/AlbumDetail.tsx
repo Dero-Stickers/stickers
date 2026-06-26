@@ -98,13 +98,19 @@ export function AlbumDetail() {
   const missing = Math.max(0, total - owned - duplicates);
   const pct = total > 0 ? Math.round(((owned + duplicates) / total) * 100) : 0;
 
-  const filteredStickers = stickers?.filter(s => {
-    if (filter === "tutte") return true;
-    if (filter === "mancanti") return s.state === "mancante";
-    if (filter === "possedute") return s.state === "posseduta";
-    if (filter === "doppie") return s.state === "doppia";
-    return true;
-  }) ?? [];
+  const filteredStickers = (stickers ?? [])
+    .filter(s => {
+      if (filter === "tutte") return true;
+      // "Mancanti" = tutto ciò che non è posseduta né doppia → coincide sempre
+      // col badge (total - possedute - doppie), anche con stato nullo.
+      if (filter === "mancanti") return s.state !== "posseduta" && s.state !== "doppia";
+      if (filter === "possedute") return s.state === "posseduta";
+      if (filter === "doppie") return s.state === "doppia";
+      return true;
+    })
+    // Ordine stabile per numero: la griglia non dipende dall'ordine del backend
+    // né si riordina quando una figurina cambia stato.
+    .sort((a, b) => a.number - b.number);
 
   const filterOptions: { key: FilterType; label: string; count: number }[] = [
     { key: "tutte", label: "Tutte", count: total },
@@ -191,7 +197,7 @@ export function AlbumDetail() {
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
               >
-                {s.number}
+                {s.code || s.number}
               </button>
             );
           })}
@@ -201,12 +207,12 @@ export function AlbumDetail() {
       <Dialog open={!!selectedSticker} onOpenChange={() => setSelectedSticker(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Figurina #{selectedSticker?.number}</DialogTitle>
+            <DialogTitle>Figurina {selectedSticker?.code || `#${selectedSticker?.number}`}</DialogTitle>
           </DialogHeader>
           {selectedSticker && (
             <div className="space-y-3">
               <div className={`h-24 rounded-lg flex items-center justify-center text-3xl font-black ${stateColors[(selectedSticker.state ?? "mancante") as StickerState]}`}>
-                {selectedSticker.number}
+                {selectedSticker.code || selectedSticker.number}
               </div>
               <p className="font-semibold text-foreground text-lg">{selectedSticker.name}</p>
               {selectedSticker.description && <p className="text-sm text-muted-foreground">{selectedSticker.description}</p>}

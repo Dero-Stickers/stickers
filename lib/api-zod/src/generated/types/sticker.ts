@@ -10,6 +10,7 @@ export interface Sticker {
   id: number;
   albumId: number;
   number: number;
+  code: string;
   name: string;
   description?: string | null;
 }

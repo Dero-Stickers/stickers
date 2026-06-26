@@ -965,9 +965,6 @@ components:
           type: integer
         title:
           type: string
-        description:
-          type: string
-          nullable: true
         coverUrl:
           type: string
           nullable: true
@@ -999,19 +996,19 @@ components:
           type: integer
         number:
           type: integer
+        code:
+          type: string
         name:
           type: string
         description:
           type: string
           nullable: true
-      required: [id, albumId, number, name]
+      required: [id, albumId, number, code, name]
 
     CreateAlbumBody:
       type: object
       properties:
         title:
-          type: string
-        description:
           type: string
         coverUrl:
           type: string
@@ -1089,12 +1086,14 @@ components:
           enum: [mancante, posseduta, doppia]
         number:
           type: integer
+        code:
+          type: string
         name:
           type: string
         description:
           type: string
           nullable: true
-      required: [stickerId, albumId, state, number, name]
+      required: [stickerId, albumId, state, number, code, name]
 
     UpdateStickerStateBody:
       type: object

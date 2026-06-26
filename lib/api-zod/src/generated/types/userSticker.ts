@@ -12,6 +12,7 @@ export interface UserSticker {
   albumId: number;
   state: UserStickerState;
   number: number;
+  code: string;
   name: string;
   description?: string | null;
 }
