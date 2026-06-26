@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
-import { BookOpen, Plus, ChevronRight, Trash2 } from "lucide-react";
+import { BookOpen, Plus, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlbumCover } from "@/components/album/AlbumCover";
 import {
@@ -32,6 +31,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 export function AlbumList() {
   const [activeTab, setActiveTab] = useState<"my" | "available">("my");
   const [removeId, setRemoveId] = useState<number | null>(null);
+  const [removeStep, setRemoveStep] = useState<1 | 2>(1);
   const [previewAlbum, setPreviewAlbum] = useState<{ title: string; coverUrl?: string | null; totalStickers: number; id: number } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -41,16 +41,27 @@ export function AlbumList() {
 
   // Ordine sempre dal più recente al più vecchio (titolo es. "Calciatori 2025-2026").
   const byTitleDesc = (a: { title: string }, b: { title: string }) => b.title.localeCompare(a.title);
+  // Al primo caricamento, se l'utente non ha ancora album, apri direttamente
+  // su "Disponibili" (la scheda "I miei album" vuota non è utile come default).
+  // Una sola volta: dopo, la scelta manuale del tab resta libera.
+  const didInitTab = useRef(false);
+  useEffect(() => {
+    if (didInitTab.current || myAlbums === undefined) return;
+    didInitTab.current = true;
+    if ((myAlbums?.length ?? 0) === 0) setActiveTab("available");
+  }, [myAlbums]);
+
   const myAlbumIds = new Set(myAlbums?.map(a => a.id) ?? []);
   const sortedMyAlbums = [...(myAlbums ?? [])].sort(byTitleDesc);
-  const availableAlbums = (allAlbums?.filter(a => a.isPublished && !myAlbumIds.has(a.id)) ?? []).sort(byTitleDesc);
+  // Tutti gli album pubblicati: quelli già aggiunti restano visibili ma disabilitati.
+  const availableAlbums = (allAlbums?.filter(a => a.isPublished) ?? []).sort(byTitleDesc);
 
   const addAlbum = useAddAlbumToUser({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetUserAlbumsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListAlbumsQueryKey() });
-        toast({ title: "Album aggiunto", description: "Ora puoi gestire le tue figurine!" });
+        toast({ title: "Album aggiunto", description: "Ora puoi gestire le tue figurine!", duration: 3000 });
       },
     },
   });
@@ -93,10 +104,10 @@ export function AlbumList() {
 
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 min-h-0">
         {activeTab === "my" && (
-          <div className="space-y-2">
+          <div className="grid gap-2 md:grid-cols-2 items-start">
             {loadingMy && [1, 2].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
             {!loadingMy && (myAlbums?.length ?? 0) === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-12 text-muted-foreground md:col-span-2">
                 <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">Nessun album aggiunto</p>
                 <p className="text-sm mt-1">Vai su "Disponibili" per aggiungere il tuo primo album</p>
@@ -105,45 +116,21 @@ export function AlbumList() {
             {sortedMyAlbums.map(ua => (
               <Card key={ua.id} className="shadow-sm">
                 <CardContent className="p-0">
-                  <Link href={`/album/${ua.id}`}>
-                    <div className="p-4 cursor-pointer">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex flex-1 min-w-0 mr-3 gap-3">
-                          <AlbumCover url={ua.coverUrl} title={ua.title} className="h-12 w-12" />
-                          <div className="min-w-0">
-                            <p className="font-semibold text-foreground truncate">{ua.title}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{ua.totalStickers} figurine totali</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-primary font-bold text-sm">{ua.completionPercent}%</span>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </div>
+                  <div className="flex items-center">
+                    <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 p-3 cursor-pointer">
+                      <AlbumCover url={ua.coverUrl} title={ua.title} className="h-12 w-12 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground truncate">{ua.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{ua.totalStickers} figurine</p>
                       </div>
-                      <Progress value={ua.completionPercent} className="h-1.5 mb-2" />
-                      <div className="flex gap-3 text-xs">
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-                          <span className="text-muted-foreground">{ua.owned} possedute</span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-                          <span className="text-muted-foreground">{ua.duplicates} doppie</span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-gray-300 inline-block" />
-                          <span className="text-muted-foreground">{ua.missing} mancanti</span>
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                  <div className="px-4 pb-3 flex justify-end border-t border-border/50 pt-2">
+                      <span className="text-primary font-bold text-sm shrink-0">{ua.completionPercent}%</span>
+                    </Link>
                     <button
-                      className="text-xs text-destructive flex items-center gap-1 hover:opacity-70 transition-opacity"
-                      onClick={() => setRemoveId(ua.id)}
+                      className="self-stretch flex items-center px-3 text-destructive border-l border-border/50"
+                      onClick={() => { setRemoveStep(1); setRemoveId(ua.id); }}
+                      aria-label={`Rimuovi ${ua.title}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Rimuovi
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </CardContent>
@@ -153,16 +140,18 @@ export function AlbumList() {
         )}
 
         {activeTab === "available" && (
-          <div className="space-y-2">
+          <div className="grid gap-2 md:grid-cols-2 items-start">
             {loadingAll && [1, 2].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
             {!loadingAll && availableAlbums.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-12 text-muted-foreground md:col-span-2">
                 <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">Hai già tutti gli album disponibili</p>
+                <p className="font-medium">Nessun album disponibile al momento</p>
               </div>
             )}
-            {availableAlbums.map(album => (
-              <Card key={album.id} className="shadow-sm">
+            {availableAlbums.map(album => {
+              const added = myAlbumIds.has(album.id);
+              return (
+              <Card key={album.id} className={`shadow-sm ${added ? "opacity-60" : ""}`}>
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
                     <button
@@ -174,21 +163,34 @@ export function AlbumList() {
                       <AlbumCover url={album.coverUrl} title={album.title} className="h-12 w-12 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-foreground text-sm truncate">{album.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{album.totalStickers} figurine</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {album.totalStickers} figurine{added ? " · Già aggiunto" : ""}
+                        </p>
                       </div>
                     </button>
-                    <Button
-                      aria-label={`Aggiungi ${album.title}`}
-                      className="h-11 w-11 shrink-0 rounded-full p-0 bg-accent text-accent-foreground hover:bg-accent/90"
-                      disabled={addAlbum.isPending}
-                      onClick={() => addAlbum.mutate({ albumId: album.id })}
-                    >
-                      <Plus className="h-5 w-5" />
-                    </Button>
+                    {added ? (
+                      <div
+                        className="h-11 w-11 shrink-0 rounded-full p-0 flex items-center justify-center bg-muted text-muted-foreground"
+                        aria-label="Già aggiunto"
+                        title="Già aggiunto"
+                      >
+                        <Check className="h-5 w-5" />
+                      </div>
+                    ) : (
+                      <Button
+                        aria-label={`Aggiungi ${album.title}`}
+                        className="h-11 w-11 shrink-0 rounded-full p-0 bg-accent text-accent-foreground hover:bg-accent/90"
+                        disabled={addAlbum.isPending}
+                        onClick={() => addAlbum.mutate({ albumId: album.id })}
+                      >
+                        <Plus className="h-5 w-5" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -209,34 +211,63 @@ export function AlbumList() {
             <AlbumCover url={previewAlbum?.coverUrl} title={previewAlbum?.title ?? ""} className="w-full aspect-square" />
           )}
           <p className="text-sm text-muted-foreground text-center">{previewAlbum?.totalStickers} figurine</p>
-          <Button
-            className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold gap-2"
-            disabled={addAlbum.isPending}
-            onClick={() => { if (previewAlbum) addAlbum.mutate({ albumId: previewAlbum.id }); setPreviewAlbum(null); }}
-          >
-            <Plus className="h-4 w-4" />
-            Aggiungi album
-          </Button>
+          {previewAlbum && myAlbumIds.has(previewAlbum.id) ? (
+            <div className="w-full flex items-center justify-center gap-2 rounded-md py-2.5 font-semibold bg-green-100 text-green-700 border border-green-200">
+              <Check className="h-4 w-4" />
+              Album aggiunto
+            </div>
+          ) : (
+            <Button
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold gap-2"
+              disabled={addAlbum.isPending}
+              onClick={() => { if (previewAlbum) addAlbum.mutate({ albumId: previewAlbum.id }); setPreviewAlbum(null); }}
+            >
+              <Plus className="h-4 w-4" />
+              Aggiungi album
+            </Button>
+          )}
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={removeId !== null} onOpenChange={() => setRemoveId(null)}>
+      <AlertDialog open={removeId !== null} onOpenChange={v => { if (!v) { setRemoveId(null); setRemoveStep(1); } }}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Rimuovere l'album?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tutti i progressi delle figurine per questo album verranno eliminati.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => removeId !== null && removeAlbum.mutate({ albumId: removeId })}
-            >
-              Rimuovi
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          {removeStep === 1 ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Rimuovere l'album?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tutti i progressi delle figurine per questo album verranno eliminati.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <Button
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => setRemoveStep(2)}
+                >
+                  Continua
+                </Button>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Sei davvero sicuro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  L'operazione è definitiva e non può essere annullata.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => removeId !== null && removeAlbum.mutate({ albumId: removeId })}
+                >
+                  Sì, rimuovi
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
         </AlertDialogContent>
       </AlertDialog>
     </div>

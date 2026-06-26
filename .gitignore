@@ -68,5 +68,7 @@ BACKUP/
 # Regole operative scaricate da App Control (rigenerate a ogni sessione)
 CLAUDE.md
 
-# Cartella di lavoro import album (immagini su Storage, dati nel DB)
+# Cartella sorgente import album (raw scraping: immagini + link + scraped.json).
+# Il dataset "default" versionato vive in lib/db/src/data/calciatori.json.
+album-source/
 INFO ALBUM/

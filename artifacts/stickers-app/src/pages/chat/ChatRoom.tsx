@@ -79,19 +79,22 @@ export function ChatRoom() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-[100dvh] bg-sidebar">
-        <div className="px-4 pt-12 pb-4">
-          <Skeleton className="h-8 w-36 bg-white/10" />
-        </div>
-        <div className="flex-1 bg-background px-4 py-4 space-y-3">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-2xl" />)}
+      <div className="min-h-[100dvh] bg-muted/40">
+        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md md:max-w-2xl flex-col bg-sidebar md:shadow-xl">
+          <div className="px-4 pt-12 pb-4">
+            <Skeleton className="h-8 w-36 bg-white/10" />
+          </div>
+          <div className="flex-1 bg-background px-4 py-4 space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-2xl" />)}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh]">
+    <div className="min-h-[100dvh] bg-muted/40">
+    <div className="relative flex flex-col min-h-[100dvh] mx-auto w-full max-w-md md:max-w-2xl bg-background md:shadow-xl">
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -138,7 +141,7 @@ export function ChatRoom() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-3 flex items-center gap-2 pb-safe">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl bg-card border-t border-border px-4 py-3 flex items-center gap-2 pb-safe">
         <Input
           value={text}
           onChange={e => setText(e.target.value)}
@@ -155,6 +158,7 @@ export function ChatRoom() {
           <Send className="h-4 w-4" />
         </Button>
       </div>
+    </div>
     </div>
   );
 }

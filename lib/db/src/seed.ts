@@ -1,12 +1,19 @@
 /**
- * Seed — popola il DB con dati mock realistici
- * Run: pnpm --filter @workspace/db run seed
+ * Seed — popola il DB con dati MOCK di sviluppo (utenti/album finti).
+ *
+ * ⚠️ DISTRUTTIVO: cancella TUTTE le tabelle (utenti, album, figurine, progressi)
+ *    prima di inserire i dati finti. NON usare per ripristinare gli album reali:
+ *    per quello esiste `restore:albums` (additivo, non distruttivo).
+ *
+ * Protetto: si rifiuta di partire senza `ALLOW_DESTRUCTIVE_SEED=1`, così non può
+ * cancellare il DB per errore.
+ *   ALLOW_DESTRUCTIVE_SEED=1 pnpm --filter @workspace/db run seed:mock-dev
  */
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import {
   usersTable, albumsTable, stickersTable,
-  userAlbumsTable, userStickersTable, appSettingsTable
+  userAlbumsTable, userStickersTable
 } from "./schema/index.js";
 import { eq } from "drizzle-orm";
 
@@ -23,7 +30,7 @@ const pool = new Pool({
 const db = drizzle(pool, {
   schema: {
     usersTable, albumsTable, stickersTable,
-    userAlbumsTable, userStickersTable, appSettingsTable
+    userAlbumsTable, userStickersTable
   }
 });
 
@@ -40,6 +47,15 @@ function hashAnswer(answer: string): string {
 }
 
 async function main() {
+  if (process.env.ALLOW_DESTRUCTIVE_SEED !== "1") {
+    console.error([
+      "⛔ STOP: questo seed è DISTRUTTIVO (cancella tutto e inserisce dati finti).",
+      "   Per ripristinare gli ALBUM REALI usa:  pnpm --filter @workspace/db run restore:albums",
+      "   Per forzare comunque il mock di sviluppo:",
+      "   ALLOW_DESTRUCTIVE_SEED=1 pnpm --filter @workspace/db run seed:mock-dev",
+    ].join("\n"));
+    process.exit(1);
+  }
   console.log("Avvio seed...");
 
   // Pulizia tabelle (in ordine FK) e reset sequenze
@@ -47,7 +63,6 @@ async function main() {
   await db.delete(userAlbumsTable);
   await db.delete(stickersTable);
   await db.delete(albumsTable);
-  await db.delete(appSettingsTable);
   await db.delete(usersTable);
 
   // Reset delle sequenze auto-increment
@@ -261,17 +276,8 @@ async function main() {
   ]);
   console.log("✓ Stato figurine impostato");
 
-  // 6. Impostazioni app
-  await db.insert(appSettingsTable).values([
-    { key: "support_email", value: "dero975@gmail.com", description: "Email supporto" },
-    { key: "demo_hours", value: "24", description: "Durata demo in ore" },
-    { key: "demo_enabled", value: "true", description: "Demo abilitata" },
-    { key: "app_name", value: "STICKERs matchbox", description: "Nome app" },
-    { key: "privacy_policy", value: "Politica sulla privacy dell'app STICKERs matchbox.", description: "Privacy policy" },
-    { key: "terms", value: "Termini e condizioni d'uso dell'app STICKERs matchbox.", description: "Termini" },
-    { key: "cookie_policy", value: "Policy cookie dell'app STICKERs matchbox.", description: "Cookie policy" },
-  ]);
-  console.log("✓ Impostazioni app inserite");
+  // Nota: app_settings (privacy/termini/cookie) NON sono gestite qui — vivono
+  // nel DB come fonte di verità e si modificano dall'area admin.
 
   console.log("\n✅ Seed completato!");
   console.log("  mario75 / 1234 — demo attiva (ancora 20h)");

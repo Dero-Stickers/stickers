@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { MapPin, Trophy, ChevronRight, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,20 +7,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   useGetBestMatches,
   useGetNearbyMatches,
-  GetNearbyMatchesRadius,
   getGetNearbyMatchesQueryKey,
 } from "@workspace/api-client-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 
-const RADIUS_OPTIONS = [5, 10, 20, 50, 100] as const;
-type RadiusValue = typeof RADIUS_OPTIONS[number];
+const RADIUS_MIN = 1;
+const RADIUS_MAX = 100;
 
 export function MatchList() {
   const [activeTab, setActiveTab] = useState<"best" | "nearby">("best");
-  const [radiusKm, setRadiusKm] = useState<RadiusValue>(10);
+  const [radiusKm, setRadiusKm] = useState(10);
+  // Lo slider aggiorna subito il valore mostrato; la query parte "in ritardo"
+  // (debounce 300ms) per non interrogare il backend a ogni km del trascinamento.
+  const [radiusQuery, setRadiusQuery] = useState(10);
+  useEffect(() => {
+    const t = setTimeout(() => setRadiusQuery(radiusKm), 300);
+    return () => clearTimeout(t);
+  }, [radiusKm]);
 
   const { data: bestMatches, isLoading: loadingBest } = useGetBestMatches();
-  const nearbyParams = { radius: radiusKm as typeof GetNearbyMatchesRadius[keyof typeof GetNearbyMatchesRadius] };
+  const nearbyParams = { radius: radiusQuery };
   const { data: nearbyMatches, isLoading: loadingNearby } = useGetNearbyMatches(
     nearbyParams,
     { query: { queryKey: getGetNearbyMatchesQueryKey(nearbyParams), enabled: activeTab === "nearby" } }
@@ -64,16 +70,19 @@ export function MatchList() {
               </div>
               <Badge className="bg-primary/10 text-primary border-0 font-bold">{radiusKm} km</Badge>
             </div>
-            <div className="flex gap-2 mt-2">
-              {RADIUS_OPTIONS.map(r => (
-                <button
-                  key={r}
-                  onClick={() => setRadiusKm(r)}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${radiusKm === r ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-transparent"}`}
-                >
-                  {r} km
-                </button>
-              ))}
+            <input
+              type="range"
+              min={RADIUS_MIN}
+              max={RADIUS_MAX}
+              step={1}
+              value={radiusKm}
+              onChange={e => setRadiusKm(Number(e.target.value))}
+              aria-label="Raggio di ricerca in km"
+              className="w-full h-6 cursor-pointer accent-primary touch-none"
+            />
+            <div className="flex justify-between text-[11px] text-muted-foreground mt-1">
+              <span>{RADIUS_MIN} km</span>
+              <span>{RADIUS_MAX} km</span>
             </div>
           </div>
         )}
@@ -93,7 +102,7 @@ export function MatchList() {
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2 items-start">
           {matches.map(match => (
             <Link key={match.userId} href={`/match/${match.userId}`}>
               <Card className="shadow-sm cursor-pointer hover:border-primary transition-colors">

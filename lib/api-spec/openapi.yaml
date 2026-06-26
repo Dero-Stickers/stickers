@@ -476,9 +476,12 @@ paths:
       parameters:
         - name: radius
           in: query
+          description: Raggio di ricerca in km (1-100).
           schema:
             type: integer
-            enum: [5, 10, 20, 50, 100]
+            minimum: 1
+            maximum: 100
+            default: 10
       responses:
         "200":
           description: Nearby matches

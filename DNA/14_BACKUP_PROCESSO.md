@@ -17,7 +17,15 @@ Permette di riprendere il progetto senza dover ricostruire mentalmente le decisi
 
 - Cartella `BACKUP/` nella root (ignorata da git, mai committata)
 - Backup creati SOLO su richiesta esplicita dell'utente
-- Un solo file compresso per backup
+- Un solo file compresso per backup (snapshot progetto) + eventuale snapshot dati DB
+
+### Backup dati DB (logico)
+
+- `pnpm --filter @workspace/db run backup` → `BACKUP/backup_<timestamp>.json`: snapshot
+  logico di tutte le tabelle (righe complete). Alternativa a `pg_dump` quando non è
+  installato; sufficiente per ripristinare i dati dopo test/pulizie.
+- Gli album "default" hanno inoltre un ripristino dedicato e additivo: vedi
+  `09_DATABASE.md` → `restore:albums`.
 
 ### Formato Backup
 

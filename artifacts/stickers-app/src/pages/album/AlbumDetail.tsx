@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
-import { AlbumCover } from "@/components/album/AlbumCover";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -57,7 +57,6 @@ export function AlbumDetail() {
   const [filter, setFilter] = useState<FilterType>("tutte");
   const [selectedSticker, setSelectedSticker] = useState<UserSticker | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  const [showCover, setShowCover] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: userAlbums } = useGetUserAlbums();
@@ -114,11 +113,11 @@ export function AlbumDetail() {
     // né si riordina quando una figurina cambia stato.
     .sort((a, b) => a.number - b.number);
 
-  const filterOptions: { key: FilterType; label: string; count: number }[] = [
-    { key: "tutte", label: "Tutte", count: total },
-    { key: "mancanti", label: "Mancanti", count: missing },
-    { key: "possedute", label: "Possedute", count: owned },
-    { key: "doppie", label: "Doppie", count: duplicates },
+  const filterOptions: { key: FilterType; label: string }[] = [
+    { key: "tutte", label: "Tutte" },
+    { key: "possedute", label: "Mie" },
+    { key: "doppie", label: "Doppie" },
+    { key: "mancanti", label: "Mancanti" },
   ];
 
   if (isLoading) {
@@ -136,72 +135,64 @@ export function AlbumDetail() {
   const albumTitle = albumInfo?.title ?? `Album #${albumId}`;
 
   return (
-    <div className="min-h-full">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-4">
-        <button className="flex items-center gap-1.5 text-sidebar-foreground/85 mb-3 text-sm" onClick={() => setLocation("/album")}>
-          <ArrowLeft className="h-4 w-4" />
-          Album
-        </button>
-        <div className="flex items-center gap-3 mb-3">
-          {albumInfo?.coverUrl ? (
-            <button
-              type="button"
-              onClick={() => setShowCover(true)}
-              className="relative shrink-0 rounded-lg"
-              aria-label="Ingrandisci copertina"
-            >
-              <AlbumCover url={albumInfo.coverUrl} title={albumTitle} className="h-18 w-18" />
-            </button>
-          ) : (
-            <AlbumCover url={albumInfo?.coverUrl} title={albumTitle} className="h-18 w-18" />
-          )}
-          <h1 className="text-lg font-bold leading-tight">{albumTitle}</h1>
+    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+      <AppHeader />
+      <div className="px-4 pt-3 pb-3 shrink-0">
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            className="shrink-0 -ml-1 p-1.5 rounded-full text-foreground active:scale-95 transition-transform"
+            onClick={() => setLocation("/album")}
+            aria-label="Torna agli album"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="flex-1 text-lg font-bold leading-tight text-foreground text-center pr-7">{albumTitle}</h1>
         </div>
         <div className="grid grid-cols-4 gap-2 text-center">
           <div>
-            <p className="text-xl font-bold">{total}</p>
-            <p className="text-xs text-sidebar-foreground/85">Totale</p>
+            <p className="text-xl font-bold text-foreground">{total}</p>
+            <p className="text-xs text-muted-foreground">Totale</p>
           </div>
           <div>
-            <p className="text-xl font-bold text-green-400">{owned}</p>
-            <p className="text-xs text-sidebar-foreground/85">Possedute</p>
+            <p className="text-xl font-bold text-green-600">{owned}</p>
+            <p className="text-xs text-muted-foreground">Possedute</p>
           </div>
           <div>
-            <p className="text-xl font-bold text-red-400">{duplicates}</p>
-            <p className="text-xs text-sidebar-foreground/85">Doppie</p>
+            <p className="text-xl font-bold text-red-500">{duplicates}</p>
+            <p className="text-xs text-muted-foreground">Doppie</p>
           </div>
           <div>
-            <p className="text-xl font-bold text-sidebar-foreground/85">{missing}</p>
-            <p className="text-xs text-sidebar-foreground/85">Mancanti</p>
+            <p className="text-xl font-bold text-foreground">{missing}</p>
+            <p className="text-xs text-muted-foreground">Mancanti</p>
           </div>
         </div>
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 bg-sidebar-border/40 rounded-full h-1.5">
-            <div className="h-1.5 rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
+          <div className="flex-1 bg-muted rounded-full h-1.5">
+            <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
           </div>
-          <span className="text-xs font-bold text-accent">{pct}%</span>
+          <span className="text-xs font-bold text-primary">{pct}%</span>
         </div>
       </div>
 
-      <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar">
+      <div className="px-4 pb-3 grid grid-cols-4 gap-2 shrink-0">
         {filterOptions.map(opt => (
           <button
             key={opt.key}
             onClick={() => setFilter(opt.key)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${filter === opt.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+            className={`px-2 py-1.5 rounded-full text-xs font-semibold border text-center transition-colors ${filter === opt.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
           >
-            {opt.label} <span className="opacity-70">({opt.count})</span>
+            {opt.label}
           </button>
         ))}
       </div>
 
-      <div className="px-3 pb-6">
+      <div className="flex-1 overflow-y-auto px-3 pb-6 min-h-0">
         {filteredStickers.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <p className="font-medium">Nessuna figurina in questa categoria</p>
           </div>
         )}
-        <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-9">
+        <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12">
           {filteredStickers.map(s => {
             const st = (s.state ?? "mancante") as StickerState;
             return (
@@ -217,6 +208,16 @@ export function AlbumDetail() {
               </button>
             );
           })}
+        </div>
+
+        <div className="pt-6 pb-2">
+          <Button
+            variant="outline"
+            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+            onClick={() => setShowRemoveDialog(true)}
+          >
+            Rimuovi album dalla collezione
+          </Button>
         </div>
       </div>
 
@@ -253,31 +254,6 @@ export function AlbumDetail() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showCover} onOpenChange={setShowCover}>
-        <DialogContent className="max-w-xs p-3">
-          <DialogHeader>
-            <DialogTitle className="text-base">{albumTitle}</DialogTitle>
-          </DialogHeader>
-          {albumInfo?.coverUrl && (
-            <img
-              src={albumInfo.coverUrl}
-              alt={`Copertina ${albumTitle}`}
-              decoding="async"
-              className="w-full rounded-lg object-contain"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <div className="px-4 pb-8">
-        <Button
-          variant="outline"
-          className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
-          onClick={() => setShowRemoveDialog(true)}
-        >
-          Rimuovi album dalla collezione
-        </Button>
-      </div>
 
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent>

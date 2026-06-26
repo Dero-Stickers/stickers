@@ -364,16 +364,10 @@ export interface AppSettings {
 }
 
 export type GetNearbyMatchesParams = {
-  radius?: GetNearbyMatchesRadius;
+  /**
+   * Raggio di ricerca in km (1-100).
+   * @minimum 1
+   * @maximum 100
+   */
+  radius?: number;
 };
-
-export type GetNearbyMatchesRadius =
-  (typeof GetNearbyMatchesRadius)[keyof typeof GetNearbyMatchesRadius];
-
-export const GetNearbyMatchesRadius = {
-  NUMBER_5: 5,
-  NUMBER_10: 10,
-  NUMBER_20: 20,
-  NUMBER_50: 50,
-  NUMBER_100: 100,
-} as const;

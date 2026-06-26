@@ -391,16 +391,16 @@ export const GetBestMatchesResponse = zod.array(GetBestMatchesResponseItem);
 /**
  * @summary Get nearby matches filtered by distance
  */
+export const getNearbyMatchesQueryRadiusDefault = 10;
+export const getNearbyMatchesQueryRadiusMax = 100;
+
 export const GetNearbyMatchesQueryParams = zod.object({
-  radius: zod
-    .union([
-      zod.literal(5),
-      zod.literal(10),
-      zod.literal(20),
-      zod.literal(50),
-      zod.literal(100),
-    ])
-    .optional(),
+  radius: zod.coerce
+    .number()
+    .min(1)
+    .max(getNearbyMatchesQueryRadiusMax)
+    .default(getNearbyMatchesQueryRadiusDefault)
+    .describe("Raggio di ricerca in km (1-100)."),
 });
 
 export const GetNearbyMatchesResponseItem = zod.object({

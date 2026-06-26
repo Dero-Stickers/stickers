@@ -19,6 +19,8 @@
 
 ### "I miei album"
 Album già aggiunti al profilo utente. Gestibili (stati figurine).
+Default tab: se l'utente non ha ancora album, la pagina apre direttamente su
+"Disponibili" (al primo caricamento; poi la scelta del tab resta libera).
 
 ### "Album disponibili"
 Album pubblicati dall'admin non ancora aggiunti. Clic su "Aggiungi album":

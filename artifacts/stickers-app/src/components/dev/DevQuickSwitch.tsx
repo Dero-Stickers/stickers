@@ -1,7 +1,7 @@
 /**
  * DevQuickSwitch — STRUMENTO DI SOLO SVILUPPO.
  *
- * Pulsante tondo fisso in alto a sinistra: mostra "U" in vista utente e "A" in
+ * Pulsante tondo fisso in alto a destra: mostra "U" in vista utente e "A" in
  * vista admin; in un clic passa da una all'altra. Nessun prompt, nessuna
  * autenticazione manuale: usa account di test predefiniti solo in dev.
  *
@@ -56,7 +56,7 @@ export function DevQuickSwitch() {
       disabled={busy}
       aria-label="DEV: cambia vista User/Admin"
       title="DEV — cambia vista User/Admin"
-      className="fixed left-4 z-[9999] flex h-11 w-11 items-center justify-center rounded-full bg-[#1a2d45] text-base font-bold text-white shadow-lg transition active:scale-95 disabled:opacity-60"
+      className="fixed right-4 z-[9999] flex h-11 w-11 items-center justify-center rounded-full bg-[#1a2d45] text-base font-bold text-white shadow-lg transition active:scale-95 disabled:opacity-60"
       style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
     >
       {busy ? "…" : currentUser?.isAdmin ? "A" : "U"}

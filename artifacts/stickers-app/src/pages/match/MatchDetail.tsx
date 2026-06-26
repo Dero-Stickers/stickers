@@ -149,7 +149,7 @@ export function MatchDetail() {
         ))}
       </div>
 
-      <div className="fixed bottom-16 left-0 right-0 px-4 pb-2 pt-3 bg-background/95 backdrop-blur border-t border-border">
+      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl px-4 pb-2 pt-3 bg-background/95 backdrop-blur border-t border-border">
         <Button
           className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 font-bold gap-2 text-base"
           onClick={handleOpenChat}

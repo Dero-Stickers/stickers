@@ -31,10 +31,22 @@ export function MobileLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background">
-      <main className="flex-1 pb-16 overflow-y-auto">{children}</main>
+    // Su desktop/tablet l'app resta centrata in una colonna stile mobile
+    // (max ~448px) con sfondo neutro ai lati; su telefono occupa tutto lo schermo.
+    <div className="min-h-[100dvh] bg-muted/40">
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md md:max-w-2xl flex-col bg-background md:shadow-xl">
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+        >{children}</main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border flex items-center justify-around h-16 px-2 pb-safe z-50">
+      {/* Tab bar nativa: riga icone piena da 4rem SOPRA la safe-area; lo sfondo
+          della barra si estende sotto (home indicator) senza schiacciare le icone. */}
+      <nav
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl bg-card border-t border-border z-50"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path));
           return (
@@ -55,7 +67,9 @@ export function MobileLayout({ children }: { children: ReactNode }) {
             </Link>
           );
         })}
+        </div>
       </nav>
+      </div>
     </div>
   );
 }

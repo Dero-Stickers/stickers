@@ -161,6 +161,12 @@ function toast({ ...props }: Toast) {
     },
   })
 
+  // Auto-dismiss quando viene indicata una durata finita (es. toast informativi
+  // come "Album aggiunto" con duration: 3000). Senza `duration` resta invariato.
+  if (typeof props.duration === "number" && Number.isFinite(props.duration)) {
+    setTimeout(() => dismiss(), props.duration)
+  }
+
   return {
     id: id,
     dismiss,

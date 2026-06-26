@@ -26,7 +26,6 @@ export * from "./demoStatusResponse";
 export * from "./demoStatusResponseDemoStatus";
 export * from "./errorResponse";
 export * from "./getNearbyMatchesParams";
-export * from "./getNearbyMatchesRadius";
 export * from "./healthStatus";
 export * from "./loginBody";
 export * from "./matchAlbumDetail";

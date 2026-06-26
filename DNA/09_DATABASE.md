@@ -124,8 +124,28 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - **Produzione**: PostgreSQL su Supabase, connessione via `SUPABASE_DATABASE_URL`
   (SSL abilitato). Il client (`lib/db/src/index.ts`) imposta `search_path=public`.
 - **Push schema**: `cd lib/db && pnpm push-force` (Drizzle Kit).
-- **Seed**: `pnpm --filter @workspace/db run seed`.
-- Stato attuale: 11 tabelle con indici integri (dati di test/finti).
+- Stato attuale: 11 tabelle con indici integri.
+
+### Seed e ripristino album "default" (sicuro)
+
+Gli album reali (23 raccolte Calciatori, 17.581 figurine) sono **versionati nel repo** e
+ripristinabili in qualsiasi momento, senza re-scraping.
+
+- **Dataset versionato**: `lib/db/src/data/calciatori.json.gz` — fonte di verità "default"
+  (titolo, copertina, pubblicazione, figurine con `number`/`code`/`name`). Committato in git,
+  **compresso gzip** (~188 KB invece di ~1.8 MB): è dato di restore, non serve al runtime.
+- **`run export:albums`** — rigenera quel file fotografando il DB attuale (sola lettura).
+  Da usare solo dopo aver modificato di proposito il set di album da admin.
+- **`run restore:albums`** — ripristina gli album mancanti dal file. **Additivo e non
+  distruttivo**: crea gli album assenti e riempie SOLO le figurine mancanti
+  (`ON CONFLICT (album_id, number) DO NOTHING`); non cancella nulla, quindi **non tocca i
+  progressi degli utenti** (`user_stickers`/`user_albums`). Idempotente.
+- **`run backup`** — snapshot logico JSON di tutte le tabelle in `BACKUP/` (git-ignored).
+- ⚠️ **`seed:mock-dev`** (ex `seed`) è **DISTRUTTIVO** (cancella tutto, inserisce dati finti):
+  protetto da `ALLOW_DESTRUCTIVE_SEED=1`, non può partire per errore. Per riavere gli album
+  reali si usa `restore:albums`, MAI il seed mock.
+- Sorgente raw dello scraping (immagini copertine + link) in `album-source/` (locale,
+  git-ignored): rete di sicurezza per ricaricare le copertine su Storage se servisse.
 
 ### Sicurezza accessi (RLS)
 

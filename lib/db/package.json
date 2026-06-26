@@ -10,7 +10,10 @@
   "scripts": {
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
-    "seed": "tsx src/seed.ts"
+    "export:albums": "tsx src/export-albums.ts",
+    "restore:albums": "tsx src/restore-albums.ts",
+    "backup": "tsx src/backup-db.ts",
+    "seed:mock-dev": "tsx src/seed.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

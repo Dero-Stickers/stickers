@@ -5,8 +5,12 @@
  * Sticker Matchbox API
  * OpenAPI spec version: 0.1.0
  */
-import type { GetNearbyMatchesRadius } from "./getNearbyMatchesRadius";
 
 export type GetNearbyMatchesParams = {
-  radius?: GetNearbyMatchesRadius;
+  /**
+   * Raggio di ricerca in km (1-100).
+   * @minimum 1
+   * @maximum 100
+   */
+  radius?: number;
 };
