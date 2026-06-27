@@ -3,10 +3,10 @@ import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, MapPin, MessageSquare, X, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { useToast } from "@/hooks/use-toast";
 import {
   useGetMatchDetail,
@@ -66,98 +66,106 @@ export function MatchDetail() {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-40 w-full" />
+      <div className="flex flex-col h-[calc(100dvh-4rem)]">
+        <AppHeader />
+        <div className="p-4 space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
       </div>
     );
   }
 
   if (!detail) {
     return (
-      <div className="flex items-center justify-center min-h-full p-4">
-        <p className="text-muted-foreground">Match non trovato</p>
+      <div className="flex flex-col h-[calc(100dvh-4rem)]">
+        <AppHeader />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <p className="text-muted-foreground">Match non trovato</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full pb-24">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-6">
-        <button className="flex items-center gap-1.5 text-sidebar-foreground/85 mb-3 text-sm" onClick={() => setLocation("/match")}>
+    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+      <AppHeader />
+
+      {/* Testata FISSA: indietro + nome + bottone chat tondo, allineato col nome */}
+      <div className="shrink-0 px-4 pt-3 pb-3 border-b border-border/60">
+        <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground mb-2 text-sm" onClick={() => setLocation("/match")}>
           <ArrowLeft className="h-4 w-4" />
           Match
         </button>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent text-lg uppercase">
-            {detail.nickname.slice(0, 2)}
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">{detail.nickname}</h1>
-            <p className="text-sidebar-foreground/85 text-sm flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-foreground truncate">{detail.nickname}</h1>
+            <p className="text-muted-foreground text-sm flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
               {detail.area}
-              {detail.distanceKm != null && <span className="ml-1">{detail.distanceKm.toFixed(1)} km</span>}
+              {detail.distanceKm != null && <span>· {detail.distanceKm.toFixed(1)} km</span>}
+            </p>
+            <p className="text-sm mt-1 text-foreground">
+              <span className="text-lg font-black text-accent">{detail.totalExchanges}</span> scambi possibili
             </p>
           </div>
-        </div>
-        <div className="mt-4 text-center bg-white/10 rounded-xl py-3">
-          <p className="text-3xl font-black text-accent">{detail.totalExchanges}</p>
-          <p className="text-sm text-sidebar-foreground/85">scambi possibili</p>
+          <Button
+            onClick={handleOpenChat}
+            disabled={openChat.isPending}
+            aria-label={`Apri chat con ${detail.nickname}`}
+            title={`Apri chat con ${detail.nickname}`}
+            className="h-14 w-14 shrink-0 rounded-full p-0 bg-accent text-accent-foreground hover:bg-accent/90 shadow-md"
+          >
+            <MessageSquare className="h-6 w-6" />
+          </Button>
         </div>
       </div>
 
-      <div className="px-4 pt-4 space-y-4">
+      {/* SOLO questa lista scorre */}
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-4">
+        {detail.albums.length === 0 && (
+          <p className="text-center text-sm text-muted-foreground py-8">Nessuno scambio possibile al momento.</p>
+        )}
         {detail.albums.map(album => (
           <Card key={album.albumId} className="shadow-sm">
             <CardHeader className="pb-2 pt-4 px-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-foreground">{album.albumTitle}</CardTitle>
-                <Badge className="bg-primary/10 text-primary border-0 text-xs">{album.exchangeCount} scambi</Badge>
-              </div>
+              <CardTitle className="text-sm font-semibold text-foreground">{album.albumTitle}</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs font-semibold text-green-600 mb-2 uppercase tracking-wide">Tu dai</p>
-                  <div className="space-y-1">
-                    {album.youGive.length === 0 && <p className="text-xs text-muted-foreground italic">Nessuna</p>}
-                    {album.youGive.map(s => (
-                      <div key={s.id} className="flex items-center gap-2 text-xs bg-green-50 border border-green-100 rounded-md px-2 py-1">
-                        <span className="font-bold text-green-700 w-6 flex-shrink-0">#{s.number}</span>
-                        <span className="truncate text-green-800">{s.name}</span>
+                  {album.youGive.length === 0
+                    ? <p className="text-xs text-muted-foreground italic">Nessuna</p>
+                    : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {album.youGive.map(s => (
+                          <span key={s.id} className="inline-flex items-center justify-center min-w-[2.1rem] px-1.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 border border-green-200">
+                            {s.number}
+                          </span>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    )}
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">Tu ricevi</p>
-                  <div className="space-y-1">
-                    {album.youReceive.length === 0 && <p className="text-xs text-muted-foreground italic">Nessuna</p>}
-                    {album.youReceive.map(s => (
-                      <div key={s.id} className="flex items-center gap-2 text-xs bg-blue-50 border border-blue-100 rounded-md px-2 py-1">
-                        <span className="font-bold text-blue-700 w-6 flex-shrink-0">#{s.number}</span>
-                        <span className="truncate text-blue-800">{s.name}</span>
+                  {album.youReceive.length === 0
+                    ? <p className="text-xs text-muted-foreground italic">Nessuna</p>
+                    : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {album.youReceive.map(s => (
+                          <span key={s.id} className="inline-flex items-center justify-center min-w-[2.1rem] px-1.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            {s.number}
+                          </span>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    )}
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl px-4 pb-2 pt-3 bg-background/95 backdrop-blur border-t border-border">
-        <Button
-          className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 font-bold gap-2 text-base"
-          onClick={handleOpenChat}
-          disabled={openChat.isPending}
-        >
-          <MessageSquare className="h-5 w-5" />
-          Apri chat con {detail.nickname}
-        </Button>
       </div>
 
       <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
