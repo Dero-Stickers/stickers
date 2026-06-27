@@ -92,33 +92,35 @@ export function MatchDetail() {
     <div className="flex flex-col h-[calc(100dvh-4rem)]">
       <AppHeader />
 
-      {/* Testata FISSA: indietro + nome + bottone chat tondo, allineato col nome */}
-      <div className="shrink-0 px-4 pt-3 pb-3 border-b border-border/60">
-        <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground mb-2 text-sm" onClick={() => setLocation("/match")}>
-          <ArrowLeft className="h-4 w-4" />
-          Match
-        </button>
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold text-foreground truncate">{detail.nickname}</h1>
-            <p className="text-muted-foreground text-sm flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5 shrink-0" />
-              {detail.area}
-              {detail.distanceKm != null && <span>· {detail.distanceKm.toFixed(1)} km</span>}
-            </p>
-            <p className="text-sm mt-1 text-foreground">
-              <span className="text-lg font-black text-accent">{detail.totalExchanges}</span> scambi possibili
-            </p>
-          </div>
+      {/* Testata FISSA, compatta e centrata (coerente con Dettaglio Album):
+          riga 1 = indietro + nome centrato + chat tondo; riga 2 = info su una riga. */}
+      <div className="px-4 pt-3 pb-3 shrink-0 border-b border-border/60">
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            className="shrink-0 -ml-1 p-1.5 rounded-full text-foreground active:scale-95 transition-transform"
+            onClick={() => setLocation("/match")}
+            aria-label="Torna ai match"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="flex-1 text-lg font-bold leading-tight text-foreground text-center truncate">{detail.nickname}</h1>
           <Button
             onClick={handleOpenChat}
             disabled={openChat.isPending}
             aria-label={`Apri chat con ${detail.nickname}`}
             title={`Apri chat con ${detail.nickname}`}
-            className="h-14 w-14 shrink-0 rounded-full p-0 bg-accent text-accent-foreground hover:bg-accent/90 shadow-md"
+            className="h-10 w-10 shrink-0 rounded-full p-0 bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm"
           >
-            <MessageSquare className="h-6 w-6" />
+            <MessageSquare className="h-5 w-5" />
           </Button>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm">
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
+            {detail.area}{detail.distanceKm != null && ` · ${detail.distanceKm.toFixed(1)} km`}
+          </span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="text-foreground"><span className="font-black text-accent">{detail.totalExchanges}</span> scambi possibili</span>
         </div>
       </div>
 
