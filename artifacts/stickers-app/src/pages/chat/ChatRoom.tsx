@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Send, Flag, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Send, AlertTriangle, ShieldAlert } from "lucide-react";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +21,6 @@ import { isRealtimeAvailable } from "@/lib/supabase";
 export function ChatRoom() {
   const { chatId } = useParams<{ chatId: string }>();
   const chatIdNum = parseInt(chatId, 10);
-  const [, setLocation] = useLocation();
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -63,7 +63,7 @@ export function ChatRoom() {
   const reportChat = useReportChat({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Segnalazione inviata", description: "Il team di moderazione verificherà la chat al più presto." });
+        toast({ title: "Segnalazione inviata", description: "Il team di moderazione verificherà la chat al più presto.", duration: 3000 });
       },
     },
   });
@@ -79,12 +79,13 @@ export function ChatRoom() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[100dvh] bg-muted/40">
-        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md md:max-w-2xl flex-col bg-sidebar md:shadow-xl">
-          <div className="px-4 pt-12 pb-4">
-            <Skeleton className="h-8 w-36 bg-white/10" />
+      <div className="h-[100dvh] overflow-hidden bg-muted/40">
+        <div className="relative mx-auto flex h-[100dvh] w-full max-w-md md:max-w-2xl flex-col bg-background md:shadow-xl">
+          <AppHeader />
+          <div className="shrink-0 px-4 py-2.5 border-b border-border/60">
+            <Skeleton className="h-6 w-36 mx-auto" />
           </div>
-          <div className="flex-1 bg-background px-4 py-4 space-y-3">
+          <div className="flex-1 px-4 py-4 space-y-3">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-2xl" />)}
           </div>
         </div>
@@ -93,73 +94,84 @@ export function ChatRoom() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-muted/40">
-    <div className="relative flex flex-col min-h-[100dvh] mx-auto w-full max-w-md md:max-w-2xl bg-background md:shadow-xl">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-12 pb-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button onClick={() => window.history.back()} className="text-sidebar-foreground/85">
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent text-sm uppercase">
-              {otherNickname.slice(0, 2)}
-            </div>
-            <span className="font-semibold">{otherNickname}</span>
-          </div>
-          <button onClick={handleReport} className="text-sidebar-foreground/85 p-1">
-            <Flag className="h-4.5 w-4.5" />
+    <div className="h-dvh overflow-hidden bg-muted/40">
+      <div className="relative flex flex-col h-dvh mx-auto w-full max-w-md md:max-w-2xl bg-background md:shadow-xl">
+        <AppHeader />
+
+        {/* Sub-header: indietro + nome centrato + segnala (no avatar) */}
+        <div className="shrink-0 flex items-center gap-2 px-4 py-2.5 border-b border-border/60">
+          <button
+            onClick={() => window.history.back()}
+            aria-label="Indietro"
+            className="shrink-0 -ml-1 p-1.5 rounded-full text-foreground active:scale-95 transition-transform"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="flex-1 text-base font-bold text-center text-foreground truncate">{otherNickname}</h1>
+          <button
+            onClick={handleReport}
+            aria-label="Segnala questa chat"
+            title="Segnala"
+            className="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full text-destructive bg-destructive/10 hover:bg-destructive/15 active:scale-95 transition-transform"
+          >
+            <AlertTriangle className="h-4 w-4" />
           </button>
         </div>
-      </div>
 
-      <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-start gap-2 flex-shrink-0">
-        <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-700">
-          Per sicurezza e moderazione, i messaggi possono essere verificati dall'admin in caso di necessità o segnalazione.
-          {" "}Si consiglia di incontrarsi in luoghi pubblici e, per i più giovani, in compagnia di un adulto.
-        </p>
-      </div>
+        {/* Avviso sicurezza / moderazione (fisso) */}
+        <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-start gap-2">
+          <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-700">
+            Per sicurezza e moderazione, i messaggi possono essere verificati dall'admin in caso di necessità o segnalazione.
+            {" "}Si consiglia di incontrarsi in luoghi pubblici e, per i più giovani, in compagnia di un adulto.
+          </p>
+        </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-background pb-20">
-        {messages?.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            Nessun messaggio. Inizia la conversazione!
-          </div>
-        )}
-        {messages?.map(msg => {
-          const isMe = msg.senderId === currentUser?.id;
-          return (
-            <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm ${isMe ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-card border border-border text-foreground rounded-bl-sm"}`}>
-                <p>{msg.text}</p>
-                <p className={`text-xs mt-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {new Date(msg.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
-                </p>
-              </div>
+        {/* SOLO i messaggi scorrono */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
+          {messages?.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              Nessun messaggio. Inizia la conversazione!
             </div>
-          );
-        })}
-        <div ref={bottomRef} />
-      </div>
+          )}
+          {messages?.map(msg => {
+            const isMe = msg.senderId === currentUser?.id;
+            return (
+              <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm ${isMe ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-card border border-border text-foreground rounded-bl-sm"}`}>
+                  <p>{msg.text}</p>
+                  <p className={`text-xs mt-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                    {new Date(msg.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
 
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl bg-card border-t border-border px-4 py-3 flex items-center gap-2 pb-safe">
-        <Input
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder="Scrivi un messaggio..."
-          className="flex-1"
-          onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
-        />
-        <Button
-          size="icon"
-          className="bg-primary text-primary-foreground flex-shrink-0"
-          onClick={handleSend}
-          disabled={!text.trim() || sendMessage.isPending}
+        {/* Barra input (fissa in basso) */}
+        <div
+          className="shrink-0 bg-card border-t border-border px-4 pt-3 flex items-center gap-2"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
         >
-          <Send className="h-4 w-4" />
-        </Button>
+          <Input
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Scrivi un messaggio..."
+            className="flex-1"
+            onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
+          />
+          <Button
+            size="icon"
+            className="bg-primary text-primary-foreground shrink-0"
+            onClick={handleSend}
+            disabled={!text.trim() || sendMessage.isPending}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-    </div>
     </div>
   );
 }
