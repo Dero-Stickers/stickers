@@ -93,7 +93,7 @@ export function AdminUsers() {
           </tr>
         )}
         {regularUsers.map(user => {
-          const nick = user.nickname.toLowerCase();
+          const nick = user.nickname;
           return (
             <tr key={user.id} className={user.isBlocked ? "opacity-60" : ""}>
               <td>
@@ -102,7 +102,7 @@ export function AdminUsers() {
                     {nick.slice(0, 2)}
                   </div>
                   <div>
-                    <p className="font-medium text-foreground lowercase">{nick}</p>
+                    <p className="font-medium text-foreground">{nick}</p>
                     {user.isBlocked && <p className="text-xs text-destructive">Bloccato</p>}
                   </div>
                 </div>

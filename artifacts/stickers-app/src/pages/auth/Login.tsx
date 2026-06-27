@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
+import { formatNickname } from "@/lib/utils";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -152,18 +153,16 @@ export function Login() {
                     <FormLabel>Nickname</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={isRegister ? "5-15 caratteri (a-z, 0-9)" : "es. nickname"}
+                        placeholder={isRegister ? "5-12 caratteri (lettere, numeri, - _)" : "es. Nickname"}
                         autoComplete="username"
-                        autoCapitalize="none"
                         spellCheck={false}
                         inputMode="text"
-                        maxLength={15}
-                        className="lowercase"
+                        maxLength={12}
                         {...field}
                         onChange={e => {
-                          // Force lowercase + strip any non-alphanumeric while typing.
-                          const v = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "");
-                          field.onChange(v);
+                          // Formato canonico mentre si digita: iniziale maiuscola,
+                          // resto minuscolo, solo lettere/numeri/-/_, max 12.
+                          field.onChange(formatNickname(e.target.value));
                         }}
                       />
                     </FormControl>

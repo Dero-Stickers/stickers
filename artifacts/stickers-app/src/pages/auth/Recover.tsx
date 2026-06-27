@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { formatNickname } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -188,13 +189,9 @@ export function Recover() {
               <Input
                 placeholder="Nickname"
                 value={nickname}
-                onChange={e =>
-                  setNickname(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))
-                }
-                autoCapitalize="none"
+                onChange={e => setNickname(formatNickname(e.target.value))}
                 spellCheck={false}
-                maxLength={15}
-                className="lowercase"
+                maxLength={12}
               />
               <Input placeholder="CAP (5 cifre)" maxLength={5} value={cap} onChange={e => setCap(e.target.value)} />
               {error && <p className="text-sm text-destructive text-center">{error}</p>}

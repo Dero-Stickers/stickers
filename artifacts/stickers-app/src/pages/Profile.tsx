@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatNickname } from "@/lib/utils";
 import { MapPin, Key, HelpCircle, Mail, LogOut, Shield, Trash2, UserCog, ArrowRight, Check, X, Lock, AlertTriangle, Send } from "lucide-react";
 import { reportError } from "@/lib/report-error";
 import { Card, CardContent } from "@/components/ui/card";
@@ -288,12 +289,12 @@ export function Profile() {
           <div className="space-y-5 pt-2">
             {/* Anteprima visiva: vecchio → nuovo */}
             <div className="flex items-center justify-center gap-2 text-sm">
-              <span className="px-2.5 py-1 rounded-md bg-muted text-muted-foreground lowercase font-medium">
+              <span className="px-2.5 py-1 rounded-md bg-muted text-muted-foreground font-medium">
                 {currentUser?.nickname ?? "—"}
               </span>
               <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              <span className={`px-2.5 py-1 rounded-md font-medium lowercase ${newNickname ? "bg-primary/10 text-primary" : "bg-muted/40 text-muted-foreground/50"}`}>
-                {newNickname || "nuovonome"}
+              <span className={`px-2.5 py-1 rounded-md font-medium ${newNickname ? "bg-primary/10 text-primary" : "bg-muted/40 text-muted-foreground/50"}`}>
+                {newNickname || "Nuovonome"}
               </span>
             </div>
 
@@ -304,22 +305,17 @@ export function Profile() {
                 Nuovo nome utente
               </label>
               <Input
-                placeholder="es. mario99"
+                placeholder="es. Mario99"
                 value={newNickname}
-                onChange={e =>
-                  setNewNickname(
-                    e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""),
-                  )
-                }
-                maxLength={15}
-                autoCapitalize="none"
+                onChange={e => setNewNickname(formatNickname(e.target.value))}
+                maxLength={12}
                 spellCheck={false}
-                className="lowercase h-11"
+                className="h-11"
               />
               {/* Checklist regole — feedback live */}
               {(() => {
-                const lenOk = newNickname.length >= 5 && newNickname.length <= 15;
-                const charOk = newNickname.length === 0 || /^[a-z0-9]+$/.test(newNickname);
+                const lenOk = newNickname.length >= 5 && newNickname.length <= 12;
+                const charOk = newNickname.length === 0 || /^[A-Za-z0-9_-]+$/.test(newNickname);
                 const Item = ({ ok, text }: { ok: boolean; text: string }) => (
                   <li className={`flex items-center gap-1.5 ${ok ? "text-green-600" : "text-muted-foreground"}`}>
                     {ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5 opacity-50" />}
@@ -328,8 +324,9 @@ export function Profile() {
                 );
                 return (
                   <ul className="text-[11px] space-y-0.5 pl-0.5">
-                    <Item ok={lenOk} text="Da 5 a 15 caratteri" />
-                    <Item ok={charOk} text="Solo lettere (a-z) e numeri (0-9)" />
+                    <Item ok={lenOk} text="Da 5 a 12 caratteri" />
+                    <Item ok={charOk} text="Lettere, numeri, trattino o underscore" />
+                    <Item ok={true} text="Iniziale maiuscola automatica" />
                   </ul>
                 );
               })()}

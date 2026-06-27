@@ -21,21 +21,27 @@ import { isPremiumDemoEnabled } from "../lib/appState";
 
 const PIN_REGEX = /^\d{4,6}$/;
 
-// Nickname: 5–15 alphanumeric, always lowercase. Trim + lowercase first so
-// users typing uppercase still match a stored lowercase nickname.
-const NICKNAME_REGEX = /^[a-z0-9]{5,15}$/;
+// Nickname: 5–12 caratteri (lettere, numeri, - o _), normalizzato a forma
+// canonica "iniziale maiuscola + resto minuscolo" (es. "marco-bo" -> "Marco-bo").
+// Login e recupero confrontano sempre in lower(), quindi l'accesso resta
+// case-insensitive anche se l'utente digita maiuscole/minuscole diverse.
+const NICKNAME_REGEX = /^[A-Za-z0-9_-]{5,12}$/;
+const canonicalNickname = (s: string): string => {
+  const t = s.trim();
+  return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+};
 const NicknameSchema = z
   .string()
   .trim()
-  .transform(s => s.toLowerCase())
   .pipe(
     z
       .string()
       .regex(
         NICKNAME_REGEX,
-        "Il nickname deve avere 5-15 caratteri, solo lettere e numeri",
+        "Il nickname deve avere 5-12 caratteri: lettere, numeri, - o _",
       ),
-  );
+  )
+  .transform(canonicalNickname);
 
 // For LOGIN we still need to accept legacy mixed-case nicknames stored in
 // the DB, so we only normalize (lowercase + trim) without enforcing the
@@ -128,18 +134,18 @@ const register: RequestHandler = async (req, res) => {
       return;
     }
     const body = RegisterBody.parse(req.body);
-    // Enforce stricter rules on top of generated schema: 5–15 alphanumeric,
-    // always stored lowercase.
+    // Enforce stricter rules on top of generated schema: 5–12 caratteri
+    // (lettere/numeri/-/_), normalizzato a forma canonica (iniziale maiuscola).
     const nickname = NicknameSchema.parse(body.nickname);
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
-    const { eq, and } = await import("drizzle-orm");
+    const { eq, and, sql } = await import("drizzle-orm");
 
     const existing = await db
       .select()
       .from(usersTable)
-      .where(and(eq(usersTable.nickname, nickname), eq(usersTable.cap, body.cap)))
+      .where(and(sql`lower(${usersTable.nickname}) = ${nickname.toLowerCase()}`, eq(usersTable.cap, body.cap)))
       .limit(1);
 
     if (existing.length > 0) {
@@ -686,8 +692,8 @@ const changeNickname: RequestHandler = async (req, res) => {
 
     resetRateLimit(rateKey);
 
-    // body.newNickname is already normalized (lowercase) by NicknameSchema.
-    if (body.newNickname === user.nickname.toLowerCase()) {
+    // body.newNickname è già normalizzato (forma canonica) da NicknameSchema.
+    if (body.newNickname.toLowerCase() === user.nickname.toLowerCase()) {
       res.json({ user: await userPayload(user) });
       return;
     }
@@ -696,7 +702,7 @@ const changeNickname: RequestHandler = async (req, res) => {
       .select({ id: usersTable.id })
       .from(usersTable)
       .where(and(
-        sql`lower(${usersTable.nickname}) = ${body.newNickname}`,
+        sql`lower(${usersTable.nickname}) = ${body.newNickname.toLowerCase()}`,
         eq(usersTable.cap, user.cap),
         ne(usersTable.id, user.id),
       ))

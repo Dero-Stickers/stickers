@@ -4,7 +4,7 @@
 
 | Campo | Note |
 |-------|------|
-| Nickname | Unico solo per CAP (stessa area) |
+| Nickname | **5-12 caratteri**; ammessi lettere, numeri, `-`, `_`. Normalizzato a forma **canonica** (iniziale maiuscola, resto minuscolo, es. `marco-bo` → `Marco-bo`). Unico **per CAP** (case-insensitive). Regola in `auth.ts` (`NICKNAME_REGEX` + `canonicalNickname`); lato frontend `formatNickname` in `lib/utils.ts` formatta mentre si digita. **Login/recupero case-insensitive** (confronto `lower()`), così l'accesso funziona anche digitando maiuscole/minuscole diverse. |
 | PIN personale | 4-6 cifre |
 | CAP/Codice Postale | Per logica match per vicinanza |
 | Domanda di sicurezza | Obbligatoria, per recupero emergenza |
