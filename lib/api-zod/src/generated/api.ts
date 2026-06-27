@@ -650,6 +650,10 @@ export const AdminListChatsResponseItem = zod.object({
   status: zod.enum(["active", "closed"]),
   messageCount: zod.number(),
   hasReport: zod.boolean(),
+  reportReason: zod
+    .string()
+    .nullish()
+    .describe("Motivo dell'ultima segnalazione (categoria + eventuali note)."),
   createdAt: zod.string().optional(),
 });
 export const AdminListChatsResponse = zod.array(AdminListChatsResponseItem);

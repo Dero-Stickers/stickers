@@ -1344,6 +1344,10 @@ components:
           type: integer
         hasReport:
           type: boolean
+        reportReason:
+          type: string
+          nullable: true
+          description: Motivo dell'ultima segnalazione (categoria + eventuali note).
         createdAt:
           type: string
       required: [id, user1Nickname, user2Nickname, status, messageCount, hasReport]

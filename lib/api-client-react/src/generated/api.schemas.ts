@@ -326,6 +326,8 @@ export interface AdminChat {
   status: AdminChatStatus;
   messageCount: number;
   hasReport: boolean;
+  /** Motivo dell'ultima segnalazione (categoria + eventuali note). */
+  reportReason?: string | null;
   createdAt?: string;
 }
 

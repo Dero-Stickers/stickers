@@ -132,7 +132,7 @@ const listChats: RequestHandler = async (req, res) => {
       const [u1] = await db.select().from(usersTable).where(eq(usersTable.id, chat.user1Id)).limit(1);
       const [u2] = await db.select().from(usersTable).where(eq(usersTable.id, chat.user2Id)).limit(1);
       const msgCount = (await db.select().from(messagesTable).where(eq(messagesTable.chatId, chat.id))).length;
-      const reports = await db.select().from(reportsTable).where(eq(reportsTable.chatId, chat.id));
+      const reports = await db.select().from(reportsTable).where(eq(reportsTable.chatId, chat.id)).orderBy(desc(reportsTable.createdAt));
       return {
         id: chat.id,
         user1Nickname: u1?.nickname ?? "",
@@ -140,6 +140,7 @@ const listChats: RequestHandler = async (req, res) => {
         status: chat.status,
         messageCount: msgCount,
         hasReport: reports.length > 0,
+        reportReason: reports[0]?.reason ?? null,
         createdAt: chat.createdAt.toISOString(),
       };
     }));

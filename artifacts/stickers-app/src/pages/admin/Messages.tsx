@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, Eye, X, Flag } from "lucide-react";
+import { MessageSquare, Eye, X, Flag, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -75,7 +75,14 @@ export function AdminMessages() {
             <td className="hidden md:table-cell text-center text-foreground">{chat.messageCount}</td>
             <td className="text-center">
               {chat.hasReport ? (
-                <Badge className="bg-red-100 text-red-700 border-0 text-xs">Segnalata</Badge>
+                <div className="flex flex-col items-center gap-0.5">
+                  <Badge className="bg-red-100 text-red-700 border-0 text-xs">Segnalata</Badge>
+                  {chat.reportReason && (
+                    <span className="text-[10px] text-muted-foreground max-w-[140px] truncate" title={chat.reportReason}>
+                      {chat.reportReason}
+                    </span>
+                  )}
+                </div>
               ) : chat.status === "closed" ? (
                 <Badge className="bg-gray-100 text-gray-600 border-0 text-xs">Chiusa</Badge>
               ) : (
@@ -120,6 +127,15 @@ export function AdminMessages() {
               Chat: {selectedChat?.user1Nickname} — {selectedChat?.user2Nickname}
             </DialogTitle>
           </DialogHeader>
+          {selectedChat?.hasReport && selectedChat.reportReason && (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-destructive">Motivo segnalazione</p>
+                <p className="text-sm text-foreground wrap-break-word">{selectedChat.reportReason}</p>
+              </div>
+            </div>
+          )}
           {selectedChat && <ChatMessages chatId={selectedChat.id} />}
         </DialogContent>
       </Dialog>

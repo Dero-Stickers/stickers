@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, Send, AlertTriangle, ShieldAlert } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   useGetChatMessages,
@@ -18,14 +20,26 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRealtimeSignal } from "@/hooks/useRealtimeSignal";
 import { isRealtimeAvailable } from "@/lib/supabase";
 
+const REPORT_REASONS = [
+  "Comportamento offensivo o molestie",
+  "Tentativo di truffa",
+  "Spam o pubblicità",
+  "Contenuti inappropriati",
+  "Altro",
+];
+
 export function ChatRoom() {
   const { chatId } = useParams<{ chatId: string }>();
   const chatIdNum = parseInt(chatId, 10);
+  const [, setLocation] = useLocation();
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState("");
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportNotes, setReportNotes] = useState("");
 
   const { data: chats } = useListChats();
   const chat = chats?.find(c => c.id === chatIdNum);
@@ -64,6 +78,9 @@ export function ChatRoom() {
     mutation: {
       onSuccess: () => {
         toast({ title: "Segnalazione inviata", description: "Il team di moderazione verificherà la chat al più presto.", duration: 3000 });
+        setShowReport(false);
+        setReportReason("");
+        setReportNotes("");
       },
     },
   });
@@ -73,8 +90,10 @@ export function ChatRoom() {
     sendMessage.mutate({ chatId: chatIdNum, data: { text: text.trim() } });
   };
 
-  const handleReport = () => {
-    reportChat.mutate({ chatId: chatIdNum, data: { reason: "Segnalazione utente", reportedUserId: chat?.otherUserId ?? 0 } });
+  const submitReport = () => {
+    if (!reportReason) return;
+    const reason = reportNotes.trim() ? `${reportReason} — ${reportNotes.trim()}` : reportReason;
+    reportChat.mutate({ chatId: chatIdNum, data: { reason, reportedUserId: chat?.otherUserId ?? 0 } });
   };
 
   if (isLoading) {
@@ -101,7 +120,7 @@ export function ChatRoom() {
         {/* Sub-header: indietro + nome centrato + segnala (no avatar) */}
         <div className="shrink-0 flex items-center gap-2 px-4 py-2.5 border-b border-border/60">
           <button
-            onClick={() => window.history.back()}
+            onClick={() => setLocation("/match")}
             aria-label="Indietro"
             className="shrink-0 -ml-1 p-1.5 rounded-full text-foreground active:scale-95 transition-transform"
           >
@@ -109,7 +128,7 @@ export function ChatRoom() {
           </button>
           <h1 className="flex-1 text-base font-bold text-center text-foreground truncate">{otherNickname}</h1>
           <button
-            onClick={handleReport}
+            onClick={() => setShowReport(true)}
             aria-label="Segnala questa chat"
             title="Segnala"
             className="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full text-destructive bg-destructive/10 hover:bg-destructive/15 active:scale-95 transition-transform"
@@ -172,6 +191,52 @@ export function ChatRoom() {
           </Button>
         </div>
       </div>
+
+      {/* Modale segnalazione: motivo + note + conferma esplicita */}
+      <Dialog open={showReport} onOpenChange={setShowReport}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Segnala la chat
+            </DialogTitle>
+            <DialogDescription>
+              Scegli un motivo e, se vuoi, aggiungi dettagli. La segnalazione è anonima verso l'altro utente e sarà valutata dall'amministratore.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              {REPORT_REASONS.map(r => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setReportReason(r)}
+                  className={`w-full text-left text-sm px-3 py-2 rounded-lg border transition-colors ${reportReason === r ? "border-destructive bg-destructive/10 text-destructive font-semibold" : "border-border hover:bg-muted text-foreground"}`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <Textarea
+              value={reportNotes}
+              onChange={e => setReportNotes(e.target.value)}
+              placeholder="Aggiungi dettagli (facoltativo)…"
+              rows={3}
+              maxLength={500}
+            />
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setShowReport(false)}>Annulla</Button>
+              <Button
+                className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={!reportReason || reportChat.isPending}
+                onClick={submitReport}
+              >
+                {reportChat.isPending ? "Invio…" : "Invia segnalazione"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
