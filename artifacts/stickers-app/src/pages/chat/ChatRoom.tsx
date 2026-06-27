@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Send, AlertTriangle, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Send, AlertTriangle, ShieldAlert, ChevronDown } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,7 @@ export function ChatRoom() {
   const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState("");
+  const [noticeOpen, setNoticeOpen] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportNotes, setReportNotes] = useState("");
@@ -137,13 +138,29 @@ export function ChatRoom() {
           </button>
         </div>
 
-        {/* Avviso sicurezza / moderazione (fisso) */}
-        <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-start gap-2">
-          <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-700">
-            Per sicurezza, i messaggi sono controllati dall'admin in caso di segnalazione.
-            {" "}Incontratevi in luoghi pubblici; per i più giovani, meglio in compagnia di un adulto.
-          </p>
+        {/* Avviso sicurezza — comprimibile (di default una riga, si apre a tendina) */}
+        <div className="shrink-0 bg-amber-50 border-b border-amber-200">
+          <button
+            type="button"
+            onClick={() => setNoticeOpen(o => !o)}
+            aria-expanded={noticeOpen}
+            className="w-full flex items-center gap-2 px-4 py-2 text-left"
+          >
+            <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0" />
+            {noticeOpen ? (
+              <span className="flex-1 text-xs font-semibold text-amber-800">Avviso sicurezza</span>
+            ) : (
+              <span className="flex-1 text-xs text-amber-700 truncate">Per sicurezza, i messaggi sono controllati dall'admin…</span>
+            )}
+            <ChevronDown className={`h-4 w-4 text-amber-600 shrink-0 transition-transform ${noticeOpen ? "rotate-180" : ""}`} />
+          </button>
+          {noticeOpen && (
+            <div className="px-4 pb-3 space-y-1.5 text-xs text-amber-700">
+              <p>Per sicurezza, i messaggi possono essere verificati dall'admin.</p>
+              <p>La verifica avviene solo in caso di segnalazione o necessità, per mantenere la chat sicura e corretta.</p>
+              <p>Incontratevi in luoghi pubblici; per i più giovani è consigliata la presenza di un adulto.</p>
+            </div>
+          )}
         </div>
 
         {/* SOLO i messaggi scorrono */}
