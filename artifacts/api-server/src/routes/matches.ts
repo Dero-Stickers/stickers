@@ -199,15 +199,20 @@ const getMatchDetail: RequestHandler = async (req, res) => {
     const theirAlbumIdSet = new Set(theirAlbumRows.map(a => a.albumId));
     const commonAlbumIds = myAlbumRows.map(a => a.albumId).filter(id => theirAlbumIdSet.has(id));
 
+    const distanceKm = parseFloat(estimateDistance(myUser?.cap ?? "00000", otherUser.cap).toFixed(1));
+
     if (!commonAlbumIds.length) {
       res.json({
         userId: otherUserId,
         nickname: otherUser.nickname,
         area: otherUser.area,
         totalExchanges: 0,
-        distanceKm: parseFloat(estimateDistance(myUser?.cap ?? "00000", otherUser.cap).toFixed(1)),
+        totalGive: 0,
+        totalReceive: 0,
+        distanceKm,
         exchangesCompleted: otherUser.exchangesCompleted,
-        albums: [],
+        give: [],
+        receive: [],
       });
       return;
     }
@@ -225,36 +230,42 @@ const getMatchDetail: RequestHandler = async (req, res) => {
 
     const stickerMap = new Map<number, { id: number; albumId: number; number: number; name: string }>();
     for (const s of allStickers) stickerMap.set(s.id, { id: s.id, albumId: s.albumId, number: s.number, name: s.name });
-    const toDetail = (ids: number[]) => ids.map(id => stickerMap.get(id)).filter(Boolean) as { id: number; albumId: number; number: number; name: string }[];
+    const toDetail = (ids: number[]) =>
+      (ids.map(id => stickerMap.get(id)).filter(Boolean) as { id: number; albumId: number; number: number; name: string }[])
+        .sort((a, b) => a.number - b.number);
 
-    let totalExchanges = 0;
-    const albumDetails = commonAlbumIds.map(albumId => {
-      const album = commonAlbums.find(a => a.id === albumId);
+    // Scambi CROSS-ALBUM: ciò che dai e ciò che ricevi sono conteggiati su TUTTI
+    // gli album in comune (indipendenti, niente bilanciamento per-album). Lo
+    // scambio reale è 1:1, quindi "scambi possibili" = min(totale dai, totale
+    // ricevi). Le figurine restano raggruppate per album solo per la UI.
+    const give: { albumId: number; albumTitle: string; stickers: ReturnType<typeof toDetail> }[] = [];
+    const receive: { albumId: number; albumTitle: string; stickers: ReturnType<typeof toDetail> }[] = [];
+    let totalGive = 0;
+    let totalReceive = 0;
+
+    for (const albumId of commonAlbumIds) {
+      const albumTitle = commonAlbums.find(a => a.id === albumId)?.title ?? `Album #${albumId}`;
       const myDups = new Set(myStickers.filter(s => s.albumId === albumId && s.state === "doppia").map(s => s.stickerId));
       const myMiss = new Set(myStickers.filter(s => s.albumId === albumId && s.state === "mancante").map(s => s.stickerId));
       const theirDups = new Set(theirStickers.filter(s => s.albumId === albumId && s.state === "doppia").map(s => s.stickerId));
       const theirMiss = new Set(theirStickers.filter(s => s.albumId === albumId && s.state === "mancante").map(s => s.stickerId));
-      const youGiveIds = [...myDups].filter(id => theirMiss.has(id));
-      const youReceiveIds = [...theirDups].filter(id => myMiss.has(id));
-      const exchangeCount = Math.min(youGiveIds.length, youReceiveIds.length);
-      totalExchanges += exchangeCount;
-      return {
-        albumId,
-        albumTitle: album?.title ?? `Album #${albumId}`,
-        exchangeCount,
-        youGive: toDetail(youGiveIds),
-        youReceive: toDetail(youReceiveIds),
-      };
-    }).filter(a => a.exchangeCount > 0);
+      const giveIds = [...myDups].filter(id => theirMiss.has(id));
+      const receiveIds = [...theirDups].filter(id => myMiss.has(id));
+      if (giveIds.length) { totalGive += giveIds.length; give.push({ albumId, albumTitle, stickers: toDetail(giveIds) }); }
+      if (receiveIds.length) { totalReceive += receiveIds.length; receive.push({ albumId, albumTitle, stickers: toDetail(receiveIds) }); }
+    }
 
     res.json({
       userId: otherUserId,
       nickname: otherUser.nickname,
       area: otherUser.area,
-      totalExchanges,
-      distanceKm: parseFloat(estimateDistance(myUser?.cap ?? "00000", otherUser.cap).toFixed(1)),
+      totalExchanges: Math.min(totalGive, totalReceive),
+      totalGive,
+      totalReceive,
+      distanceKm,
       exchangesCompleted: otherUser.exchangesCompleted,
-      albums: albumDetails,
+      give,
+      receive,
     });
   } catch (err) {
     req.log?.error(err);

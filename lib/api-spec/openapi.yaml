@@ -1126,24 +1126,18 @@ components:
           type: integer
       required: [userId, nickname, totalExchanges, exchangesCompleted, albumsInCommon]
 
-    MatchAlbumDetail:
+    MatchAlbumGroup:
       type: object
       properties:
         albumId:
           type: integer
         albumTitle:
           type: string
-        exchangeCount:
-          type: integer
-        youGive:
+        stickers:
           type: array
           items:
             $ref: "#/components/schemas/Sticker"
-        youReceive:
-          type: array
-          items:
-            $ref: "#/components/schemas/Sticker"
-      required: [albumId, albumTitle, exchangeCount, youGive, youReceive]
+      required: [albumId, albumTitle, stickers]
 
     MatchDetail:
       type: object
@@ -1156,16 +1150,24 @@ components:
           type: string
         totalExchanges:
           type: integer
+        totalGive:
+          type: integer
+        totalReceive:
+          type: integer
         distanceKm:
           type: number
           nullable: true
         exchangesCompleted:
           type: integer
-        albums:
+        give:
           type: array
           items:
-            $ref: "#/components/schemas/MatchAlbumDetail"
-      required: [userId, nickname, totalExchanges, exchangesCompleted, albums]
+            $ref: "#/components/schemas/MatchAlbumGroup"
+        receive:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchAlbumGroup"
+      required: [userId, nickname, totalExchanges, totalGive, totalReceive, exchangesCompleted, give, receive]
 
     Chat:
       type: object

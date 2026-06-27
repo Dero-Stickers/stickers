@@ -450,14 +450,15 @@ export const GetMatchDetailResponse = zod.object({
   nickname: zod.string(),
   area: zod.string().optional(),
   totalExchanges: zod.number(),
+  totalGive: zod.number(),
+  totalReceive: zod.number(),
   distanceKm: zod.number().nullish(),
   exchangesCompleted: zod.number(),
-  albums: zod.array(
+  give: zod.array(
     zod.object({
       albumId: zod.number(),
       albumTitle: zod.string(),
-      exchangeCount: zod.number(),
-      youGive: zod.array(
+      stickers: zod.array(
         zod.object({
           id: zod.number(),
           albumId: zod.number(),
@@ -467,7 +468,13 @@ export const GetMatchDetailResponse = zod.object({
           description: zod.string().nullish(),
         }),
       ),
-      youReceive: zod.array(
+    }),
+  ),
+  receive: zod.array(
+    zod.object({
+      albumId: zod.number(),
+      albumTitle: zod.string(),
+      stickers: zod.array(
         zod.object({
           id: zod.number(),
           albumId: zod.number(),

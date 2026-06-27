@@ -7,10 +7,8 @@
  */
 import type { Sticker } from "./sticker";
 
-export interface MatchAlbumDetail {
+export interface MatchAlbumGroup {
   albumId: number;
   albumTitle: string;
-  exchangeCount: number;
-  youGive: Sticker[];
-  youReceive: Sticker[];
+  stickers: Sticker[];
 }

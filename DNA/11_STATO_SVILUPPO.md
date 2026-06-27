@@ -84,7 +84,7 @@ Album match: **11** (Calciatori 2025-2026, 624 fig). Range per `number`: A=1-150
 | 7  | marcobo  | 40139 | premium | doppia C, manc. A, poss. B+D | +album 12 completo |
 | 8  | giuliabo | 40136 | demo attiva | doppia A+B, manc. C+D | +album 12 vuoto |
 | 9  | sarabo   | 40138 | demo scaduta | doppia C, manc. A, poss. B+D | match forte con Dero975 |
-| 10 | lucabo   | 40141 | free | doppia D, manc. B, poss. A+C | |
+| 10 | lucabo   | 40141 | free | a11: manc. A, resto poss. · a12: doppia 1-150 | **partner CROSS-ALBUM di Dero975**: dà nell'album 2024-25, riceve nel 2025-26 |
 | 11 | annamo   | 41100 | free (Modena) | doppia C, manc. A, poss. B+D | lontano: nei "migliori", non "vicini" |
 | 12 | blockme  | 40140 | **bloccato** | doppia C, manc. A | escluso dai match |
 

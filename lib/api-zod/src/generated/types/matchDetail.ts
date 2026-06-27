@@ -5,14 +5,17 @@
  * Sticker Matchbox API
  * OpenAPI spec version: 0.1.0
  */
-import type { MatchAlbumDetail } from "./matchAlbumDetail";
+import type { MatchAlbumGroup } from "./matchAlbumGroup";
 
 export interface MatchDetail {
   userId: number;
   nickname: string;
   area?: string;
   totalExchanges: number;
+  totalGive: number;
+  totalReceive: number;
   distanceKm?: number | null;
   exchangesCompleted: number;
-  albums: MatchAlbumDetail[];
+  give: MatchAlbumGroup[];
+  receive: MatchAlbumGroup[];
 }

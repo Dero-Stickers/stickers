@@ -177,12 +177,10 @@ export interface MatchSummary {
   albumsInCommon: number;
 }
 
-export interface MatchAlbumDetail {
+export interface MatchAlbumGroup {
   albumId: number;
   albumTitle: string;
-  exchangeCount: number;
-  youGive: Sticker[];
-  youReceive: Sticker[];
+  stickers: Sticker[];
 }
 
 export interface MatchDetail {
@@ -190,9 +188,12 @@ export interface MatchDetail {
   nickname: string;
   area?: string;
   totalExchanges: number;
+  totalGive: number;
+  totalReceive: number;
   distanceKm?: number | null;
   exchangesCompleted: number;
-  albums: MatchAlbumDetail[];
+  give: MatchAlbumGroup[];
+  receive: MatchAlbumGroup[];
 }
 
 export type ChatStatus = (typeof ChatStatus)[keyof typeof ChatStatus];

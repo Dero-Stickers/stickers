@@ -28,7 +28,7 @@ export * from "./errorResponse";
 export * from "./getNearbyMatchesParams";
 export * from "./healthStatus";
 export * from "./loginBody";
-export * from "./matchAlbumDetail";
+export * from "./matchAlbumGroup";
 export * from "./matchDetail";
 export * from "./matchSummary";
 export * from "./message";

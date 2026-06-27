@@ -16,40 +16,56 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
-type MatchSticker = { id: number; number: number };
+type MatchGroup = { albumId: number; albumTitle: string; stickers: { id: number; number: number }[] };
 
-/** Colonna scambio (Tu dai / Tu ricevi): griglia uniforme e allineata. */
-function ExchangeColumn({
+/**
+ * Sezione direzione (DAI / RICEVI) a tutta larghezza: figurine raggruppate per
+ * album (titolo album + griglia di numeri). Lo scambio è cross-album, quindi le
+ * due direzioni sono indipendenti e ognuna elenca tutti i suoi album.
+ */
+function DirectionSection({
   variant,
   label,
-  stickers,
+  total,
+  groups,
 }: {
   variant: "give" | "receive";
   label: string;
-  stickers: MatchSticker[];
+  total: number;
+  groups: MatchGroup[];
 }) {
   const give = variant === "give";
   const tone = give
-    ? { label: "text-emerald-600", chip: "bg-emerald-50 text-emerald-700" }
-    : { label: "text-sky-600", chip: "bg-sky-50 text-sky-700" };
+    ? { label: "text-emerald-600", chip: "bg-emerald-50 text-emerald-700", badge: "bg-emerald-100 text-emerald-700" }
+    : { label: "text-sky-600", chip: "bg-sky-50 text-sky-700", badge: "bg-sky-100 text-sky-700" };
   return (
-    <div className="p-3">
-      <p className={`text-xs font-bold uppercase tracking-wide text-center mb-2.5 ${tone.label}`}>{label}</p>
-      {stickers.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic">Nessuna</p>
+    <Card className="shadow-sm p-3">
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`text-sm font-bold uppercase tracking-wide ${tone.label}`}>{label}</span>
+        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${tone.badge}`}>{total}</span>
+      </div>
+      {groups.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">Nessuna figurina</p>
       ) : (
-        <div className="grid grid-cols-3 gap-1.5">
-          {stickers.map(s => (
-            <span
-              key={s.id}
-              className={`flex items-center justify-center h-9 rounded-lg text-sm font-bold tabular-nums ${tone.chip}`}
-            >
-              {s.number}
-            </span>
+        <div className="space-y-3">
+          {groups.map(g => (
+            <div key={g.albumId}>
+              <p className="text-xs font-semibold text-foreground mb-1.5">{g.albumTitle}</p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {g.stickers.map(s => (
+                  <span
+                    key={s.id}
+                    className={`flex items-center justify-center h-9 rounded-lg text-sm font-bold tabular-nums ${tone.chip}`}
+                  >
+                    {s.number}
+                  </span>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -156,22 +172,17 @@ export function MatchDetail() {
         </p>
       </div>
 
-      {/* SOLO questa lista scorre */}
+      {/* SOLO questo blocco scorre. Scambi CROSS-ALBUM: prima tutto ciò che DAI
+          (per album), poi tutto ciò che RICEVI (per album). */}
       <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-4">
-        {detail.albums.length === 0 && (
+        {detail.totalGive === 0 && detail.totalReceive === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-8">Nessuno scambio possibile al momento.</p>
+        ) : (
+          <>
+            <DirectionSection variant="give" label="Tu dai" total={detail.totalGive} groups={detail.give} />
+            <DirectionSection variant="receive" label="Tu ricevi" total={detail.totalReceive} groups={detail.receive} />
+          </>
         )}
-        {detail.albums.map(album => (
-          <Card key={album.albumId} className="shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-border/60 bg-muted/30">
-              <h3 className="text-sm font-bold text-foreground text-center truncate">{album.albumTitle}</h3>
-            </div>
-            <div className="grid grid-cols-2 divide-x divide-border/60">
-              <ExchangeColumn variant="give" label="Dai" stickers={album.youGive} />
-              <ExchangeColumn variant="receive" label="Ricevi" stickers={album.youReceive} />
-            </div>
-          </Card>
-        ))}
       </div>
 
       <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
