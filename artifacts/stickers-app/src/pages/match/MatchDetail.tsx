@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, MapPin, MessageSquare, X, Star } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, ArrowUpRight, ArrowDownLeft, MapPin, MessageSquare, X, Star } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,11 +16,55 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
+type MatchSticker = { id: number; number: number };
+
+/** Colonna scambio (Tu dai / Tu ricevi): griglia uniforme e allineata. */
+function ExchangeColumn({
+  variant,
+  label,
+  stickers,
+}: {
+  variant: "give" | "receive";
+  label: string;
+  stickers: MatchSticker[];
+}) {
+  const give = variant === "give";
+  const Icon = give ? ArrowUpRight : ArrowDownLeft;
+  const tone = give
+    ? { label: "text-emerald-600", ring: "bg-emerald-100 text-emerald-600", badge: "bg-emerald-100 text-emerald-700", chip: "bg-emerald-50 text-emerald-700" }
+    : { label: "text-sky-600", ring: "bg-sky-100 text-sky-600", badge: "bg-sky-100 text-sky-700", chip: "bg-sky-50 text-sky-700" };
+  return (
+    <div className="p-3">
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <span className={`flex items-center justify-center h-5 w-5 rounded-full ${tone.ring}`}>
+          <Icon className="h-3 w-3" />
+        </span>
+        <span className={`text-xs font-bold uppercase tracking-wide ${tone.label}`}>{label}</span>
+        <span className={`ml-auto text-[11px] font-bold px-1.5 py-0.5 rounded-full ${tone.badge}`}>{stickers.length}</span>
+      </div>
+      {stickers.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">Nessuna</p>
+      ) : (
+        <div className="grid grid-cols-3 gap-1.5">
+          {stickers.map(s => (
+            <span
+              key={s.id}
+              className={`flex items-center justify-center h-9 rounded-lg text-sm font-bold tabular-nums ${tone.chip}`}
+            >
+              {s.number}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MatchDetail() {
   const { userId } = useParams<{ userId: string }>();
   const matchUserId = parseInt(userId, 10);
   const [, setLocation] = useLocation();
-  const { currentUser, demoStatus, premiumDemoEnabled } = useAuth();
+  const { demoStatus, premiumDemoEnabled } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -130,42 +174,14 @@ export function MatchDetail() {
           <p className="text-center text-sm text-muted-foreground py-8">Nessuno scambio possibile al momento.</p>
         )}
         {detail.albums.map(album => (
-          <Card key={album.albumId} className="shadow-sm">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold text-foreground">{album.albumTitle}</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-semibold text-green-600 mb-2 uppercase tracking-wide">Tu dai</p>
-                  {album.youGive.length === 0
-                    ? <p className="text-xs text-muted-foreground italic">Nessuna</p>
-                    : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {album.youGive.map(s => (
-                          <span key={s.id} className="inline-flex items-center justify-center min-w-[2.1rem] px-1.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 border border-green-200">
-                            {s.number}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">Tu ricevi</p>
-                  {album.youReceive.length === 0
-                    ? <p className="text-xs text-muted-foreground italic">Nessuna</p>
-                    : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {album.youReceive.map(s => (
-                          <span key={s.id} className="inline-flex items-center justify-center min-w-[2.1rem] px-1.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                            {s.number}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                </div>
-              </div>
-            </CardContent>
+          <Card key={album.albumId} className="shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-border/60 bg-muted/30">
+              <h3 className="text-sm font-bold text-foreground truncate">{album.albumTitle}</h3>
+            </div>
+            <div className="grid grid-cols-2 divide-x divide-border/60">
+              <ExchangeColumn variant="give" label="Tu dai" stickers={album.youGive} />
+              <ExchangeColumn variant="receive" label="Tu ricevi" stickers={album.youReceive} />
+            </div>
           </Card>
         ))}
       </div>
