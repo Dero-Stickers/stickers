@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, ArrowUpRight, ArrowDownLeft, MapPin, MessageSquare, X, Star } from "lucide-react";
+import { ArrowLeft, MapPin, MessageSquare, X, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,19 +29,12 @@ function ExchangeColumn({
   stickers: MatchSticker[];
 }) {
   const give = variant === "give";
-  const Icon = give ? ArrowUpRight : ArrowDownLeft;
   const tone = give
-    ? { label: "text-emerald-600", ring: "bg-emerald-100 text-emerald-600", badge: "bg-emerald-100 text-emerald-700", chip: "bg-emerald-50 text-emerald-700" }
-    : { label: "text-sky-600", ring: "bg-sky-100 text-sky-600", badge: "bg-sky-100 text-sky-700", chip: "bg-sky-50 text-sky-700" };
+    ? { label: "text-emerald-600", chip: "bg-emerald-50 text-emerald-700" }
+    : { label: "text-sky-600", chip: "bg-sky-50 text-sky-700" };
   return (
     <div className="p-3">
-      <div className="flex items-center gap-1.5 mb-2.5">
-        <span className={`flex items-center justify-center h-5 w-5 rounded-full ${tone.ring}`}>
-          <Icon className="h-3 w-3" />
-        </span>
-        <span className={`text-xs font-bold uppercase tracking-wide ${tone.label}`}>{label}</span>
-        <span className={`ml-auto text-[11px] font-bold px-1.5 py-0.5 rounded-full ${tone.badge}`}>{stickers.length}</span>
-      </div>
+      <p className={`text-xs font-bold uppercase tracking-wide mb-2.5 ${tone.label}`}>{label}</p>
       {stickers.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">Nessuna</p>
       ) : (
@@ -176,11 +169,11 @@ export function MatchDetail() {
         {detail.albums.map(album => (
           <Card key={album.albumId} className="shadow-sm overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border/60 bg-muted/30">
-              <h3 className="text-sm font-bold text-foreground truncate">{album.albumTitle}</h3>
+              <h3 className="text-sm font-bold text-foreground text-center truncate">{album.albumTitle}</h3>
             </div>
             <div className="grid grid-cols-2 divide-x divide-border/60">
-              <ExchangeColumn variant="give" label="Tu dai" stickers={album.youGive} />
-              <ExchangeColumn variant="receive" label="Tu ricevi" stickers={album.youReceive} />
+              <ExchangeColumn variant="give" label="Dai" stickers={album.youGive} />
+              <ExchangeColumn variant="receive" label="Ricevi" stickers={album.youReceive} />
             </div>
           </Card>
         ))}
