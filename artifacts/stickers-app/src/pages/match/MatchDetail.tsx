@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, MapPin, MessageSquare, X, Star } from "lucide-react";
+import { ArrowLeft, MessageSquare, X, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +34,7 @@ function ExchangeColumn({
     : { label: "text-sky-600", chip: "bg-sky-50 text-sky-700" };
   return (
     <div className="p-3">
-      <p className={`text-xs font-bold uppercase tracking-wide mb-2.5 ${tone.label}`}>{label}</p>
+      <p className={`text-xs font-bold uppercase tracking-wide text-center mb-2.5 ${tone.label}`}>{label}</p>
       {stickers.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">Nessuna</p>
       ) : (
@@ -151,14 +151,9 @@ export function MatchDetail() {
             <MessageSquare className="h-5 w-5" />
           </Button>
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm">
-          <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 shrink-0" />
-            {detail.area}{detail.distanceKm != null && ` · ${detail.distanceKm.toFixed(1)} km`}
-          </span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className="text-foreground"><span className="font-black text-accent">{detail.totalExchanges}</span> scambi possibili</span>
-        </div>
+        <p className="text-center text-sm text-foreground">
+          <span className="font-black text-accent">{detail.totalExchanges}</span> scambi possibili
+        </p>
       </div>
 
       {/* SOLO questa lista scorre */}
