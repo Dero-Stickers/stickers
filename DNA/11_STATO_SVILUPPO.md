@@ -73,22 +73,39 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Utenti nel DB (Supabase)
 
-Account base: **admin** (id 2) e **Dero975** (id 1, free, CAP 40138 Bologna).
+Account base: **admin** (id 6) e **Dero975** (id 1, free, CAP 40138 Bologna).
+Dero975 possiede gli album **11, 12, 13, 14** (collezione ampliata per i match incrociati multi-album).
 
 **Dati di test PERSISTENTI** (giu 2026) — creati per provare l'app popolata da telefono.
-Utenti id 7-12, tutti vicino a Bologna, registrati via API (PIN reali, login funzionante).
-Album match: **11** (Calciatori 2025-2026, 624 fig). Range per `number`: A=1-150, B=151-300, C=301-450, D=451-624.
+Utenti id 7-12 e 14-15, tutti vicino a Bologna, registrati via API (PIN reali, login funzionante).
+Album usati per i match: 11 (2025-26, 624), 12 (2024-25, 736), 13 (2023-24, 725), 14 (2022-23, 699).
+Range per `number` sull'album 11: A=1-150, B=151-300, C=301-450, D=451-624.
+
+**Partner base (album 11/12)** — id 7-12:
 
 | id | Nickname | CAP | Stato | Collezione album 11 | Note |
 |----|----------|-----|-------|---------------------|------|
 | 7  | marcobo  | 40139 | premium | doppia C, manc. A, poss. B+D | +album 12 completo |
 | 8  | giuliabo | 40136 | demo attiva | doppia A+B, manc. C+D | +album 12 vuoto |
 | 9  | sarabo   | 40138 | demo scaduta | doppia C, manc. A, poss. B+D | match forte con Dero975 |
-| 10 | lucabo   | 40141 | free | a11: manc. A, resto poss. · a12: doppia 1-150 | **partner CROSS-ALBUM di Dero975**: dà nell'album 2024-25, riceve nel 2025-26 |
+| 10 | lucabo   | 40141 | free | a11: manc. A, resto poss. · a12: doppia 1-150 | **CROSS-ALBUM 1 album/direzione**: dà nel 2024-25, riceve nel 2025-26 (150 scambi) |
 | 11 | annamo   | 41100 | free (Modena) | doppia C, manc. A, poss. B+D | lontano: nei "migliori", non "vicini" |
 | 12 | blockme  | 40140 | **bloccato** | doppia C, manc. A | escluso dai match |
 
-Dero975 (id 1) album 11 impostato: doppia A, mancante C, posseduta B+D (così ha match).
+**Partner MULTI-ALBUM (più album per direzione)** — id 14-15, creati giu 2026 per testare
+il dettaglio match incrociato con più gruppi-album sia in "Tu dai" sia in "Tu ricevi":
+
+| id | Nickname | CAP | Stato | Match con Dero975 |
+|----|----------|-----|-------|-------------------|
+| 14 | robybo  | 40137 | free | **DAI 350** (a11:150 + a13:200) · **RICEVI 650** (a11:150 + a12:300 + a13:200) → **350 scambi** |
+| 15 | elenamo | 40142 | premium | **DAI 350** (a13:200 + a14:150) · **RICEVI 835** (a12:336 + a13:200 + a14:299) → **350 scambi** |
+
+Collezioni multi-album (per `number`):
+- **Dero975** a13: doppia 1-200, manc. 201-400, poss. resto · a14: doppia 1-150, manc. 401-699, poss. resto.
+- **robybo** a11: doppia 301-450, manc. 1-150 · a12: doppia 1-300 · a13: doppia 201-400, manc. 1-200.
+- **elenamo** a12: doppia 401-736 · a13: doppia 201-400, manc. 1-200 · a14: doppia 401-699, manc. 1-150.
+
+Dero975 (id 1) album 11 impostato: doppia A, mancante C, posseduta B+D; album 12 tutto mancante.
 Chat di test: Dero975↔marcobo (attiva), Dero975↔sarabo (attiva + **segnalazione** pending), giuliabo↔lucabo (chiusa).
 
 > I PIN dei test NON sono in repo (account usa e getta; le credenziali sono state passate
@@ -96,10 +113,11 @@ Chat di test: Dero975↔marcobo (attiva), Dero975↔sarabo (attiva + **segnalazi
 
 **Rimozione pulita dei dati di test** (quando non servono più):
 ```sql
-DELETE FROM reports WHERE reporter_id BETWEEN 7 AND 12 OR reported_user_id BETWEEN 7 AND 12;
-DELETE FROM users   WHERE id BETWEEN 7 AND 12;  -- cascade: user_albums/stickers/chats/messages
--- opzionale, riportare Dero975 album 11 a "tutte mancanti":
--- UPDATE user_stickers SET state='mancante' WHERE user_id=1 AND album_id=11;
+DELETE FROM reports WHERE reporter_id BETWEEN 7 AND 15 OR reported_user_id BETWEEN 7 AND 15;
+DELETE FROM users   WHERE id BETWEEN 7 AND 15;  -- cascade: user_albums/stickers/chats/messages
+-- opzionale, togliere a Dero975 gli album multi-album aggiunti per i test:
+-- DELETE FROM user_stickers WHERE user_id=1 AND album_id IN (13,14);
+-- DELETE FROM user_albums   WHERE user_id=1 AND album_id IN (13,14);
 ```
 
 ## Dove stanno i segreti
