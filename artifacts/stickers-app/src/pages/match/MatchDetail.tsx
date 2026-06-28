@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, MessageSquare, X, Star } from "lucide-react";
+import { ArrowLeft, MessageSquare, X, Star, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,10 +18,15 @@ import { useQueryClient } from "@tanstack/react-query";
 
 type MatchGroup = { albumId: number; albumTitle: string; stickers: { id: number; number: number }[] };
 
+// Oltre questa soglia un album mostra prima un'anteprima, poi "Mostra tutte".
+const PREVIEW_LIMIT = 60;
+
 /**
- * Sezione direzione (DAI / RICEVI) a tutta larghezza: figurine raggruppate per
- * album (titolo album + griglia di numeri). Lo scambio è cross-album, quindi le
- * due direzioni sono indipendenti e ognuna elenca tutti i suoi album.
+ * Sezione direzione (DAI / RICEVI). Lo scambio è CROSS-ALBUM: i numeri di ogni
+ * album sono indipendenti dall'altra direzione (puoi dare figurine di un album e
+ * riceverne di un altro). Per restare leggibile anche con tanti album e tante
+ * figurine, ogni album è una riga "a fisarmonica": si tocca per aprire/chiudere
+ * la griglia dei numeri. Con un solo album resta già aperto (niente tocco inutile).
  */
 function DirectionSection({
   variant,
@@ -36,33 +41,78 @@ function DirectionSection({
 }) {
   const give = variant === "give";
   const tone = give
-    ? { label: "text-emerald-600", chip: "bg-emerald-50 text-emerald-700", badge: "bg-emerald-100 text-emerald-700" }
-    : { label: "text-sky-600", chip: "bg-sky-50 text-sky-700", badge: "bg-sky-100 text-sky-700" };
+    ? { label: "text-emerald-700", chip: "bg-emerald-50 text-emerald-700", badge: "bg-emerald-100 text-emerald-700" }
+    : { label: "text-sky-700", chip: "bg-sky-50 text-sky-700", badge: "bg-sky-100 text-sky-700" };
+
+  const single = groups.length === 1;
+  const [openIds, setOpenIds] = useState<Set<number>>(() => (single ? new Set(groups.map(g => g.albumId)) : new Set()));
+  const [showAllIds, setShowAllIds] = useState<Set<number>>(new Set());
+
+  const toggle = (id: number) =>
+    setOpenIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   return (
     <Card className="shadow-sm p-3">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1">
         <span className={`text-sm font-bold uppercase tracking-wide ${tone.label}`}>{label}</span>
         <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${tone.badge}`}>{total}</span>
       </div>
       {groups.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic">Nessuna figurina</p>
+        <p className="text-xs text-muted-foreground italic py-1">Nessuna figurina</p>
       ) : (
-        <div className="space-y-3">
-          {groups.map(g => (
-            <div key={g.albumId}>
-              <p className="text-xs font-semibold text-foreground mb-1.5">{g.albumTitle}</p>
-              <div className="grid grid-cols-5 gap-1.5">
-                {g.stickers.map(s => (
-                  <span
-                    key={s.id}
-                    className={`flex items-center justify-center h-9 rounded-lg text-sm font-bold tabular-nums ${tone.chip}`}
-                  >
-                    {s.number}
+        <div className="divide-y divide-border/60">
+          {groups.map(g => {
+            const isOpen = openIds.has(g.albumId);
+            const all = showAllIds.has(g.albumId);
+            const visible = all ? g.stickers : g.stickers.slice(0, PREVIEW_LIMIT);
+            const hidden = g.stickers.length - visible.length;
+            return (
+              <div key={g.albumId}>
+                <button
+                  type="button"
+                  onClick={() => toggle(g.albumId)}
+                  aria-expanded={isOpen}
+                  className="w-full flex items-center gap-2 py-2.5 text-left active:opacity-70"
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`}
+                  />
+                  <span className="flex-1 text-sm font-semibold text-foreground truncate">{g.albumTitle}</span>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full tabular-nums ${tone.badge}`}>
+                    {g.stickers.length}
                   </span>
-                ))}
+                </button>
+                {isOpen && (
+                  <div className="pb-3">
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {visible.map(s => (
+                        <span
+                          key={s.id}
+                          className={`flex items-center justify-center h-9 rounded-lg text-sm font-bold tabular-nums ${tone.chip}`}
+                        >
+                          {s.number}
+                        </span>
+                      ))}
+                    </div>
+                    {hidden > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllIds(prev => new Set(prev).add(g.albumId))}
+                        className="mt-2 w-full text-xs font-semibold text-accent py-1.5 active:opacity-70"
+                      >
+                        Mostra tutte ({g.stickers.length})
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Card>
