@@ -4,11 +4,13 @@
 
 | Campo | Note |
 |-------|------|
-| Nickname | **5-12 caratteri**; ammessi lettere, numeri, `-`, `_`. Normalizzato a forma **canonica** (iniziale maiuscola, resto minuscolo, es. `marco-bo` → `Marco-bo`). Unico **per CAP** (case-insensitive). Regola in `auth.ts` (`NICKNAME_REGEX` + `canonicalNickname`); lato frontend `formatNickname` in `lib/utils.ts` formatta mentre si digita. **Login/recupero case-insensitive** (confronto `lower()`), così l'accesso funziona anche digitando maiuscole/minuscole diverse. |
+| Nickname | **5-12 caratteri**; ammessi lettere, numeri, `-`, `_`. Normalizzato a forma **canonica** (iniziale maiuscola, resto minuscolo, es. `marco-bo` → `Marco-bo`). **Unico in tutta l'app** (case-insensitive) — indice DB `users_nickname_lower_unique` su `lower(nickname)`. Regola in `auth.ts` (`NICKNAME_REGEX` + `canonicalNickname`); lato frontend `formatNickname` in `lib/utils.ts` formatta mentre si digita. **Login/recupero case-insensitive** (confronto `lower()`). |
 | PIN personale | 4-6 cifre |
-| CAP/Codice Postale | Per logica match per vicinanza |
+| CAP/Codice Postale | **Solo geografia**, non fa parte dell'identità: serve per i match per vicinanza ed è **liberamente modificabile** dal Profilo (vedi sotto). |
 | Domanda di sicurezza | Obbligatoria, per recupero emergenza |
 | Risposta alla domanda di sicurezza | |
+
+> **Identità slegata dal CAP** (giu 2026). Il nickname è l'unica chiave d'identità (unico globale); il CAP è puro dato geografico. Questo rende l'accesso più semplice (solo nickname + PIN), il recupero indipendente dal CAP e il cambio zona privo di rischi. Migrazione: `lib/db/migrations/0001_nickname_global_unique.sql`.
 
 ## Campi NON obbligatori
 
@@ -17,9 +19,19 @@
 
 ## Accesso Quotidiano
 
-- Nickname + PIN
-- Il CAP non viene richiesto ad ogni login
+- **Solo Nickname + PIN** (il CAP non serve all'accesso: non è più parte dell'identità)
 - Il dispositivo ricorda l'accesso finché l'utente non fa logout manuale
+
+## Cambio Zona (CAP) — "modalità in vacanza"
+
+- Dal **Profilo → Cambia zona**: l'utente imposta un nuovo CAP per cercare match in un'altra città.
+- Endpoint `PATCH /api/auth/me/location` (autenticato, **niente PIN**: il CAP è solo geografia). Valida 5 cifre e **ricalcola l'area** (`deriveArea` in `auth.ts`: match esatto → prefisso provincia → generico).
+- Non tocca login né recupero: l'identità (nickname) resta invariata.
+
+## Email di recupero (futuro)
+
+- Prossimo passo consigliato: email **facoltativa** come àncora di recupero (link/codice), che potrà sostituire la domanda di sicurezza.
+- Richiede l'attivazione di un **servizio di invio email** (config/chiavi) → non ancora implementata.
 
 ## Codice di Recupero
 
@@ -30,10 +42,11 @@
 
 ## Recupero PIN
 
-1. Utente inserisce codice di recupero
-2. App verifica il codice
-3. Se valido → utente crea nuovo PIN
-4. Profilo, album, stati, demo, premium rimangono invariati
+Due strade (nessuna richiede il CAP):
+- **Codice di recupero**: utente inserisce `STICK-XXXX-XXXX-XXXX` → crea nuovo PIN. Mostra anche il nickname.
+- **Domanda di sicurezza**: utente inserisce **solo il nickname** (unico) → l'app mostra la sua domanda → risponde → crea nuovo PIN.
+
+Profilo, album, stati, demo, premium rimangono invariati.
 
 ## Profilo Pubblico (visibile ad altri utenti)
 
@@ -46,6 +59,6 @@
 
 1. Utente contatta admin via email di supporto
 2. Admin cerca utente nell'archivio
-3. Admin verifica: nickname, CAP, domanda di sicurezza
+3. Admin verifica: nickname (unico) e domanda di sicurezza
 4. Se coerente → admin può aiutare al recupero o generare nuovo codice
 5. Azione admin tracciata nel log

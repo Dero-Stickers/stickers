@@ -25,7 +25,6 @@ export function Recover() {
 
   // Domanda segreta
   const [nickname, setNickname] = useState("");
-  const [cap, setCap] = useState("");
   const [securityQuestion, setSecurityQuestion] = useState<string | null>(null);
   const [securityAnswer, setSecurityAnswer] = useState("");
   const [newPinAnswer, setNewPinAnswer] = useState("");
@@ -34,7 +33,7 @@ export function Recover() {
     setMethod(null);
     setError(null);
     setRecoveryCode(""); setNewPinCode(""); setRecoveredNick(null);
-    setNickname(""); setCap(""); setSecurityQuestion(null); setSecurityAnswer(""); setNewPinAnswer("");
+    setNickname(""); setSecurityQuestion(null); setSecurityAnswer(""); setNewPinAnswer("");
   };
 
   const submitCode = async () => {
@@ -59,7 +58,7 @@ export function Recover() {
       const res = await fetch("/api/auth/recover/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nickname: nickname.trim(), cap: cap.trim() }),
+        body: JSON.stringify({ nickname: nickname.trim() }),
       });
       const json: { securityQuestion?: string; message?: string } = await res.json();
       if (!res.ok) { setError(json.message ?? "Account non trovato"); return; }
@@ -76,7 +75,6 @@ export function Recover() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nickname: nickname.trim(),
-          cap: cap.trim(),
           securityAnswer: securityAnswer.trim(),
           newPin: newPinAnswer,
         }),
@@ -144,7 +142,7 @@ export function Recover() {
                 <HelpCircle className="h-5 w-5 text-primary flex-shrink-0" />
                 <div>
                   <p className="font-medium text-sm">Rispondi alla domanda di sicurezza</p>
-                  <p className="text-xs text-muted-foreground">Devi ricordare nickname e CAP</p>
+                  <p className="text-xs text-muted-foreground">Devi ricordare il nickname</p>
                 </div>
               </button>
               <Button variant="ghost" className="w-full" onClick={() => setLocation("/login")}>
@@ -193,12 +191,11 @@ export function Recover() {
                 spellCheck={false}
                 maxLength={12}
               />
-              <Input placeholder="CAP (5 cifre)" maxLength={5} value={cap} onChange={e => setCap(e.target.value)} />
               {error && <p className="text-sm text-destructive text-center">{error}</p>}
               <Button
                 className="w-full bg-primary text-primary-foreground h-11"
                 onClick={lookupQuestion}
-                disabled={loading || nickname.length < 3 || cap.length !== 5}
+                disabled={loading || nickname.length < 3}
               >
                 {loading ? "Cerco..." : "Mostra la mia domanda"}
               </Button>

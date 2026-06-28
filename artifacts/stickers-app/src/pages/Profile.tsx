@@ -97,6 +97,33 @@ export function Profile() {
     finally { setNickLoading(false); }
   };
 
+  // Cambio zona di ricerca (CAP). Il CAP è solo geografia: nessun PIN richiesto.
+  const [showLocDialog, setShowLocDialog] = useState(false);
+  const [newCap, setNewCap] = useState("");
+  const [locError, setLocError] = useState<string | null>(null);
+  const [locLoading, setLocLoading] = useState(false);
+
+  const handleChangeLocation = async () => {
+    setLocError(null); setLocLoading(true);
+    try {
+      const token = localStorage.getItem("sticker_token");
+      const res = await fetch("/api/auth/me/location", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ cap: newCap.trim() }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { setLocError((j as any)?.message ?? "Errore aggiornamento"); return; }
+      if (token && j.user) login(j.user, token);
+      toast({ title: "Zona aggiornata", description: `Ora cerchi match a ${j.user?.area ?? newCap}.` });
+      setShowLocDialog(false);
+    } catch { setLocError("Errore di connessione."); }
+    finally { setLocLoading(false); }
+  };
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePin, setDeletePin] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -203,6 +230,17 @@ export function Profile() {
               <div>
                 <p className="font-medium text-sm text-foreground">Cambia nickname</p>
                 <p className="text-xs text-muted-foreground">Devi confermare con il PIN</p>
+              </div>
+            </button>
+
+            <button
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+              onClick={() => { setShowLocDialog(true); setNewCap(currentUser?.cap ?? ""); setLocError(null); }}
+            >
+              <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
+              <div>
+                <p className="font-medium text-sm text-foreground">Cambia zona</p>
+                <p className="text-xs text-muted-foreground">Cerca scambi in un'altra città (CAP)</p>
               </div>
             </button>
 
@@ -366,9 +404,58 @@ export function Profile() {
               <Button
                 className="flex-1 h-11 bg-primary text-primary-foreground font-semibold"
                 onClick={handleChangeNickname}
-                disabled={nickLoading || !/^[a-z0-9]{5,15}$/.test(newNickname) || nickPin.length < 4}
+                disabled={nickLoading || !/^[A-Za-z0-9_-]{5,12}$/.test(newNickname) || nickPin.length < 4}
               >
                 {nickLoading ? "Aggiorno…" : "Conferma"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLocDialog} onOpenChange={setShowLocDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="text-center sm:text-left">
+            <DialogTitle className="text-lg">Cambia zona di ricerca</DialogTitle>
+            <p className="text-sm text-muted-foreground pt-1">
+              Inserisci il CAP della zona dove vuoi cercare scambi. Puoi cambiarlo quando vuoi.
+            </p>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+                CAP (5 cifre)
+              </label>
+              <Input
+                inputMode="numeric"
+                placeholder="es. 40138"
+                maxLength={5}
+                value={newCap}
+                onChange={e => setNewCap(e.target.value.replace(/\D/g, ""))}
+                className="h-11 tracking-[0.4em] text-center"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Serve solo a trovare i match vicini: non cambia il tuo accesso.
+              </p>
+            </div>
+
+            {locError && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                {locError}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1 h-11" onClick={() => setShowLocDialog(false)} disabled={locLoading}>
+                Annulla
+              </Button>
+              <Button
+                className="flex-1 h-11 bg-primary text-primary-foreground font-semibold"
+                onClick={handleChangeLocation}
+                disabled={locLoading || newCap.length !== 5}
+              >
+                {locLoading ? "Aggiorno…" : "Conferma"}
               </Button>
             </div>
           </div>

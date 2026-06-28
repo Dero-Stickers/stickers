@@ -52,14 +52,14 @@ const LoginNicknameSchema = z
   .transform(s => s.toLowerCase())
   .pipe(z.string().min(1).max(64));
 
+// Recupero account: ora basato sul SOLO nickname (unico in tutta l'app).
+// Il CAP non serve più — non fa più parte dell'identità.
 const RecoverLookupBody = z.object({
   nickname: LoginNicknameSchema,
-  cap: z.string().length(5),
 });
 
 const RecoverAnswerBody = z.object({
   nickname: LoginNicknameSchema,
-  cap: z.string().length(5),
   securityAnswer: z.string().min(1),
   newPin: z.string().regex(PIN_REGEX, "Il PIN deve essere di 4-6 cifre numeriche"),
 });
@@ -68,6 +68,33 @@ const ChangeNicknameBody = z.object({
   pin: z.string().regex(PIN_REGEX, "PIN non valido"),
   newNickname: NicknameSchema,
 });
+
+// Cambio zona di ricerca: il CAP è ora solo geografia, modificabile a piacere
+// (es. quando l'utente è in un'altra città). 5 cifre numeriche.
+const CAP_REGEX = /^\d{5}$/;
+const ChangeLocationBody = z.object({
+  cap: z.string().regex(CAP_REGEX, "Il CAP deve essere di 5 cifre"),
+});
+
+// Deriva l'area leggibile dal CAP. Unica fonte, riusata da registrazione e
+// cambio zona, così CAP e area non vanno mai fuori sincrono.
+// 1) match esatto su zone note; 2) fallback sul prefisso provincia (prime 2
+// cifre ≈ provincia in Italia); 3) generico se sconosciuto.
+const AREA_MAP: Record<string, string> = {
+  "20100": "Milano Nord", "20121": "Milano Centro", "20135": "Milano Sud",
+  "20151": "Milano Ovest", "20137": "Milano Est", "00100": "Roma Centro",
+  "00118": "Roma Nord", "10100": "Torino Centro", "40100": "Bologna",
+};
+const AREA_PREFIX: Record<string, string> = {
+  "00": "Roma", "09": "Cagliari", "10": "Torino", "16": "Genova",
+  "20": "Milano", "30": "Venezia", "34": "Trieste", "35": "Padova",
+  "37": "Verona", "40": "Bologna", "41": "Modena", "43": "Parma",
+  "47": "Forlì-Cesena", "50": "Firenze", "60": "Ancona", "70": "Bari",
+  "80": "Napoli", "90": "Palermo", "95": "Catania",
+};
+function deriveArea(cap: string): string {
+  return AREA_MAP[cap] || AREA_PREFIX[cap.slice(0, 2)] || `Area ${cap.slice(0, 2)}XXX`;
+}
 
 const NICKNAME_CHANGE_MAX_ATTEMPTS = 5;
 const NICKNAME_CHANGE_WINDOW_MS = 15 * 60 * 1000;
@@ -140,41 +167,47 @@ const register: RequestHandler = async (req, res) => {
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
-    const { eq, and, sql } = await import("drizzle-orm");
+    const { sql } = await import("drizzle-orm");
 
+    // Nickname unico in tutta l'app (case-insensitive), non più "per CAP".
     const existing = await db
       .select()
       .from(usersTable)
-      .where(and(sql`lower(${usersTable.nickname}) = ${nickname.toLowerCase()}`, eq(usersTable.cap, body.cap)))
+      .where(sql`lower(${usersTable.nickname}) = ${nickname.toLowerCase()}`)
       .limit(1);
 
     if (existing.length > 0) {
-      res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso per questo CAP" });
+      res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
       return;
     }
 
     const recoveryCode = generateRecoveryCode();
-    const areaMap: Record<string, string> = {
-      "20100": "Milano Nord", "20121": "Milano Centro", "20135": "Milano Sud",
-      "20151": "Milano Ovest", "20137": "Milano Est", "00100": "Roma Centro",
-      "00118": "Roma Nord", "10100": "Torino Centro", "40100": "Bologna",
-    };
-    const area = areaMap[body.cap] || `Area ${body.cap.slice(0, 2)}XXX`;
+    const area = deriveArea(body.cap);
 
-    const [user] = await db
-      .insert(usersTable)
-      .values({
-        nickname,
-        pinHash: await hashPin(body.pin),
-        cap: body.cap,
-        area,
-        securityQuestion: body.securityQuestion,
-        securityAnswerHash: await hashAnswer(body.securityAnswer),
-        recoveryCode,
-        isPremium: false,
-        acceptedTermsAt: new Date(),
-      })
-      .returning();
+    let user;
+    try {
+      [user] = await db
+        .insert(usersTable)
+        .values({
+          nickname,
+          pinHash: await hashPin(body.pin),
+          cap: body.cap,
+          area,
+          securityQuestion: body.securityQuestion,
+          securityAnswerHash: await hashAnswer(body.securityAnswer),
+          recoveryCode,
+          isPremium: false,
+          acceptedTermsAt: new Date(),
+        })
+        .returning();
+    } catch (e: any) {
+      // Race-safe: collisione sull'indice unico (lower(nickname)).
+      if (e?.code === "23505") {
+        res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
+        return;
+      }
+      throw e;
+    }
 
     res.status(201).json({
       user: await userPayload(user),
@@ -214,24 +247,14 @@ const login: RequestHandler = async (req, res) => {
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
-    const { eq, and, sql } = await import("drizzle-orm");
+    const { sql } = await import("drizzle-orm");
 
-    // Case-insensitive match: handles legacy mixed-case nicknames stored
-    // before lowercase normalization was enforced.
-    const nicknameMatch = sql`lower(${usersTable.nickname}) = ${nickname}`;
-
-    let usersFound;
-    if (body.cap) {
-      usersFound = await db
-        .select()
-        .from(usersTable)
-        .where(and(nicknameMatch, eq(usersTable.cap, body.cap)));
-    } else {
-      usersFound = await db
-        .select()
-        .from(usersTable)
-        .where(nicknameMatch);
-    }
+    // Nickname unico in tutta l'app → login con solo nickname + PIN.
+    // Confronto case-insensitive: le maiuscole/minuscole digitate non contano.
+    const usersFound = await db
+      .select()
+      .from(usersTable)
+      .where(sql`lower(${usersTable.nickname}) = ${nickname}`);
 
     let user: typeof usersFound[number] | undefined;
     for (const u of usersFound) {
@@ -571,15 +594,12 @@ const recoverLookup: RequestHandler = async (req, res) => {
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
-    const { eq, and, sql } = await import("drizzle-orm");
+    const { sql } = await import("drizzle-orm");
 
     const [user] = await db
       .select()
       .from(usersTable)
-      .where(and(
-        sql`lower(${usersTable.nickname}) = ${body.nickname}`,
-        eq(usersTable.cap, body.cap),
-      ))
+      .where(sql`lower(${usersTable.nickname}) = ${body.nickname}`)
       .limit(1);
 
     // Anti-enumeration: same shape & status code whether the user exists or not.
@@ -622,15 +642,12 @@ const recoverAnswer: RequestHandler = async (req, res) => {
 
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
-    const { eq, and, sql } = await import("drizzle-orm");
+    const { eq, sql } = await import("drizzle-orm");
 
     const [user] = await db
       .select()
       .from(usersTable)
-      .where(and(
-        sql`lower(${usersTable.nickname}) = ${body.nickname}`,
-        eq(usersTable.cap, body.cap),
-      ))
+      .where(sql`lower(${usersTable.nickname}) = ${body.nickname}`)
       .limit(1);
 
     if (!user || !(await verifyAnswer(body.securityAnswer, user.securityAnswerHash))) {
@@ -703,13 +720,12 @@ const changeNickname: RequestHandler = async (req, res) => {
       .from(usersTable)
       .where(and(
         sql`lower(${usersTable.nickname}) = ${body.newNickname.toLowerCase()}`,
-        eq(usersTable.cap, user.cap),
         ne(usersTable.id, user.id),
       ))
       .limit(1);
 
     if (conflict.length > 0) {
-      res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso per questo CAP" });
+      res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
       return;
     }
 
@@ -721,9 +737,9 @@ const changeNickname: RequestHandler = async (req, res) => {
         .returning();
       res.json({ user: await userPayload(updated) });
     } catch (e: any) {
-      // Race-safe: catch unique-violation from DB-level (cap, nickname) index
+      // Race-safe: catch unique-violation from DB-level lower(nickname) index
       if (e?.code === "23505") {
-        res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso per questo CAP" });
+        res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
         return;
       }
       throw e;
@@ -731,6 +747,37 @@ const changeNickname: RequestHandler = async (req, res) => {
   } catch (err) {
     if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
       res.status(400).json({ error: "VALIDATION_ERROR", message: "Dati non validi" });
+      return;
+    }
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
+  }
+};
+
+// PATCH /api/auth/me/location — cambia il CAP = zona di ricerca match.
+// Il CAP è solo geografia (non più identità): basta l'autenticazione, niente PIN.
+// Ricalcola l'area così CAP e area restano sempre allineati.
+const changeLocation: RequestHandler = async (req, res) => {
+  try {
+    const body = ChangeLocationBody.parse(req.body);
+    const session = req.session!;
+
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+
+    const [updated] = await db
+      .update(usersTable)
+      .set({ cap: body.cap, area: deriveArea(body.cap) })
+      .where(eq(usersTable.id, session.userId))
+      .returning();
+
+    if (!updated) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
+
+    res.json({ user: await userPayload(updated) });
+  } catch (err) {
+    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: "CAP non valido (5 cifre)" });
       return;
     }
     req.log?.error(err);
@@ -748,6 +795,7 @@ router.get("/me", requireAuth, getMe);
 router.get("/me/export", requireAuth, exportMe);
 router.delete("/me", requireAuth, deleteMe);
 router.patch("/me/nickname", requireAuth, changeNickname);
+router.patch("/me/location", requireAuth, changeLocation);
 router.post("/recovery-code", requireAuth, getRecoveryCode);
 
 export default router;

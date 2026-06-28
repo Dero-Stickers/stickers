@@ -1,4 +1,5 @@
 import { pgTable, serial, text, boolean, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -20,8 +21,9 @@ export const usersTable = pgTable("users", {
   acceptedTermsAt: timestamp("accepted_terms_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => ({
-  // Race-safe uniqueness for "nickname per CAP".
-  nicknameCapUnique: uniqueIndex("users_nickname_cap_unique").on(t.cap, t.nickname),
+  // Nickname unico GLOBALE (case-insensitive). Il CAP non fa più parte
+  // dell'identità: è solo dato geografico, modificabile dall'utente.
+  nicknameUnique: uniqueIndex("users_nickname_lower_unique").on(sql`lower(${t.nickname})`),
 }));
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true });

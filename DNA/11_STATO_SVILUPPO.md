@@ -23,6 +23,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 ### Backend (api-server)
 - Express 5 + pino. Route: auth, albums, stickers, matches, chats, admin, settings, demo, error-reports, health
 - **Auth sicura**: token firmato HMAC-SHA256 (`v1.<payload>.<firma>`, TTL 30 giorni); PIN e risposte di sicurezza con **scrypt** asincrono (salt per utente)
+- **Identità slegata dal CAP** (giu 2026): nickname **unico globale** (`users_nickname_lower_unique`), login **solo nickname + PIN**, recupero per **solo nickname**, CAP modificabile (`PATCH /me/location`, ricalcolo area via `deriveArea`). Migrazione `lib/db/migrations/0001_nickname_global_unique.sql`. Email di recupero = prossimo passo (serve servizio email). Vedi `02_UTENTI_AUTENTICAZIONE.md`
 - **Rate limiting** in-memory: login 8/5min, recover 5/15min (429 + Retry-After)
 - **CORS allowlist**: `*.onrender.com` (prod), `localhost`/`127.0.0.1` (dev), più `CORS_ORIGINS`
 - Middleware `requireAuth`/`requireAdmin` centralizzati

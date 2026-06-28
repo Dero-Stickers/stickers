@@ -12,8 +12,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppLogo } from "@/components/brand/AppLogo";
 import type { AuthResponse } from "@workspace/api-client-react";
 
-const NICKNAME_REGEX = /^[a-z0-9]{5,15}$/;
-const NICKNAME_MSG = "Il nickname deve avere 5-15 caratteri, solo lettere e numeri";
+// Allineato alla forma canonica del backend: iniziale maiuscola ammessa,
+// 5-12 caratteri tra lettere, numeri, trattino e underscore.
+const NICKNAME_REGEX = /^[A-Za-z0-9_-]{5,12}$/;
+const NICKNAME_MSG = "Il nickname deve avere 5-12 caratteri: lettere, numeri, - o _";
 
 const loginSchema = z.object({
   nickname: z.string().min(1, "Inserisci il nickname"),
