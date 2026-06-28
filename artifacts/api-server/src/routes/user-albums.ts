@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { RequestHandler } from "express";
 import { eq, and, asc, sql, inArray } from "drizzle-orm";
 import { getSession } from "../middlewares/auth";
+import { invalidateUser } from "../lib/matchCache";
 
 const router = Router();
 
@@ -118,6 +119,7 @@ const addAlbum: RequestHandler = async (req, res) => {
     });
 
     if (result.alreadyAdded) { res.status(400).json({ error: "ALREADY_ADDED" }); return; }
+    invalidateUser(session.userId); // la collezione è cambiata → match non più validi in cache
     res.status(201).json({ success: true, message: "Album aggiunto" });
   } catch (err) {
     req.log?.error(err);
@@ -142,6 +144,7 @@ const removeAlbum: RequestHandler = async (req, res) => {
       and(eq(userAlbumsTable.userId, session.userId), eq(userAlbumsTable.albumId, albumId))
     );
 
+    invalidateUser(session.userId); // collezione cambiata → invalida cache match
     res.json({ success: true, message: "Album rimosso" });
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
@@ -210,6 +213,8 @@ const updateStickerState: RequestHandler = async (req, res) => {
       .returning();
 
     if (!row) { res.status(404).json({ error: "NOT_FOUND" }); return; }
+
+    invalidateUser(session.userId); // stato figurina cambiato → invalida cache match
 
     const [s] = await db.select().from(stickersTable).where(eq(stickersTable.id, stickerId)).limit(1);
 

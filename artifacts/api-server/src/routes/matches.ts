@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { RequestHandler } from "express";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { getSession } from "../middlewares/auth";
+import { getCached, setCached } from "../lib/matchCache";
 
 const router = Router();
 
@@ -111,6 +112,11 @@ const getBestMatches: RequestHandler = async (req, res) => {
   try {
     const session = await requireAuth(req, res);
     if (!session) return;
+
+    const cacheKey = `u:${session.userId}:matches`;
+    const cached = getCached<unknown[]>(cacheKey);
+    if (cached) { res.json(cached); return; }
+
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
     const [me] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
@@ -127,6 +133,7 @@ const getBestMatches: RequestHandler = async (req, res) => {
       exchangesCompleted: c.exchanges_completed,
       albumsInCommon: c.albums_in_common,
     }));
+    setCached(cacheKey, result);
     res.json(result);
   } catch (err) {
     req.log?.error(err);
@@ -140,6 +147,11 @@ const getNearbyMatches: RequestHandler = async (req, res) => {
     const session = await requireAuth(req, res);
     if (!session) return;
     const radiusKm = parseFloat((req.query.radius ?? req.query.radiusKm ?? "10") as string);
+
+    const cacheKey = `u:${session.userId}:nearby:${radiusKm}`;
+    const cached = getCached<unknown[]>(cacheKey);
+    if (cached) { res.json(cached); return; }
+
     const { db } = await import("@workspace/db");
     const { usersTable } = await import("@workspace/db");
     const [me] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
@@ -167,6 +179,7 @@ const getNearbyMatches: RequestHandler = async (req, res) => {
       .filter(c => c.distanceKm <= radiusKm)
       .sort((a, b) => a.distanceKm - b.distanceKm)
       .slice(0, 20);
+    setCached(cacheKey, result);
     res.json(result);
   } catch (err) {
     req.log?.error(err);

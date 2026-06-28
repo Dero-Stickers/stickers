@@ -27,7 +27,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - **Rate limiting** in-memory: login 8/5min, recover 5/15min (429 + Retry-After)
 - **CORS allowlist**: `*.onrender.com` (prod), `localhost`/`127.0.0.1` (dev), più `CORS_ORIGINS`
 - Middleware `requireAuth`/`requireAdmin` centralizzati
-- Match performanti: query in batch (no N+1), distanza CAP deterministica
+- Match performanti: query in batch (no N+1), distanza CAP deterministica, **indice composto** `user_stickers(sticker_id,state)` (−42% sulla query) e **cache in memoria** delle liste match (TTL 60s, invalidata sui cambi dell'utente — `lib/matchCache.ts`). Soglie di tenuta free tier in `16_STRESS_TEST_AUDIT.md`
 - In produzione serve anche il frontend statico (+ fallback SPA)
 
 ### Frontend (stickers-app)
@@ -61,6 +61,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - [ ] Onboarding interattivo (ora mostra un toast placeholder)
 
 ### Media priorità
+- [ ] **Scaling oltre ~2.000 utenti (free)**: leva #1 = non salvare le righe "mancante" (mancante = album posseduto + nessuna riga) → 2-3× tetto storage; poi modello bitmap per album per i 50k. Intervento profondo, vedi `16_STRESS_TEST_AUDIT.md`
 - [ ] Notifiche push
 - [ ] Pagamenti reali (modello da scegliere — struttura dati già pronta)
 - [ ] Landing page pubblica con dominio

@@ -18,6 +18,7 @@ import {
 import { z } from "zod";
 import { requireAuth, getSession } from "../middlewares/auth";
 import { isPremiumDemoEnabled } from "../lib/appState";
+import { invalidateUser } from "../lib/matchCache";
 
 const PIN_REGEX = /^\d{4,6}$/;
 
@@ -773,6 +774,8 @@ const changeLocation: RequestHandler = async (req, res) => {
       .returning();
 
     if (!updated) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
+
+    invalidateUser(session.userId); // la zona influisce sulle distanze dei match → invalida cache
 
     res.json({ user: await userPayload(updated) });
   } catch (err) {

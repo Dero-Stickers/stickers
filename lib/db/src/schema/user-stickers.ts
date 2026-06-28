@@ -22,6 +22,9 @@ export const userStickersTable = pgTable(
     // Hot path: load all of a user's stickers for a given album in one shot.
     userAlbumIdx: index("user_stickers_user_album_idx").on(t.userId, t.albumId),
     stickerIdx: index("user_stickers_sticker_idx").on(t.stickerId),
+    // Match aggregation: join su sticker_id filtrando per stato (doppia/mancante).
+    // Misurato −42% sul tempo della query match (vedi DNA 15 — audit stress test).
+    stickerStateIdx: index("user_stickers_sticker_state_idx").on(t.stickerId, t.state),
   }),
 );
 
