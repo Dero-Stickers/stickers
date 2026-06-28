@@ -54,6 +54,8 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 ## Da fare
 
 ### Alta priorità
+- [ ] **Email di recupero**: attivare un servizio di invio email (SMTP / Supabase). La struttura auth è già pronta (login nickname+PIN, identità slegata dal CAP); una volta attiva, il recupero può passare all'email e si può ritirare la domanda di sicurezza. Vedi `02_UTENTI_AUTENTICAZIONE.md` → "Email di recupero (futuro)".
+- [ ] **Verifica da telefono** i flussi cambiati (sessione 28 giu 2026): login **solo nickname+PIN**, Profilo → **Cambia zona (CAP)**, dettaglio match **a fisarmonica**, match **cross-album multi-album**.
 - [ ] Test PWA installata su iOS Safari / Android Chrome reali (service worker già attivo)
 - [ ] Attivare il realtime in produzione: aggiungere su Render `SUPABASE_SERVICE_ROLE_KEY` (backend) e `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (build frontend). Senza queste, la chat resta in fallback polling 30s.
 - [ ] Onboarding interattivo (ora mostra un toast placeholder)
