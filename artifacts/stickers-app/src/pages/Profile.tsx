@@ -182,7 +182,7 @@ export function Profile() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+    <div className="flex flex-col h-full">
       <AppHeader />
       <div className="px-4 pt-4 flex flex-col items-center text-center shrink-0">
         <h1 className="text-xl font-bold text-foreground">{currentUser?.nickname}</h1>

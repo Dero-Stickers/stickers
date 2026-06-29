@@ -277,14 +277,21 @@
 
   html {
     height: 100%;
+    overflow: hidden;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Documento BLOCCATO come un'app nativa: né html, né body, né #root scorrono
+     o rimbalzano. Lo scroll vive SOLO nei contenitori interni (.overflow-y-auto).
+     box-sizing border-box + padding safe-area => #root resta dentro il viewport
+     (niente overflow del documento = niente rubber-band su iOS). */
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    min-height: 100dvh;
-    overscroll-behavior-y: none;
+    height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    overscroll-behavior: none;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -292,9 +299,18 @@
   }
 
   #root {
-    min-height: 100dvh;
+    height: 100%;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  /* Ogni area scrollabile trattiene il proprio scroll (niente catena verso il
+     documento bloccato) e usa lo scorrimento inerziale su iOS. */
+  .overflow-y-auto,
+  .overflow-auto {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Respect safe areas (iOS notch / Android gesture bar) */

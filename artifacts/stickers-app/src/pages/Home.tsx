@@ -50,7 +50,7 @@ export function Home() {
   const totalExchanges = matches.reduce((s, m) => s + m.totalExchanges, 0);
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+    <div className="flex flex-col h-full">
       <AppHeader />
       <div className="px-4 pt-3 flex items-center justify-center gap-2 shrink-0">
         <p className="text-sm text-muted-foreground">

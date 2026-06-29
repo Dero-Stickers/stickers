@@ -101,8 +101,8 @@ export function ChatRoom() {
 
   if (isLoading) {
     return (
-      <div className="h-[100dvh] overflow-hidden bg-muted/40">
-        <div className="relative mx-auto flex h-[100dvh] w-full max-w-md md:max-w-2xl flex-col bg-background md:shadow-xl">
+      <div className="h-full overflow-hidden bg-muted/40">
+        <div className="relative mx-auto flex h-full w-full max-w-md md:max-w-2xl flex-col bg-background md:shadow-xl">
           <AppHeader />
           <div className="shrink-0 px-4 py-2.5 border-b border-border/60">
             <Skeleton className="h-6 w-36 mx-auto" />
@@ -116,8 +116,8 @@ export function ChatRoom() {
   }
 
   return (
-    <div className="h-dvh overflow-hidden bg-muted/40">
-      <div className="relative flex flex-col h-dvh mx-auto w-full max-w-md md:max-w-2xl bg-background md:shadow-xl">
+    <div className="h-full overflow-hidden bg-muted/40">
+      <div className="relative flex flex-col h-full mx-auto w-full max-w-md md:max-w-2xl bg-background md:shadow-xl">
         <AppHeader />
 
         {/* Sub-header: indietro + nome centrato + segnala (no avatar) */}

@@ -23,7 +23,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background">
+    <div className="flex h-full overflow-hidden bg-background">
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
         <div className="relative flex items-center justify-center px-4 h-14">

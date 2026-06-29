@@ -176,7 +176,7 @@ export function MatchDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-[calc(100dvh-4rem)]">
+      <div className="flex flex-col h-full">
         <AppHeader />
         <div className="p-4 space-y-4">
           <Skeleton className="h-8 w-48" />
@@ -189,7 +189,7 @@ export function MatchDetail() {
 
   if (!detail) {
     return (
-      <div className="flex flex-col h-[calc(100dvh-4rem)]">
+      <div className="flex flex-col h-full">
         <AppHeader />
         <div className="flex-1 flex items-center justify-center p-4">
           <p className="text-muted-foreground">Match non trovato</p>
@@ -199,7 +199,7 @@ export function MatchDetail() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+    <div className="flex flex-col h-full">
       <AppHeader />
 
       {/* Testata FISSA, compatta e centrata (coerente con Dettaglio Album):

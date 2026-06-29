@@ -56,7 +56,7 @@ export function LegalPage() {
   const loading = privacy === null || terms === null;
 
   return (
-    <div className="min-h-[100dvh] bg-background">
+    <div className="h-full overflow-y-auto bg-background">
       <div className="bg-sidebar text-sidebar-foreground px-4 pt-10 pb-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <Button

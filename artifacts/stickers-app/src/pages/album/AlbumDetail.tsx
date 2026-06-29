@@ -151,7 +151,7 @@ export function AlbumDetail() {
   const albumTitle = albumInfo?.title ?? `Album #${albumId}`;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+    <div className="flex flex-col h-full">
       <AppHeader />
       <div className="px-4 pt-3 pb-3 shrink-0">
         <div className="flex items-center gap-2 mb-3">

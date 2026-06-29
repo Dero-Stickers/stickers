@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
       const r = this.state.reportSent;
       return (
-        <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background p-6 text-center gap-4">
+        <div className="h-full overflow-y-auto flex flex-col items-center justify-center bg-background p-6 text-center gap-4">
           <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
             <span className="text-3xl">⚠️</span>
           </div>

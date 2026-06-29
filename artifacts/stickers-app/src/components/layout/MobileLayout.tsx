@@ -36,18 +36,18 @@ export function MobileLayout({ children }: { children: ReactNode }) {
   return (
     // Su desktop/tablet l'app resta centrata in una colonna stile mobile
     // (max ~448px) con sfondo neutro ai lati; su telefono occupa tutto lo schermo.
-    <div className="min-h-[100dvh] bg-muted/40">
-      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md md:max-w-2xl flex-col bg-background md:shadow-xl">
+    <div className="h-full bg-muted/40">
+      <div className="relative mx-auto flex h-full w-full max-w-md md:max-w-2xl flex-col overflow-hidden bg-background md:shadow-xl">
         <main
           ref={mainRef}
-          className="flex-1 overflow-y-auto"
-          style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+          className="flex-1 min-h-0 overflow-hidden"
         >{children}</main>
 
-      {/* Tab bar nativa: riga icone piena da 4rem SOPRA la safe-area; lo sfondo
-          della barra si estende sotto (home indicator) senza schiacciare le icone. */}
+      {/* Tab bar nativa: parte FISSA della colonna (non più position:fixed) —
+          riga icone piena da 4rem SOPRA la safe-area; lo sfondo si estende sotto
+          (home indicator) senza schiacciare le icone. */}
       <nav
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl bg-card border-t border-border z-50"
+        className="shrink-0 w-full bg-card border-t border-border z-50"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-center justify-around h-16 px-2">

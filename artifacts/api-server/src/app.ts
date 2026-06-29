@@ -78,13 +78,27 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-// Security headers. CSP is intentionally disabled here because the SPA is
-// served by the same process and already ships its own meta CSP; enabling
-// Helmet's default CSP would block the Vite-built bundle.
+// Security headers + Content-Security-Policy. Partiamo dai default sicuri di
+// Helmet (script-src 'self', object-src 'none', base-uri 'self', form-action
+// 'self', upgrade-insecure-requests, ecc.) e sovrascriviamo SOLO ciò che serve
+// a questa app (lo stesso processo serve SPA + API):
+//  - lo splash bootstrap è uno script ESTERNO (/splash-gate.js) → script-src 'self' resta stretto;
+//  - lo splash usa un <style> inline → 'unsafe-inline' SOLO sugli stili (rischio basso);
+//  - connect-src aggiunge Supabase (Realtime https/wss) oltre alla stessa origine (API);
+//  - frame-ancestors 'none' contro il clickjacking.
 app.use(
   helmet({
-    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        workerSrc: ["'self'"],
+        manifestSrc: ["'self'"],
+        frameAncestors: ["'none'"],
+      },
+    },
   }),
 );
 

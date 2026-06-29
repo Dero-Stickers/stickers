@@ -81,19 +81,7 @@
       <img src="/logo.webp" alt="" decoding="async" fetchpriority="high" />
     </div>
     <div id="root"></div>
-    <script>
-      // Splash gate: visible only on first session open.
-      // Marks shown synchronously to avoid double-trigger on remounts.
-      try {
-        if (sessionStorage.getItem('sticker_splash_shown') === '1') {
-          var s = document.getElementById('boot-splash');
-          if (s) s.parentNode.removeChild(s);
-        } else {
-          sessionStorage.setItem('sticker_splash_shown', '1');
-          window.__splashUntil = performance.now() + 4500;
-        }
-      } catch (e) { /* private mode: keep splash but no persistence */ }
-    </script>
+    <script src="/splash-gate.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -29,6 +29,7 @@ riunisce la specifica funzionale, lo stato di sviluppo e le guide operative.
 | `14_BACKUP_PROCESSO.md` | Convenzioni documentazione e backup |
 | `15_PROSSIMO_PROMPT.md` | Prompt operativo per la prossima sessione |
 | `16_STRESS_TEST_AUDIT.md` | Audit stress test: soglie di tenuta free tier, misure, migliorie |
+| `17_DECISION_LOG.md` | Decisioni tecniche rilevanti (registro, le più recenti in alto) |
 
 ### Archivio
 | File | Contenuto |

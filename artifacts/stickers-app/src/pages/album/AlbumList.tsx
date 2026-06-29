@@ -75,7 +75,7 @@ export function AlbumList() {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+    <div className="flex flex-col h-full">
       <AppHeader />
       <div className="px-4 pt-3 text-center shrink-0">
         <h1 className="text-base font-bold text-foreground">Album</h1>

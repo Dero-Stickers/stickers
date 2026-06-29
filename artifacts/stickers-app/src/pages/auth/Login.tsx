@@ -114,7 +114,7 @@ export function Login() {
 
   if (showRecoveryCode) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-muted/30 p-4">
+      <div className="h-full overflow-y-auto flex items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold text-primary">Registrazione completata</CardTitle>
@@ -138,7 +138,7 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-muted/30 p-4">
+    <div className="h-full overflow-y-auto flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2">
           <CardTitle className="flex items-center justify-center">

@@ -46,7 +46,8 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - `pnpm run typecheck` → **0 errori**; file funzionali ≤ 350 righe (eccezioni documentate: `routes/auth.ts`, `pages/Profile.tsx`, generati orval)
 - Sistema segnalazione errori con **sanitizer PII** (PIN/JWT/email/IP/path/codici)
 - E2E Playwright in `artifacts/stickers-app/` (config + Chromium pronti; suite di test in completamento)
-- **RLS attiva su tutte le 11 tabelle** (deny-by-default; backend `postgres` bypassa, anon bloccato via PostgREST). Vedi `09_DATABASE.md` → Sicurezza accessi.
+- **RLS attiva su tutte le 14 tabelle** (deny-by-default; backend `postgres` bypassa, anon bloccato via PostgREST). Vedi `09_DATABASE.md` → Sicurezza accessi.
+- **CSP attiva** (header via Helmet in `api-server/app.ts`): `script-src 'self'` (splash bootstrap esternalizzato in `public/splash-gate.js`), `frame-ancestors 'none'`, `object-src 'none'`, `connect-src` limitato a self + Supabase. Vale in produzione (Express serve la SPA). Audit completo in `16_STRESS_TEST_AUDIT.md`.
 - **Testi legali 100% da DB**: privacy/termini letti da `app_settings` (modificabili da admin); nessun testo legale hardcoded nel frontend (`LegalPage` mostra solo un messaggio neutro se il DB è vuoto).
 - **Banner cookie minimale** (`CookieBanner`): informativa una tantum (solo memoria tecnica, no profilazione) + link privacy; scelta salvata in localStorage.
 - **Copertine album RIMOSSE** (scelta legale/IP): nessun artwork di terzi. Feature eliminata da UI, API, schema, Storage e seed; card solo testo. Vedi `09_DATABASE.md` e `10_PRIVACY_LEGALE.md`.
