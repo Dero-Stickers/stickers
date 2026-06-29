@@ -15,7 +15,7 @@ const RADIUS_MIN = 1;
 const RADIUS_MAX = 100;
 
 export function MatchList() {
-  const [activeTab, setActiveTab] = useState<"best" | "nearby">("best");
+  const [activeTab, setActiveTab] = useState<"best" | "nearby">("nearby");
   const [radiusKm, setRadiusKm] = useState(10);
   // Lo slider aggiorna subito il valore mostrato; la query parte "in ritardo"
   // (debounce 300ms) per non interrogare il backend a ogni km del trascinamento.
@@ -33,7 +33,14 @@ export function MatchList() {
   );
 
   const isLoading = activeTab === "best" ? loadingBest : loadingNearby;
-  const matches = activeTab === "best" ? (bestMatches ?? []) : (nearbyMatches ?? []);
+  const matches =
+    activeTab === "best"
+      ? (bestMatches ?? [])
+      : [...(nearbyMatches ?? [])].sort(
+          (a, b) =>
+            (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) ||
+            a.nickname.localeCompare(b.nickname),
+        );
 
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)]">
@@ -46,24 +53,24 @@ export function MatchList() {
       <div className="px-4 pt-4 shrink-0">
         <div className="flex rounded-lg bg-muted p-1">
           <button
-            className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === "best" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
-            onClick={() => setActiveTab("best")}
-          >
-            Migliori match
-          </button>
-          <button
             className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === "nearby" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
             onClick={() => setActiveTab("nearby")}
           >
             Vicini a te
           </button>
+          <button
+            className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === "best" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+            onClick={() => setActiveTab("best")}
+          >
+            Migliori match
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 min-h-0">
-        {activeTab === "nearby" && (
-          <div className="mb-4 p-4 bg-card rounded-xl border border-border">
-            <div className="flex items-center justify-between mb-3">
+      {activeTab === "nearby" && (
+        <div className="px-4 pt-4 shrink-0">
+          <div className="px-3 py-2.5 bg-card rounded-xl border border-border">
+            <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Raggio di ricerca</span>
@@ -78,15 +85,17 @@ export function MatchList() {
               value={radiusKm}
               onChange={e => setRadiusKm(Number(e.target.value))}
               aria-label="Raggio di ricerca in km"
-              className="w-full h-6 cursor-pointer accent-primary touch-none"
+              className="w-full h-5 cursor-pointer accent-primary touch-none"
             />
-            <div className="flex justify-between text-[11px] text-muted-foreground mt-1">
+            <div className="flex justify-between text-[11px] text-muted-foreground">
               <span>{RADIUS_MIN} km</span>
               <span>{RADIUS_MAX} km</span>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 min-h-0">
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
@@ -102,42 +111,35 @@ export function MatchList() {
           </div>
         )}
 
-        <div className="grid gap-3 md:grid-cols-2 items-start">
+        <div className="grid gap-1.5 md:grid-cols-2 items-start">
           {matches.map(match => (
             <Link key={match.userId} href={`/match/${match.userId}`}>
               <Card className="shadow-sm cursor-pointer hover:border-primary transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm uppercase flex-shrink-0">
-                        {match.nickname.slice(0, 2)}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">{match.nickname}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <MapPin className="h-3 w-3" />
-                          {match.area}
-                          {match.distanceKm != null && (
-                            <span className="ml-1 text-primary font-medium">{match.distanceKm.toFixed(1)} km</span>
-                          )}
-                        </p>
-                      </div>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{match.nickname}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                        <MapPin className="h-3 w-3" />
+                        {match.area}
+                        {match.distanceKm != null && (
+                          <span className="text-primary font-medium">{match.distanceKm.toFixed(1)} km</span>
+                        )}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <p className="font-bold text-primary text-sm">{match.totalExchanges}</p>
-                        <p className="text-xs text-muted-foreground">scambi</p>
-                      </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="font-bold text-primary text-sm">{match.totalExchanges}</span>
+                      <span className="text-xs text-muted-foreground">scambi</span>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
-                    <Badge variant="outline" className="text-xs gap-1">
-                      <Trophy className="h-3 w-3" />
+                  <div className="flex items-center gap-4 mt-2 pt-2 border-t border-border/50">
+                    <Badge variant="outline" className="text-[11px] leading-none gap-1 border-0 px-0 bg-transparent font-normal">
+                      <Trophy className="h-2.5 w-2.5 shrink-0 text-yellow-600" />
                       {match.albumsInCommon} album in comune
                     </Badge>
-                    <Badge variant="outline" className="text-xs gap-1">
-                      <Users className="h-3 w-3" />
+                    <Badge variant="outline" className="text-[11px] leading-none gap-1 border-0 px-0 bg-transparent font-normal">
+                      <Users className="h-2.5 w-2.5 shrink-0 text-chart-1" />
                       {match.exchangesCompleted} scambi fatti
                     </Badge>
                   </div>

@@ -60,7 +60,8 @@ function DirectionSection({
     <Card className="shadow-sm p-3">
       <div className="flex items-center gap-2 mb-1">
         <span className={`text-sm font-bold uppercase tracking-wide ${tone.label}`}>{label}</span>
-        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${tone.badge}`}>{total}</span>
+        <span className={`text-sm font-bold ${tone.label}`}>{total}</span>
+        <span className="text-xs text-muted-foreground">figurine {give ? "doppie" : "mancanti"}</span>
       </div>
       {groups.length === 0 ? (
         <p className="text-xs text-muted-foreground italic py-1">Nessuna figurina</p>
@@ -229,8 +230,8 @@ export function MatchDetail() {
           <p className="text-center text-sm text-muted-foreground py-8">Nessuno scambio possibile al momento.</p>
         ) : (
           <>
-            <DirectionSection variant="give" label="Tu dai" total={detail.totalGive} groups={detail.give} />
-            <DirectionSection variant="receive" label="Tu ricevi" total={detail.totalReceive} groups={detail.receive} />
+            <DirectionSection variant="give" label="Dai" total={detail.totalGive} groups={detail.give} />
+            <DirectionSection variant="receive" label="Ricevi" total={detail.totalReceive} groups={detail.receive} />
           </>
         )}
       </div>

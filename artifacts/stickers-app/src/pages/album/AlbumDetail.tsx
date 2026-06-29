@@ -178,7 +178,7 @@ export function AlbumDetail() {
             <p className="text-xs text-muted-foreground">Doppie</p>
           </div>
           <div>
-            <p className="text-xl font-bold text-foreground">{missing}</p>
+            <p className="text-xl font-bold text-accent">{missing}</p>
             <p className="text-xs text-muted-foreground">Mancanti</p>
           </div>
         </div>

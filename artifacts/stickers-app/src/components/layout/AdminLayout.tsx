@@ -1,13 +1,16 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { BarChart2, BookOpen, Users, MessageSquare, Crown, Settings, LogOut, Menu, X, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLogo } from "@/components/brand/AppLogo";
+import { useScrollResetOnNavigate } from "@/hooks/useScrollResetOnNavigate";
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  useScrollResetOnNavigate(mainRef);
 
   const navItems = [
     { icon: BarChart2, label: "Dashboard", path: "/admin" },
@@ -102,7 +105,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 flex flex-col overflow-hidden bg-muted/20 pt-14 md:pt-0">
+      <main ref={mainRef} className="flex-1 min-w-0 flex flex-col overflow-hidden bg-muted/20 pt-14 md:pt-0">
         <div className="flex-1 min-h-0 w-full max-w-6xl mx-auto p-4 md:p-8 flex flex-col">
           {children}
         </div>

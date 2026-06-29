@@ -9,15 +9,13 @@
 | Match | scambio | `/match` |
 | Profilo | persona | `/profilo` |
 
-## Home — Dashboard Rapida
+## Home — Panoramica generale
 
-- Logo/nome app
-- Album attivi
-- Completamento album principale
-- Migliore match
-- Match vicino per CAP
-- Stato demo/premium
-- Bottoni rapidi Album/Match
+Tre blocchi essenziali (no dati duplicati dalle altre sezioni, no dettaglio singolo album):
+- **La tua collezione** (sintesi aggregata su TUTTI gli album): % completamento complessiva + barra; possedute (verde `chart-3`) / doppie (rosso `destructive`) / mancanti (giallo `accent`); n° album.
+- **Ti aspettano** (azioni richieste): solo se ci sono chat con messaggi non letti → riga per chat verso `/chat/{id}`.
+- **Match per te** (hero, driver di conversione): card a gradiente `primary→chart-1`; titolo "N scambi · M utenti vicini"; switch in alto a destra ⚡ migliori in generale / 📍 migliori vicini (icone, no testo); 3 anteprime, ognuna → `/match/{userId}`; CTA "Trova match" → `/match`.
+- Stato demo/premium (badge accanto al saluto).
 
 ## Sezione Album
 
@@ -29,9 +27,9 @@
 
 ## Sezione Match
 
-- Migliori match
-- Vicini a te
-- Filtro distanza CAP (slider)
+- Vicini a te (scheda di default) / Migliori match
+- Filtro distanza CAP (slider) — box fisso sopra la lista, solo le card scrollano
+- Lista "Vicini a te" ordinata per distanza crescente
 - Dettaglio match multi-album
 - Chat integrata
 
@@ -75,8 +73,9 @@ Riapribile dalla sezione Profilo.
 - **Griglie adattive**: liste album e match a 2 colonne da `md`; griglia figurine `7 → sm:9 → md:10 → lg:12`.
 - **Pagine a contenuto fisso + scroll**: `h-[calc(100dvh-4rem)]` flex-col, header/titoli/filtri `shrink-0`, contenuto `flex-1 overflow-y-auto min-h-0` (nav fissa `h-16`). Robusto anche in orizzontale (il contenuto scorre).
 - **Tab bar nativa (safe-area)**: la barra inferiore ha una riga icone piena da `h-16` con la safe-area (`env(safe-area-inset-bottom)`) **aggiunta sotto** come padding del contenitore — NON dentro `h-16` (altrimenti `box-sizing: border-box` la sottrae e schiaccia le icone, bug visto su iPhone con home indicator). Il `<main>` compensa con `padding-bottom: calc(4rem + safe-area)`. Vale per app installata da store su qualsiasi device.
+- **Scroll-reset alla navigazione** (standard mobile): a ogni cambio rotta la pagina riparte dall'alto. Logica unica nell'hook `useScrollResetOnNavigate`, applicata SOLO nei layout radice (`MobileLayout`, `AdminLayout`) — resetta il contenitore e i discendenti scrollabili. Necessaria perché wouter riusa il DOM dei layout tra le rotte.
 - **Indietro nel dettaglio**: nelle pagine di dettaglio (es. AlbumDetail) il "torna indietro" è una **freccia sola, senza testo**, sulla stessa riga del titolo (non una riga dedicata). La nav inferiore cambia sezione, non sostituisce il back nel dettaglio.
-- **Card album SENZA immagini**: feature copertine rimossa completamente (no artwork di terzi, scelta legale). Nessun componente `AlbumCover`, nessuna tessera/placeholder, nessuna modale-anteprima. Le card sono **solo testo**: "I miei album" = titolo + figurine + % + cestino (tap → dettaglio); "Disponibili" = titolo + figurine + pulsante "+". Vedi `09_DATABASE.md` → copertine rimosse.
+- **Card album SENZA immagini**: feature copertine rimossa completamente (no artwork di terzi, scelta legale). Nessun componente `AlbumCover`, nessuna tessera/placeholder, nessuna modale-anteprima. Le card sono **solo testo**: "I miei album" = titolo + % + cestino su una sola riga (tap → dettaglio); "Disponibili" = titolo + figurine + pulsante "+". Vedi `09_DATABASE.md` → copertine rimosse.
 - **Prestazioni liste lunghe**: griglia figurine con utility `cv-cell` (`content-visibility:auto`) → il browser salta il render fuori schermo; toggle stato figurina **ottimistico** (nessun refetch dell'intera griglia).
 - **Area admin**: layout desktop a larghezza piena (`AdminLayout`, `max-w-6xl`), non segue il guscio mobile.
 - **Orientamento (fase nativa/store)**: telefono bloccato in verticale, tablet libero in orizzontale — impostato in Capacitor (iOS/Android), non via overlay JS. Sul web il manifest richiede `portrait` (solo suggerimento).

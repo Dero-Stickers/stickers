@@ -1,13 +1,16 @@
-import { ReactNode } from "react";
+import { ReactNode, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Home, BookOpen, Users, User } from "lucide-react";
 import { useListChats, getListChatsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeSignal } from "@/hooks/useRealtimeSignal";
+import { useScrollResetOnNavigate } from "@/hooks/useScrollResetOnNavigate";
 
 export function MobileLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+  useScrollResetOnNavigate(mainRef);
   const { currentUser } = useAuth();
   const queryClient = useQueryClient();
   const { data: chats } = useListChats({
@@ -36,6 +39,7 @@ export function MobileLayout({ children }: { children: ReactNode }) {
     <div className="min-h-[100dvh] bg-muted/40">
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md md:max-w-2xl flex-col bg-background md:shadow-xl">
         <main
+          ref={mainRef}
           className="flex-1 overflow-y-auto"
           style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
         >{children}</main>

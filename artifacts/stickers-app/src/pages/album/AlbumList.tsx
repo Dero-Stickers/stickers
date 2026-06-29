@@ -114,15 +114,12 @@ export function AlbumList() {
               <Card key={ua.id} className="shadow-sm">
                 <CardContent className="p-0">
                   <div className="flex items-center">
-                    <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 p-3 cursor-pointer">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-foreground truncate">{ua.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{ua.totalStickers} figurine</p>
-                      </div>
+                    <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 px-3 py-3.5 cursor-pointer">
+                      <p className="font-semibold text-foreground truncate min-w-0 flex-1">{ua.title}</p>
                       <span className="text-primary font-bold text-sm shrink-0">{ua.completionPercent}%</span>
                     </Link>
                     <button
-                      className="self-stretch flex items-center px-3 text-destructive border-l border-border/50"
+                      className="self-stretch flex items-center px-3 text-destructive"
                       onClick={() => { setRemoveStep(1); setRemoveId(ua.id); }}
                       aria-label={`Rimuovi ${ua.title}`}
                     >
