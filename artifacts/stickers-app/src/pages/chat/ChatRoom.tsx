@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Send, AlertTriangle, ShieldAlert, ChevronDown } from "lucide-react";
+import { ArrowLeft, Send, AlertTriangle, ShieldAlert, ChevronDown, CheckCircle2 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { TradeConfirmDialog } from "@/components/chat/TradeConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +39,7 @@ export function ChatRoom() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState("");
   const [noticeOpen, setNoticeOpen] = useState(false);
+  const [showTrade, setShowTrade] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportNotes, setReportNotes] = useState("");
@@ -186,11 +188,19 @@ export function ChatRoom() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Barra input (fissa in basso) */}
+        {/* Barra input (fissa in basso) — con FAB "Scambio fatto" sopra a destra */}
         <div
-          className="shrink-0 bg-card border-t border-border px-4 pt-3 flex items-center gap-2"
+          className="relative shrink-0 bg-card border-t border-border px-4 pt-3 flex items-center gap-2"
           style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
         >
+          <button
+            onClick={() => setShowTrade(true)}
+            aria-label="Conferma scambio concluso"
+            title="Scambio fatto"
+            className="absolute right-4 -top-18 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 active:scale-95 transition-transform"
+          >
+            <CheckCircle2 className="h-7 w-7" />
+          </button>
           <Input
             value={text}
             onChange={e => setText(e.target.value)}
@@ -208,6 +218,9 @@ export function ChatRoom() {
           </Button>
         </div>
       </div>
+
+      {/* Conferma scambio concluso: aggiorna solo il proprio album */}
+      <TradeConfirmDialog chatId={chatIdNum} open={showTrade} onOpenChange={setShowTrade} />
 
       {/* Modale segnalazione: motivo + note + conferma esplicita */}
       <Dialog open={showReport} onOpenChange={setShowReport}>

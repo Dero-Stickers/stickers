@@ -188,6 +188,33 @@ export interface MatchDetail {
   receive: MatchAlbumGroup[];
 }
 
+export interface ChatTrade {
+  otherUserId: number;
+  otherUserNickname: string;
+  totalGive: number;
+  totalReceive: number;
+  give: MatchAlbumGroup[];
+  receive: MatchAlbumGroup[];
+  /** Quando l'utente corrente ha confermato lo scambio (null se non ancora). */
+  myConfirmedAt?: string | null;
+  /** Quando l'altro utente ha confermato (null se non ancora). */
+  otherConfirmedAt?: string | null;
+}
+
+export interface ConfirmTradeBody {
+  /** Id delle figurine cedute (doppie mie). Filtrate lato server contro lo scambio valido. */
+  giveStickerIds: number[];
+  /** Id delle figurine ricevute (mancanti mie). Filtrate lato server contro lo scambio valido. */
+  receiveStickerIds: number[];
+}
+
+export interface ConfirmTradeResponse {
+  success: boolean;
+  givenApplied: number;
+  receivedApplied: number;
+  exchangesCompleted: number;
+}
+
 export type ChatStatus = (typeof ChatStatus)[keyof typeof ChatStatus];
 
 export const ChatStatus = {

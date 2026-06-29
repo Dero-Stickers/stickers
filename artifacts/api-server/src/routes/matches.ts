@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getSession } from "../middlewares/auth";
 import { getCached, setCached } from "../lib/matchCache";
 
@@ -196,21 +196,13 @@ const getMatchDetail: RequestHandler = async (req, res) => {
     if (!Number.isFinite(otherUserId)) { res.status(400).json({ error: "BAD_REQUEST" }); return; }
 
     const { db } = await import("@workspace/db");
-    const { usersTable, userAlbumsTable, userStickersTable, albumsTable, stickersTable } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
 
     const [[myUser], [otherUser]] = await Promise.all([
       db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1),
       db.select().from(usersTable).where(eq(usersTable.id, otherUserId)).limit(1),
     ]);
     if (!otherUser) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
-
-    const [myAlbumRows, theirAlbumRows] = await Promise.all([
-      db.select({ albumId: userAlbumsTable.albumId }).from(userAlbumsTable).where(eq(userAlbumsTable.userId, session.userId)),
-      db.select({ albumId: userAlbumsTable.albumId }).from(userAlbumsTable).where(eq(userAlbumsTable.userId, otherUserId)),
-    ]);
-
-    const theirAlbumIdSet = new Set(theirAlbumRows.map(a => a.albumId));
-    const commonAlbumIds = myAlbumRows.map(a => a.albumId).filter(id => theirAlbumIdSet.has(id));
 
     const distanceKm = parseFloat(estimateDistance(myUser?.cap ?? "00000", otherUser.cap).toFixed(1));
 
@@ -219,60 +211,11 @@ const getMatchDetail: RequestHandler = async (req, res) => {
     const { canOpenChat } = await import("../lib/billing");
     const chatUnlocked = await canOpenChat(session.userId, otherUserId);
 
-    if (!commonAlbumIds.length) {
-      res.json({
-        userId: otherUserId,
-        nickname: otherUser.nickname,
-        area: otherUser.area,
-        totalExchanges: 0,
-        totalGive: 0,
-        totalReceive: 0,
-        distanceKm,
-        exchangesCompleted: otherUser.exchangesCompleted,
-        chatUnlocked,
-        give: [],
-        receive: [],
-      });
-      return;
-    }
-
-    const [myStickers, theirStickers, commonAlbums, allStickers] = await Promise.all([
-      db.select({ stickerId: userStickersTable.stickerId, albumId: userStickersTable.albumId, state: userStickersTable.state })
-        .from(userStickersTable)
-        .where(and(eq(userStickersTable.userId, session.userId), inArray(userStickersTable.albumId, commonAlbumIds))),
-      db.select({ stickerId: userStickersTable.stickerId, albumId: userStickersTable.albumId, state: userStickersTable.state })
-        .from(userStickersTable)
-        .where(and(eq(userStickersTable.userId, otherUserId), inArray(userStickersTable.albumId, commonAlbumIds))),
-      db.select().from(albumsTable).where(inArray(albumsTable.id, commonAlbumIds)),
-      db.select().from(stickersTable).where(inArray(stickersTable.albumId, commonAlbumIds)),
-    ]);
-
-    const stickerMap = new Map<number, { id: number; albumId: number; number: number; name: string }>();
-    for (const s of allStickers) stickerMap.set(s.id, { id: s.id, albumId: s.albumId, number: s.number, name: s.name });
-    const toDetail = (ids: number[]) =>
-      (ids.map(id => stickerMap.get(id)).filter(Boolean) as { id: number; albumId: number; number: number; name: string }[])
-        .sort((a, b) => a.number - b.number);
-
-    // Scambi CROSS-ALBUM: ciò che dai e ciò che ricevi sono conteggiati su TUTTI
-    // gli album in comune (indipendenti, niente bilanciamento per-album). Lo
-    // scambio reale è 1:1, quindi "scambi possibili" = min(totale dai, totale
-    // ricevi). Le figurine restano raggruppate per album solo per la UI.
-    const give: { albumId: number; albumTitle: string; stickers: ReturnType<typeof toDetail> }[] = [];
-    const receive: { albumId: number; albumTitle: string; stickers: ReturnType<typeof toDetail> }[] = [];
-    let totalGive = 0;
-    let totalReceive = 0;
-
-    for (const albumId of commonAlbumIds) {
-      const albumTitle = commonAlbums.find(a => a.id === albumId)?.title ?? `Album #${albumId}`;
-      const myDups = new Set(myStickers.filter(s => s.albumId === albumId && s.state === "doppia").map(s => s.stickerId));
-      const myMiss = new Set(myStickers.filter(s => s.albumId === albumId && s.state === "mancante").map(s => s.stickerId));
-      const theirDups = new Set(theirStickers.filter(s => s.albumId === albumId && s.state === "doppia").map(s => s.stickerId));
-      const theirMiss = new Set(theirStickers.filter(s => s.albumId === albumId && s.state === "mancante").map(s => s.stickerId));
-      const giveIds = [...myDups].filter(id => theirMiss.has(id));
-      const receiveIds = [...theirDups].filter(id => myMiss.has(id));
-      if (giveIds.length) { totalGive += giveIds.length; give.push({ albumId, albumTitle, stickers: toDetail(giveIds) }); }
-      if (receiveIds.length) { totalReceive += receiveIds.length; receive.push({ albumId, albumTitle, stickers: toDetail(receiveIds) }); }
-    }
+    // Cosa dai / cosa ricevi su tutti gli album in comune — logica condivisa
+    // con la conferma scambio in chat (lib/trade). Scambio reale 1:1, quindi
+    // "scambi possibili" = min(totale dai, totale ricevi).
+    const { computeTradeBreakdown } = await import("../lib/trade");
+    const { give, receive, totalGive, totalReceive } = await computeTradeBreakdown(session.userId, otherUserId);
 
     res.json({
       userId: otherUserId,

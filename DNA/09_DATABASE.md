@@ -133,6 +133,19 @@ export const chatUnlocksTable = pgTable("chat_unlocks", {
   paymentId: integer("payment_id").references(() => paymentsTable.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// trade_confirmations — conferma scambio concluso, lato singolo utente. Una riga
+// per (chat, utente); upsert su nuova conferma. La conferma aggiorna SOLO
+// l'album di chi conferma. unique(chat_id, user_id).
+export const tradeConfirmationsTable = pgTable("trade_confirmations", {
+  id: serial("id").primaryKey(),
+  chatId: integer("chat_id").references(() => chatsTable.id).notNull(),
+  userId: integer("user_id").references(() => usersTable.id).notNull(),
+  givenCount: integer("given_count").default(0).notNull(),
+  receivedCount: integer("received_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 ```
 
 ## SQL Script Supabase
@@ -145,7 +158,7 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - **Produzione**: PostgreSQL su Supabase, connessione via `SUPABASE_DATABASE_URL`
   (SSL abilitato). Il client (`lib/db/src/index.ts`) imposta `search_path=public`.
 - **Push schema**: `cd lib/db && pnpm push-force` (Drizzle Kit).
-- Stato attuale: 13 tabelle con indici integri (+`payments`, +`chat_unlocks`).
+- Stato attuale: 14 tabelle con indici integri (+`payments`, +`chat_unlocks`, +`trade_confirmations`).
 
 ### Monetizzazione — migrazioni e divergenza codice/DB (giu 2026)
 
@@ -160,6 +173,9 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
   ma il **DB reale le ha ancora** (colonne nullable, ignorate → nessuna rottura a runtime).
   Da applicare a mano su Supabase quando confermato; finché non lo è, la divergenza è
   innocua. Lo schema parziale Drizzle **non** viene mai pushato, quindi nessun rischio.
+- **`0005_trade_confirmations.sql`** — **APPLICATA**. Additiva: crea `trade_confirmations`
+  (RLS attiva, unique `chat_id,user_id`) per la conferma scambio concluso. Non tocca dati
+  esistenti. Modello in `04_MATCHING_SCAMBI.md` → "Conferma scambio concluso".
 
 ### Seed e ripristino album "default" (sicuro)
 
@@ -184,7 +200,7 @@ ripristinabili in qualsiasi momento, senza re-scraping.
 
 ### Sicurezza accessi (RLS)
 
-- **RLS attiva su tutte le 13 tabelle** (`ENABLE ROW LEVEL SECURITY`), **deny-by-default**: nessuna policy → i ruoli `anon`/`authenticated` (chiave pubblica nel frontend) **non possono leggere/scrivere** via PostgREST `/rest/v1`.
+- **RLS attiva su tutte le 14 tabelle** (`ENABLE ROW LEVEL SECURITY`), **deny-by-default**: nessuna policy → i ruoli `anon`/`authenticated` (chiave pubblica nel frontend) **non possono leggere/scrivere** via PostgREST `/rest/v1`.
 - Il backend si connette come ruolo **`postgres`** (proprietario delle tabelle, `rolbypassrls=true`): **bypassa RLS**, quindi tutte le API continuano a funzionare. Tutti i dati passano **solo** dal backend.
 - La chiave anon nel frontend serve **esclusivamente** al Realtime **broadcast** della chat (non legge tabelle): RLS non lo tocca.
 - ⚠️ Se in futuro un client dovesse leggere tabelle **direttamente** con la chiave anon, servirà aggiungere **policy esplicite** (oggi non necessarie).

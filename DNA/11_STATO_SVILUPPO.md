@@ -16,7 +16,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - Monorepo: `artifacts/{stickers-app, api-server}` + `lib/{api-spec, api-client-react, api-zod, db}`
 - Deploy unico su Render (`stickers-matchbox`), **autoDeploy** su push `main`
   - build via **corepack** (`corepack pnpm …`), start con **node diretto** sul bundle
-- Supabase operativo: **13 tabelle**, indici integri. Dati **reali** caricati: **23 album Calciatori (2003-04→2025-26), 17.581 figurine** (import Panini via Playwright; pipeline in [[import-panini-collections]]); utenti: Dero975 (test) + admin. **Nessuna copertina/artwork** (feature rimossa, scelta legale — vedi `09_DATABASE.md`). DB a Londra (UK), hosting Render a Francoforte (UE)
+- Supabase operativo: **14 tabelle**, indici integri. Dati **reali** caricati: **23 album Calciatori (2003-04→2025-26), 17.581 figurine** (import Panini via Playwright; pipeline in [[import-panini-collections]]); utenti: Dero975 (test) + admin. **Nessuna copertina/artwork** (feature rimossa, scelta legale — vedi `09_DATABASE.md`). DB a Londra (UK), hosting Render a Francoforte (UE)
 - Keep-alive Supabase: `SELECT 1` periodico + GitHub Action `keepalive.yml`
 - **CI GitHub Actions** (`ci.yml`): typecheck + build su ogni push/PR su `main` (nessun deploy, zero costi)
 
@@ -39,6 +39,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - PWA mobile-first: manifest, icone, splash, safe-area (icone PNG ottimizzate con pngquant, ~−50% peso senza perdita visibile; logo `.webp`). **Service worker** via `vite-plugin-pwa` (registerType autoUpdate): precache dell'app-shell, **mai** in cache le `/api`, font **Inter self-hosted** via `@fontsource/inter` (nessuna connessione a Google → conforme GDPR), nel precache → app **installabile e con caricamento offline**. Manifest e `index.html` con `theme-color` uniformato (`#9DC9E8`).
 - **Head bar unificata** (`components/layout/AppHeader`): solo logo, sfondo a sfumatura orizzontale, usata da Home/Album/Match/**Dettaglio match**/Profilo; testi sotto la barra. Su queste pagine **scorre solo il contenuto**, testate fisse. Note legali (Privacy + Termini) consolidate in un'unica voce Profilo → rotta `/legal/note`.
 - **Dettaglio match** (`pages/match/MatchDetail`): testata fissa con AppHeader + nome + distanza + "N scambi possibili" e **bottone chat tondo** allineato al nome (niente avatar iniziali, niente badge per-album); le sezioni **Dai** / **Ricevi** mostrano il totale come "N figurine doppie/mancanti" (numero colorato, senza chip), scorre solo la lista. Sfondo coerente con le altre pagine user.
+- **Conferma scambio concluso** (giu 2026): in chat, bottone "Scambio fatto" → dialog (`components/chat/TradeConfirmDialog`) con la lista DAI/RICEVI precompilata spuntata e modificabile (scambio parziale). Conferma → aggiorna **solo il proprio album** (`doppia→posseduta`, `mancante→posseduta`), mai quello dell'altro; ognuno conferma il suo lato; il **manuale resta** come rete di sicurezza; i match si ricalcolano da soli. Backend `routes/chat-trade.ts` (`GET/POST /chats/:id/trade[/confirm]`), calcolo dai/ricevi condiviso col dettaglio match in `lib/trade.ts`. Sicurezza: insieme valido ricalcolato lato server. Tabella `trade_confirmations`. Vedi `04_MATCHING_SCAMBI.md`.
 - `DevQuickSwitch` — pulsante tondo (mostra **U** in vista utente, **A** in admin), colore navy `#1a2d45`, fisso in alto a sinistra, cambia vista in un clic (login automatico con account demo, **senza autenticazione manuale**). **Sempre visibile, anche in produzione/deploy** (scelta demo intenzionale). ⚠️ Strumento, non feature: **escluso da analisi/valutazioni di sicurezza**; al passaggio a utenti reali va rimosso da `App.tsx` e va cambiato il PIN admin.
 
 ### Qualità
@@ -103,7 +104,7 @@ Range per `number` sull'album 11: A=1-150, B=151-300, C=301-450, D=451-624.
 | 12 | blockme  | 40140 | **bloccato** | doppia C, manc. A | escluso dai match |
 
 **Partner MULTI-ALBUM (più album per direzione)** — id 14-15, creati giu 2026 per testare
-il dettaglio match incrociato con più gruppi-album sia in "Tu dai" sia in "Tu ricevi":
+il dettaglio match incrociato con più gruppi-album sia in "Dai" sia in "Ricevi":
 
 | id | Nickname | CAP | Stato | Match con Dero975 |
 |----|----------|-----|-------|-------------------|

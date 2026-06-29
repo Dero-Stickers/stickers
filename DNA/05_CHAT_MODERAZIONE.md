@@ -5,7 +5,8 @@
 - Una sola chat per coppia di utenti (multi-album)
 - La chat è integrata nella sezione Match (NON footer separato)
 - Si apre solo da un match valido
-- Disponibile solo per utenti premium o con demo attiva
+- Apertura a pagamento **solo se il paywall è attivo** (sblocco singolo o "tutte le chat"); a paywall spento è gratis. Vedi `06_PREMIUM_DEMO.md`
+- **Conferma scambio concluso**: bottone "Scambio fatto" nella testata della chat → conferma lo scambio e aggiorna solo il proprio album. Logica e sicurezza in `04_MATCHING_SCAMBI.md` → "Conferma scambio concluso"
 
 ## Avviso Moderazione
 

@@ -12,6 +12,7 @@ import {
   useOpenChat,
   useBillingCheckout,
 } from "@workspace/api-client-react";
+import { TRADE_DIRECTION } from "@/lib/trade-labels";
 
 type MatchGroup = { albumId: number; albumTitle: string; stickers: { id: number; number: number }[] };
 
@@ -27,16 +28,15 @@ const PREVIEW_LIMIT = 60;
  */
 function DirectionSection({
   variant,
-  label,
   total,
   groups,
 }: {
   variant: "give" | "receive";
-  label: string;
   total: number;
   groups: MatchGroup[];
 }) {
   const give = variant === "give";
+  const label = TRADE_DIRECTION[variant]; // "Dai" / "Ricevi" — fonte unica
   const tone = give
     ? { label: "text-emerald-700", chip: "bg-emerald-50 text-emerald-700", badge: "bg-emerald-100 text-emerald-700" }
     : { label: "text-sky-700", chip: "bg-sky-50 text-sky-700", badge: "bg-sky-100 text-sky-700" };
@@ -236,8 +236,8 @@ export function MatchDetail() {
           <p className="text-center text-sm text-muted-foreground py-8">Nessuno scambio possibile al momento.</p>
         ) : (
           <>
-            <DirectionSection variant="give" label="Dai" total={detail.totalGive} groups={detail.give} />
-            <DirectionSection variant="receive" label="Ricevi" total={detail.totalReceive} groups={detail.receive} />
+            <DirectionSection variant="give" total={detail.totalGive} groups={detail.give} />
+            <DirectionSection variant="receive" total={detail.totalReceive} groups={detail.receive} />
           </>
         )}
       </div>

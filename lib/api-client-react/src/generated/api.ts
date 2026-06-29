@@ -28,8 +28,11 @@ import type {
   BatchStickersResponse,
   BlockUserBody,
   Chat,
+  ChatTrade,
   CheckoutBody,
   CheckoutResponse,
+  ConfirmTradeBody,
+  ConfirmTradeResponse,
   CreateAlbumBody,
   ErrorResponse,
   GetNearbyMatchesParams,
@@ -2432,6 +2435,180 @@ export const useReportChat = <
   TContext
 > => {
   return useMutation(getReportChatMutationOptions(options));
+};
+
+/**
+ * @summary Proposta di scambio per la coppia di questa chat + stato conferme
+ */
+export const getGetChatTradeUrl = (chatId: number) => {
+  return `/api/chats/${chatId}/trade`;
+};
+
+export const getChatTrade = async (
+  chatId: number,
+  options?: RequestInit,
+): Promise<ChatTrade> => {
+  return customFetch<ChatTrade>(getGetChatTradeUrl(chatId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetChatTradeQueryKey = (chatId: number) => {
+  return [`/api/chats/${chatId}/trade`] as const;
+};
+
+export const getGetChatTradeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getChatTrade>>,
+  TError = ErrorType<unknown>,
+>(
+  chatId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChatTrade>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetChatTradeQueryKey(chatId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getChatTrade>>> = ({
+    signal,
+  }) => getChatTrade(chatId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!chatId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getChatTrade>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetChatTradeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getChatTrade>>
+>;
+export type GetChatTradeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Proposta di scambio per la coppia di questa chat + stato conferme
+ */
+
+export function useGetChatTrade<
+  TData = Awaited<ReturnType<typeof getChatTrade>>,
+  TError = ErrorType<unknown>,
+>(
+  chatId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChatTrade>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetChatTradeQueryOptions(chatId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Conferma scambio concluso (aggiorna solo il proprio album)
+ */
+export const getConfirmChatTradeUrl = (chatId: number) => {
+  return `/api/chats/${chatId}/trade/confirm`;
+};
+
+export const confirmChatTrade = async (
+  chatId: number,
+  confirmTradeBody: ConfirmTradeBody,
+  options?: RequestInit,
+): Promise<ConfirmTradeResponse> => {
+  return customFetch<ConfirmTradeResponse>(getConfirmChatTradeUrl(chatId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(confirmTradeBody),
+  });
+};
+
+export const getConfirmChatTradeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmChatTrade>>,
+    TError,
+    { chatId: number; data: BodyType<ConfirmTradeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmChatTrade>>,
+  TError,
+  { chatId: number; data: BodyType<ConfirmTradeBody> },
+  TContext
+> => {
+  const mutationKey = ["confirmChatTrade"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmChatTrade>>,
+    { chatId: number; data: BodyType<ConfirmTradeBody> }
+  > = (props) => {
+    const { chatId, data } = props ?? {};
+
+    return confirmChatTrade(chatId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConfirmChatTradeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof confirmChatTrade>>
+>;
+export type ConfirmChatTradeMutationBody = BodyType<ConfirmTradeBody>;
+export type ConfirmChatTradeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Conferma scambio concluso (aggiorna solo il proprio album)
+ */
+export const useConfirmChatTrade = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmChatTrade>>,
+    TError,
+    { chatId: number; data: BodyType<ConfirmTradeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof confirmChatTrade>>,
+  TError,
+  { chatId: number; data: BodyType<ConfirmTradeBody> },
+  TContext
+> => {
+  return useMutation(getConfirmChatTradeMutationOptions(options));
 };
 
 /**

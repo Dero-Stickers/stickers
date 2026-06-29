@@ -40,12 +40,37 @@ Valori: 5 km / 10 km / 20 km / 50 km / 100 km
 
 - Nickname, area generica (da CAP), distanza
 - **Scambi possibili** = `min(totale dai, totale ricevi)`
-- Layout **"per direzione"**: sezione **TU DAI** (con totale) poi **TU RICEVI**
+- Layout **"per direzione"**: sezione **DAI** (con totale) poi **RICEVI**
   (con totale), ciascuna con le figurine **raggruppate per album** (titolo album +
   griglia numeri). Un album può comparire solo in "dai" o solo in "ricevi".
 - Backend (`getMatchDetail`): `give[]` / `receive[]` = gruppi `{ albumId,
   albumTitle, stickers[] }`, più `totalGive` / `totalReceive` / `totalExchanges`.
+  Il calcolo dai/ricevi è in `api-server/src/lib/trade.ts` (`computeTradeBreakdown`),
+  logica UNICA condivisa con la conferma scambio in chat — non duplicarla.
 - Bottone chat (tondo) sempre visibile in testata.
+
+## Conferma scambio concluso
+
+Quando due collezionisti completano lo scambio **di persona**, ciascuno lo
+conferma **dal proprio lato** dalla chat (bottone "Scambio fatto" nella testata
+della chat). Modello scelto (ibrido):
+
+- Bottone **"Scambio fatto"** nella chat → modale a **due passi**: (1) breve
+  **spiegazione** di cosa succede + **"Conferma e aggiorna"** (un tap = conferma
+  tutto); (2) **"Scegli figurine"** per lo scambio **parziale** — lista DAI/RICEVI
+  a fisarmonica per album (stessa del dettaglio match), precompilata spuntata, da
+  cui **togliere** ciò che non è stato scambiato.
+- Applica gli stati **solo all'album di chi conferma**: figurine cedute
+  `doppia → posseduta` (resta una copia), figurine ricevute `mancante → posseduta`.
+  **Mai** scrittura sull'album dell'altro → stesso modello di sicurezza
+  dell'aggiornamento manuale; ognuno gestisce il suo.
+- Il **manuale resta** sempre disponibile (modifica diretta dell'album): è la rete
+  di sicurezza. In ogni caso i **match si ricalcolano da soli** dallo stato delle
+  figurine (cache match invalidata), quindi nessuna delle due strade rompe niente.
+- Sicurezza: il backend **ricalcola l'insieme valido** e applica solo le figurine
+  realmente scambiabili (ignora id arbitrari). Endpoint `GET /chats/:id/trade`
+  (proposta + stato conferme) e `POST /chats/:id/trade/confirm` (`routes/chat-trade.ts`).
+  Prima conferma in una chat = +1 `exchangesCompleted`. Pagamenti **non** coinvolti.
 
 ## Privacy Geografica
 

@@ -570,6 +570,89 @@ export const ReportChatBody = zod.object({
 });
 
 /**
+ * @summary Proposta di scambio per la coppia di questa chat + stato conferme
+ */
+export const GetChatTradeParams = zod.object({
+  chatId: zod.coerce.number(),
+});
+
+export const GetChatTradeResponse = zod.object({
+  otherUserId: zod.number(),
+  otherUserNickname: zod.string(),
+  totalGive: zod.number(),
+  totalReceive: zod.number(),
+  give: zod.array(
+    zod.object({
+      albumId: zod.number(),
+      albumTitle: zod.string(),
+      stickers: zod.array(
+        zod.object({
+          id: zod.number(),
+          albumId: zod.number(),
+          number: zod.number(),
+          code: zod.string(),
+          name: zod.string(),
+          description: zod.string().nullish(),
+        }),
+      ),
+    }),
+  ),
+  receive: zod.array(
+    zod.object({
+      albumId: zod.number(),
+      albumTitle: zod.string(),
+      stickers: zod.array(
+        zod.object({
+          id: zod.number(),
+          albumId: zod.number(),
+          number: zod.number(),
+          code: zod.string(),
+          name: zod.string(),
+          description: zod.string().nullish(),
+        }),
+      ),
+    }),
+  ),
+  myConfirmedAt: zod
+    .string()
+    .nullish()
+    .describe(
+      "Quando l'utente corrente ha confermato lo scambio (null se non ancora).",
+    ),
+  otherConfirmedAt: zod
+    .string()
+    .nullish()
+    .describe("Quando l'altro utente ha confermato (null se non ancora)."),
+});
+
+/**
+ * @summary Conferma scambio concluso (aggiorna solo il proprio album)
+ */
+export const ConfirmChatTradeParams = zod.object({
+  chatId: zod.coerce.number(),
+});
+
+export const ConfirmChatTradeBody = zod.object({
+  giveStickerIds: zod
+    .array(zod.number())
+    .describe(
+      "Id delle figurine cedute (doppie mie). Filtrate lato server contro lo scambio valido.",
+    ),
+  receiveStickerIds: zod
+    .array(zod.number())
+    .describe(
+      "Id delle figurine ricevute (mancanti mie). Filtrate lato server contro lo scambio valido.",
+    ),
+});
+
+export const ConfirmChatTradeResponse = zod.object({
+  success: zod.boolean(),
+  givenApplied: zod.number(),
+  receivedApplied: zod.number(),
+  exchangesCompleted: zod.number(),
+});
+
+/**
  * @summary Get number of chats with unread messages
  */
 export const GetUnreadChatsCountResponse = zod.object({

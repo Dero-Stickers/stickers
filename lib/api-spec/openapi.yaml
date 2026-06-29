@@ -621,6 +621,50 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /chats/{chatId}/trade:
+    get:
+      operationId: getChatTrade
+      tags: [chats]
+      summary: Proposta di scambio per la coppia di questa chat + stato conferme
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trade breakdown e conferme
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatTrade"
+
+  /chats/{chatId}/trade/confirm:
+    post:
+      operationId: confirmChatTrade
+      tags: [chats]
+      summary: Conferma scambio concluso (aggiorna solo il proprio album)
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmTradeBody"
+      responses:
+        "200":
+          description: Scambio confermato e album aggiornato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmTradeResponse"
+
   /chats/unread-count:
     get:
       operationId: getUnreadChatsCount
@@ -1192,6 +1236,63 @@ components:
           items:
             $ref: "#/components/schemas/MatchAlbumGroup"
       required: [userId, nickname, totalExchanges, totalGive, totalReceive, exchangesCompleted, chatUnlocked, give, receive]
+
+    ChatTrade:
+      type: object
+      properties:
+        otherUserId:
+          type: integer
+        otherUserNickname:
+          type: string
+        totalGive:
+          type: integer
+        totalReceive:
+          type: integer
+        give:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchAlbumGroup"
+        receive:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchAlbumGroup"
+        myConfirmedAt:
+          type: string
+          nullable: true
+          description: Quando l'utente corrente ha confermato lo scambio (null se non ancora).
+        otherConfirmedAt:
+          type: string
+          nullable: true
+          description: Quando l'altro utente ha confermato (null se non ancora).
+      required: [otherUserId, otherUserNickname, totalGive, totalReceive, give, receive]
+
+    ConfirmTradeBody:
+      type: object
+      properties:
+        giveStickerIds:
+          type: array
+          items:
+            type: integer
+          description: Id delle figurine cedute (doppie mie). Filtrate lato server contro lo scambio valido.
+        receiveStickerIds:
+          type: array
+          items:
+            type: integer
+          description: Id delle figurine ricevute (mancanti mie). Filtrate lato server contro lo scambio valido.
+      required: [giveStickerIds, receiveStickerIds]
+
+    ConfirmTradeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        givenApplied:
+          type: integer
+        receivedApplied:
+          type: integer
+        exchangesCompleted:
+          type: integer
+      required: [success, givenApplied, receivedApplied, exchangesCompleted]
 
     Chat:
       type: object

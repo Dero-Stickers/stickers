@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq, and, or, desc, sql } from "drizzle-orm";
+import { eq, and, or, sql } from "drizzle-orm";
 import { getSession } from "../middlewares/auth";
 import { broadcast } from "../lib/realtime";
 

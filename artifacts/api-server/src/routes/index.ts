@@ -5,6 +5,7 @@ import albumsRouter from "./albums";
 import userAlbumsRouter from "./user-albums";
 import matchesRouter from "./matches";
 import chatsRouter from "./chats";
+import chatTradeRouter from "./chat-trade";
 import billingRouter from "./billing";
 import adminRouter from "./admin";
 import settingsRouter from "./settings";
@@ -28,6 +29,8 @@ router.use("/matches", matchesRouter);
 
 // Chat routes
 router.use("/chats", chatsRouter);
+// Conferma scambio concluso (montata sotto /chats)
+router.use("/chats", chatTradeRouter);
 
 // Billing routes (sblocco chat a pagamento — stub finché il provider non è collegato)
 router.use("/billing", billingRouter);
