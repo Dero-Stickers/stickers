@@ -82,6 +82,11 @@ Dero975 possiede gli album **11, 12, 13, 14** (collezione ampliata per i match i
 
 **Dati di test PERSISTENTI** (giu 2026) — creati per provare l'app popolata da telefono.
 Utenti id 7-12 e 14-15, tutti vicino a Bologna, registrati via API (PIN reali, login funzionante).
+
+**50 utenti sparsi per l'Italia** (giu 2026) — generati per testare match e navigazione su scala nazionale.
+Script ADDITIVO `lib/db/src/seed-testusers.ts` (`SEED_TESTUSERS=1 pnpm --filter @workspace/db run seed:testusers`): 50 utenti su 50 città (Torino→Cagliari), PIN `1234`, album 11-14 + 1-2 extra (15-18), figurine campionate (~150/album) con stati 40% doppia / 40% mancante / 20% posseduta → ~38k righe `user_stickers`. Generano 57 match per Dero975. `recoveryCode` con prefisso **`STICK-TST-`**.
+8 di questi (Torino, Roma, Napoli, Palermo, Milano, Firenze, Bari, Cagliari) hanno figurine **complementari** a Dero975 (mancante dove lui ha doppie, doppia dove a lui mancano) → match forti 288-500 scambi, sopra i Bologna (350): servono a testare match potenti e lontani.
+Cleanup: `DELETE FROM users WHERE recovery_code LIKE 'STICK-TST-%';` (cascade su album/figurine).
 Album usati per i match: 11 (2025-26, 624), 12 (2024-25, 736), 13 (2023-24, 725), 14 (2022-23, 699).
 Range per `number` sull'album 11: A=1-150, B=151-300, C=301-450, D=451-624.
 

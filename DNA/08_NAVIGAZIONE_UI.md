@@ -14,7 +14,7 @@
 Tre blocchi essenziali (no dati duplicati dalle altre sezioni, no dettaglio singolo album):
 - **La tua collezione** (sintesi aggregata su TUTTI gli album): % completamento complessiva + barra; possedute (verde `chart-3`) / doppie (rosso `destructive`) / mancanti (giallo `accent`); n° album.
 - **Ti aspettano** (azioni richieste): solo se ci sono chat con messaggi non letti → riga per chat verso `/chat/{id}`.
-- **Match per te** (hero, driver di conversione): card a gradiente `primary→chart-1`; titolo "N scambi · M utenti vicini"; switch in alto a destra ⚡ migliori in generale / 📍 migliori vicini (icone, no testo); 3 anteprime, ognuna → `/match/{userId}`; CTA "Trova match" → `/match`.
+- **Migliori match** (hero, driver di conversione): card a gradiente `primary→chart-1`; switch in alto a destra ⚡ migliori in generale / 📍 migliori vicini (icone, no testo); sottotitolo per-filtro "N scambi · M utenti" (⚡) o "…utenti vicini" (📍); 3 anteprime ordinate per il filtro attivo, ognuna → `/match/{userId}`; CTA "Trova match" → `/match`.
 - Stato demo/premium (badge accanto al saluto).
 
 ## Sezione Album

@@ -13,7 +13,8 @@
     "export:albums": "tsx src/export-albums.ts",
     "restore:albums": "tsx src/restore-albums.ts",
     "backup": "tsx src/backup-db.ts",
-    "seed:mock-dev": "tsx src/seed.ts"
+    "seed:mock-dev": "tsx src/seed.ts",
+    "seed:testusers": "tsx src/seed-testusers.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

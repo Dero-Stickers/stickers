@@ -141,7 +141,7 @@ export function Home() {
           <Card className="border-0 shadow-md overflow-hidden bg-linear-to-br from-primary to-chart-1 text-primary-foreground">
             <CardContent className="p-4 space-y-2.5">
               <div className="relative flex items-center justify-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-white/90">Match per te</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-white/90">Migliori match</span>
                 <div className="absolute right-0 flex items-center gap-0.5 rounded-full bg-white/15 p-0.5">
                   <button
                     type="button"
@@ -172,7 +172,7 @@ export function Home() {
 
               <div className="text-center">
                 <p className="text-sm leading-tight text-white/90">
-                  <span className="font-bold text-white">{totalExchanges}</span> scambi · <span className="font-bold text-white">{matches.length}</span> utenti vicini
+                  <span className="font-bold text-white">{totalExchanges}</span> scambi · <span className="font-bold text-white">{matches.length}</span> utenti{heroMode === "best" ? "" : " vicini"}
                 </p>
               </div>
 
