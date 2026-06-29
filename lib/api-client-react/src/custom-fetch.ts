@@ -19,6 +19,39 @@ let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
 
 /**
+ * Optional observer invoked when a request fails (HTTP error or network).
+ * The web app registers one to feed automatic error reports; other consumers
+ * (e.g. Expo) can leave it unset. Kept generic so this package stays
+ * independent of any app-specific reporting module.
+ */
+export type FetchFailureObserver = (info: {
+  status: number | null;
+  method: string;
+  url: string;
+  message: string;
+}) => void;
+
+let _failureObserver: FetchFailureObserver | null = null;
+
+export function setFetchFailureObserver(obs: FetchFailureObserver | null): void {
+  _failureObserver = obs;
+}
+
+function notifyFailure(info: {
+  status: number | null;
+  method: string;
+  url: string;
+  message: string;
+}): void {
+  if (!_failureObserver) return;
+  try {
+    _failureObserver(info);
+  } catch {
+    // an observer must never break the request flow
+  }
+}
+
+/**
  * Set a base URL that is prepended to every relative request URL
  * (i.e. paths that start with `/`).
  *
@@ -360,11 +393,30 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  let response: Response;
+  try {
+    response = await fetch(input, { ...init, method, headers });
+  } catch (networkErr) {
+    // No HTTP response at all → connection/network failure.
+    notifyFailure({
+      status: null,
+      method,
+      url: requestInfo.url,
+      message: networkErr instanceof Error ? networkErr.message : String(networkErr),
+    });
+    throw networkErr;
+  }
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
-    throw new ApiError(response, errorData, requestInfo);
+    const apiError = new ApiError(response, errorData, requestInfo);
+    notifyFailure({
+      status: response.status,
+      method,
+      url: apiError.url,
+      message: apiError.message,
+    });
+    throw apiError;
   }
 
   return (await parseSuccessBody(response, responseType, requestInfo)) as T;

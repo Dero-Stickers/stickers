@@ -1,21 +1,15 @@
-import { Bug, ChevronRight, Globe, Monitor, Smartphone } from "lucide-react";
+import { ChevronRight, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   PRIORITY_COLOR,
   PRIORITY_LABEL,
   STATUS_COLOR,
   STATUS_LABEL,
+  friendlyTitle,
+  userLabel,
   timeAgo,
   type ErrorRow as ErrorRowType,
 } from "./types";
-
-function DeviceIcon({ ua }: { ua: string | null }) {
-  if (!ua) return <Globe className="h-3.5 w-3.5 text-muted-foreground" />;
-  if (ua.startsWith("mobile"))
-    return <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />;
-  if (ua === "bot") return <Bug className="h-3.5 w-3.5 text-muted-foreground" />;
-  return <Monitor className="h-3.5 w-3.5 text-muted-foreground" />;
-}
 
 interface Props {
   row: ErrorRowType;
@@ -52,15 +46,15 @@ export function ErrorRow({ row, selected, onToggleSelect, onOpen }: Props) {
             </Badge>
           )}
         </div>
-        <p className="text-sm font-medium text-foreground line-clamp-1 break-all">
-          {row.userNote || row.messageClean || "(nessun dettaglio)"}
+        {/* Descrizione SEMPLICE del problema (niente tecnicismi). */}
+        <p className="text-sm font-medium text-foreground line-clamp-2">
+          {friendlyTitle(row)}
         </p>
+        {/* Info utili a colpo d'occhio: chi l'ha avuto + quando. */}
         <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-muted-foreground">
-          <span className="font-mono">{row.page || "—"}</span>
-          <span>•</span>
           <span className="flex items-center gap-1">
-            <DeviceIcon ua={row.uaClass} />
-            {row.uaClass ?? "?"}
+            <User className="h-3 w-3" />
+            {userLabel(row)}
           </span>
           <span>•</span>
           <span>{timeAgo(row.lastSeenAt)}</span>

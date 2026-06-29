@@ -12,6 +12,8 @@ import {
   PRIORITY_LABEL,
   STATUS_COLOR,
   STATUS_LABEL,
+  friendlyTitle,
+  userLabel,
   type ErrorRow,
   type Priority,
   type Status,
@@ -58,6 +60,11 @@ export function ErrorDetailDialog({
               </Badge>
             </div>
 
+            {/* Descrizione semplice, in evidenza (la stessa della lista). */}
+            <p className="text-base font-semibold text-foreground">
+              {friendlyTitle(selected)}
+            </p>
+
             {selected.userNote && (
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
@@ -70,6 +77,10 @@ export function ErrorDetailDialog({
             )}
 
             <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Utente</p>
+                <p className="text-xs font-medium">{userLabel(selected)}</p>
+              </div>
               <div>
                 <p className="text-xs text-muted-foreground">Pagina</p>
                 <p className="font-mono text-xs break-all">{selected.page || "—"}</p>

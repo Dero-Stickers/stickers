@@ -27,6 +27,20 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: { componentStack: string }) {
     console.error("[ErrorBoundary] Uncaught error:", error, info.componentStack);
     this.setState({ stack: info.componentStack });
+    // Invio AUTOMATICO: un crash che mostra questa schermata è sempre rilevante.
+    // Best-effort, non blocca; il bottone manuale resta come fallback se fallisce.
+    void reportError({
+      errorType: "client_crash",
+      messageClean: error?.message ?? "Errore sconosciuto",
+      stackTop: (error?.stack ?? info.componentStack ?? "")
+        .split("\n")
+        .slice(0, 8)
+        .join("\n"),
+      userNote: "App crashed (ErrorBoundary, auto)",
+    }).then((ok) => {
+      // Riflette l'esito nel bottone così l'utente non re-invia un duplicato.
+      if (ok) this.setState((s) => (s.reportSent === "idle" ? { reportSent: "ok" } : null));
+    });
   }
 
   handleSendReport = async () => {
@@ -55,7 +69,8 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
           <h2 className="text-xl font-bold text-foreground">Qualcosa è andato storto</h2>
           <p className="text-sm text-muted-foreground max-w-xs">
-            Si è verificato un errore inatteso. Puoi inviare una segnalazione anonima per aiutarci a risolverlo.
+            Si è verificato un errore inatteso. La segnalazione viene inviata
+            automaticamente per aiutarci a risolverlo; puoi anche reinviarla qui sotto.
           </p>
           <p className="text-xs font-mono text-muted-foreground bg-muted px-3 py-2 rounded max-w-sm break-all">
             {this.state.error?.message ?? "Errore sconosciuto"}

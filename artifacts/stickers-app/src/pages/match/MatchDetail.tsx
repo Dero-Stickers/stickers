@@ -41,8 +41,8 @@ function DirectionSection({
     ? { label: "text-emerald-700", chip: "bg-emerald-50 text-emerald-700", badge: "bg-emerald-100 text-emerald-700" }
     : { label: "text-sky-700", chip: "bg-sky-50 text-sky-700", badge: "bg-sky-100 text-sky-700" };
 
-  const single = groups.length === 1;
-  const [openIds, setOpenIds] = useState<Set<number>>(() => (single ? new Set(groups.map(g => g.albumId)) : new Set()));
+  // Album sempre CHIUSI all'apertura della pagina: l'utente li espande al tap.
+  const [openIds, setOpenIds] = useState<Set<number>>(() => new Set());
   const [showAllIds, setShowAllIds] = useState<Set<number>>(new Set());
 
   const toggle = (id: number) =>

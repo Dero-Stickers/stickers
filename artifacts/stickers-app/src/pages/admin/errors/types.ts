@@ -14,6 +14,7 @@ export interface ErrorRow {
   uaClass: string | null;
   ipPrefix: string | null;
   userId: number | null;
+  nickname: string | null;
   appVersion: string | null;
   userNote: string | null;
   adminNote: string | null;
@@ -57,6 +58,59 @@ export const STATUS_COLOR: Record<Status, string> = {
 export function authHeaders(): HeadersInit {
   const token = localStorage.getItem("sticker_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// Mappa pagina (normalizzata) → nome leggibile della sezione, per l'anteprima.
+const PAGE_LABEL: Array<[RegExp, string]> = [
+  [/^\/$/, "Home"],
+  [/^\/album\/:id/, "Dettaglio album"],
+  [/^\/album/, "Album"],
+  [/^\/match\/:id/, "Dettaglio match"],
+  [/^\/match/, "Match"],
+  [/^\/chat/, "Chat"],
+  [/^\/profilo/, "Profilo"],
+  [/^\/login/, "Accesso"],
+  [/^\/recover/, "Recupero account"],
+  [/^\/legal/, "Note legali"],
+  [/^\/admin/, "Area admin"],
+];
+
+export function sectionLabel(page: string | null): string {
+  if (!page) return "una pagina";
+  for (const [re, label] of PAGE_LABEL) if (re.test(page)) return label;
+  return page;
+}
+
+/**
+ * Descrizione SEMPLICE per l'anteprima, senza tecnicismi: traduce il tipo di
+ * errore in una frase chiara, contestualizzata sulla sezione dell'app.
+ * Il dettaglio tecnico resta nella scheda di dettaglio.
+ */
+export function friendlyTitle(row: Pick<ErrorRow, "errorType" | "page" | "userNote">): string {
+  // Una segnalazione scritta a mano dall'utente vale più di una frase generica.
+  if (row.errorType === "user_report" && row.userNote?.trim()) {
+    return row.userNote.trim();
+  }
+  const where = sectionLabel(row.page);
+  switch (row.errorType) {
+    case "user_report":
+      return `Segnalazione di un utente da “${where}”`;
+    case "client_crash":
+      return `La pagina “${where}” si è bloccata durante l'uso`;
+    case "api_error":
+      return `“${where}” non è riuscita a comunicare col server`;
+    case "other":
+      return `Problema di caricamento in “${where}”`;
+    default:
+      return `Problema in “${where}”`;
+  }
+}
+
+/** Etichetta utente per l'anteprima: nickname o "Anonimo". */
+export function userLabel(row: Pick<ErrorRow, "nickname" | "userId">): string {
+  if (row.nickname) return row.nickname;
+  if (row.userId != null) return `Utente #${row.userId}`;
+  return "Anonimo";
 }
 
 export function timeAgo(iso: string): string {

@@ -7,6 +7,16 @@
 
 ## 2026-06
 
+- **Cattura errori silenti (mini-Sentry self-hosted, no dipendenze esterne)** — scelto di NON
+  adottare Sentry (dato fuori UE/GDPR, costo, free tier) e di potenziare il sistema interno:
+  handler globali client (`lib/error-capture.ts`: window.error + unhandledrejection +
+  vite:preloadError) con dedup/throttle/filtro-rumore; API 5xx/rete → `api_error` automatico via
+  un `FetchFailureObserver` in `custom-fetch.ts` (lib resta indipendente: chiama l'hook solo se
+  registrato); i 4xx normali esclusi (rumore); ErrorBoundary auto-invio; chunk fallito → reload
+  una volta (guard sessionStorage) per evitare lo schermo bianco. Test via `node --test`+tsx
+  (no nuove dep di runtime; tsx era già transitiva). Nota infra: i binari nativi darwin-arm64
+  (rollup/esbuild/lightningcss) sono disabilitati negli override di `pnpm-workspace.yaml` (deploy
+  Linux); per buildare/dev in locale su Mac vanno reinstallati a mano nel rispettivo pkg.
 - **Home/Profilo più standard (UI)** — Home: "Migliori match" mostra **4** anteprime (3 erano poche); a
   meno di 4 match gli slot mancanti restano placeholder tratteggiati per **altezza card fissa**. Profilo:
   voci consolidate in 3 sezioni con titoletto (Account / Aiuto e supporto / Informazioni), sottotitoli

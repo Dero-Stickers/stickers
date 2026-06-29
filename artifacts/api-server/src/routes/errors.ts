@@ -201,6 +201,19 @@ const listErrors: RequestHandler = async (req, res) => {
       return b.lastSeenAt.getTime() - a.lastSeenAt.getTime();
     });
 
+    // Risolvi i nickname degli utenti coinvolti (una sola query, non N+1) per
+    // mostrarli in lista all'admin (gestione comunicazioni).
+    const userIds = [...new Set(rows.map((r) => r.userId).filter((v): v is number => v != null))];
+    const nickById = new Map<number, string>();
+    if (userIds.length) {
+      const { usersTable } = await import("@workspace/db");
+      const us = await db
+        .select({ id: usersTable.id, nickname: usersTable.nickname })
+        .from(usersTable)
+        .where(inArray(usersTable.id, userIds));
+      for (const u of us) nickById.set(u.id, u.nickname);
+    }
+
     // Counts for the UI badges.
     const since = new Date(Date.now() - 7 * 24 * 60 * 60_000);
     const recent = await db
@@ -229,6 +242,7 @@ const listErrors: RequestHandler = async (req, res) => {
         uaClass: r.uaClass,
         ipPrefix: r.ipPrefix,
         userId: r.userId,
+        nickname: r.userId != null ? (nickById.get(r.userId) ?? null) : null,
         appVersion: r.appVersion,
         userNote: r.userNote,
         adminNote: r.adminNote,
@@ -325,6 +339,18 @@ const consolidatedReport: RequestHandler = async (req, res) => {
       return pa - pb;
     });
 
+    // Risolvi i nickname (per le comunicazioni con l'utente).
+    const repUserIds = [...new Set(rows.map((r) => r.userId).filter((v): v is number => v != null))];
+    const repNick = new Map<number, string>();
+    if (repUserIds.length) {
+      const { usersTable } = await import("@workspace/db");
+      const us = await db
+        .select({ id: usersTable.id, nickname: usersTable.nickname })
+        .from(usersTable)
+        .where(inArray(usersTable.id, repUserIds));
+      for (const u of us) repNick.set(u.id, u.nickname);
+    }
+
     const lines: string[] = [];
     lines.push("# Report tecnico — Sticker Matchbox");
     lines.push("");
@@ -339,6 +365,7 @@ const consolidatedReport: RequestHandler = async (req, res) => {
       lines.push(`## ${r.priority.toUpperCase()} — ${r.errorType}`);
       lines.push("");
       lines.push(`- **Pagina**: \`${r.page || "(sconosciuta)"}\``);
+      lines.push(`- **Utente**: ${r.userId != null ? (repNick.get(r.userId) ?? `#${r.userId}`) : "anonimo"}`);
       lines.push(`- **Occorrenze**: ${r.count}`);
       lines.push(`- **Ultima volta**: ${r.lastSeenAt.toISOString()}`);
       lines.push(`- **Stato**: ${r.status}`);

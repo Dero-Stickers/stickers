@@ -9,8 +9,9 @@ import { ErrorDetailDialog } from "./errors/ErrorDetailDialog";
 import { AdminPage } from "@/components/admin/AdminPage";
 import {
   authHeaders,
-  PRIORITY_LABEL,
   STATUS_LABEL,
+  friendlyTitle,
+  userLabel,
   type ErrorRow as ErrorRowType,
   type ListResponse,
   type Priority,
@@ -22,7 +23,6 @@ export function AdminErrors() {
   const [data, setData] = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
-  const [priorityFilter, setPriorityFilter] = useState<"all" | Priority>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ErrorRowType | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -33,7 +33,6 @@ export function AdminErrors() {
     try {
       const qs = new URLSearchParams();
       if (statusFilter !== "all") qs.set("status", statusFilter);
-      if (priorityFilter !== "all") qs.set("priority", priorityFilter);
       const res = await fetch(`/api/admin/errors?${qs.toString()}`, {
         headers: authHeaders(),
       });
@@ -54,7 +53,7 @@ export function AdminErrors() {
   useEffect(() => {
     void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, priorityFilter]);
+  }, [statusFilter]);
 
   const filtered = useMemo(() => {
     if (!data) return [];
@@ -62,6 +61,8 @@ export function AdminErrors() {
     const q = search.toLowerCase();
     return data.items.filter(
       (r) =>
+        friendlyTitle(r).toLowerCase().includes(q) ||
+        userLabel(r).toLowerCase().includes(q) ||
         (r.page ?? "").toLowerCase().includes(q) ||
         (r.messageClean ?? "").toLowerCase().includes(q) ||
         (r.userNote ?? "").toLowerCase().includes(q) ||
@@ -229,20 +230,6 @@ export function AdminErrors() {
                 </button>
               ),
             )}
-            <span className="text-muted-foreground ml-3 mr-1">Priorità:</span>
-            {(["all", "critical", "high", "medium", "low"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPriorityFilter(p)}
-                className={`px-2.5 py-1 rounded-full border transition-colors ${
-                  priorityFilter === p
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border hover:bg-muted"
-                }`}
-              >
-                {p === "all" ? "Tutte" : PRIORITY_LABEL[p as Priority]}
-              </button>
-            ))}
           </div>
 
           {selectedIds.size > 0 && (

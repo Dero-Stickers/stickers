@@ -44,6 +44,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ### Qualità
 - `pnpm run typecheck` → **0 errori**; file funzionali ≤ 350 righe (eccezioni documentate: `routes/auth.ts`, `pages/Profile.tsx`, generati orval)
+- **Cattura errori completa (consolidata giu 2026)**: ogni errore arriva in **Segnalazioni**, non solo i crash React e le segnalazioni manuali. `lib/error-capture.ts` installa handler globali (`window.error`, `unhandledrejection`, `vite:preloadError`) + dedup/throttle/filtro-rumore lato client; i fallimenti API **5xx/rete** diventano `api_error` automatici via `setFetchFailureObserver` in `custom-fetch.ts` (i 4xx normali — PIN/paywall — esclusi); `ErrorBoundary` invia in automatico; chunk lazy fallito → **auto-reload una volta** (guard sessionStorage anti-loop, evita lo schermo bianco). Test: `pnpm --filter @workspace/{api-server,stickers-app} run test` (`node --test` via tsx) → unit su sanitizer+dedup; smoke E2E in `scripts` copre i 4 tipi, dedup, PII, rate-limit, PATCH, markdown, admin protetto.
 - Sistema segnalazione errori con **sanitizer PII** (PIN/JWT/email/IP/path/codici)
 - E2E Playwright in `artifacts/stickers-app/` (config + Chromium pronti; suite di test in completamento)
 - **RLS attiva su tutte le 14 tabelle** (deny-by-default; backend `postgres` bypassa, anon bloccato via PostgREST). Vedi `09_DATABASE.md` → Sicurezza accessi.
@@ -130,6 +131,24 @@ DELETE FROM users   WHERE id BETWEEN 7 AND 15;  -- cascade: user_albums/stickers
 -- opzionale, togliere a Dero975 gli album multi-album aggiunti per i test:
 -- DELETE FROM user_stickers WHERE user_id=1 AND album_id IN (13,14);
 -- DELETE FROM user_albums   WHERE user_id=1 AND album_id IN (13,14);
+```
+
+**"Ripulire l'app" = album allo STATO VERGINE.** Quando l'owner chiede di *ripulire l'app dai
+record di test*, l'obiettivo è: catalogo `albums`/`stickers` **intatto** (NON si tocca, è il
+dataset Panini reale) ma **zero possessi e zero utenti di prova**, come ad app appena pubblicata.
+Azione DISTRUTTIVA sul DB di produzione → **backup DB + conferma esplicita prima**. Mantieni
+SEMPRE gli account base `admin` (id 6) e `Dero975` (id 1) e `app_settings`. Ordine obbligato (FK
+`reports`/`admin_actions` = NO ACTION, bloccano):
+```sql
+-- 1) sciogli i blocchi FK sugli utenti di test
+DELETE FROM reports WHERE reporter_id BETWEEN 7 AND 15 OR reported_user_id BETWEEN 7 AND 15
+   OR reporter_id IN (SELECT id FROM users WHERE recovery_code LIKE 'STICK-TST-%')
+   OR reported_user_id IN (SELECT id FROM users WHERE recovery_code LIKE 'STICK-TST-%');
+-- 2) elimina gli utenti di test (cascade su user_albums/stickers/chats/messages/ecc.)
+DELETE FROM users WHERE id BETWEEN 7 AND 15 OR recovery_code LIKE 'STICK-TST-%';
+-- 3) riporta gli account base allo stato vergine (svuota i loro possessi, lascia gli account)
+DELETE FROM user_stickers WHERE user_id IN (1,6);
+DELETE FROM user_albums   WHERE user_id IN (1,6);
 ```
 
 ## Dove stanno i segreti

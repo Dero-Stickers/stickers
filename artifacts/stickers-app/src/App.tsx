@@ -10,6 +10,32 @@ import NotFound from "@/pages/not-found";
 import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
 import { CookieBanner } from "@/components/CookieBanner";
 import { dismissBootSplash } from "@/components/brand/SplashScreen";
+import { setFetchFailureObserver } from "@workspace/api-client-react";
+import { installGlobalErrorCapture, reportApiFailure } from "@/lib/error-capture";
+
+// Cattura errori globali (JS non gestiti, promise, chunk falliti) il prima
+// possibile, prima ancora del render: così nessun errore silente sfugge.
+installGlobalErrorCapture();
+// Ogni chiamata API che fallisce con 5xx o per rete assente diventa una
+// segnalazione automatica (i 4xx normali — PIN errato, paywall — sono esclusi).
+setFetchFailureObserver(reportApiFailure);
+
+// Recupero automatico dallo "schermo bianco": se un chunk lazy non si scarica
+// (deploy nuovo, rete instabile), ricarica UNA volta la pagina invece di
+// lasciare l'utente bloccato. Il guard in sessionStorage evita loop infiniti.
+if (typeof window !== "undefined") {
+  window.addEventListener("vite:preloadError", () => {
+    try {
+      const KEY = "sticker_chunk_reloaded";
+      if (!sessionStorage.getItem(KEY)) {
+        sessionStorage.setItem(KEY, "1");
+        window.location.reload();
+      }
+    } catch {
+      /* sessionStorage può non essere disponibile: non bloccare */
+    }
+  });
+}
 
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
