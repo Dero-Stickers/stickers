@@ -27,6 +27,8 @@ import type {
   BatchStickersBody,
   BatchStickersResponse,
   BlockUserBody,
+  BulkSetStickersBody,
+  BulkSetStickersResponse,
   Chat,
   ChatTrade,
   CheckoutBody,
@@ -1650,6 +1652,98 @@ export function useGetUserAlbumStickers<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Sets every sticker of this album to the given state (posseduta | doppia | mancante) for the current user, overwriting the current selections ("mancante" resets the album). Only rows whose state actually differs are updated. Confirmed in the UI; reversible by the user.
+
+ * @summary Set all stickers of an album to a single state (overwrites)
+ */
+export const getBulkSetUserStickersUrl = (albumId: number) => {
+  return `/api/user/albums/${albumId}/stickers/bulk`;
+};
+
+export const bulkSetUserStickers = async (
+  albumId: number,
+  bulkSetStickersBody: BulkSetStickersBody,
+  options?: RequestInit,
+): Promise<BulkSetStickersResponse> => {
+  return customFetch<BulkSetStickersResponse>(
+    getBulkSetUserStickersUrl(albumId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(bulkSetStickersBody),
+    },
+  );
+};
+
+export const getBulkSetUserStickersMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkSetUserStickers>>,
+    TError,
+    { albumId: number; data: BodyType<BulkSetStickersBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof bulkSetUserStickers>>,
+  TError,
+  { albumId: number; data: BodyType<BulkSetStickersBody> },
+  TContext
+> => {
+  const mutationKey = ["bulkSetUserStickers"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof bulkSetUserStickers>>,
+    { albumId: number; data: BodyType<BulkSetStickersBody> }
+  > = (props) => {
+    const { albumId, data } = props ?? {};
+
+    return bulkSetUserStickers(albumId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BulkSetUserStickersMutationResult = NonNullable<
+  Awaited<ReturnType<typeof bulkSetUserStickers>>
+>;
+export type BulkSetUserStickersMutationBody = BodyType<BulkSetStickersBody>;
+export type BulkSetUserStickersMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Set all stickers of an album to a single state (overwrites)
+ */
+export const useBulkSetUserStickers = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkSetUserStickers>>,
+    TError,
+    { albumId: number; data: BodyType<BulkSetStickersBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof bulkSetUserStickers>>,
+  TError,
+  { albumId: number; data: BodyType<BulkSetStickersBody> },
+  TContext
+> => {
+  return useMutation(getBulkSetUserStickersMutationOptions(options));
+};
 
 /**
  * @summary Update sticker state (cycle mancante/posseduta/doppia)

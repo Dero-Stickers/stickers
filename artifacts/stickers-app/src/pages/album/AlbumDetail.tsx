@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   useGetUserAlbumStickers,
   useUpdateUserStickerState,
+  useBulkSetUserStickers,
   useRemoveAlbumFromUser,
   useGetUserAlbums,
   getGetUserAlbumsQueryKey,
@@ -31,6 +32,7 @@ import {
 } from "@workspace/api-client-react";
 import type { UserSticker } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { BulkStateDialog, type BulkState } from "@/components/album/BulkStateDialog";
 
 type StickerState = "mancante" | "posseduta" | "doppia";
 type FilterType = "tutte" | "mancanti" | "possedute" | "doppie";
@@ -57,7 +59,12 @@ export function AlbumDetail() {
   const [filter, setFilter] = useState<FilterType>("tutte");
   const [selectedSticker, setSelectedSticker] = useState<UserSticker | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [bulkTarget, setBulkTarget] = useState<BulkState | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Long-press sui chip stato (Mie/Doppie/Mancanti): timer + flag per NON far
+  // scattare anche il cambio filtro al rilascio.
+  const chipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chipLongPressed = useRef(false);
 
   const { data: userAlbums } = useGetUserAlbums();
   const albumInfo = userAlbums?.find(a => a.id === albumId);
@@ -89,6 +96,25 @@ export function AlbumDetail() {
     },
   });
 
+  const bulkSet = useBulkSetUserStickers({
+    mutation: {
+      onSuccess: (res) => {
+        // Azione di massa una tantum: qui un refetch della griglia è corretto
+        // (a differenza del tap singolo, che resta ottimistico).
+        queryClient.invalidateQueries({ queryKey: stickersKey });
+        queryClient.invalidateQueries({ queryKey: getGetUserAlbumsQueryKey() });
+        setBulkTarget(null);
+        toast({
+          title: "Figurine aggiornate",
+          description: res.updated > 0
+            ? `${res.updated} figurine aggiornate.`
+            : "Erano già tutte in questo stato.",
+        });
+      },
+      onError: () => toast({ title: "Operazione non riuscita", variant: "destructive" }),
+    },
+  });
+
   const removeAlbum = useRemoveAlbumFromUser({
     mutation: {
       onSuccess: () => {
@@ -108,6 +134,18 @@ export function AlbumDetail() {
     longPressTimer.current = setTimeout(() => setSelectedSticker(s), 500);
   };
   const handlePointerUp = () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); };
+
+  // Chip stato: tenere premuto apre la conferma "imposta tutte a questo stato".
+  // Il tap normale resta il cambio filtro.
+  const handleChipDown = (target: BulkState) => {
+    chipLongPressed.current = false;
+    chipTimer.current = setTimeout(() => { chipLongPressed.current = true; setBulkTarget(target); }, 500);
+  };
+  const handleChipUp = () => { if (chipTimer.current) clearTimeout(chipTimer.current); };
+  const handleChipClick = (key: FilterType) => {
+    if (chipLongPressed.current) { chipLongPressed.current = false; return; } // long-press: niente cambio filtro
+    setFilter(key);
+  };
 
   const owned = stickers?.filter(s => s.state === "posseduta").length ?? 0;
   const duplicates = stickers?.filter(s => s.state === "doppia").length ?? 0;
@@ -129,11 +167,12 @@ export function AlbumDetail() {
     // né si riordina quando una figurina cambia stato.
     .sort((a, b) => a.number - b.number);
 
-  const filterOptions: { key: FilterType; label: string }[] = [
+  // bulkState = stato applicato col long-press. "Tutte" non ha azione (solo filtro).
+  const filterOptions: { key: FilterType; label: string; bulkState?: BulkState }[] = [
     { key: "tutte", label: "Tutte" },
-    { key: "possedute", label: "Mie" },
-    { key: "doppie", label: "Doppie" },
-    { key: "mancanti", label: "Mancanti" },
+    { key: "possedute", label: "Mie", bulkState: "posseduta" },
+    { key: "doppie", label: "Doppie", bulkState: "doppia" },
+    { key: "mancanti", label: "Mancanti", bulkState: "mancante" },
   ];
 
   if (isLoading) {
@@ -194,8 +233,11 @@ export function AlbumDetail() {
         {filterOptions.map(opt => (
           <button
             key={opt.key}
-            onClick={() => setFilter(opt.key)}
-            className={`px-2 py-1.5 rounded-full text-xs font-semibold border text-center transition-colors ${filter === opt.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+            onClick={() => handleChipClick(opt.key)}
+            onPointerDown={opt.bulkState ? () => handleChipDown(opt.bulkState!) : undefined}
+            onPointerUp={opt.bulkState ? handleChipUp : undefined}
+            onPointerLeave={opt.bulkState ? handleChipUp : undefined}
+            className={`px-2 py-1.5 rounded-full text-xs font-semibold border text-center transition-colors select-none ${filter === opt.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
           >
             {opt.label}
           </button>
@@ -270,6 +312,12 @@ export function AlbumDetail() {
         </DialogContent>
       </Dialog>
 
+      <BulkStateDialog
+        target={bulkTarget}
+        pending={bulkSet.isPending}
+        onOpenChange={(open) => { if (!open) setBulkTarget(null); }}
+        onConfirm={(target) => bulkSet.mutate({ albumId, data: { state: target } })}
+      />
 
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent>

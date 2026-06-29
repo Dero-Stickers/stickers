@@ -44,7 +44,12 @@ Ciclo tapping: Mancante → Posseduta → Doppia → Mancante
 
 ## Filtri Album
 
-- Tutte / Mancanti / Possedute / Doppie
+- Tutte / Mancanti / Possedute / Doppie (tap = cambia filtro)
+- **Pressione lunga su Mie/Doppie/Mancanti** → conferma → imposta TUTTE le figurine
+  dell'album a quello stato, sovrascrivendo le selezioni attuali ("Mancanti" = azzera
+  l'album). "Tutte" non ha azione (solo filtro). Endpoint additivo
+  `POST /user/albums/:id/stickers/bulk` `{state}`: un solo UPDATE, tocca solo le righe
+  che cambiano, su dati propri; invalida la cache match. Reversibile dall'utente.
 
 ## Riepilogo Album
 

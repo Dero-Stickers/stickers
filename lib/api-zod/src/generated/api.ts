@@ -375,6 +375,25 @@ export const GetUserAlbumStickersResponse = zod.array(
 );
 
 /**
+ * Sets every sticker of this album to the given state (posseduta | doppia | mancante) for the current user, overwriting the current selections ("mancante" resets the album). Only rows whose state actually differs are updated. Confirmed in the UI; reversible by the user.
+
+ * @summary Set all stickers of an album to a single state (overwrites)
+ */
+export const BulkSetUserStickersParams = zod.object({
+  albumId: zod.coerce.number(),
+});
+
+export const BulkSetUserStickersBody = zod.object({
+  state: zod.enum(["mancante", "posseduta", "doppia"]),
+});
+
+export const BulkSetUserStickersResponse = zod.object({
+  updated: zod
+    .number()
+    .describe("Number of stickers whose state actually changed"),
+});
+
+/**
  * @summary Update sticker state (cycle mancante/posseduta/doppia)
  */
 export const UpdateUserStickerStateParams = zod.object({

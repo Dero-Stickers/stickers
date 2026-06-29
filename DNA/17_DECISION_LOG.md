@@ -7,6 +7,13 @@
 
 ## 2026-06
 
+- **Azioni di massa sugli stati figurina** — sui chip Mie/Doppie/Mancanti la pressione lunga
+  apre una conferma e imposta TUTTE le figurine dell'album a quello stato, sovrascrivendo le
+  selezioni ("Mancanti" = reset album). "Tutte" senza azione; tap singolo = filtro. Endpoint
+  additivo `POST /user/albums/:id/stickers/bulk` `{state}` (un solo UPDATE sulle sole righe che
+  cambiano, dati propri, cache match invalidata). Modale in `BulkStateDialog`. Motivo: album
+  passati già completati + necessità di un reset (l'azione è reversibile dall'utente). Scartata
+  l'idea iniziale "completa solo le mancanti" perché non reversibile. Vedi `03_ALBUM_FIGURINE.md`.
 - **Governance portabile** — aggiunto `AGENTS.md` versionato (le regole complete restano in
   `CLAUDE.md`, gestito su App Control e in `.gitignore`): serve a far rispettare la governance
   anche da agent diversi e in cloni/chat senza storico. Fonte canonica unica = `CLAUDE.md`;

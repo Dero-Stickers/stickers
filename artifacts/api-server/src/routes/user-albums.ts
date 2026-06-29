@@ -232,10 +232,50 @@ const updateStickerState: RequestHandler = async (req, res) => {
   }
 };
 
+// POST /api/user/albums/:albumId/stickers/bulk
+// Imposta TUTTE le figurine dell'album dell'utente corrente a uno stato
+// (posseduta | doppia | mancante), SOVRASCRIVENDO le selezioni attuali
+// ("mancante" = azzera l'album). Aggiorna solo le righe che cambiano davvero
+// (stato diverso dal target) → updated = quante sono cambiate. Un solo UPDATE.
+// Dati propri, confermata lato UI e reversibile dall'utente (può re-impostare).
+const bulkSetStickers: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+    const albumId = parseInt(req.params.albumId as string, 10);
+    const state = req.body.state as string;
+
+    if (!["mancante", "posseduta", "doppia"].includes(state)) {
+      res.status(400).json({ error: "INVALID_STATE" });
+      return;
+    }
+
+    const { db } = await import("@workspace/db");
+    const { userStickersTable } = await import("@workspace/db");
+
+    const updated = await db
+      .update(userStickersTable)
+      .set({ state, updatedAt: new Date() })
+      .where(and(
+        eq(userStickersTable.userId, session.userId),
+        eq(userStickersTable.albumId, albumId),
+        sql`${userStickersTable.state} is distinct from ${state}`,
+      ))
+      .returning({ stickerId: userStickersTable.stickerId });
+
+    invalidateUser(session.userId); // collezione cambiata → invalida cache match
+    res.json({ updated: updated.length });
+  } catch (err) {
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
 router.get("/albums", getUserAlbums);
 router.post("/albums/:albumId", addAlbum);
 router.delete("/albums/:albumId", removeAlbum);
 router.get("/albums/:albumId/stickers", getUserAlbumStickers);
+router.post("/albums/:albumId/stickers/bulk", bulkSetStickers);
 router.patch("/albums/:albumId/stickers/:stickerId", updateStickerState);
 
 export default router;

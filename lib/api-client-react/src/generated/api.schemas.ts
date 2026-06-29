@@ -156,6 +156,24 @@ export interface UpdateStickerStateBody {
   state: UpdateStickerStateBodyState;
 }
 
+export type BulkSetStickersBodyState =
+  (typeof BulkSetStickersBodyState)[keyof typeof BulkSetStickersBodyState];
+
+export const BulkSetStickersBodyState = {
+  mancante: "mancante",
+  posseduta: "posseduta",
+  doppia: "doppia",
+} as const;
+
+export interface BulkSetStickersBody {
+  state: BulkSetStickersBodyState;
+}
+
+export interface BulkSetStickersResponse {
+  /** Number of stickers whose state actually changed */
+  updated: number;
+}
+
 export interface MatchSummary {
   userId: number;
   nickname: string;

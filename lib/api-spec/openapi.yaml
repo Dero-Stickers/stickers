@@ -424,6 +424,36 @@ paths:
                 items:
                   $ref: "#/components/schemas/UserSticker"
 
+  /user/albums/{albumId}/stickers/bulk:
+    post:
+      operationId: bulkSetUserStickers
+      tags: [user-stickers]
+      summary: Set all stickers of an album to a single state (overwrites)
+      description: >
+        Sets every sticker of this album to the given state
+        (posseduta | doppia | mancante) for the current user, overwriting the
+        current selections ("mancante" resets the album). Only rows whose state
+        actually differs are updated. Confirmed in the UI; reversible by the user.
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkSetStickersBody"
+      responses:
+        "200":
+          description: Stickers updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkSetStickersResponse"
+
   /user/albums/{albumId}/stickers/{stickerId}:
     patch:
       operationId: updateUserStickerState
@@ -1168,6 +1198,22 @@ components:
           type: string
           enum: [mancante, posseduta, doppia]
       required: [state]
+
+    BulkSetStickersBody:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [mancante, posseduta, doppia]
+      required: [state]
+
+    BulkSetStickersResponse:
+      type: object
+      properties:
+        updated:
+          type: integer
+          description: Number of stickers whose state actually changed
+      required: [updated]
 
     MatchSummary:
       type: object
