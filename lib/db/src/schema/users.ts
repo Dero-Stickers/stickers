@@ -13,8 +13,6 @@ export const usersTable = pgTable("users", {
   securityAnswerHash: text("security_answer_hash").notNull(),
   recoveryCode: text("recovery_code").notNull().unique(),
   isPremium: boolean("is_premium").default(false).notNull(),
-  demoStartedAt: timestamp("demo_started_at"),
-  demoExpiresAt: timestamp("demo_expires_at"),
   isBlocked: boolean("is_blocked").default(false).notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   exchangesCompleted: integer("exchanges_completed").default(0).notNull(),

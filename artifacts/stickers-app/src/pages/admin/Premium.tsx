@@ -1,231 +1,248 @@
-import { useState, useEffect } from "react";
-import { Crown, Star } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Crown, Lock, Unlock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   useAdminListUsers,
-  useGetDemoConfig,
-  useUpdateDemoConfig,
-  getGetDemoConfigQueryKey,
+  useGetPaywallConfig,
+  useUpdatePaywallConfig,
+  useAdminSetUserPremium,
+  getGetPaywallConfigQueryKey,
+  getAdminListUsersQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AdminPage, AdminScrollArea } from "@/components/admin/AdminPage";
+import { AdminPage } from "@/components/admin/AdminPage";
+import { AdminTable } from "@/components/admin/AdminTable";
+import { ChatAccessBadge, classifyAccess, type ChatAccess } from "@/components/admin/ChatAccessBadge";
+
+// Centesimi interi → stringa euro (es. 199 → "1.99") per gli input.
+const centsToEuro = (cents: number) => (cents / 100).toFixed(2);
+// Stringa euro → centesimi interi (es. "1,99" → 199). Floor difensivo.
+const euroToCents = (euro: string) => Math.max(0, Math.round(parseFloat(euro.replace(",", ".")) * 100) || 0);
+
+type Filter = "all" | ChatAccess;
 
 export function AdminPremium() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: demoConfig, isLoading: loadingConfig } = useGetDemoConfig();
+  const { data: config, isLoading: loadingConfig } = useGetPaywallConfig();
   const { data: users, isLoading: loadingUsers } = useAdminListUsers();
 
-  const [demoHours, setDemoHours] = useState("24");
+  const [paywallOn, setPaywallOn] = useState(false);
+  const [priceSingle, setPriceSingle] = useState("1.99");
+  const [priceAll, setPriceAll] = useState("9.99");
+  const [filter, setFilter] = useState<Filter>("all");
 
   useEffect(() => {
-    if (demoConfig) setDemoHours(String(demoConfig.demoHours));
-  }, [demoConfig]);
+    if (config) {
+      setPaywallOn(config.chatPaywallEnabled);
+      setPriceSingle(centsToEuro(config.priceSingleCents));
+      setPriceAll(centsToEuro(config.priceAllCents));
+    }
+  }, [config]);
 
-  const updateConfig = useUpdateDemoConfig({
+  const updateConfig = useUpdatePaywallConfig({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetPaywallConfigQueryKey() }) },
+  });
+
+  const saveConfig = (over: Partial<{ chatPaywallEnabled: boolean }>, onOk: () => void) =>
+    updateConfig.mutate(
+      {
+        data: {
+          chatPaywallEnabled: over.chatPaywallEnabled ?? paywallOn,
+          priceSingleCents: euroToCents(priceSingle),
+          priceAllCents: euroToCents(priceAll),
+          currency: config?.currency ?? "EUR",
+        },
+      },
+      { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetPaywallConfigQueryKey() }); onOk(); } },
+    );
+
+  const handleToggleMaster = () => {
+    const next = !paywallOn;
+    saveConfig({ chatPaywallEnabled: next }, () => {
+      setPaywallOn(next);
+      toast({
+        title: next ? "Chat a pagamento ATTIVE" : "Chat a pagamento DISATTIVATE",
+        description: next ? "Per aprire una nuova chat serve uno sblocco." : "Tutte le chat sono di nuovo gratis.",
+      });
+    });
+  };
+
+  const handleSavePrices = () =>
+    saveConfig({}, () => toast({ title: "Prezzi salvati", description: `Singola €${priceSingle} · Tutte €${priceAll}` }));
+
+  const setPremium = useAdminSetUserPremium({
     mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetDemoConfigQueryKey() });
-        toast({ title: "Configurazione salvata", description: `Durata demo impostata a ${demoHours} ore` });
+      onSuccess: (_, vars) => {
+        queryClient.invalidateQueries({ queryKey: getAdminListUsersQueryKey() });
+        toast({ title: vars.data.grant ? "Tutte le chat sbloccate" : "Sblocco revocato" });
       },
     },
   });
 
-  // Interruttore globale del sistema Premium/Demo.
-  const [masterEnabled, setMasterEnabled] = useState(true);
-  useEffect(() => {
-    if (demoConfig) setMasterEnabled(demoConfig.premiumDemoEnabled !== false);
-  }, [demoConfig]);
+  // Tutti gli utenti ordinati per nickname; conteggi per filtro.
+  const all = useMemo(
+    () => [...(users ?? [])].sort((a, b) => a.nickname.toLowerCase().localeCompare(b.nickname.toLowerCase(), "it")),
+    [users],
+  );
+  const counts = useMemo(() => {
+    const c = { all: all.length, none: 0, some: 0, full: 0 };
+    for (const u of all) c[classifyAccess(u)]++;
+    return c;
+  }, [all]);
+  const rows = useMemo(() => (filter === "all" ? all : all.filter(u => classifyAccess(u) === filter)), [all, filter]);
 
-  const toggleMaster = useUpdateDemoConfig();
-
-  const handleToggleMaster = () => {
-    const next = !masterEnabled;
-    toggleMaster.mutate(
-      {
-        data: {
-          demoHours: parseInt(demoHours, 10) || 24,
-          premiumDemoEnabled: next,
-        },
-      },
-      {
-        onSuccess: () => {
-          setMasterEnabled(next);
-          queryClient.invalidateQueries({ queryKey: getGetDemoConfigQueryKey() });
-          toast({
-            title: next ? "Premium / Demo ATTIVATO" : "Premium / Demo DISATTIVATO",
-            description: next
-              ? "Il sistema è di nuovo attivo."
-              : "L'app funziona come se Premium e Demo non esistessero.",
-          });
-        },
-      },
-    );
-  };
-
-  const demoUsers = users?.filter(u => u.demoStatus === "demo_active") ?? [];
-  const premiumUsers = users?.filter(u => u.demoStatus === "premium") ?? [];
+  const FILTERS: { key: Filter; label: string }[] = [
+    { key: "all", label: "Tutti" },
+    { key: "none", label: "Senza sblocco" },
+    { key: "some", label: "Alcune chat" },
+    { key: "full", label: "Tutte le chat" },
+  ];
 
   return (
-    <AdminPage title="Premium / Demo" subtitle="Gestisci abbonamenti e configurazione demo">
-      <AdminScrollArea className="space-y-6">
-      <Card className={`shadow-sm border-2 ${masterEnabled ? "border-emerald-200" : "border-muted"}`}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Crown className={`h-4 w-4 ${masterEnabled ? "text-emerald-600" : "text-muted-foreground"}`} />
-            Sistema Premium / Demo
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
+    <AdminPage title="Monetizzazione" subtitle="Chat a pagamento: interruttore, prezzi e sblocchi">
+      {/* Config compatta (non scorre) */}
+      <div className="shrink-0 grid gap-4 md:grid-cols-2">
+        <Card className={`shadow-sm border-2 ${paywallOn ? "border-emerald-200" : "border-muted"}`}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Lock className={`h-4 w-4 ${paywallOn ? "text-emerald-600" : "text-muted-foreground"}`} />
+              Chat a pagamento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-foreground">
                 Stato:{" "}
-                <span className={`font-bold ${masterEnabled ? "text-emerald-600" : "text-muted-foreground"}`}>
-                  {loadingConfig ? "…" : masterEnabled ? "ATTIVO" : "DISATTIVATO"}
+                <span className={`font-bold ${paywallOn ? "text-emerald-600" : "text-muted-foreground"}`}>
+                  {loadingConfig ? "…" : paywallOn ? "ATTIVE" : "DISATTIVATE"}
                 </span>
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Se disattivato, l'app funziona come se Premium e Demo non esistessero: accesso pieno per tutti,
-                nessun blocco chat, nessuna scadenza demo, nessuna etichetta.
-              </p>
+              <Button
+                onClick={handleToggleMaster}
+                disabled={updateConfig.isPending || loadingConfig}
+                className={paywallOn ? "bg-muted text-foreground hover:bg-muted/80 shrink-0" : "bg-emerald-600 text-white hover:bg-emerald-700 shrink-0"}
+              >
+                {paywallOn ? "Disattiva" : "Attiva"}
+              </Button>
             </div>
-            <Button
-              onClick={handleToggleMaster}
-              disabled={toggleMaster.isPending || loadingConfig}
-              className={masterEnabled
-                ? "bg-muted text-foreground hover:bg-muted/80 shrink-0"
-                : "bg-emerald-600 text-white hover:bg-emerald-700 shrink-0"}
-            >
-              {masterEnabled ? "Disattiva" : "Attiva"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <p className="text-xs text-muted-foreground mt-2">
+              Se disattivate, tutte le chat sono gratis. L'app resta sempre gratis e visibile.
+            </p>
+          </CardContent>
+        </Card>
 
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Star className="h-4 w-4 text-amber-500" />
-            Configurazione Demo
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <label className="text-sm font-medium text-foreground block mb-1">Durata demo (ore)</label>
-            {loadingConfig
-              ? <Skeleton className="h-9 w-40" />
-              : (
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="168"
-                    value={demoHours}
-                    onChange={e => setDemoHours(e.target.value)}
-                    className="w-32"
-                  />
-                  <Button
-                    className="bg-primary text-primary-foreground"
-                    disabled={updateConfig.isPending}
-                    onClick={() => updateConfig.mutate({ data: { demoHours: parseInt(demoHours, 10) || 24 } })}
-                  >
-                    Salva
-                  </Button>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Crown className="h-4 w-4 text-amber-500" />
+              Prezzi sblocco (€)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingConfig ? (
+              <Skeleton className="h-9 w-40" />
+            ) : (
+              <div className="flex flex-wrap items-end gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Una chat</label>
+                  <Input type="number" min="0" step="0.01" value={priceSingle} onChange={e => setPriceSingle(e.target.value)} className="w-24" />
                 </div>
-              )
-            }
-            <p className="text-xs text-muted-foreground mt-1">Ogni nuovo utente può attivare la demo una sola volta per questa durata.</p>
-          </div>
-        </CardContent>
-      </Card>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Tutte le chat</label>
+                  <Input type="number" min="0" step="0.01" value={priceAll} onChange={e => setPriceAll(e.target.value)} className="w-24" />
+                </div>
+                <Button className="bg-primary text-primary-foreground" disabled={updateConfig.isPending} onClick={handleSavePrices}>
+                  Salva
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card className="shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Star className="h-4 w-4 text-primary" />
-            Utenti in demo ({loadingUsers ? "..." : demoUsers.length})
-          </CardTitle>
-        </CardHeader>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                <th className="text-left px-4 py-2 font-medium">Utente</th>
-                <th className="text-left px-4 py-2 font-medium hidden sm:table-cell">Area</th>
-                <th className="text-left px-4 py-2 font-medium">Scambi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loadingUsers && <tr><td colSpan={3} className="px-4 py-4"><Skeleton className="h-10 rounded" /></td></tr>}
-              {!loadingUsers && demoUsers.length === 0 && (
-                <tr><td colSpan={3} className="px-4 py-6 text-center text-sm text-muted-foreground">Nessun utente in demo</td></tr>
-              )}
-              {demoUsers.map((u, i) => (
-                <tr key={u.id} className={i < demoUsers.length - 1 ? "border-b border-border/50" : ""}>
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-medium text-foreground">{u.nickname}</p>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <p className="text-sm text-muted-foreground">{u.area}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-sm text-foreground">{u.exchangesCompleted}</p>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      {/* Filtri (non scorrono) */}
+      <div className="shrink-0 flex flex-wrap gap-2">
+        {FILTERS.map(f => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setFilter(f.key)}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+              filter === f.key
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card text-muted-foreground border-border hover:text-foreground"
+            }`}
+          >
+            {f.label} <span className="opacity-70">({counts[f.key]})</span>
+          </button>
+        ))}
+      </div>
 
-      <Card className="shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Crown className="h-4 w-4 text-amber-500" />
-            Utenti premium ({loadingUsers ? "..." : premiumUsers.length})
-          </CardTitle>
-        </CardHeader>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                <th className="text-left px-4 py-2 font-medium">Utente</th>
-                <th className="text-left px-4 py-2 font-medium hidden sm:table-cell">Area</th>
-                <th className="text-left px-4 py-2 font-medium">Scambi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!loadingUsers && premiumUsers.length === 0 && (
-                <tr><td colSpan={3} className="px-4 py-6 text-center text-sm text-muted-foreground">Nessun utente premium</td></tr>
-              )}
-              {premiumUsers.map((u, i) => (
-                <tr key={u.id} className={i < premiumUsers.length - 1 ? "border-b border-border/50" : ""}>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground">{u.nickname}</p>
-                      <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">Premium</Badge>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <p className="text-sm text-muted-foreground">{u.area}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-sm text-foreground">{u.exchangesCompleted}</p>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-      </AdminScrollArea>
+      {/* Tabella unica consolidata (solo questa scorre) */}
+      <AdminTable
+        isLoading={loadingUsers}
+        head={
+          <>
+            <th>Utente</th>
+            <th className="hidden sm:table-cell">CAP</th>
+            <th className="hidden sm:table-cell">Area</th>
+            <th>Stato</th>
+            <th>Azione</th>
+          </>
+        }
+      >
+        {rows.length === 0 && (
+          <tr>
+            <td colSpan={5} className="text-center text-muted-foreground">
+              <div className="py-8">Nessun utente in questo filtro.</div>
+            </td>
+          </tr>
+        )}
+        {rows.map(u => {
+          const access = classifyAccess(u);
+          return (
+            <tr key={u.id} className={u.isBlocked ? "opacity-60" : ""}>
+              <td>
+                <p className="font-medium text-foreground">{u.nickname}</p>
+              </td>
+              <td className="hidden sm:table-cell text-center text-foreground">{u.cap}</td>
+              <td className="hidden sm:table-cell text-center text-muted-foreground">{u.area}</td>
+              <td className="text-center">
+                <ChatAccessBadge access={access} count={u.unlockedChats ?? 0} />
+              </td>
+              <td>
+                <div className="flex justify-center">
+                  {access === "full" ? (
+                    <Button
+                      size="sm" variant="ghost"
+                      className="h-7 px-2 gap-1 text-xs text-destructive hover:text-destructive/80"
+                      disabled={setPremium.isPending}
+                      onClick={() => setPremium.mutate({ userId: u.id, data: { grant: false } })}
+                    >
+                      <Lock className="h-3.5 w-3.5" /> Revoca
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm" variant="ghost"
+                      className="h-7 px-2 gap-1 text-xs text-emerald-600 hover:text-emerald-700"
+                      disabled={setPremium.isPending}
+                      onClick={() => setPremium.mutate({ userId: u.id, data: { grant: true } })}
+                    >
+                      <Unlock className="h-3.5 w-3.5" /> Sblocca tutte
+                    </Button>
+                  )}
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </AdminTable>
     </AdminPage>
   );
 }

@@ -14,7 +14,7 @@ riunisce la specifica funzionale, lo stato di sviluppo e le guide operative.
 | `03_ALBUM_FIGURINE.md` | Gestione album e figurine |
 | `04_MATCHING_SCAMBI.md` | Logica di matching e scambi 1:1 |
 | `05_CHAT_MODERAZIONE.md` | Chat, segnalazioni, moderazione admin |
-| `06_PREMIUM_DEMO.md` | Modalità free, demo 24h, premium |
+| `06_PREMIUM_DEMO.md` | Monetizzazione: sblocco chat a pagamento (no demo, no abbonamenti) |
 | `07_ADMIN_PANNELLO.md` | Pannello admin — sezioni e funzionalità |
 | `08_NAVIGAZIONE_UI.md` | Navigazione utente, layout, stile UI |
 | `09_DATABASE.md` | Schema DB (Drizzle), Supabase, distanza CAP |

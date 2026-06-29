@@ -13,17 +13,8 @@ import {
 } from "@workspace/api-client-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 
-function DemoStatusBadge({ status, expiresAt }: { status: string | null; expiresAt?: string | null }) {
-  if (status === "premium") return <Badge className="bg-amber-500 text-white text-xs font-bold">PREMIUM</Badge>;
-  if (status === "demo_active") {
-    const remaining = expiresAt ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 3600000)) : 0;
-    return <Badge className="bg-primary text-primary-foreground text-xs font-bold">DEMO ({remaining}h)</Badge>;
-  }
-  return <Badge variant="outline" className="text-xs">Free</Badge>;
-}
-
 export function Home() {
-  const { currentUser, premiumDemoEnabled } = useAuth();
+  const { currentUser } = useAuth();
   // Switch hero: "best" = migliori in generale · "nearby" = migliori vicino a me
   const [heroMode, setHeroMode] = useState<"best" | "nearby">("best");
 
@@ -65,9 +56,6 @@ export function Home() {
         <p className="text-sm text-muted-foreground">
           Ciao, <span className="font-semibold text-foreground">{currentUser?.nickname}</span>
         </p>
-        {premiumDemoEnabled && (
-          <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
-        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-4 space-y-3 pb-4 min-h-0">

@@ -55,6 +55,11 @@ export default defineConfig({
       mode: "split",
       clean: true,
       prettier: true,
+      // Il barrel src/index.ts è scritto a mano e ri-esporta SOLO le zod schemas
+      // (./generated/api). NON lasciare che orval rigeneri l'index aggiungendo
+      // anche ./generated/types: i nomi (es. RegisterBody) collidono tra la zod
+      // const e l'interface TS, rompendo il typecheck (TS2308).
+      indexFiles: false,
       override: {
         zod: {
           coerce: {

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { UserProfile, UserProfileDemoStatus, setAuthTokenGetter } from "@workspace/api-client-react";
+import { UserProfile, setAuthTokenGetter } from "@workspace/api-client-react";
 
 const TOKEN_KEY = "sticker_token";
 const USER_KEY = "sticker_user";
@@ -10,9 +10,10 @@ interface AuthContextType {
   isLoading: boolean;
   login: (user: UserProfile, token: string) => void;
   logout: () => void;
-  demoStatus: UserProfileDemoStatus | null;
-  /** false solo se l'admin ha disattivato globalmente il sistema Premium/Demo. */
-  premiumDemoEnabled: boolean;
+  /** Riflette il master switch chat_paywall_enabled. Se false, tutte le chat sono gratis. */
+  paywallEnabled: boolean;
+  /** L'utente ha sbloccato TUTTE le chat (= isPremium). */
+  hasAllChats: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -110,8 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         logout,
-        demoStatus: currentUser?.demoStatus ?? null,
-        premiumDemoEnabled: currentUser?.premiumDemoEnabled !== false,
+        paywallEnabled: currentUser?.paywallEnabled === true,
+        hasAllChats: currentUser?.hasAllChats === true,
       }}
     >
       {children}

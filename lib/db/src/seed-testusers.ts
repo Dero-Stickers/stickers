@@ -86,7 +86,6 @@ function shuffle<T>(arr: T[]): T[] {
   }
   return a;
 }
-const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 async function main() {
   if (process.env.SEED_TESTUSERS !== "1") {
@@ -118,6 +117,9 @@ async function main() {
     let nick = `${name}${city.cc}`;
     while (used.has(nick.toLowerCase())) nick = `${name}${city.cc}${i}`;
     used.add(nick.toLowerCase());
+    // REGOLA NICKNAME (vedi auth.ts): 5-12 caratteri [A-Za-z0-9_-], forma
+    // canonica = prima lettera maiuscola, resto minuscolo. Rispettarla sempre.
+    nick = nick.charAt(0).toUpperCase() + nick.slice(1).toLowerCase();
     const n = String(i + 1).padStart(2, "0");
     const rand = randomBytes(2).toString("hex").toUpperCase();
     userValues.push({

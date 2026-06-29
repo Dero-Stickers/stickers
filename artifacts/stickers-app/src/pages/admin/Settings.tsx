@@ -21,7 +21,6 @@ export function AdminSettings() {
   const { data: settings, isLoading } = useGetAppSettings();
   const [form, setForm] = useState({
     supportEmail: "",
-    demoHours: "",
     privacyPolicy: "",
     terms: "",
     cookies: "",
@@ -31,7 +30,6 @@ export function AdminSettings() {
     if (settings) {
       setForm({
         supportEmail: settings.supportEmail ?? "",
-        demoHours: String(settings.demoHours ?? 24),
         privacyPolicy: settings.privacyPolicyText ?? "",
         terms: settings.termsText ?? "",
         cookies: settings.cookiePolicyText ?? "",
@@ -53,7 +51,6 @@ export function AdminSettings() {
       data: {
         appName: settings?.appName ?? "Stickers Matchbox",
         supportEmail: form.supportEmail,
-        demoHours: parseInt(form.demoHours, 10) || 24,
         privacyPolicyText: form.privacyPolicy,
         termsText: form.terms,
         cookiePolicyText: form.cookies,
@@ -86,17 +83,6 @@ export function AdminSettings() {
               value={form.supportEmail}
               onChange={e => setForm(p => ({ ...p, supportEmail: e.target.value }))}
               placeholder="email@esempio.it"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-foreground block mb-1">Durata demo predefinita (ore)</label>
-            <Input
-              type="number"
-              min="1"
-              max="168"
-              value={form.demoHours}
-              onChange={e => setForm(p => ({ ...p, demoHours: e.target.value }))}
-              className="w-32"
             />
           </div>
         </CardContent>

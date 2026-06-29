@@ -1,76 +1,60 @@
-# Free, Demo e Premium
+# Monetizzazione — Sblocco chat a pagamento
 
-## Versione Free
+> Modello cambiato (giu 2026): **niente più demo a tempo, niente piani/abbonamenti.**
+> L'app è **100% gratis e visibile**; si paga **solo** per **sbloccare la chat** di un
+> match. La vecchia "demo premium 24h" è stata eliminata da tutto lo stack.
 
-Cosa è permesso:
-- Gestione album
-- Gestione figurine (stati)
-- Visualizzazione match
+## Modello
 
-Limitazione principale: impossibile aprire chat di scambio.
+L'intera app è gratuita: album, figurine, match (migliori + vicini), dettaglio
+scambi. L'**unica** cosa a pagamento è **aprire una chat** con un match.
 
-## Versione Premium
+Due acquisti (una tantum, mai ricorrenti):
+- **Una chat** (`single`) — sblocca la conversazione con **quel** match.
+- **Tutte le chat** (`all`) — pagamento unico più alto, sblocca **tutte** le chat a
+  vita (= flag `isPremium` dell'utente).
 
-Sblocca tutto al 100%:
-- Gestione album + figurine
-- Match (migliori + vicini)
-- Dettaglio figurine scambiabili
-- Apertura chat
-- Scrittura messaggi
-- Funzione scambio completa
+Prezzi in **centesimi interi** (mai float), configurabili da admin:
+`price_single_cents` (default 199), `price_all_cents` (default 999), `paywall_currency` (EUR).
 
-## Demo Premium (24h)
+## Interruttore master (admin)
 
-### Quando inizia
-Quando l'utente prova ad aprire una chat per la prima volta.
+Setting `chat_paywall_enabled` in `app_settings` (default **false** = SPENTO):
+- **OFF** → tutte le chat sono **gratis**, l'app funziona come se il paywall non esistesse.
+- **ON** → per aprire una **nuova** chat con un match serve uno sblocco (single o all).
 
-**NON inizia:**
-- alla registrazione
-- all'apertura dell'app
-- visualizzando album
-- visualizzando match
+Esposto nel profilo come `UserProfile.paywallEnabled` e in `AdminUser` come
+`hasAllChats` + `unlockedChats`. Le chat **già aperte** restano sempre accessibili.
 
-### Attivazione
-Messaggio esplicito: l'utente sa che sta attivando la demo.
-Il testo chiarisce che dopo la scadenza sarà necessario il pagamento.
+## Gate e concessioni (solo lato server)
 
-### Durata
-- Default: 24 ore
-- **Configurabile dall'admin** (non hardcoded)
+Logica unica in `api-server/src/lib/billing.ts` (NON duplicare altrove):
+- `isChatPaywallEnabled()` — legge il master switch.
+- `canOpenChat(userId, otherUserId)` — `true` se: paywall OFF **oppure** utente premium
+  (`hasAllChats`) **oppure** esiste una riga `chat_unlocks` per la coppia. Altrimenti `false`.
+- `grantAllChats(userId)` — imposta `isPremium=true` (sblocco totale).
+- `grantChatUnlock(userId, otherUserId, paymentId?)` — inserisce in `chat_unlocks`
+  (idempotente, `onConflictDoNothing`).
 
-### Dopo la scadenza
-Può ancora:
-- Gestire album
-- Cambiare stati figurine
-- Visualizzare album e match
+Il gate è in `routes/chats.ts` (apertura chat): se la chat **non** esiste ancora e
+`canOpenChat` è `false` → **403 PREMIUM_REQUIRED**. Le concessioni avvengono **solo**
+server-side; mai dal frontend.
 
-NON può più:
-- Aprire chat di scambio
-- Usare la funzione scambio
+## Pagamenti reali — DA COLLEGARE (ultimo step, non ancora attivo)
 
-## Anti-abuso Demo
+`routes/billing.ts` → `POST /billing/checkout` è uno **stub inerte**: ritorna
+`{ status: "not_configured" }`, **non addebita nulla**. Da fare alla fine:
+- collegare provider **senza partita IVA** (PayPal o simili — Stripe richiede P.IVA);
+  prima in **modalità test** (pagamenti di prova fatti dall'owner);
+- il checkout crea una riga `payments` (status `pending`) e ritorna l'URL di pagamento;
+- un **webhook** sul pagamento confermato chiama `grantChatUnlock`/`grantAllChats`
+  (idempotenza via `payments.provider_ref`).
 
-- Account nickname + PIN
-- CAP
-- Identificatore anonimo dispositivo/browser
-- Controlli tecnici lato DB
-- Gestione anomalie da admin
+Distribuzione **fuori dagli store** (link Render condiviso): nessuna commissione del 30%.
 
-## Stato Utente
+## Tabelle DB
 
-| Stato | Codice |
-|-------|--------|
-| Free | `free` |
-| Demo attiva | `demo_active` |
-| Demo scaduta | `demo_expired` |
-| Premium | `premium` |
-
-## Pagamenti (solo preparazione, NON implementati)
-
-Struttura dati preparata per:
-- Pagamento una tantum
-- Abbonamento mensile
-- Abbonamento annuale
-- Paywall simulato (bottoni disabilitati o simulati)
-
-La scelta definitiva tra i modelli di pagamento sarà definita in seguito.
+`payments` (audit/incassi) e `chat_unlocks` (sblocchi singoli) — schema in
+`09_DATABASE.md`. Create dalla migrazione additiva `0003_monetization_foundation.sql`
+(già applicata). Il cleanup demo `0004_drop_demo.sql` è **da applicare a mano** (vedi
+`09_DATABASE.md` → divergenza codice/DB).

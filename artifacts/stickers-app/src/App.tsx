@@ -17,7 +17,6 @@ import { Login } from "@/pages/auth/Login";
 import { Recover } from "@/pages/auth/Recover";
 import { Home } from "@/pages/Home";
 import { AlbumList } from "@/pages/album/AlbumList";
-import { DemoExpiredScreen } from "@/pages/DemoExpiredScreen";
 import { LegalPage } from "@/pages/LegalPage";
 
 const importAlbumDetail = () => import("@/pages/album/AlbumDetail");
@@ -97,14 +96,8 @@ function useAuthRedirect(target: string | null) {
   }, [target, setLocation]);
 }
 
-function ProtectedUserRoute({
-  component: Component,
-  requirePremium = false,
-}: {
-  component: React.FC;
-  requirePremium?: boolean;
-}) {
-  const { isAuthenticated, currentUser, premiumDemoEnabled } = useAuth();
+function ProtectedUserRoute({ component: Component }: { component: React.FC }) {
+  const { isAuthenticated, currentUser } = useAuth();
   const redirect = !isAuthenticated
     ? "/login"
     : currentUser?.isAdmin
@@ -114,14 +107,8 @@ function ProtectedUserRoute({
 
   if (redirect) return null;
 
-  if (requirePremium && premiumDemoEnabled && currentUser?.demoStatus === "demo_expired") {
-    return (
-      <MobileLayout>
-        <DemoExpiredScreen />
-      </MobileLayout>
-    );
-  }
-
+  // App 100% gratis e visibile: i match e tutte le sezioni sono sempre
+  // accessibili. Il paywall vive SOLO sull'apertura della chat (lato server).
   return (
     <MobileLayout>
       <Component />
@@ -130,7 +117,7 @@ function ProtectedUserRoute({
 }
 
 function ProtectedChatRoute({ component: Component }: { component: React.FC }) {
-  const { isAuthenticated, currentUser, premiumDemoEnabled } = useAuth();
+  const { isAuthenticated, currentUser } = useAuth();
   const redirect = !isAuthenticated
     ? "/login"
     : currentUser?.isAdmin
@@ -139,14 +126,6 @@ function ProtectedChatRoute({ component: Component }: { component: React.FC }) {
   useAuthRedirect(redirect);
 
   if (redirect) return null;
-
-  if (premiumDemoEnabled && currentUser?.demoStatus === "demo_expired") {
-    return (
-      <MobileLayout>
-        <DemoExpiredScreen />
-      </MobileLayout>
-    );
-  }
 
   return <Component />;
 }
@@ -185,8 +164,8 @@ function Router() {
         <Route path="/" component={() => <ProtectedUserRoute component={Home} />} />
         <Route path="/album" component={() => <ProtectedUserRoute component={AlbumList} />} />
         <Route path="/album/:id" component={() => <ProtectedUserRoute component={AlbumDetail} />} />
-        <Route path="/match" component={() => <ProtectedUserRoute component={MatchList} requirePremium />} />
-        <Route path="/match/:userId" component={() => <ProtectedUserRoute component={MatchDetail} requirePremium />} />
+        <Route path="/match" component={() => <ProtectedUserRoute component={MatchList} />} />
+        <Route path="/match/:userId" component={() => <ProtectedUserRoute component={MatchDetail} />} />
         <Route path="/chat/:chatId" component={() => <ProtectedChatRoute component={ChatRoom} />} />
         <Route path="/profilo" component={() => <ProtectedUserRoute component={Profile} />} />
 

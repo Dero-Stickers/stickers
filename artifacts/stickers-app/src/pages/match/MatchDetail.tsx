@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, MessageSquare, X, Star, ChevronDown } from "lucide-react";
+import { ArrowLeft, MessageSquare, X, Lock, Unlock, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,10 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   useGetMatchDetail,
   useOpenChat,
-  useActivateDemo,
-  getGetDemoStatusQueryKey,
+  useBillingCheckout,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 
 type MatchGroup = { albumId: number; albumTitle: string; stickers: { id: number; number: number }[] };
 
@@ -124,9 +121,7 @@ export function MatchDetail() {
   const { userId } = useParams<{ userId: string }>();
   const matchUserId = parseInt(userId, 10);
   const [, setLocation] = useLocation();
-  const { demoStatus, premiumDemoEnabled } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const [showPaywall, setShowPaywall] = useState(false);
 
@@ -138,7 +133,9 @@ export function MatchDetail() {
         setLocation(`/chat/${chat.id}`);
       },
       onError: (err: any) => {
-        if (err?.error === "PREMIUM_REQUIRED" || err?.statusCode === 403) {
+        // Il backend risponde 403 PREMIUM_REQUIRED se la chat è a pagamento e
+        // non ancora sbloccata → mostra il paywall (due opzioni di acquisto).
+        if (err?.status === 403 || err?.data?.error === "PREMIUM_REQUIRED") {
           setShowPaywall(true);
         } else {
           toast({ title: "Errore", description: "Impossibile aprire la chat", variant: "destructive" });
@@ -147,24 +144,33 @@ export function MatchDetail() {
     },
   });
 
-  const activateDemo = useActivateDemo({
+  // Checkout: per ora è uno STUB lato server ({ status: 'not_configured' }).
+  // NON sblocca nulla dal client: mostra solo un avviso "pagamenti in arrivo".
+  const checkout = useBillingCheckout({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetDemoStatusQueryKey() });
-        toast({ title: "Demo attivata!", description: "Hai 24 ore per usare tutte le funzioni premium" });
+        toast({
+          title: "Pagamenti in arrivo",
+          description: "Lo sblocco delle chat non è ancora attivo. Torna presto!",
+        });
         setShowPaywall(false);
-        openChat.mutate({ data: { otherUserId: matchUserId } });
+      },
+      onError: () => {
+        toast({ title: "Errore", description: "Riprova tra poco", variant: "destructive" });
       },
     },
   });
 
-  const canChat = !premiumDemoEnabled || demoStatus === "premium" || demoStatus === "demo_active";
-
   const handleOpenChat = () => {
-    if (canChat) {
+    // chatUnlocked = true se l'utente può già aprire la chat (premium/all,
+    // sblocco coppia, oppure paywall spento). Se non sbloccata, tentiamo
+    // comunque l'apertura: il gate vero è lato server (403 → paywall).
+    if (detail?.chatUnlocked) {
       openChat.mutate({ data: { otherUserId: matchUserId } });
-    } else {
+    } else if (detail?.chatUnlocked === false) {
       setShowPaywall(true);
+    } else {
+      openChat.mutate({ data: { otherUserId: matchUserId } });
     }
   };
 
@@ -239,39 +245,40 @@ export function MatchDetail() {
       <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Funzione Premium</DialogTitle>
+            <DialogTitle>Sblocca la chat</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {demoStatus === "free" ? (
-              <>
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
-                  <Star className="h-8 w-8 text-accent mx-auto mb-2" />
-                  <p className="font-semibold text-foreground">Prova premium gratis per 24 ore</p>
-                  <p className="text-sm text-muted-foreground mt-1">Attiva la demo e scrivi subito a {detail.nickname}</p>
-                </div>
-                <Button
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold"
-                  disabled={activateDemo.isPending}
-                  onClick={() => activateDemo.mutate()}
-                >
-                  Attiva demo gratuita
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground text-center">
-                  La tua demo è scaduta. Passa a Premium per continuare a scambiare.
-                </p>
-                <div className="space-y-2">
-                  <Button disabled className="w-full" variant="outline">Mensile — €2,99/mese</Button>
-                  <Button disabled className="w-full" variant="outline">Annuale — €19,99/anno</Button>
-                  <Button disabled className="w-full" variant="outline">Una tantum — €34,99</Button>
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  Pagamenti in arrivo. Contatta <a href="mailto:stickersmatchbox@hotmail.com" className="text-primary underline">stickersmatchbox@hotmail.com</a>
-                </p>
-              </>
-            )}
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
+              <Lock className="h-8 w-8 text-accent mx-auto mb-2" />
+              <p className="font-semibold text-foreground">Scrivi a {detail.nickname}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                L'app è gratis: paghi solo per aprire la chat di un match.
+              </p>
+            </div>
+            <div className="space-y-2">
+              {/* Sblocca SOLO questa chat (acquisto 'single', coppia con questo utente) */}
+              <Button
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold gap-2"
+                disabled={checkout.isPending}
+                onClick={() => checkout.mutate({ data: { kind: "single", otherUserId: matchUserId } })}
+              >
+                <MessageSquare className="h-4 w-4" />
+                Sblocca questa chat
+              </Button>
+              {/* Sblocca TUTTE le chat (acquisto 'all') */}
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                disabled={checkout.isPending}
+                onClick={() => checkout.mutate({ data: { kind: "all" } })}
+              >
+                <Unlock className="h-4 w-4" />
+                Sblocca tutte le chat
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Pagamenti in arrivo. Per info: <a href="mailto:stickersmatchbox@hotmail.com" className="text-primary underline">stickersmatchbox@hotmail.com</a>
+            </p>
             <Button variant="ghost" className="w-full" onClick={() => setShowPaywall(false)}>
               <X className="h-4 w-4 mr-2" />
               Chiudi

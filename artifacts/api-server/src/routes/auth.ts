@@ -16,8 +16,8 @@ import {
   resetRateLimit,
 } from "../lib/auth";
 import { z } from "zod";
-import { requireAuth, getSession } from "../middlewares/auth";
-import { isPremiumDemoEnabled } from "../lib/appState";
+import { requireAuth } from "../middlewares/auth";
+import { isChatPaywallEnabled } from "../lib/billing";
 import { invalidateUser } from "../lib/matchCache";
 
 const PIN_REGEX = /^\d{4,6}$/;
@@ -122,30 +122,21 @@ function generateRecoveryCode(): string {
   return `STICK-${segment()}-${segment()}-${segment()}`;
 }
 
-function computeDemoStatus(user: {
-  isPremium: boolean;
-  demoStartedAt: Date | null;
-  demoExpiresAt: Date | null;
-}): "free" | "demo_active" | "demo_expired" | "premium" {
-  if (user.isPremium) return "premium";
-  if (!user.demoStartedAt) return "free";
-  if (user.demoExpiresAt && new Date() > user.demoExpiresAt) return "demo_expired";
-  return "demo_active";
-}
-
 async function userPayload(user: any) {
-  const premiumDemoEnabled = await isPremiumDemoEnabled();
+  // Nuovo modello "paga per sbloccare la chat":
+  //  - paywallEnabled riflette il master switch app_settings chat_paywall_enabled;
+  //  - hasAllChats = isPremium (l'utente ha sbloccato TUTTE le chat).
+  const paywallEnabled = await isChatPaywallEnabled();
   return {
     id: user.id,
     nickname: user.nickname,
     cap: user.cap,
     area: user.area,
     isPremium: user.isPremium,
-    demoStatus: computeDemoStatus(user),
-    demoExpiresAt: user.demoExpiresAt?.toISOString() ?? null,
+    paywallEnabled,
+    hasAllChats: user.isPremium,
     exchangesCompleted: user.exchangesCompleted,
     isAdmin: user.isAdmin,
-    premiumDemoEnabled,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -401,71 +392,6 @@ const getRecoveryCode: RequestHandler = async (req, res) => {
   }
 };
 
-// POST /api/demo/activate
-export const activateDemo: RequestHandler = async (req, res) => {
-  try {
-    const session = getSession(req, res);
-    if (!session) return;
-
-    const { db } = await import("@workspace/db");
-    const { usersTable, appSettingsTable } = await import("@workspace/db");
-    const { eq } = await import("drizzle-orm");
-
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-    if (!user) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
-
-    if (user.isPremium || user.demoStartedAt) {
-      res.json({
-        demoStatus: computeDemoStatus(user),
-        demoStartedAt: user.demoStartedAt?.toISOString() ?? null,
-        demoExpiresAt: user.demoExpiresAt?.toISOString() ?? null,
-        isPremium: user.isPremium,
-      });
-      return;
-    }
-
-    const [setting] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "demo_hours")).limit(1);
-    const hours = setting ? parseInt(setting.value, 10) : 24;
-    const now = new Date();
-    const expires = new Date(now.getTime() + hours * 3600 * 1000);
-
-    await db.update(usersTable).set({ demoStartedAt: now, demoExpiresAt: expires }).where(eq(usersTable.id, user.id));
-
-    res.json({
-      demoStatus: "demo_active",
-      demoStartedAt: now.toISOString(),
-      demoExpiresAt: expires.toISOString(),
-      isPremium: false,
-    });
-  } catch (err) {
-    req.log?.error(err);
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
-// GET /api/demo/status
-export const getDemoStatus: RequestHandler = async (req, res) => {
-  try {
-    const session = getSession(req, res);
-    if (!session) return;
-
-    const { db } = await import("@workspace/db");
-    const { usersTable } = await import("@workspace/db");
-    const { eq } = await import("drizzle-orm");
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-    if (!user) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
-
-    res.json({
-      demoStatus: computeDemoStatus(user),
-      demoStartedAt: user.demoStartedAt?.toISOString() ?? null,
-      demoExpiresAt: user.demoExpiresAt?.toISOString() ?? null,
-      isPremium: user.isPremium,
-    });
-  } catch {
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
 // GET /api/auth/me/export — GDPR Art.20 portabilità dati
 const exportMe: RequestHandler = async (req, res) => {
   try {
@@ -498,8 +424,6 @@ const exportMe: RequestHandler = async (req, res) => {
         area: user.area,
         securityQuestion: user.securityQuestion,
         isPremium: user.isPremium,
-        demoStartedAt: user.demoStartedAt,
-        demoExpiresAt: user.demoExpiresAt,
         exchangesCompleted: user.exchangesCompleted,
         createdAt: user.createdAt,
       },

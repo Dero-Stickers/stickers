@@ -18,7 +18,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     { icon: Users, label: "Utenti", path: "/admin/utenti" },
     { icon: MessageSquare, label: "Messaggi", path: "/admin/messaggi" },
     { icon: AlertTriangle, label: "Segnalazioni", path: "/admin/segnalazioni" },
-    { icon: Crown, label: "Premium/Demo", path: "/admin/premium" },
+    { icon: Crown, label: "Monetizzazione", path: "/admin/premium" },
     { icon: Settings, label: "Impostazioni", path: "/admin/impostazioni" },
   ];
 

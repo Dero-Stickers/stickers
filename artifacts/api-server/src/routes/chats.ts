@@ -8,20 +8,6 @@ const router = Router();
 
 const requireAuth = async (req: any, res: any) => getSession(req, res);
 
-async function requirePremium(userId: number): Promise<boolean> {
-  // Sistema Premium/Demo disattivato globalmente: accesso pieno per tutti.
-  const { isPremiumDemoEnabled } = await import("../lib/appState");
-  if (!(await isPremiumDemoEnabled())) return true;
-
-  const { db } = await import("@workspace/db");
-  const { usersTable } = await import("@workspace/db");
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  if (!user) return false;
-  if (user.isPremium) return true;
-  if (user.demoStartedAt && user.demoExpiresAt && new Date() <= user.demoExpiresAt) return true;
-  return false;
-}
-
 // GET /api/chats — single aggregated query: chat + other user + last message
 // + unread count, no per-row N+1. Backed by indexes:
 //   chats_user1_idx / chats_user2_idx → WHERE filter
@@ -100,11 +86,25 @@ const openChat: RequestHandler = async (req, res) => {
     }
     const otherUserIdNum = Number(otherUserId);
 
-    const canChat = await requirePremium(session.userId);
-    if (!canChat) { res.status(403).json({ error: "PREMIUM_REQUIRED", message: "Funzione premium richiesta" }); return; }
-
     const { db } = await import("@workspace/db");
     const { chatsTable, usersTable } = await import("@workspace/db");
+
+    // Gate paywall: serve il permesso solo per APRIRE una NUOVA chat. Se la
+    // conversazione esiste già (qualcuno ha pagato/aperto), l'altro risponde
+    // sempre gratis → controlla il permesso solo quando non c'è ancora chat.
+    const [already] = await db.select({ id: chatsTable.id }).from(chatsTable).where(
+      or(
+        and(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, otherUserIdNum)),
+        and(eq(chatsTable.user1Id, otherUserIdNum), eq(chatsTable.user2Id, session.userId)),
+      ),
+    ).limit(1);
+    if (!already) {
+      const { canOpenChat } = await import("../lib/billing");
+      if (!(await canOpenChat(session.userId, otherUserIdNum))) {
+        res.status(403).json({ error: "PREMIUM_REQUIRED", message: "Sblocca la chat per scrivere a questo utente" });
+        return;
+      }
+    }
 
     // Race-proof open-or-create: serialize concurrent calls for the same
     // unordered pair via a transaction-scoped advisory lock keyed on the

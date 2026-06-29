@@ -17,7 +17,7 @@ async function requireAdmin(req: any, res: any): Promise<{ userId: number; isAdm
   return session;
 }
 
-const SETTING_KEYS = ["support_email", "demo_hours", "privacy_policy", "terms", "cookie_policy", "app_name"];
+const SETTING_KEYS = ["support_email", "privacy_policy", "terms", "cookie_policy", "app_name"];
 
 // GET /api/settings
 const getSettings: RequestHandler = async (req, res) => {
@@ -31,7 +31,6 @@ const getSettings: RequestHandler = async (req, res) => {
     res.json({
       supportEmail: map["support_email"] ?? "stickersmatchbox@hotmail.com",
       appName: map["app_name"] ?? "STICKERs matchbox",
-      demoHours: parseInt(map["demo_hours"] ?? "24", 10),
       privacyPolicyText: map["privacy_policy"] ?? "",
       termsText: map["terms"] ?? "",
       cookiePolicyText: map["cookie_policy"] ?? "",
@@ -53,7 +52,6 @@ const updateSettings: RequestHandler = async (req, res) => {
     const updates: { key: string; value: string }[] = [];
     if (req.body.supportEmail !== undefined) updates.push({ key: "support_email", value: req.body.supportEmail });
     if (req.body.appName !== undefined) updates.push({ key: "app_name", value: req.body.appName });
-    if (req.body.demoHours !== undefined) updates.push({ key: "demo_hours", value: String(req.body.demoHours) });
     if (req.body.privacyPolicyText !== undefined) updates.push({ key: "privacy_policy", value: req.body.privacyPolicyText });
     if (req.body.termsText !== undefined) updates.push({ key: "terms", value: req.body.termsText });
     if (req.body.cookiePolicyText !== undefined) updates.push({ key: "cookie_policy", value: req.body.cookiePolicyText });

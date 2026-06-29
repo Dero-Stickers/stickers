@@ -17,9 +17,7 @@ export const usersTable = pgTable("users", {
   securityQuestion: text("security_question").notNull(),
   securityAnswerHash: text("security_answer_hash").notNull(),
   recoveryCode: text("recovery_code").notNull().unique(),
-  isPremium: boolean("is_premium").default(false),
-  demoStartedAt: timestamp("demo_started_at"),
-  demoExpiresAt: timestamp("demo_expires_at"),
+  isPremium: boolean("is_premium").default(false), // = sblocco "tutte le chat"
   isBlocked: boolean("is_blocked").default(false),
   isAdmin: boolean("is_admin").default(false),
   exchangesCompleted: integer("exchanges_completed").default(0),
@@ -110,6 +108,31 @@ export const appSettingsTable = pgTable("app_settings", {
   description: text("description"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// payments — audit/incassi sblocco chat. Importi in CENTESIMI interi (mai float).
+export const paymentsTable = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => usersTable.id).notNull(),
+  provider: text("provider").notNull(),          // 'stripe' | 'paypal'
+  kind: text("kind").notNull(),                   // 'single' | 'all'
+  otherUserId: integer("other_user_id").references(() => usersTable.id), // solo 'single'
+  amountCents: integer("amount_cents").notNull(),
+  currency: text("currency").notNull().default("EUR"),
+  status: text("status").notNull().default("pending"), // pending|paid|failed|refunded
+  providerRef: text("provider_ref"),              // id transazione provider (idempotenza)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// chat_unlocks — sblocco di UNA chat (coppia utente→match). Righe create SOLO
+// dal webhook del pagamento confermato. unique(user_id, other_user_id).
+export const chatUnlocksTable = pgTable("chat_unlocks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => usersTable.id).notNull(),
+  otherUserId: integer("other_user_id").references(() => usersTable.id).notNull(),
+  paymentId: integer("payment_id").references(() => paymentsTable.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 ```
 
 ## SQL Script Supabase
@@ -122,7 +145,21 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - **Produzione**: PostgreSQL su Supabase, connessione via `SUPABASE_DATABASE_URL`
   (SSL abilitato). Il client (`lib/db/src/index.ts`) imposta `search_path=public`.
 - **Push schema**: `cd lib/db && pnpm push-force` (Drizzle Kit).
-- Stato attuale: 11 tabelle con indici integri.
+- Stato attuale: 13 tabelle con indici integri (+`payments`, +`chat_unlocks`).
+
+### Monetizzazione — migrazioni e divergenza codice/DB (giu 2026)
+
+- **`0003_monetization_foundation.sql`** — **APPLICATA**. Additiva: crea `payments` e
+  `chat_unlocks` (RLS attiva, deny-by-default), inserisce le impostazioni paywall
+  (`chat_paywall_enabled=false`, `price_single_cents=199`, `price_all_cents=999`,
+  `paywall_currency=EUR`). Non tocca dati esistenti. Modello in `06_PREMIUM_DEMO.md`.
+- **`0004_drop_demo.sql`** — **NON ancora applicata** (è **distruttiva**: `DROP COLUMN`).
+  Rimuove `users.demo_started_at`, `users.demo_expires_at` e le impostazioni
+  `demo_hours` / `premium_demo_enabled`.
+  ⚠️ **Divergenza nota**: lo schema Drizzle e il codice **non** usano più le colonne demo,
+  ma il **DB reale le ha ancora** (colonne nullable, ignorate → nessuna rottura a runtime).
+  Da applicare a mano su Supabase quando confermato; finché non lo è, la divergenza è
+  innocua. Lo schema parziale Drizzle **non** viene mai pushato, quindi nessun rischio.
 
 ### Seed e ripristino album "default" (sicuro)
 
@@ -147,7 +184,7 @@ ripristinabili in qualsiasi momento, senza re-scraping.
 
 ### Sicurezza accessi (RLS)
 
-- **RLS attiva su tutte le 11 tabelle** (`ENABLE ROW LEVEL SECURITY`), **deny-by-default**: nessuna policy → i ruoli `anon`/`authenticated` (chiave pubblica nel frontend) **non possono leggere/scrivere** via PostgREST `/rest/v1`.
+- **RLS attiva su tutte le 13 tabelle** (`ENABLE ROW LEVEL SECURITY`), **deny-by-default**: nessuna policy → i ruoli `anon`/`authenticated` (chiave pubblica nel frontend) **non possono leggere/scrivere** via PostgREST `/rest/v1`.
 - Il backend si connette come ruolo **`postgres`** (proprietario delle tabelle, `rolbypassrls=true`): **bypassa RLS**, quindi tutte le API continuano a funzionare. Tutti i dati passano **solo** dal backend.
 - La chiave anon nel frontend serve **esclusivamente** al Realtime **broadcast** della chat (non legge tabelle): RLS non lo tocca.
 - ⚠️ Se in futuro un client dovesse leggere tabelle **direttamente** con la chiave anon, servirà aggiungere **policy esplicite** (oggi non necessarie).

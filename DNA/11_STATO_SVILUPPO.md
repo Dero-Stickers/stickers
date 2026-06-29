@@ -1,6 +1,6 @@
 # DNA — Stato Sviluppo
 
-Aggiornato: 26 giugno 2026
+Aggiornato: 29 giugno 2026
 
 > Fotografia dello **stato attuale** (non un changelog). Tenere aggiornato questo
 > file a fine sessione. I dati nel DB sono di **test/finti**.
@@ -16,12 +16,12 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - Monorepo: `artifacts/{stickers-app, api-server}` + `lib/{api-spec, api-client-react, api-zod, db}`
 - Deploy unico su Render (`stickers-matchbox`), **autoDeploy** su push `main`
   - build via **corepack** (`corepack pnpm …`), start con **node diretto** sul bundle
-- Supabase operativo: **11 tabelle**, indici integri. Dati **reali** caricati: **23 album Calciatori (2003-04→2025-26), 17.581 figurine** (import Panini via Playwright; pipeline in [[import-panini-collections]]); utenti: Dero975 (test) + admin. **Nessuna copertina/artwork** (feature rimossa, scelta legale — vedi `09_DATABASE.md`). DB a Londra (UK), hosting Render a Francoforte (UE)
+- Supabase operativo: **13 tabelle**, indici integri. Dati **reali** caricati: **23 album Calciatori (2003-04→2025-26), 17.581 figurine** (import Panini via Playwright; pipeline in [[import-panini-collections]]); utenti: Dero975 (test) + admin. **Nessuna copertina/artwork** (feature rimossa, scelta legale — vedi `09_DATABASE.md`). DB a Londra (UK), hosting Render a Francoforte (UE)
 - Keep-alive Supabase: `SELECT 1` periodico + GitHub Action `keepalive.yml`
 - **CI GitHub Actions** (`ci.yml`): typecheck + build su ogni push/PR su `main` (nessun deploy, zero costi)
 
 ### Backend (api-server)
-- Express 5 + pino. Route: auth, albums, stickers, matches, chats, admin, settings, demo, error-reports, health
+- Express 5 + pino. Route: auth, albums, stickers, matches, chats, admin, settings, billing, error-reports, health (route `demo` **rimossa**)
 - **Auth sicura**: token firmato HMAC-SHA256 (`v1.<payload>.<firma>`, TTL 30 giorni); PIN e risposte di sicurezza con **scrypt** asincrono (salt per utente)
 - **Identità slegata dal CAP** (giu 2026): nickname **unico globale** (`users_nickname_lower_unique`), login **solo nickname + PIN**, recupero per **solo nickname**, CAP modificabile (`PATCH /me/location`, ricalcolo area via `deriveArea`). Migrazione `lib/db/migrations/0001_nickname_global_unique.sql`. Email di recupero = prossimo passo (serve servizio email). Vedi `02_UTENTI_AUTENTICAZIONE.md`
 - **Rate limiting** in-memory: login 8/5min, recover 5/15min (429 + Retry-After)
@@ -32,9 +32,9 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ### Frontend (stickers-app)
 - **User**: login/registrazione (nickname, PIN, CAP, domanda sicurezza), codice recupero, Home, Album, Match (migliori/vicini + slider distanza), Chat (**realtime** via Supabase Broadcast, fallback polling adattivo 8s/30s, + segnalazione), Profilo
-- **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Premium/Demo, Impostazioni, Segnalazioni errori
+- **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Monetizzazione, Impostazioni, Segnalazioni errori
 - **Layout admin consolidato** (`components/admin/AdminPage` + `AdminTable` + `AdminScrollArea`): testata di pagina fissa, **solo il contenuto/lista scorre**; tabelle con intestazioni centrate e sticky, griglia verticale, righe a colorazione alternata, densità compatta. Album: azione unica **Gestisci** (rinomina + figurine), stato **On Line/Off Line**, colonna **Utenti** (`userCount` lato admin), ordine stabile per id (Off Line non sposta la riga). Vedi `07_ADMIN_PANNELLO.md`.
-- **Interruttore globale Premium/Demo** (admin → Premium/Demo): setting `premium_demo_enabled` in `app_settings`. Se OFF, l'app funziona come se Premium/Demo non esistesse (accesso pieno, niente blocco chat/scadenza demo/etichette). Flag esposto nel profilo (`UserProfile.premiumDemoEnabled`); gate backend in `chats.requirePremium`. Default ON.
+- **Monetizzazione — sblocco chat a pagamento** (giu 2026, sostituisce la demo a tempo): app 100% gratis, si paga **solo** per aprire la chat di un match. Due acquisti una tantum: **una chat** (`single`) o **tutte le chat** (`all` = `isPremium`). Interruttore master `chat_paywall_enabled` in `app_settings` (default **OFF** = tutte le chat gratis). Logica unica server-side in `api-server/src/lib/billing.ts` (`canOpenChat`/`grantChatUnlock`/`grantAllChats`); gate in `routes/chats.ts` (403 `PREMIUM_REQUIRED` solo per chat **nuova**). Tabelle `payments` + `chat_unlocks`. Pagamento reale **non ancora collegato** (`routes/billing.ts` → checkout stub inerte). Admin **Monetizzazione**: master switch + prezzi + tabella unica consolidata con filtri. Vedi `06_PREMIUM_DEMO.md`.
 - Lazy loading route (bundle iniziale ~152 KB gzip), ErrorBoundary
 - PWA mobile-first: manifest, icone, splash, safe-area (icone PNG ottimizzate con pngquant, ~−50% peso senza perdita visibile; logo `.webp`). **Service worker** via `vite-plugin-pwa` (registerType autoUpdate): precache dell'app-shell, **mai** in cache le `/api`, font **Inter self-hosted** via `@fontsource/inter` (nessuna connessione a Google → conforme GDPR), nel precache → app **installabile e con caricamento offline**. Manifest e `index.html` con `theme-color` uniformato (`#9DC9E8`).
 - **Head bar unificata** (`components/layout/AppHeader`): solo logo, sfondo a sfumatura orizzontale, usata da Home/Album/Match/**Dettaglio match**/Profilo; testi sotto la barra. Su queste pagine **scorre solo il contenuto**, testate fisse. Note legali (Privacy + Termini) consolidate in un'unica voce Profilo → rotta `/legal/note`.
@@ -63,7 +63,8 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 ### Media priorità
 - [ ] **Scaling oltre ~2.000 utenti (free)**: leva #1 = non salvare le righe "mancante" (mancante = album posseduto + nessuna riga) → 2-3× tetto storage; poi modello bitmap per album per i 50k. Intervento profondo, vedi `16_STRESS_TEST_AUDIT.md`
 - [ ] Notifiche push
-- [ ] Pagamenti reali (modello da scegliere — struttura dati già pronta)
+- [ ] **Collegare il pagamento reale** (ultimo step monetizzazione): provider **senza P.IVA** (PayPal o simili — Stripe richiede P.IVA), prima in **test**. Il checkout (`routes/billing.ts`, oggi stub inerte) deve creare la riga `payments` pending + URL pagamento; un **webhook** sul pagamento confermato chiama `grantChatUnlock`/`grantAllChats`. Schema e gate già pronti. Vedi `06_PREMIUM_DEMO.md`
+- [ ] Applicare la migrazione `0004_drop_demo.sql` (DROP colonne/impostazioni demo — distruttiva, a mano, da confermare)
 - [ ] Landing page pubblica con dominio
 
 ### Bassa priorità
@@ -71,7 +72,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - [ ] Statistiche admin avanzate (grafici), export dati GDPR, multilingua (post-v1)
 
 ## Decisioni aperte
-- Modello di pagamento (una tantum / mensile / annuale)
+- ~~Modello di pagamento~~ **DECISO** (giu 2026): solo sblocco chat a pagamento, una tantum (single/all), niente abbonamenti. Resta da scegliere il **provider** (PayPal/simili senza P.IVA)
 - Soglia di affidabilità utente (quanti scambi = affidabile?)
 - Gestione minori (serve verifica età?)
 
@@ -94,9 +95,9 @@ Range per `number` sull'album 11: A=1-150, B=151-300, C=301-450, D=451-624.
 
 | id | Nickname | CAP | Stato | Collezione album 11 | Note |
 |----|----------|-----|-------|---------------------|------|
-| 7  | marcobo  | 40139 | premium | doppia C, manc. A, poss. B+D | +album 12 completo |
-| 8  | giuliabo | 40136 | demo attiva | doppia A+B, manc. C+D | +album 12 vuoto |
-| 9  | sarabo   | 40138 | demo scaduta | doppia C, manc. A, poss. B+D | match forte con Dero975 |
+| 7  | marcobo  | 40139 | premium (tutte chat) | doppia C, manc. A, poss. B+D | +album 12 completo |
+| 8  | giuliabo | 40136 | free | doppia A+B, manc. C+D | +album 12 vuoto |
+| 9  | sarabo   | 40138 | free | doppia C, manc. A, poss. B+D | match forte con Dero975 |
 | 10 | lucabo   | 40141 | free | a11: manc. A, resto poss. · a12: doppia 1-150 | **CROSS-ALBUM 1 album/direzione**: dà nel 2024-25, riceve nel 2025-26 (150 scambi) |
 | 11 | annamo   | 41100 | free (Modena) | doppia C, manc. A, poss. B+D | lontano: nei "migliori", non "vicini" |
 | 12 | blockme  | 40140 | **bloccato** | doppia C, manc. A | escluso dai match |
@@ -107,7 +108,7 @@ il dettaglio match incrociato con più gruppi-album sia in "Tu dai" sia in "Tu r
 | id | Nickname | CAP | Stato | Match con Dero975 |
 |----|----------|-----|-------|-------------------|
 | 14 | robybo  | 40137 | free | **DAI 350** (a11:150 + a13:200) · **RICEVI 650** (a11:150 + a12:300 + a13:200) → **350 scambi** |
-| 15 | elenamo | 40142 | premium | **DAI 350** (a13:200 + a14:150) · **RICEVI 835** (a12:336 + a13:200 + a14:299) → **350 scambi** |
+| 15 | elenamo | 40142 | premium (tutte chat) | **DAI 350** (a13:200 + a14:150) · **RICEVI 835** (a12:336 + a13:200 + a14:299) → **350 scambi** |
 
 Collezioni multi-album (per `number`):
 - **Dero975** a13: doppia 1-200, manc. 201-400, poss. resto · a14: doppia 1-150, manc. 401-699, poss. resto.

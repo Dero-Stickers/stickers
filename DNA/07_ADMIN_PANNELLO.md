@@ -3,7 +3,7 @@
 ## Caratteristiche Generali
 
 - Solo per il proprietario del progetto
-- NON soggetto a limitazioni demo
+- NON soggetto al paywall chat
 - Desktop priority, usabile anche da mobile
 - Sidebar fissa a sinistra (desktop)
 - Badge numero in cima al pannello
@@ -28,7 +28,10 @@ TUTTE le sezioni admin per coerenza:
   compatta**. Le pagine passano solo gli `<th>` (`head`) e le righe; lo stile è
   centralizzato nel componente.
 - `AdminScrollArea` — area scrollabile per pagine non tabellari (form/card:
-  Dashboard, Premium/Demo, Impostazioni); solo questo blocco scorre.
+  Dashboard, Impostazioni); solo questo blocco scorre.
+- **Stato chat utente** (`components/admin/ChatAccessBadge`): badge + logica di
+  classificazione UNICA condivisa tra **Utenti** e **Monetizzazione** — `Free` (verde),
+  `Alcune · N` (azzurro), `Tutte le chat` (giallo). Non duplicare la logica altrove.
 
 ## Sezioni Admin
 
@@ -36,7 +39,7 @@ TUTTE le sezioni admin per coerenza:
 - Numero utenti
 - Numero album
 - Numero chat/messaggi
-- Utenti in demo/premium
+- Utenti con sblocco chat (singole / totale)
 - Stato generale app
 
 ### Album
@@ -56,8 +59,9 @@ TUTTE le sezioni admin per coerenza:
 - Modifica singole figurine (numero/nome/descrizione)
 
 ### Utenti
-- Visualizza lista utenti
-- Colonne: nickname, CAP/area, stato demo/premium, num. album, blocco
+- Visualizza lista utenti (ordinabile per nickname A↔Z)
+- Colonne: **Utente · CAP · Area · Stato · Scambi · Azioni** (CAP e città in colonne
+  distinte). "Stato" = badge chat condiviso (Free / Alcune · N / Tutte le chat)
 - Blocca/sblocca utente
 
 ### Messaggi
@@ -66,22 +70,22 @@ TUTTE le sezioni admin per coerenza:
 - Chiudi chat problematica
 - Supporto moderazione
 
-### Premium / Demo
-- Utenti in demo
-- Utenti premium
-- Configura durata demo
-- Controlla demo scadute
-- Prepara piani futuri
+### Monetizzazione
+- **Interruttore master** chat a pagamento (`chat_paywall_enabled`): Attiva/Disattiva
+  tutta la sezione. OFF = tutte le chat gratis
+- **Prezzi sblocco** in €: una chat (`price_single_cents`) e tutte le chat (`price_all_cents`)
+- **Tabella unica consolidata** di tutti gli utenti con **filtri**: Tutti / Senza sblocco /
+  Alcune chat / Tutte le chat (con conteggi). Stesso `AdminTable` di Album/Utenti
+- Azione per riga: **Sblocca tutte** (grant manuale = premium) / **Revoca**
+- Modello e gate in `06_PREMIUM_DEMO.md`
 
 ### Impostazioni
 - Email di supporto (default: stickersmatchbox@hotmail.com)
-- Durata demo
 - Testi base app
 - Impostazioni privacy/supporto
-- Preparazione pagamento futuro
 
 ## Autenticazione Admin
 
 - Login separato con credenziali admin
-- Nessuna limitazione demo
+- Nessuna limitazione di accesso (paywall chat non applicato all'admin)
 - Accesso a dati sensibili (chat, utenti, segnalazioni)

@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ReportBody {
-  reason: string;
-  reportedUserId: number;
+export interface SetPremiumBody {
+  /** true = sblocca tutte le chat (isPremium); false = revoca. */
+  grant: boolean;
 }

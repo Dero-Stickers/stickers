@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { Shield, ShieldOff, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -11,15 +10,9 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
+import { ChatAccessBadge, classifyAccess } from "@/components/admin/ChatAccessBadge";
 
 type SortDir = "asc" | "desc";
-
-function DemoStatusBadge({ status }: { status: string | null | undefined }) {
-  if (status === "premium") return <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">Premium</Badge>;
-  if (status === "demo_active") return <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">Demo</Badge>;
-  if (status === "demo_expired") return <Badge className="bg-orange-100 text-orange-700 border-0 text-xs">Demo scad.</Badge>;
-  return <Badge variant="outline" className="text-xs">Free</Badge>;
-}
 
 export function AdminUsers() {
   const { toast } = useToast();
@@ -78,7 +71,8 @@ export function AdminUsers() {
                 </span>
               </button>
             </th>
-            <th className="hidden sm:table-cell">CAP / Area</th>
+            <th className="hidden sm:table-cell">CAP</th>
+            <th className="hidden sm:table-cell">Area</th>
             <th>Stato</th>
             <th className="hidden md:table-cell">Scambi</th>
             <th>Azioni</th>
@@ -87,7 +81,7 @@ export function AdminUsers() {
       >
         {regularUsers.length === 0 && (
           <tr>
-            <td colSpan={5} className="text-center text-muted-foreground">
+            <td colSpan={6} className="text-center text-muted-foreground">
               <div className="py-8">Nessun utente da mostrare.</div>
             </td>
           </tr>
@@ -97,22 +91,13 @@ export function AdminUsers() {
           return (
             <tr key={user.id} className={user.isBlocked ? "opacity-60" : ""}>
               <td>
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary uppercase shrink-0">
-                    {nick.slice(0, 2)}
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">{nick}</p>
-                    {user.isBlocked && <p className="text-xs text-destructive">Bloccato</p>}
-                  </div>
-                </div>
+                <p className="font-medium text-foreground">{nick}</p>
+                {user.isBlocked && <p className="text-xs text-destructive">Bloccato</p>}
               </td>
-              <td className="hidden sm:table-cell">
-                <p className="text-foreground">{user.cap}</p>
-                <p className="text-xs text-muted-foreground">{user.area}</p>
-              </td>
+              <td className="hidden sm:table-cell text-center text-foreground">{user.cap}</td>
+              <td className="hidden sm:table-cell text-center text-muted-foreground">{user.area}</td>
               <td className="text-center">
-                <DemoStatusBadge status={user.demoStatus} />
+                <ChatAccessBadge access={classifyAccess(user)} count={user.unlockedChats} />
               </td>
               <td className="hidden md:table-cell text-center text-foreground">{user.exchangesCompleted}</td>
               <td>

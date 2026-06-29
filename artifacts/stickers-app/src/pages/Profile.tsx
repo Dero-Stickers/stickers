@@ -4,7 +4,6 @@ import { formatNickname } from "@/lib/utils";
 import { MapPin, Key, HelpCircle, Mail, LogOut, Shield, Trash2, UserCog, ArrowRight, Check, X, Lock, AlertTriangle, Send } from "lucide-react";
 import { reportError } from "@/lib/report-error";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,18 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
 
-function DemoStatusBadge({ status, expiresAt }: { status: string | null; expiresAt?: string | null }) {
-  if (status === "premium") return <Badge className="bg-amber-500 text-white">PREMIUM</Badge>;
-  if (status === "demo_active") {
-    const remaining = expiresAt ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 3600000)) : 0;
-    return <Badge className="bg-primary text-primary-foreground">DEMO ATTIVA — {remaining}h rimaste</Badge>;
-  }
-  if (status === "demo_expired") return <Badge variant="destructive">DEMO SCADUTA</Badge>;
-  return <Badge variant="outline">Free</Badge>;
-}
-
 export function Profile() {
-  const { currentUser, logout, login, premiumDemoEnabled } = useAuth();
+  const { currentUser, logout, login } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -201,11 +190,6 @@ export function Profile() {
           <MapPin className="h-3.5 w-3.5" />
           {currentUser?.area ?? "—"} — CAP {currentUser?.cap}
         </p>
-        {premiumDemoEnabled && (
-          <div className="mt-2">
-            <DemoStatusBadge status={currentUser?.demoStatus ?? null} expiresAt={currentUser?.demoExpiresAt} />
-          </div>
-        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 min-h-0">
