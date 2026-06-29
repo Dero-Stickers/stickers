@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatNickname } from "@/lib/utils";
-import { MapPin, Key, HelpCircle, LogOut, Shield, Trash2, UserCog, ArrowRight, Check, X, Lock, AlertTriangle, Send, ChevronRight } from "lucide-react";
+import { MapPin, Key, HelpCircle, LogOut, Shield, Trash2, Check, AlertTriangle, Send, ChevronRight } from "lucide-react";
 import { reportError } from "@/lib/report-error";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,34 +55,6 @@ export function Profile() {
   const handleLogout = () => {
     logout();
     setLocation("/login");
-  };
-
-  const [showNickDialog, setShowNickDialog] = useState(false);
-  const [nickPin, setNickPin] = useState("");
-  const [newNickname, setNewNickname] = useState("");
-  const [nickError, setNickError] = useState<string | null>(null);
-  const [nickLoading, setNickLoading] = useState(false);
-
-  const handleChangeNickname = async () => {
-    setNickError(null); setNickLoading(true);
-    try {
-      const token = localStorage.getItem("sticker_token");
-      const res = await fetch("/api/auth/me/nickname", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ pin: nickPin, newNickname: newNickname.trim() }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) { setNickError((j as any)?.message ?? "Errore aggiornamento"); return; }
-      if (token && j.user) login(j.user, token);
-      toast({ title: "Nickname aggiornato", description: `Ora ti chiami ${j.user?.nickname ?? newNickname}.` });
-      setShowNickDialog(false);
-      setNickPin(""); setNewNickname("");
-    } catch { setNickError("Errore di connessione."); }
-    finally { setNickLoading(false); }
   };
 
   // Cambio zona di ricerca (CAP). Il CAP è solo geografia: nessun PIN richiesto.
@@ -209,15 +180,6 @@ export function Profile() {
 
               <button
                 className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
-                onClick={() => { setShowNickDialog(true); setNickPin(""); setNewNickname(currentUser?.nickname ?? ""); setNickError(null); }}
-              >
-                <UserCog className="h-5 w-5 text-primary flex-shrink-0" />
-                <p className="flex-1 font-medium text-sm text-foreground">Cambia nickname</p>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
-              </button>
-
-              <button
-                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
                 onClick={() => { setShowLocDialog(true); setNewCap(currentUser?.cap ?? ""); setLocError(null); }}
               >
                 <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
@@ -297,104 +259,6 @@ export function Profile() {
           )}
         </div>
       </div>
-
-      <Dialog open={showNickDialog} onOpenChange={setShowNickDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader className="text-center sm:text-left">
-            <DialogTitle className="text-lg">Cambia nome utente</DialogTitle>
-            <p className="text-sm text-muted-foreground pt-1">
-              Scegli il nuovo nome con cui ti vedranno gli altri.
-            </p>
-          </DialogHeader>
-
-          <div className="space-y-5 pt-2">
-            {/* Anteprima visiva: vecchio → nuovo */}
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <span className="px-2.5 py-1 rounded-md bg-muted text-muted-foreground font-medium">
-                {currentUser?.nickname ?? "—"}
-              </span>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              <span className={`px-2.5 py-1 rounded-md font-medium ${newNickname ? "bg-primary/10 text-primary" : "bg-muted/40 text-muted-foreground/50"}`}>
-                {newNickname || "Nuovonome"}
-              </span>
-            </div>
-
-            {/* Campo nuovo nome */}
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <UserCog className="h-3.5 w-3.5 text-primary" />
-                Nuovo nome utente
-              </label>
-              <Input
-                placeholder="es. Mario99"
-                value={newNickname}
-                onChange={e => setNewNickname(formatNickname(e.target.value))}
-                maxLength={12}
-                spellCheck={false}
-                className="h-11"
-              />
-              {/* Checklist regole — feedback live */}
-              {(() => {
-                const lenOk = newNickname.length >= 5 && newNickname.length <= 12;
-                const charOk = newNickname.length === 0 || /^[A-Za-z0-9_-]+$/.test(newNickname);
-                const Item = ({ ok, text }: { ok: boolean; text: string }) => (
-                  <li className={`flex items-center gap-1.5 ${ok ? "text-green-600" : "text-muted-foreground"}`}>
-                    {ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5 opacity-50" />}
-                    <span>{text}</span>
-                  </li>
-                );
-                return (
-                  <ul className="text-[11px] space-y-0.5 pl-0.5">
-                    <Item ok={lenOk} text="Da 5 a 12 caratteri" />
-                    <Item ok={charOk} text="Lettere, numeri, trattino o underscore" />
-                    <Item ok={true} text="Iniziale maiuscola automatica" />
-                  </ul>
-                );
-              })()}
-            </div>
-
-            {/* Campo PIN — spiegato */}
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-primary" />
-                Conferma con il tuo PIN
-              </label>
-              <Input
-                type="password"
-                inputMode="numeric"
-                placeholder="••••"
-                maxLength={6}
-                value={nickPin}
-                onChange={e => setNickPin(e.target.value.replace(/\D/g, ""))}
-                autoComplete="current-password"
-                className="h-11 tracking-[0.4em] text-center"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Serve solo a confermare che sei tu.
-              </p>
-            </div>
-
-            {nickError && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
-                {nickError}
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-1">
-              <Button variant="outline" className="flex-1 h-11" onClick={() => setShowNickDialog(false)} disabled={nickLoading}>
-                Annulla
-              </Button>
-              <Button
-                className="flex-1 h-11 bg-primary text-primary-foreground font-semibold"
-                onClick={handleChangeNickname}
-                disabled={nickLoading || !/^[A-Za-z0-9_-]{5,12}$/.test(newNickname) || nickPin.length < 4}
-              >
-                {nickLoading ? "Aggiorno…" : "Conferma"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showLocDialog} onOpenChange={setShowLocDialog}>
         <DialogContent className="max-w-sm">

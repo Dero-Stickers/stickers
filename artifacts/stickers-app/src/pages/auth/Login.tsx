@@ -12,10 +12,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppLogo } from "@/components/brand/AppLogo";
 import type { AuthResponse } from "@workspace/api-client-react";
 
-// Allineato alla forma canonica del backend: iniziale maiuscola ammessa,
-// 5-12 caratteri tra lettere, numeri, trattino e underscore.
+// Allineato alla regola del backend: 5-12 caratteri (lettere, numeri, - o _),
+// ALFANUMERICO MISTO obbligatorio (almeno una lettera E almeno un numero).
 const NICKNAME_REGEX = /^[A-Za-z0-9_-]{5,12}$/;
-const NICKNAME_MSG = "Il nickname deve avere 5-12 caratteri: lettere, numeri, - o _";
+const NICKNAME_MSG =
+  "Il nickname deve avere 5-12 caratteri con almeno una lettera e un numero (ammessi - e _)";
 
 const loginSchema = z.object({
   nickname: z.string().min(1, "Inserisci il nickname"),
@@ -23,7 +24,10 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  nickname: z.string().regex(NICKNAME_REGEX, NICKNAME_MSG),
+  nickname: z
+    .string()
+    .regex(NICKNAME_REGEX, NICKNAME_MSG)
+    .refine((s) => /[A-Za-z]/.test(s) && /[0-9]/.test(s), NICKNAME_MSG),
   pin: z.string().min(4, "Il PIN deve avere almeno 4 cifre").max(6),
   cap: z.string().length(5, "Il CAP deve essere di 5 cifre"),
   securityQuestion: z.string().min(5, "Domanda di sicurezza obbligatoria"),
@@ -159,7 +163,7 @@ export function Login() {
                     <FormLabel>Nickname</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={isRegister ? "5-12 caratteri (lettere, numeri, - _)" : "es. Nickname"}
+                        placeholder={isRegister ? "es. Marco95 (lettere + numeri)" : "es. Marco95"}
                         autoComplete="username"
                         spellCheck={false}
                         inputMode="text"
@@ -173,6 +177,12 @@ export function Login() {
                       />
                     </FormControl>
                     <FormMessage />
+                    {isRegister && (
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        È il nome con cui ti vedranno gli altri. Scegli bene:{" "}
+                        <span className="font-medium text-foreground">non potrà essere modificato</span>.
+                      </p>
+                    )}
                   </FormItem>
                 )}
               />

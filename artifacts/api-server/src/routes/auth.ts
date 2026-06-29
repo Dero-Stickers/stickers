@@ -24,9 +24,15 @@ const PIN_REGEX = /^\d{4,6}$/;
 
 // Nickname: 5–12 caratteri (lettere, numeri, - o _), normalizzato a forma
 // canonica "iniziale maiuscola + resto minuscolo" (es. "marco-bo" -> "Marco-bo").
+// DEVE essere ALFANUMERICO MISTO: almeno una lettera E almeno un numero (no solo
+// lettere, no solo numeri) — più robusto e meno confondibile.
 // Login e recupero confrontano sempre in lower(), quindi l'accesso resta
 // case-insensitive anche se l'utente digita maiuscole/minuscole diverse.
 const NICKNAME_REGEX = /^[A-Za-z0-9_-]{5,12}$/;
+const NICKNAME_HAS_LETTER = /[A-Za-z]/;
+const NICKNAME_HAS_DIGIT = /[0-9]/;
+const NICKNAME_MSG =
+  "Il nickname deve avere 5-12 caratteri con almeno una lettera e un numero (ammessi - e _)";
 const canonicalNickname = (s: string): string => {
   const t = s.trim();
   return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
@@ -34,14 +40,8 @@ const canonicalNickname = (s: string): string => {
 const NicknameSchema = z
   .string()
   .trim()
-  .pipe(
-    z
-      .string()
-      .regex(
-        NICKNAME_REGEX,
-        "Il nickname deve avere 5-12 caratteri: lettere, numeri, - o _",
-      ),
-  )
+  .pipe(z.string().regex(NICKNAME_REGEX, NICKNAME_MSG))
+  .refine((s) => NICKNAME_HAS_LETTER.test(s) && NICKNAME_HAS_DIGIT.test(s), NICKNAME_MSG)
   .transform(canonicalNickname);
 
 // For LOGIN we still need to accept legacy mixed-case nicknames stored in
@@ -63,11 +63,6 @@ const RecoverAnswerBody = z.object({
   nickname: LoginNicknameSchema,
   securityAnswer: z.string().min(1),
   newPin: z.string().regex(PIN_REGEX, "Il PIN deve essere di 4-6 cifre numeriche"),
-});
-
-const ChangeNicknameBody = z.object({
-  pin: z.string().regex(PIN_REGEX, "PIN non valido"),
-  newNickname: NicknameSchema,
 });
 
 // Cambio zona di ricerca: il CAP è ora solo geografia, modificabile a piacere
@@ -96,9 +91,6 @@ const AREA_PREFIX: Record<string, string> = {
 function deriveArea(cap: string): string {
   return AREA_MAP[cap] || AREA_PREFIX[cap.slice(0, 2)] || `Area ${cap.slice(0, 2)}XXX`;
 }
-
-const NICKNAME_CHANGE_MAX_ATTEMPTS = 5;
-const NICKNAME_CHANGE_WINDOW_MS = 15 * 60 * 1000;
 
 const LOGIN_MAX_ATTEMPTS = 8;
 const LOGIN_WINDOW_MS = 5 * 60 * 1000;
@@ -601,83 +593,10 @@ const recoverAnswer: RequestHandler = async (req, res) => {
   }
 };
 
-// PATCH /api/auth/me/nickname — change nickname (auth required, PIN re-confirmation, rate-limited)
-const changeNickname: RequestHandler = async (req, res) => {
-  try {
-    const body = ChangeNicknameBody.parse(req.body);
-    const session = req.session!;
-
-    const ip = clientIp(req);
-    const rateKey = `nickname-change:${session.userId}:${ip}`;
-    const limit = checkRateLimit(rateKey, NICKNAME_CHANGE_MAX_ATTEMPTS, NICKNAME_CHANGE_WINDOW_MS);
-    if (!limit.allowed) {
-      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
-      res.setHeader("Retry-After", String(retryAfter));
-      res.status(429).json({
-        error: "RATE_LIMITED",
-        message: `Troppi tentativi. Riprova fra ${retryAfter}s.`,
-      });
-      return;
-    }
-
-    const { db } = await import("@workspace/db");
-    const { usersTable } = await import("@workspace/db");
-    const { eq, and, ne, sql } = await import("drizzle-orm");
-
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-    if (!user) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
-
-    if (!(await verifyPin(body.pin, user.pinHash))) {
-      res.status(401).json({ error: "WRONG_PIN", message: "PIN non corretto" });
-      return;
-    }
-
-    resetRateLimit(rateKey);
-
-    // body.newNickname è già normalizzato (forma canonica) da NicknameSchema.
-    if (body.newNickname.toLowerCase() === user.nickname.toLowerCase()) {
-      res.json({ user: await userPayload(user) });
-      return;
-    }
-
-    const conflict = await db
-      .select({ id: usersTable.id })
-      .from(usersTable)
-      .where(and(
-        sql`lower(${usersTable.nickname}) = ${body.newNickname.toLowerCase()}`,
-        ne(usersTable.id, user.id),
-      ))
-      .limit(1);
-
-    if (conflict.length > 0) {
-      res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
-      return;
-    }
-
-    try {
-      const [updated] = await db
-        .update(usersTable)
-        .set({ nickname: body.newNickname })
-        .where(eq(usersTable.id, user.id))
-        .returning();
-      res.json({ user: await userPayload(updated) });
-    } catch (e: any) {
-      // Race-safe: catch unique-violation from DB-level lower(nickname) index
-      if (e?.code === "23505") {
-        res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
-        return;
-      }
-      throw e;
-    }
-  } catch (err) {
-    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
-      res.status(400).json({ error: "VALIDATION_ERROR", message: "Dati non validi" });
-      return;
-    }
-    req.log?.error(err);
-    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
-  }
-};
+// NOTA: la modifica del nickname è stata RIMOSSA di proposito (giu 2026).
+// Il nickname è l'identità pubblica permanente: si sceglie una volta in
+// registrazione (con conferma) e non è più modificabile — app più pulita e
+// sicura (niente impersonificazione di nomi appena liberati). Vedi DNA 18.
 
 // PATCH /api/auth/me/location — cambia il CAP = zona di ricerca match.
 // Il CAP è solo geografia (non più identità): basta l'autenticazione, niente PIN.
@@ -721,7 +640,6 @@ router.post("/recover/answer", recoverAnswer);
 router.get("/me", requireAuth, getMe);
 router.get("/me/export", requireAuth, exportMe);
 router.delete("/me", requireAuth, deleteMe);
-router.patch("/me/nickname", requireAuth, changeNickname);
 router.patch("/me/location", requireAuth, changeLocation);
 router.post("/recovery-code", requireAuth, getRecoveryCode);
 

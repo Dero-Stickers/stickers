@@ -4,7 +4,7 @@
 
 | Campo | Note |
 |-------|------|
-| Nickname | **5-12 caratteri**; ammessi lettere, numeri, `-`, `_`. Normalizzato a forma **canonica** (iniziale maiuscola, resto minuscolo, es. `marco-bo` → `Marco-bo`). **Unico in tutta l'app** (case-insensitive) — indice DB `users_nickname_lower_unique` su `lower(nickname)`. Regola in `auth.ts` (`NICKNAME_REGEX` + `canonicalNickname`); lato frontend `formatNickname` in `lib/utils.ts` formatta mentre si digita. **Login/recupero case-insensitive** (confronto `lower()`). |
+| Nickname | **5-12 caratteri**; ammessi lettere, numeri, `-`, `_`, **ALFANUMERICO MISTO obbligatorio** (almeno una lettera E almeno un numero — no solo lettere, no solo numeri). Normalizzato a forma **canonica** (iniziale maiuscola, resto minuscolo, es. `marco95` → `Marco95`). **Unico in tutta l'app** (case-insensitive) — indice DB `users_nickname_lower_unique` su `lower(nickname)`. Regola in `auth.ts` (`NICKNAME_REGEX` + refine lettera/numero + `canonicalNickname`), identica lato frontend. **NON modificabile** dopo la creazione (scelto una volta in registrazione con conferma "non modificabile"): identità pubblica permanente → endpoint `PATCH /me/nickname` e voce Profilo "Cambia nickname" **rimossi** (giu 2026). **Login/recupero case-insensitive** (confronto `lower()`). |
 | PIN personale | 4-6 cifre |
 | CAP/Codice Postale | **Solo geografia**, non fa parte dell'identità: serve per i match per vicinanza ed è **liberamente modificabile** dal Profilo (vedi sotto). |
 | Domanda di sicurezza | Obbligatoria, per recupero emergenza |
