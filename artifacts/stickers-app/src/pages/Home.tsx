@@ -48,7 +48,7 @@ export function Home() {
         ? b.totalExchanges - a.totalExchanges
         : (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity),
     )
-    .slice(0, 3), [matches, heroMode]);
+    .slice(0, 4), [matches, heroMode]);
   const totalExchanges = useMemo(() => matches.reduce((s, m) => s + m.totalExchanges, 0), [matches]);
 
   return (
@@ -181,6 +181,18 @@ export function Home() {
                       <span className="text-sm font-bold shrink-0">{m.totalExchanges} scambi</span>
                     </div>
                   </Link>
+                ))}
+                {/* Slot vuoti per mantenere l'altezza fissa della card (sempre 4 righe):
+                    il testo compare solo nel primo slot, gli altri restano spazi neutri. */}
+                {Array.from({ length: Math.max(0, 4 - topMatches.length) }).map((_, i) => (
+                  <div
+                    key={`placeholder-${i}`}
+                    className="flex items-center justify-center bg-white/5 rounded-lg px-3 py-1.5 border border-dashed border-white/15"
+                  >
+                    {i === 0 && (
+                      <span className="text-xs text-white/50">Nessun altro match disponibile</span>
+                    )}
+                  </div>
                 ))}
               </div>
 

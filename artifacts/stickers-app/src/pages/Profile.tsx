@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatNickname } from "@/lib/utils";
-import { MapPin, Key, HelpCircle, Mail, LogOut, Shield, Trash2, UserCog, ArrowRight, Check, X, Lock, AlertTriangle, Send } from "lucide-react";
+import { MapPin, Key, HelpCircle, LogOut, Shield, Trash2, UserCog, ArrowRight, Check, X, Lock, AlertTriangle, Send, ChevronRight } from "lucide-react";
 import { reportError } from "@/lib/report-error";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -192,111 +192,110 @@ export function Profile() {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 min-h-0">
-        <Card className="shadow-sm">
-          <CardContent className="p-0 divide-y divide-border">
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-              onClick={() => { setShowRecoveryDialog(true); setRecoveryCode(null); setPin(""); setPinError(false); }}
-            >
-              <Key className="h-5 w-5 text-primary flex-shrink-0" />
-              <div>
-                <p className="font-medium text-sm text-foreground">Il mio codice di recupero</p>
-                <p className="text-xs text-muted-foreground">Usa questo codice se perdi l'accesso all'account</p>
-              </div>
-            </button>
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-6 min-h-0">
+        {/* Sezione: Account */}
+        <section className="space-y-1.5">
+          <h2 className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account</h2>
+          <Card className="shadow-sm">
+            <CardContent className="p-0 divide-y divide-border">
+              <button
+                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
+                onClick={() => { setShowRecoveryDialog(true); setRecoveryCode(null); setPin(""); setPinError(false); }}
+              >
+                <Key className="h-5 w-5 text-primary flex-shrink-0" />
+                <p className="flex-1 font-medium text-sm text-foreground">Il mio codice di recupero</p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
+              </button>
 
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-              onClick={() => { setShowNickDialog(true); setNickPin(""); setNewNickname(currentUser?.nickname ?? ""); setNickError(null); }}
-            >
-              <UserCog className="h-5 w-5 text-primary flex-shrink-0" />
-              <div>
-                <p className="font-medium text-sm text-foreground">Cambia nickname</p>
-                <p className="text-xs text-muted-foreground">Devi confermare con il PIN</p>
-              </div>
-            </button>
+              <button
+                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
+                onClick={() => { setShowNickDialog(true); setNickPin(""); setNewNickname(currentUser?.nickname ?? ""); setNickError(null); }}
+              >
+                <UserCog className="h-5 w-5 text-primary flex-shrink-0" />
+                <p className="flex-1 font-medium text-sm text-foreground">Cambia nickname</p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
+              </button>
 
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-              onClick={() => { setShowLocDialog(true); setNewCap(currentUser?.cap ?? ""); setLocError(null); }}
-            >
-              <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
-              <div>
-                <p className="font-medium text-sm text-foreground">Cambia zona</p>
-                <p className="text-xs text-muted-foreground">Cerca scambi in un'altra città (CAP)</p>
-              </div>
-            </button>
+              <button
+                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
+                onClick={() => { setShowLocDialog(true); setNewCap(currentUser?.cap ?? ""); setLocError(null); }}
+              >
+                <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
+                <p className="flex-1 font-medium text-sm text-foreground">Cambia zona</p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
+              </button>
+            </CardContent>
+          </Card>
+        </section>
 
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-              onClick={() => toast({ title: "Guida", description: "La guida sarà disponibile a breve." })}
-            >
-              <HelpCircle className="h-5 w-5 text-primary flex-shrink-0" />
-              <div>
-                <p className="font-medium text-sm text-foreground">Guida Stickers</p>
-                <p className="text-xs text-muted-foreground">Come usare l'app e trovare match</p>
-              </div>
-            </button>
+        {/* Sezione: Aiuto e supporto */}
+        <section className="space-y-1.5">
+          <h2 className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Aiuto e supporto</h2>
+          <Card className="shadow-sm">
+            <CardContent className="p-0 divide-y divide-border">
+              <button
+                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
+                onClick={() => toast({ title: "Guida", description: "La guida sarà disponibile a breve." })}
+              >
+                <HelpCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                <p className="flex-1 font-medium text-sm text-foreground">Guida Stickers</p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
+              </button>
 
-            <button
-              onClick={() => {
-                setShowReportDialog(true);
-                setReportNote("");
-                setReportPage(window.location.pathname);
-                setReportSent(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-            >
-              <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
-              <div>
-                <p className="font-medium text-sm text-foreground">Segnala un problema</p>
-                <p className="text-xs text-muted-foreground">Qualcosa non funziona? Faccelo sapere</p>
-              </div>
-            </button>
+              <button
+                onClick={() => {
+                  setShowReportDialog(true);
+                  setReportNote("");
+                  setReportPage(window.location.pathname);
+                  setReportSent(false);
+                }}
+                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
+              >
+                <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                <p className="flex-1 font-medium text-sm text-foreground">Segnala un problema</p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
+              </button>
+            </CardContent>
+          </Card>
+        </section>
 
-            <a
-              href="mailto:stickersmatchbox@hotmail.com"
-              className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50 transition-colors"
-            >
-              <Mail className="h-5 w-5 text-primary flex-shrink-0" />
-              <div>
-                <p className="font-medium text-sm text-foreground">Contatta il supporto</p>
-                <p className="text-xs text-muted-foreground">stickersmatchbox@hotmail.com</p>
-              </div>
-            </a>
+        {/* Sezione: Informazioni */}
+        <section className="space-y-1.5">
+          <h2 className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Informazioni</h2>
+          <Card className="shadow-sm">
+            <CardContent className="p-0 divide-y divide-border">
+              <button
+                onClick={() => setLocation("/legal/note")}
+                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
+              >
+                <Shield className="h-5 w-5 text-primary flex-shrink-0" />
+                <p className="flex-1 font-medium text-sm text-foreground">Privacy e Termini d'uso</p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
+              </button>
+            </CardContent>
+          </Card>
+        </section>
 
-            <button
-              onClick={() => setLocation("/legal/note")}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-            >
-              <Shield className="h-5 w-5 text-primary flex-shrink-0" />
-              <div>
-                <p className="font-medium text-sm text-foreground">Privacy e Termini d'uso</p>
-                <p className="text-xs text-muted-foreground">Informativa privacy e condizioni d'uso</p>
-              </div>
-            </button>
-          </CardContent>
-        </Card>
-
-        <Button
-          variant="outline"
-          className="w-full h-11 text-destructive border-destructive/30 hover:bg-destructive/10 gap-2"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4" />
-          Esci dall'account
-        </Button>
-
-        {!currentUser?.isAdmin && (
-          <button
-            onClick={() => { setShowDeleteDialog(true); setDeletePin(""); setDeleteConfirm(""); setDeleteError(null); }}
-            className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground/70 hover:text-destructive transition-colors py-2"
+        <div className="space-y-2">
+          <Button
+            variant="outline"
+            className="w-full h-11 rounded-xl bg-white text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive font-semibold gap-2"
+            onClick={handleLogout}
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            Elimina definitivamente l'account
-          </button>
-        )}
+            <LogOut className="h-4 w-4" />
+            Esci dall'account
+          </Button>
+
+          {!currentUser?.isAdmin && (
+            <Button
+              onClick={() => { setShowDeleteDialog(true); setDeletePin(""); setDeleteConfirm(""); setDeleteError(null); }}
+              className="w-full h-11 rounded-xl bg-destructive text-white border border-destructive hover:bg-destructive/90 font-semibold gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Elimina account
+            </Button>
+          )}
+        </div>
       </div>
 
       <Dialog open={showNickDialog} onOpenChange={setShowNickDialog}>

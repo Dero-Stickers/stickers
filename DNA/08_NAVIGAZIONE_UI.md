@@ -14,7 +14,7 @@
 Tre blocchi essenziali (no dati duplicati dalle altre sezioni, no dettaglio singolo album):
 - **La tua collezione** (sintesi aggregata su TUTTI gli album): % completamento complessiva + barra; possedute (verde `chart-3`) / doppie (rosso `destructive`) / mancanti (giallo `accent`); n° album.
 - **Ti aspettano** (azioni richieste): solo se ci sono chat con messaggi non letti → riga per chat verso `/chat/{id}`.
-- **Migliori match** (hero, driver di conversione): card a gradiente `primary→chart-1`; switch in alto a destra ⚡ migliori in generale / 📍 migliori vicini (icone, no testo); sottotitolo per-filtro "N scambi · M utenti" (⚡) o "…utenti vicini" (📍); 3 anteprime ordinate per il filtro attivo, ognuna → `/match/{userId}`; CTA "Trova match" → `/match`.
+- **Migliori match** (hero, driver di conversione): card a gradiente `primary→chart-1`; switch in alto a destra ⚡ migliori in generale / 📍 migliori vicini (icone, no testo); sottotitolo per-filtro "N scambi · M utenti" (⚡) o "…utenti vicini" (📍); **4 anteprime** ordinate per il filtro attivo, ognuna → `/match/{userId}`; CTA "Trova match" → `/match`. Se i match sono < 4, gli slot mancanti restano come **righe-placeholder tratteggiate** (altezza card fissa); il primo slot vuoto mostra "Nessun altro match disponibile". Con 0 match la card hero è sostituita dalla card neutra "Nessun match ancora".
 - Stato demo/premium (badge accanto al saluto).
 
 ## Sezione Album
@@ -35,14 +35,12 @@ Tre blocchi essenziali (no dati duplicati dalle altre sezioni, no dettaglio sing
 
 ## Sezione Profilo
 
-- Nickname
-- CAP
-- Area generica
-- Stato demo/premium
-- Codice di recupero (protetto da PIN)
-- Guida onboarding riapribile
-- Email di supporto
-- Logout
+Testata: nickname + area/CAP. Voci raggruppate in **sezioni con titoletto** (stile impostazioni), ogni riga con icona + titolo (no sottotitoli) + freccia `›`:
+- **Account**: codice di recupero (protetto da PIN), cambia nickname (PIN), cambia zona (CAP)
+- **Aiuto e supporto**: Guida Stickers, Segnala un problema
+- **Informazioni**: Privacy e Termini d'uso → `/legal/note`
+
+In fondo due pulsanti speculari, vicini, `rounded-xl`: **Esci dall'account** (bianco, bordo+testo rossi) e **Elimina account** (rosso pieno, testo bianco; nascosto agli admin; apre dialog PIN+conferma).
 
 ## Onboarding (primo accesso)
 

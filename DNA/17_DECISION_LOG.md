@@ -7,6 +7,12 @@
 
 ## 2026-06
 
+- **Home/Profilo più standard (UI)** — Home: "Migliori match" mostra **4** anteprime (3 erano poche); a
+  meno di 4 match gli slot mancanti restano placeholder tratteggiati per **altezza card fissa**. Profilo:
+  voci consolidate in 3 sezioni con titoletto (Account / Aiuto e supporto / Informazioni), sottotitoli
+  rimossi, freccia `›` per riga; **"Contatta il supporto" rimosso** (ridondante con "Segnala un problema");
+  due pulsanti finali speculari e `rounded-xl` (Esci = bianco/rosso, Elimina = rosso pieno). Solo frontend,
+  nessun impatto DB/API. Vedi `08_NAVIGAZIONE_UI.md`.
 - **Fluidità render (no nuove dipendenze, layout invariato)** — il rallentamento al
   "popolamento" era lato React, non DB (query figurine ~12ms, indici ok). Fix: cella griglia
   in `StickerCell` (`React.memo`) + callback stabili → al tap si ri-renderizza solo la cella
