@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -33,20 +33,14 @@ import {
 import type { UserSticker } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { BulkStateDialog, type BulkState } from "@/components/album/BulkStateDialog";
+import { StickerCell, stateColors, type StickerState } from "@/components/album/StickerCell";
 
-type StickerState = "mancante" | "posseduta" | "doppia";
 type FilterType = "tutte" | "mancanti" | "possedute" | "doppie";
 
 const NEXT_STATE: Record<StickerState, StickerState> = {
   mancante: "posseduta",
   posseduta: "doppia",
   doppia: "mancante",
-};
-
-const stateColors: Record<StickerState, string> = {
-  mancante: "bg-gray-100 text-gray-400 border border-gray-200",
-  posseduta: "bg-green-100 text-green-700 border border-green-200",
-  doppia: "bg-red-100 text-red-600 border border-red-200",
 };
 
 export function AlbumDetail() {
@@ -125,15 +119,20 @@ export function AlbumDetail() {
     },
   });
 
-  const tapSticker = (s: UserSticker) => {
-    const nextState = NEXT_STATE[s.state as StickerState ?? "mancante"];
-    updateState.mutate({ albumId, stickerId: s.stickerId, data: { state: nextState } });
-  };
+  // Callback STABILI (useCallback): permettono a StickerCell (memo) di NON
+  // ri-renderizzare le celle non cambiate. `mutate` di react-query è stabile.
+  const { mutate: mutateStickerState } = updateState;
+  const tapSticker = useCallback((s: UserSticker) => {
+    const nextState = NEXT_STATE[(s.state ?? "mancante") as StickerState];
+    mutateStickerState({ albumId, stickerId: s.stickerId, data: { state: nextState } });
+  }, [albumId, mutateStickerState]);
 
-  const handlePointerDown = (s: UserSticker) => {
+  const handlePointerDown = useCallback((s: UserSticker) => {
     longPressTimer.current = setTimeout(() => setSelectedSticker(s), 500);
-  };
-  const handlePointerUp = () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); };
+  }, []);
+  const handlePointerUp = useCallback(() => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }, []);
 
   // Chip stato: tenere premuto apre la conferma "imposta tutte a questo stato".
   // Il tap normale resta il cambio filtro.
@@ -147,13 +146,22 @@ export function AlbumDetail() {
     setFilter(key);
   };
 
-  const owned = stickers?.filter(s => s.state === "posseduta").length ?? 0;
-  const duplicates = stickers?.filter(s => s.state === "doppia").length ?? 0;
-  const total = stickers?.length ?? 0;
-  const missing = Math.max(0, total - owned - duplicates);
-  const pct = total > 0 ? Math.round(((owned + duplicates) / total) * 100) : 0;
+  // Conteggi memoizzati: ricalcolati solo quando cambiano le figurine, non a
+  // ogni render (prima erano 3 filter su ~700 elementi per render).
+  const { owned, duplicates, total, missing, pct } = useMemo(() => {
+    const list = stickers ?? [];
+    const owned = list.filter(s => s.state === "posseduta").length;
+    const duplicates = list.filter(s => s.state === "doppia").length;
+    const total = list.length;
+    const missing = Math.max(0, total - owned - duplicates);
+    const pct = total > 0 ? Math.round(((owned + duplicates) / total) * 100) : 0;
+    return { owned, duplicates, total, missing, pct };
+  }, [stickers]);
 
-  const filteredStickers = (stickers ?? [])
+  // Lista filtrata memoizzata: filter+sort su ~700-900 elementi solo quando
+  // cambiano figurine o filtro (prima a ogni render). `.filter` crea un nuovo
+  // array, quindi `.sort` non muta la cache di react-query.
+  const filteredStickers = useMemo(() => (stickers ?? [])
     .filter(s => {
       if (filter === "tutte") return true;
       // "Mancanti" = tutto ciò che non è posseduta né doppia → coincide sempre
@@ -165,7 +173,7 @@ export function AlbumDetail() {
     })
     // Ordine stabile per numero: la griglia non dipende dall'ordine del backend
     // né si riordina quando una figurina cambia stato.
-    .sort((a, b) => a.number - b.number);
+    .sort((a, b) => a.number - b.number), [stickers, filter]);
 
   // bulkState = stato applicato col long-press. "Tutte" non ha azione (solo filtro).
   const filterOptions: { key: FilterType; label: string; bulkState?: BulkState }[] = [
@@ -251,21 +259,15 @@ export function AlbumDetail() {
           </div>
         )}
         <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12">
-          {filteredStickers.map(s => {
-            const st = (s.state ?? "mancante") as StickerState;
-            return (
-              <button
-                key={s.stickerId}
-                className={`cv-cell aspect-square rounded-md flex items-center justify-center text-xs font-bold select-none transition-transform active:scale-95 ${stateColors[st]}`}
-                onClick={() => tapSticker(s)}
-                onPointerDown={() => handlePointerDown(s)}
-                onPointerUp={handlePointerUp}
-                onPointerLeave={handlePointerUp}
-              >
-                {s.code || s.number}
-              </button>
-            );
-          })}
+          {filteredStickers.map(s => (
+            <StickerCell
+              key={s.stickerId}
+              sticker={s}
+              onTap={tapSticker}
+              onPressStart={handlePointerDown}
+              onPressEnd={handlePointerUp}
+            />
+          ))}
         </div>
 
         <div className="pt-6 pb-2">

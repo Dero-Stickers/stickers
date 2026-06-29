@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "wouter";
 import { MapPin, Trophy, ChevronRight, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,14 +33,17 @@ export function MatchList() {
   );
 
   const isLoading = activeTab === "best" ? loadingBest : loadingNearby;
-  const matches =
+  // Memoizzato: lo spread+sort dei vicini viene rifatto solo al cambio di
+  // tab/dati, non a ogni render (es. trascinamento slider raggio).
+  const matches = useMemo(() =>
     activeTab === "best"
       ? (bestMatches ?? [])
       : [...(nearbyMatches ?? [])].sort(
           (a, b) =>
             (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) ||
             a.nickname.localeCompare(b.nickname),
-        );
+        ),
+    [activeTab, bestMatches, nearbyMatches]);
 
   return (
     <div className="flex flex-col h-full">

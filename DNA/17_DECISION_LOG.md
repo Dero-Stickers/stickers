@@ -7,6 +7,13 @@
 
 ## 2026-06
 
+- **Fluidità render (no nuove dipendenze, layout invariato)** — il rallentamento al
+  "popolamento" era lato React, non DB (query figurine ~12ms, indici ok). Fix: cella griglia
+  in `StickerCell` (`React.memo`) + callback stabili → al tap si ri-renderizza solo la cella
+  toccata; lista filtrata e conteggi in `useMemo`; stesso pattern per i derivati di
+  Home/Album/Match. Virtualizzazione **scartata** per ora (cambierebbe scroll/layout;
+  `content-visibility` già salta il paint fuori schermo) — da valutare solo se l'apertura di
+  album da 700+ resta lenta su device. Vedi `08_NAVIGAZIONE_UI.md`.
 - **Azioni di massa sugli stati figurina** — sui chip Mie/Doppie/Mancanti la pressione lunga
   apre una conferma e imposta TUTTE le figurine dell'album a quello stato, sovrascrivendo le
   selezioni ("Mancanti" = reset album). "Tutte" senza azione; tap singolo = filtro. Endpoint

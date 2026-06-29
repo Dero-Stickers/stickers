@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { Zap, ArrowRight, MapPin, MessageCircle, Library } from "lucide-react";
@@ -24,7 +24,9 @@ export function Home() {
 
   // 1 · Sintesi collezione — aggregato su TUTTI gli album
   const albums = myAlbums ?? [];
-  const agg = albums.reduce(
+  // Aggregati/derivati memoizzati: ricalcolati solo al cambio dei dati, non a
+  // ogni render (es. switch hero, apertura chat…).
+  const agg = useMemo(() => albums.reduce(
     (a, al) => ({
       owned: a.owned + al.owned,
       duplicates: a.duplicates + al.duplicates,
@@ -32,22 +34,22 @@ export function Home() {
       slots: a.slots + al.totalStickers,
     }),
     { owned: 0, duplicates: 0, missing: 0, slots: 0 },
-  );
+  ), [albums]);
   const overallPercent = agg.slots > 0 ? Math.round((agg.owned / agg.slots) * 100) : 0;
 
   // 2 · Azioni richieste — chat con messaggi non letti
-  const unreadChats = (chats ?? []).filter(c => c.unreadCount > 0);
+  const unreadChats = useMemo(() => (chats ?? []).filter(c => c.unreadCount > 0), [chats]);
 
   // 3 · Match — l'eroe della pagina
   const matches = bestMatches ?? [];
-  const topMatches = [...matches]
+  const topMatches = useMemo(() => [...matches]
     .sort((a, b) =>
       heroMode === "best"
         ? b.totalExchanges - a.totalExchanges
         : (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity),
     )
-    .slice(0, 3);
-  const totalExchanges = matches.reduce((s, m) => s + m.totalExchanges, 0);
+    .slice(0, 3), [matches, heroMode]);
+  const totalExchanges = useMemo(() => matches.reduce((s, m) => s + m.totalExchanges, 0), [matches]);
 
   return (
     <div className="flex flex-col h-full">

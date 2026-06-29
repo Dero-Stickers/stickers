@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "wouter";
 import { BookOpen, Plus, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,10 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/AppHeader";
 
+// Ordine sempre dal più recente al più vecchio (titolo es. "Calciatori 2025-2026").
+// A livello di modulo → funzione stabile, non ricreata a ogni render.
+const byTitleDesc = (a: { title: string }, b: { title: string }) => b.title.localeCompare(a.title);
+
 export function AlbumList() {
   const [activeTab, setActiveTab] = useState<"my" | "available">("my");
   const [removeId, setRemoveId] = useState<number | null>(null);
@@ -36,8 +40,6 @@ export function AlbumList() {
   const { data: myAlbums, isLoading: loadingMy } = useGetUserAlbums();
   const { data: allAlbums, isLoading: loadingAll } = useListAlbums();
 
-  // Ordine sempre dal più recente al più vecchio (titolo es. "Calciatori 2025-2026").
-  const byTitleDesc = (a: { title: string }, b: { title: string }) => b.title.localeCompare(a.title);
   // Al primo caricamento, se l'utente non ha ancora album, apri direttamente
   // su "Disponibili" (la scheda "I miei album" vuota non è utile come default).
   // Una sola volta: dopo, la scelta manuale del tab resta libera.
@@ -48,10 +50,12 @@ export function AlbumList() {
     if ((myAlbums?.length ?? 0) === 0) setActiveTab("available");
   }, [myAlbums]);
 
-  const myAlbumIds = new Set(myAlbums?.map(a => a.id) ?? []);
-  const sortedMyAlbums = [...(myAlbums ?? [])].sort(byTitleDesc);
+  // Derivati memoizzati: Set + sort ricalcolati solo al cambio dati, non a ogni
+  // render (es. cambio tab, apertura dialog di rimozione).
+  const myAlbumIds = useMemo(() => new Set(myAlbums?.map(a => a.id) ?? []), [myAlbums]);
+  const sortedMyAlbums = useMemo(() => [...(myAlbums ?? [])].sort(byTitleDesc), [myAlbums]);
   // Tutti gli album pubblicati: quelli già aggiunti restano visibili ma disabilitati.
-  const availableAlbums = (allAlbums?.filter(a => a.isPublished) ?? []).sort(byTitleDesc);
+  const availableAlbums = useMemo(() => (allAlbums?.filter(a => a.isPublished) ?? []).sort(byTitleDesc), [allAlbums]);
 
   const addAlbum = useAddAlbumToUser({
     mutation: {
