@@ -153,10 +153,13 @@ function ProtectedChatRoute({ component: Component }: { component: React.FC }) {
 
 function ProtectedAdminRoute({ component: Component }: { component: React.FC }) {
   const { isAuthenticated, currentUser } = useAuth();
+  // /admin è la porta d'ingresso admin: se non sei loggato (o sei un utente
+  // normale) vai al login con next=/admin, così puoi entrare con le credenziali
+  // admin invece di essere rimbalzato in Home.
   const redirect = !isAuthenticated
-    ? "/login"
+    ? "/login?next=/admin"
     : !currentUser?.isAdmin
-      ? "/"
+      ? "/login?next=/admin"
       : null;
   useAuthRedirect(redirect);
 

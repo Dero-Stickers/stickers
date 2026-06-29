@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { formatNickname } from "@/lib/utils";
 import { z } from "zod";
@@ -38,7 +38,11 @@ type RegisterValues = z.infer<typeof registerSchema>;
 
 export function Login() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { login } = useAuth();
+  // Destinazione dopo il login (es. /admin), solo se path interno sicuro.
+  const rawNext = new URLSearchParams(search).get("next");
+  const nextPath = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
   const [isRegister, setIsRegister] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +98,7 @@ export function Login() {
           return;
         }
         login(json.user, json.token);
-        setLocation(json.user.isAdmin ? "/admin" : "/");
+        setLocation(json.user.isAdmin ? (nextPath ?? "/admin") : "/");
       }
     } catch {
       setLoginError("Errore di connessione. Riprova.");
