@@ -7,6 +7,14 @@
 
 ## 2026-06
 
+- **⛔ Pulsante switch U/A (DevQuickSwitch) — INTOCCABILE per regola dell'owner** — il pulsante
+  tondo "U/A" (in `components/dev/DevQuickSwitch.tsx`) **bypassa l'autenticazione** (login automatico
+  con account demo Dero975/admin, switch istantaneo vista Utente↔Admin) ed è una scelta INTENZIONALE,
+  sempre attiva anche in produzione. NON va rimosso, gated o modificato, né vanno cancellati gli
+  account demo, **senza ordine esplicito** dell'owner — "consolida/ripulisci/azzera" NON autorizzano.
+  L'azzeramento app di giu 2026 aveva cancellato gli account demo rompendo il pulsante → **ripristinati**
+  (`Dero975` pin 1234, `admin` pin 0000). Protezione resa permanente: guardia nel codice + memoria
+  `sticker-pulsante-ua-non-toccare`. Errore ricorrente da non ripetere.
 - **App azzerata a stato vergine (pre-pubblicazione)** — eliminati TUTTI gli utenti (60, admin
   e Dero975 inclusi), chat, messaggi, sblocchi, pagamenti, conferme scambio, segnalazioni e
   possessi (`user_albums`/`user_stickers`); resta INTATTO il catalogo (`albums` 23 + `stickers`

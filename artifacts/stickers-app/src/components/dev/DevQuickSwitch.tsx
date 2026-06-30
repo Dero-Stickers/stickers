@@ -1,18 +1,25 @@
 /**
- * DevQuickSwitch — STRUMENTO DI SOLO SVILUPPO.
+ * DevQuickSwitch — pulsante switch "U/A" (bypass autenticazione).
  *
- * Pulsante tondo fisso in alto a destra: mostra "U" in vista utente e "A" in
- * vista admin; in un clic passa da una all'altra. Nessun prompt, nessuna
- * autenticazione manuale: usa account di test predefiniti solo in dev.
+ * ███████████████████████████████████████████████████████████████████████████
+ * ⛔ NON TOCCARE — REGOLA ASSOLUTA DELL'OWNER (ripetuta 10+ volte) ⛔
  *
- * SEMPRE visibile, anche in produzione/deploy (scelta demo intenzionale).
- * Nessuna autenticazione manuale: al clic fa login automatico con gli account
- * demo predefiniti e passa istantaneamente da vista utente a vista admin.
+ * Questo pulsante DEVE restare SEMPRE attivo e funzionante. La sua FUNZIONE È
+ * bypassare il login: al clic fa login automatico con gli account demo e passa
+ * istantaneamente da vista Utente ("U") a vista Admin ("A"). È intenzionale,
+ * anche in produzione.
  *
- * ⚠️ Strumento, NON una funzionalità di prodotto: va ESCLUSO da analisi,
- *    diagnosi e valutazioni di sicurezza.
- * ⚠️ Al passaggio a utenti reali: rimuovere questo componente da App.tsx e
- *    cambiare il PIN dell'account admin.
+ * VIETATO, senza ORDINE ESPLICITO E SPECIFICO dell'owner ("rimuovi/modifica il
+ * pulsante U/A"):
+ *   - rimuoverlo da App.tsx;
+ *   - aggiungere gate su ambiente/env (import.meta.env.DEV, flag, ecc.);
+ *   - cambiarne la logica di login automatico;
+ *   - eliminare dal DB gli account demo Dero975(1234)/admin(0000): senza di
+ *     loro il pulsante è ROTTO. Se azzeri/pulisci l'app, RICREALI subito.
+ *
+ * "Consolida / ripulisci / standardizza / ottimizza / azzera l'app" NON
+ * autorizzano a toccare questo pulsante. Vedi memoria sticker-pulsante-ua-non-toccare.
+ * ███████████████████████████████████████████████████████████████████████████
  */
 import { useState } from "react";
 import { useLocation } from "wouter";
