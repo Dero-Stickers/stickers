@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { formatNickname } from "@/lib/utils";
@@ -10,6 +10,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLogo } from "@/components/brand/AppLogo";
+import { GoogleIcon } from "@/components/brand/GoogleIcon";
+import { isSocialAuthAvailable } from "@/lib/supabase";
+import {
+  startGoogleLogin,
+  completeSocialLogin,
+  completeSocialProfile,
+  clearSocialSession,
+  type SocialResult,
+} from "@/lib/social-auth";
 import type { AuthResponse } from "@workspace/api-client-react";
 
 // Allineato alla regola del backend: 5-12 caratteri (lettere, numeri, - o _),
@@ -51,6 +60,48 @@ export function Login() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showRecoveryCode, setShowRecoveryCode] = useState<string | null>(null);
+  // Accesso con nickname+PIN: opzione secondaria, nascosta di default.
+  const [showLegacy, setShowLegacy] = useState(false);
+  // Stato accesso social (Google / email via Supabase).
+  const socialAvailable = isSocialAuthAvailable();
+  const [socialBusy, setSocialBusy] = useState(false);
+  // Quando un nuovo utente social deve scegliere nickname + CAP.
+  const [pendingProfile, setPendingProfile] = useState<{ accessToken: string; email: string | null } | null>(null);
+
+  const finishSocial = (r: SocialResult) => {
+    if (r.kind === "logged_in") {
+      void clearSocialSession();
+      login(r.user, r.token);
+      setLocation(r.user.isAdmin ? (nextPath ?? "/admin") : "/");
+    } else if (r.kind === "needs_profile") {
+      setPendingProfile({ accessToken: r.accessToken, email: r.email });
+    } else {
+      setLoginError(r.message);
+    }
+  };
+
+  // Al caricamento: se torniamo da Google (sessione nell'URL), scambia col backend.
+  useEffect(() => {
+    if (!socialAvailable) return;
+    let active = true;
+    setSocialBusy(true);
+    completeSocialLogin()
+      .then((r) => {
+        if (!active) return;
+        if (r) finishSocial(r);
+      })
+      .finally(() => active && setSocialBusy(false));
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onGoogle = async () => {
+    setLoginError(null);
+    setSocialBusy(true);
+    const ok = await startGoogleLogin();
+    if (!ok) { setLoginError("Accesso con Google non disponibile al momento."); setSocialBusy(false); }
+    // Se ok: redirect a Google in corso; al ritorno parte l'useEffect.
+  };
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(isRegister ? registerSchema : loginSchema),
@@ -116,6 +167,11 @@ export function Login() {
     setLocation("/");
   };
 
+  // --- Schermata "Completa profilo" per nuovi utenti social (Google/email) ---
+  if (pendingProfile) {
+    return <CompleteProfile pending={pendingProfile} onDone={finishSocial} onCancel={() => { void clearSocialSession(); setPendingProfile(null); }} />;
+  }
+
   if (showRecoveryCode) {
     return (
       <div className="h-full overflow-y-auto flex items-center justify-center bg-muted/30 p-4">
@@ -153,6 +209,43 @@ export function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Accesso moderno: Google + Email in evidenza. */}
+          {socialAvailable && (
+            <div className="space-y-2.5 mb-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 gap-2.5 font-semibold border-input bg-white text-foreground hover:bg-muted/60"
+                onClick={onGoogle}
+                disabled={socialBusy || isLoading}
+              >
+                <GoogleIcon className="h-5 w-5" />
+                {socialBusy ? "Attendi…" : "Continua con Google"}
+              </Button>
+
+              {!showLegacy && (
+                <button
+                  type="button"
+                  onClick={() => { setShowLegacy(true); setLoginError(null); }}
+                  className="w-full text-center text-xs text-muted-foreground hover:text-primary pt-1"
+                >
+                  Oppure entra con nickname e PIN
+                </button>
+              )}
+
+              {showLegacy && (
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-[11px] text-muted-foreground">oppure</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Form nickname + PIN: principale se social non disponibile, altrimenti
+              opzione secondaria mostrata su richiesta. */}
+          {(!socialAvailable || showLegacy) && (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -290,7 +383,8 @@ export function Login() {
               </div>
             </form>
           </Form>
-          {!isRegister && (
+          )}
+          {(!socialAvailable || showLegacy) && !isRegister && (
             <div className="mt-3 text-center">
               <button
                 type="button"
@@ -305,6 +399,107 @@ export function Login() {
             <a href="/legal/privacy" className="hover:text-primary hover:underline">Privacy</a>
             <span aria-hidden>·</span>
             <a href="/legal/termini" className="hover:text-primary hover:underline">Termini</a>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Completa profilo — primo accesso social: l'utente sceglie nickname (permanente)
+// e CAP. Email e identità arrivano da Google/Supabase, qui niente PIN.
+// ---------------------------------------------------------------------------
+function CompleteProfile({
+  pending,
+  onDone,
+  onCancel,
+}: {
+  pending: { accessToken: string; email: string | null };
+  onDone: (r: SocialResult) => void;
+  onCancel: () => void;
+}) {
+  const [nickname, setNickname] = useState("");
+  const [cap, setCap] = useState("");
+  const [accept, setAccept] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const nickOk = NICKNAME_REGEX.test(nickname) && /[A-Za-z]/.test(nickname) && /[0-9]/.test(nickname);
+  const capOk = /^\d{5}$/.test(cap);
+  const canSubmit = nickOk && capOk && accept && !busy;
+
+  const submit = async () => {
+    setErr(null);
+    setBusy(true);
+    const r = await completeSocialProfile({ accessToken: pending.accessToken, nickname, cap });
+    if (r.kind === "error") { setErr(r.message); setBusy(false); return; }
+    onDone(r);
+  };
+
+  return (
+    <div className="h-full overflow-y-auto flex items-center justify-center bg-muted/30 p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="text-center space-y-2">
+          <CardTitle className="flex items-center justify-center">
+            <AppLogo className="h-20 w-auto" />
+          </CardTitle>
+          <CardDescription className="text-base font-medium text-foreground">
+            Completa il tuo profilo
+          </CardDescription>
+          {pending.email && (
+            <p className="text-xs text-muted-foreground">Accesso come {pending.email}</p>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">Scegli un nickname</label>
+            <Input
+              placeholder="es. Marco95 (lettere + numeri)"
+              value={nickname}
+              onChange={(e) => setNickname(formatNickname(e.target.value))}
+              maxLength={12}
+              spellCheck={false}
+            />
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              È il nome con cui ti vedranno gli altri. Scegli bene:{" "}
+              <span className="font-medium text-foreground">non potrà essere modificato</span>.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">Il tuo CAP</label>
+            <Input
+              placeholder="es. 20100"
+              value={cap}
+              onChange={(e) => setCap(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              inputMode="numeric"
+              maxLength={5}
+            />
+            <p className="text-[11px] text-muted-foreground">Serve a trovare scambi vicino a te. Puoi cambiarlo quando vuoi.</p>
+          </div>
+
+          <label className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed cursor-pointer">
+            <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" checked={accept} onChange={(e) => setAccept(e.target.checked)} />
+            <span>
+              Dichiaro di avere almeno 14 anni e di aver letto la{" "}
+              <a href="/legal/privacy" target="_blank" rel="noopener" className="underline text-primary">Privacy Policy</a>
+              {" "}e i{" "}
+              <a href="/legal/termini" target="_blank" rel="noopener" className="underline text-primary">Termini d'uso</a>.
+            </span>
+          </label>
+
+          {err && (
+            <p className="text-sm text-destructive text-center bg-destructive/5 border border-destructive/20 rounded-lg p-2">{err}</p>
+          )}
+
+          <div className="flex flex-col gap-2 pt-1">
+            <Button className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 font-bold" disabled={!canSubmit} onClick={submit}>
+              {busy ? "Attendi…" : "Entra in Stickers"}
+            </Button>
+            <Button variant="outline" className="w-full h-11" onClick={onCancel} disabled={busy}>
+              Annulla
+            </Button>
           </div>
         </CardContent>
       </Card>

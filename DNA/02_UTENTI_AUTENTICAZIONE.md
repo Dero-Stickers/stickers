@@ -17,10 +17,16 @@
 - Email, password classica, Google/Apple login
 - Numero di telefono, indirizzo personale, GPS, geolocalizzazione reale
 
-## Accesso Quotidiano
+## Accesso (moderno, giu 2026)
 
-- **Solo Nickname + PIN** (il CAP non serve all'accesso: non è più parte dell'identità)
-- Il dispositivo ricorda l'accesso finché l'utente non fa logout manuale
+Schermata di accesso (`Login.tsx`) con **"Continua con Google"** in evidenza + accesso storico
+**Nickname + PIN** come opzione secondaria. Architettura in `DNA/18_PIANO_AUTH.md`.
+- **Google** (Supabase Auth): 1 tap → al primo accesso si sceglie nickname (permanente) + CAP
+  (`/api/auth/social` + `/api/auth/social/complete`; ponte identità in `lib/supabase-auth.ts`).
+  Utente social: nessun PIN, nessuna domanda, nessun codice STICK (recupero via Google).
+- **Nickname + PIN** (storico): invariato, sempre disponibile (il CAP non serve all'accesso).
+- **Email + password** e reset via email: previsti, attivabili quando c'è l'SMTP (Brevo) — vedi piano.
+- Il dispositivo ricorda l'accesso finché l'utente non fa logout manuale.
 
 ## Cambio Zona (CAP) — "modalità in vacanza"
 

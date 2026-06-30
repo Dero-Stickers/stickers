@@ -58,3 +58,35 @@ export function getSupabaseClient(): SupabaseClient | null {
 export function isRealtimeAvailable(): boolean {
   return getSupabaseClient() !== null;
 }
+
+// ---------------------------------------------------------------------------
+// Client AUTH separato (login Google / email). A differenza del client realtime
+// QUI serve persistere la sessione e gestire il redirect OAuth nell'URL.
+// ---------------------------------------------------------------------------
+let authClient: SupabaseClient | null | undefined;
+
+export function getSupabaseAuthClient(): SupabaseClient | null {
+  if (authClient !== undefined) return authClient;
+  if (!url || !anonKey) {
+    authClient = null;
+    return authClient;
+  }
+  try {
+    authClient = createClient(url, anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
+  } catch (err) {
+    console.warn("[supabase] init auth non riuscita:", err);
+    authClient = null;
+  }
+  return authClient;
+}
+
+/** True se l'accesso social (Google/email via Supabase) è configurato. */
+export function isSocialAuthAvailable(): boolean {
+  return getSupabaseAuthClient() !== null;
+}

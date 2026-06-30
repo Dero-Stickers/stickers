@@ -19,6 +19,7 @@ import { z } from "zod";
 import { requireAuth } from "../middlewares/auth";
 import { isChatPaywallEnabled } from "../lib/billing";
 import { invalidateUser } from "../lib/matchCache";
+import { verifySupabaseToken, isSupabaseAuthConfigured } from "../lib/supabase-auth";
 
 const PIN_REGEX = /^\d{4,6}$/;
 
@@ -242,7 +243,8 @@ const login: RequestHandler = async (req, res) => {
 
     let user: typeof usersFound[number] | undefined;
     for (const u of usersFound) {
-      if (await verifyPin(body.pin, u.pinHash)) {
+      // Utenti social (Google/email) non hanno PIN: salta il confronto.
+      if (u.pinHash && (await verifyPin(body.pin, u.pinHash))) {
         user = u;
         break;
       }
@@ -369,7 +371,7 @@ const getRecoveryCode: RequestHandler = async (req, res) => {
     const { eq } = await import("drizzle-orm");
 
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-    if (!user || !(await verifyPin(body.pin, user.pinHash))) {
+    if (!user || !user.pinHash || !(await verifyPin(body.pin, user.pinHash))) {
       res.status(401).json({ error: "WRONG_PIN", message: "PIN non corretto" });
       return;
     }
@@ -470,7 +472,7 @@ const deleteMe: RequestHandler = async (req, res) => {
       return;
     }
 
-    if (!pin || !(await verifyPin(String(pin), user.pinHash))) {
+    if (!pin || !user.pinHash || !(await verifyPin(String(pin), user.pinHash))) {
       res.status(401).json({ error: "WRONG_PIN", message: "PIN non corretto" });
       return;
     }
@@ -567,7 +569,7 @@ const recoverAnswer: RequestHandler = async (req, res) => {
       .where(sql`lower(${usersTable.nickname}) = ${body.nickname}`)
       .limit(1);
 
-    if (!user || !(await verifyAnswer(body.securityAnswer, user.securityAnswerHash))) {
+    if (!user || !user.securityAnswerHash || !(await verifyAnswer(body.securityAnswer, user.securityAnswerHash))) {
       res.status(401).json({ error: "WRONG_ANSWER", message: "Risposta non corretta" });
       return;
     }
@@ -631,8 +633,190 @@ const changeLocation: RequestHandler = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Accesso social (Google / Email via Supabase Auth)
+// ---------------------------------------------------------------------------
+
+const SocialBody = z.object({
+  accessToken: z.string().min(10).max(4096),
+});
+
+const SocialCompleteBody = z.object({
+  accessToken: z.string().min(10).max(4096),
+  nickname: NicknameSchema,
+  cap: z.string().regex(CAP_REGEX, "Il CAP deve essere di 5 cifre"),
+  acceptTerms: z.literal(true),
+});
+
+// POST /api/auth/social — verifica il token Supabase. Se l'utente esiste già
+// (collegato per supabaseUserId o email), effettua il login e ritorna il nostro
+// token. Altrimenti risponde 200 { needsProfile: true } così il frontend mostra
+// la schermata "Completa profilo".
+const social: RequestHandler = async (req, res) => {
+  try {
+    if (!isSupabaseAuthConfigured()) {
+      res.status(503).json({ error: "SOCIAL_UNAVAILABLE", message: "Accesso social non disponibile" });
+      return;
+    }
+    const { accessToken } = SocialBody.parse(req.body);
+
+    const ip = clientIp(req);
+    const limit = checkRateLimit(`social:${ip}`, LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS);
+    if (!limit.allowed) {
+      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
+      res.setHeader("Retry-After", String(retryAfter));
+      res.status(429).json({ error: "RATE_LIMITED", message: `Troppi tentativi. Riprova fra ${retryAfter}s.` });
+      return;
+    }
+
+    const identity = await verifySupabaseToken(accessToken);
+    if (!identity) {
+      res.status(401).json({ error: "INVALID_TOKEN", message: "Accesso non valido" });
+      return;
+    }
+
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const { eq, or, sql } = await import("drizzle-orm");
+
+    // Cerca per supabaseUserId (collegamento certo) o per email (riconciliazione).
+    const emailLower = identity.email?.toLowerCase() ?? null;
+    const [existing] = await db
+      .select()
+      .from(usersTable)
+      .where(
+        emailLower
+          ? or(eq(usersTable.supabaseUserId, identity.supabaseUserId), sql`lower(${usersTable.email}) = ${emailLower}`)
+          : eq(usersTable.supabaseUserId, identity.supabaseUserId),
+      )
+      .limit(1);
+
+    if (!existing) {
+      // Nessun account: serve scegliere nickname + CAP.
+      res.json({ needsProfile: true, email: identity.email });
+      return;
+    }
+
+    if (existing.isBlocked) {
+      res.status(403).json({ error: "BLOCKED", message: "Account bloccato" });
+      return;
+    }
+
+    // Collega/aggiorna l'identità Supabase se mancante (primo login social di un
+    // account storico con stessa email, o link dell'uuid).
+    if (existing.supabaseUserId !== identity.supabaseUserId || (emailLower && !existing.email)) {
+      await db
+        .update(usersTable)
+        .set({
+          supabaseUserId: identity.supabaseUserId,
+          ...(emailLower && !existing.email ? { email: identity.email } : {}),
+        })
+        .where(eq(usersTable.id, existing.id));
+    }
+
+    res.json({
+      user: await userPayload(existing),
+      token: signToken({ userId: existing.id, isAdmin: existing.isAdmin }),
+    });
+  } catch (err) {
+    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: "Dati non validi" });
+      return;
+    }
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
+  }
+};
+
+// POST /api/auth/social/complete — crea l'account per un utente social al primo
+// accesso: verifica di nuovo il token, valida nickname unico, salva CAP/area.
+const socialComplete: RequestHandler = async (req, res) => {
+  try {
+    if (!isSupabaseAuthConfigured()) {
+      res.status(503).json({ error: "SOCIAL_UNAVAILABLE", message: "Accesso social non disponibile" });
+      return;
+    }
+    if (req.body?.acceptTerms !== true) {
+      res.status(400).json({ error: "CONSENT_REQUIRED", message: "Devi accettare Privacy e Termini" });
+      return;
+    }
+    const body = SocialCompleteBody.parse(req.body);
+
+    const identity = await verifySupabaseToken(body.accessToken);
+    if (!identity) {
+      res.status(401).json({ error: "INVALID_TOKEN", message: "Accesso non valido" });
+      return;
+    }
+
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const { eq, sql } = await import("drizzle-orm");
+
+    // Se l'account esiste già (doppio invio), effettua login invece di duplicare.
+    const [already] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.supabaseUserId, identity.supabaseUserId))
+      .limit(1);
+    if (already) {
+      res.json({ user: await userPayload(already), token: signToken({ userId: already.id, isAdmin: already.isAdmin }) });
+      return;
+    }
+
+    // Nickname unico (case-insensitive).
+    const taken = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(sql`lower(${usersTable.nickname}) = ${body.nickname.toLowerCase()}`)
+      .limit(1);
+    if (taken.length > 0) {
+      res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
+      return;
+    }
+
+    const area = deriveArea(body.cap);
+    let user;
+    try {
+      [user] = await db
+        .insert(usersTable)
+        .values({
+          nickname: body.nickname,
+          cap: body.cap,
+          area,
+          email: identity.email,
+          authProvider: identity.provider === "google" ? "google" : "email",
+          supabaseUserId: identity.supabaseUserId,
+          isPremium: false,
+          acceptedTermsAt: new Date(),
+          // pinHash / securityQuestion / recoveryCode restano NULL (utente social).
+        })
+        .returning();
+    } catch (e: any) {
+      if (e?.code === "23505") {
+        res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
+        return;
+      }
+      throw e;
+    }
+
+    res.status(201).json({
+      user: await userPayload(user),
+      token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
+    });
+  } catch (err) {
+    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: "Dati non validi" });
+      return;
+    }
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
+  }
+};
+
 router.post("/register", register);
 router.post("/login", login);
+router.post("/social", social);
+router.post("/social/complete", socialComplete);
 router.post("/logout", logout);
 router.post("/recover", recover);
 router.post("/recover/lookup", recoverLookup);

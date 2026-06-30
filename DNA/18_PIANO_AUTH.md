@@ -79,13 +79,22 @@ Conclusione: **costo zero** fino ai numeri previsti e oltre.
 - **STEP 0 — ✅ FATTO (giu 2026):** nickname alfanumerico misto obbligatorio (frontend+backend),
   rimozione "Cambia nickname" (UI Profilo + endpoint `PATCH /me/nickname` + schema/costanti),
   avviso "non modificabile" in registrazione. Verificato via API (solo lettere/solo numeri → 400).
-- **STEP 1:** registrazioni esterne (Google Cloud, Brevo) — guidate.
-- **STEP 2:** abilitare Supabase Auth (Google + Email) lato config; collegare SMTP.
-- **STEP 3:** nuova schermata di accesso (Google/Email) + schermata "Completa profilo" (nickname+CAP).
-- **STEP 4:** ponte identità: collegare l'utente Supabase Auth all'utente nel nostro DB; mantenere
-  login legacy nickname+PIN per gli esistenti.
-- **STEP 5:** recupero via email (reset password) e ritiro di domanda di sicurezza + codice STICK.
-- **STEP 6:** aggiornare privacy (login Google = dato in più) e DNA `02_UTENTI_AUTENTICAZIONE.md`.
+- **STEP 1 — ✅ FATTO:** Google Cloud OAuth creato (progetto "stikers"), client web con redirect
+  Supabase. Brevo (email) = ancora da fare (serve per email/password e reset).
+- **STEP 2 — ✅ FATTO (Google):** Supabase Auth → provider Google abilitato (client id+secret),
+  URL Configuration impostata (Site URL Render + redirect Render/localhost). Email provider = quando c'è Brevo.
+- **STEP 3 — ✅ FATTO:** schermata accesso moderna (`Login.tsx`): "Continua con Google" in evidenza,
+  nickname+PIN come opzione secondaria; schermata "Completa profilo" (nickname permanente + CAP).
+- **STEP 4 — ✅ FATTO:** ponte identità. Backend `lib/supabase-auth.ts` (verifica access token presso
+  Supabase) + `POST /api/auth/social` (login o needsProfile) + `POST /api/auth/social/complete`
+  (crea utente social). Frontend `lib/social-auth.ts`. Migrazione 0006 (email/auth_provider/
+  supabase_user_id; PIN/domanda/recovery_code nullable). Login legacy nickname+PIN intatto.
+  **Verificato end-to-end in locale** (login Google reale → profilo → app).
+- **STEP 5 — DA FARE (dopo Brevo):** "Continua con Email" + reset password via email; poi ritiro
+  domanda di sicurezza + codice STICK per i nuovi utenti.
+- **STEP 6 — DA FARE:** aggiornare privacy/policy (login Google = dato in più). **Prima del deploy:**
+  aggiungere su Render le env del backend `SUPABASE_URL` + `SUPABASE_ANON_KEY` (oggi NON in render.yaml)
+  e per il frontend `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`, altrimenti il social non parte in prod.
 
 ## 9. Aperto / da decidere più avanti
 

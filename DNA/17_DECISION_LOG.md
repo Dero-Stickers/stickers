@@ -7,6 +7,14 @@
 
 ## 2026-06
 
+- **Accesso moderno con Google (Supabase Auth), no costi** — adottato "Continua con Google" via
+  Supabase Auth (già nel progetto), mantenendo nickname+PIN legacy. Ponte identità: il frontend
+  ottiene l'access token Supabase → backend lo verifica presso Supabase (`lib/supabase-auth.ts`) →
+  crea/collega l'utente nel nostro DB e rilascia il NOSTRO token HMAC (resto app invariato). Nuovo
+  utente social sceglie nickname (permanente) + CAP, niente PIN/domanda/codice STICK. Migrazione
+  additiva 0006 (email/auth_provider/supabase_user_id; PIN/domanda/recovery_code → nullable, indici
+  unici parziali). Free tier ampio (50k MAU; Google login non manda email → illimitato). Email/
+  password + reset = quando ci sarà SMTP gratuito (Brevo). Vedi `18_PIANO_AUTH.md`.
 - **Cattura errori silenti (mini-Sentry self-hosted, no dipendenze esterne)** — scelto di NON
   adottare Sentry (dato fuori UE/GDPR, costo, free tier) e di potenziare il sistema interno:
   handler globali client (`lib/error-capture.ts`: window.error + unhandledrejection +
