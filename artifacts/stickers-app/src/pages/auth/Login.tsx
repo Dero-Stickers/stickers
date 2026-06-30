@@ -19,6 +19,8 @@ import {
   clearSocialSession,
   type SocialResult,
 } from "@/lib/social-auth";
+import { EmailAuth } from "@/pages/auth/EmailAuth";
+import { Mail } from "lucide-react";
 import type { AuthResponse } from "@workspace/api-client-react";
 
 // Allineato alla regola del backend: 5-12 caratteri (lettere, numeri, - o _),
@@ -65,6 +67,8 @@ export function Login() {
   // Stato accesso social (Google / email via Supabase).
   const socialAvailable = isSocialAuthAvailable();
   const [socialBusy, setSocialBusy] = useState(false);
+  // Mostra il form email/password (registrazione, accesso, recupero).
+  const [showEmail, setShowEmail] = useState(false);
   // Quando un nuovo utente social deve scegliere nickname + CAP.
   const [pendingProfile, setPendingProfile] = useState<{ accessToken: string; email: string | null } | null>(null);
 
@@ -172,6 +176,11 @@ export function Login() {
     return <CompleteProfile pending={pendingProfile} onDone={finishSocial} onCancel={() => { void clearSocialSession(); setPendingProfile(null); }} />;
   }
 
+  // --- Accesso/registrazione con Email + password ---
+  if (showEmail) {
+    return <EmailAuth onDone={finishSocial} onBack={() => { setShowEmail(false); setLoginError(null); }} />;
+  }
+
   if (showRecoveryCode) {
     return (
       <div className="h-full overflow-y-auto flex items-center justify-center bg-muted/30 p-4">
@@ -221,6 +230,17 @@ export function Login() {
               >
                 <GoogleIcon className="h-5 w-5" />
                 {socialBusy ? "Attendi…" : "Continua con Google"}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 gap-2.5 font-semibold border-input bg-white text-foreground hover:bg-muted/60"
+                onClick={() => { setLoginError(null); setShowEmail(true); }}
+                disabled={socialBusy || isLoading}
+              >
+                <Mail className="h-5 w-5" />
+                Continua con Email
               </Button>
 
               {!showLegacy && (

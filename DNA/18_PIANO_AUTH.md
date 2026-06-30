@@ -1,7 +1,8 @@
 # DNA — Sistema di accesso (auth)
 
 > Obiettivo: accesso moderno, semplice e sicuro, a **costo zero** fino a 2.000-3.000 utenti.
-> Stato: **Google login fatto e verificato** (giu 2026). Email/password = da fare (serve SMTP).
+> Stato: **Google + Email/password fatti e verificati** (giu 2026). Le email partono via Brevo
+> (consegnate, ma su dominio gratuito → finiscono in SPAM: serve un dominio proprio per la prod).
 
 ## 0. Configurazione e credenziali (riferimento operativo)
 
@@ -24,7 +25,12 @@
   - "Confirm email" resta ON (vale per email/password; Google è già verificato → nessuna mail).
 - **Render (`stickers-matchbox`):** env necessarie all'auth **già presenti** — backend
   `SUPABASE_URL`, `SUPABASE_ANON_KEY`; build frontend `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
-- **Brevo (SMTP per email/password):** ancora **da registrare** (gratis, 300 email/giorno).
+- **Brevo (SMTP per email/password):** ✅ attivo. Account "Stickers" (login Brevo `dero975@gmail.com`),
+  piano gratuito 300 email/giorno. SMTP `smtp-relay.brevo.com:587`, login `b06283001@smtp-brevo.com`,
+  chiave in `.env`/App Control (`BREVO_SMTP_*`). Configurato in Supabase → Auth → Emails → custom SMTP.
+  **Mittente verificato: `dero975@gmail.com`** (l'hotmail NON è verificato su Brevo → non usarlo come sender).
+  ⚠️ Dominio gratuito → le mail risultano "Consegnate" ma cadono in SPAM. Fix prod = dominio proprio + DKIM/DMARC.
+  Template email personalizzati (conferma + reset) in `artifacts/api-server/email-templates/`, incollati in Supabase.
 
 **Mappa file (dove vive cosa)**
 - Frontend: `pages/auth/Login.tsx` (schermata + `CompleteProfile`), `lib/social-auth.ts` (flusso),
@@ -135,9 +141,13 @@ Conclusione: **costo zero** fino ai numeri previsti e oltre.
   (crea utente social). Frontend `lib/social-auth.ts`. Migrazione 0006 (email/auth_provider/
   supabase_user_id; PIN/domanda/recovery_code nullable). Login legacy nickname+PIN intatto.
   **Verificato end-to-end in locale** (login Google reale → profilo → app).
-- **STEP 5 — DA FARE (dopo Brevo):** "Continua con Email" + reset password via email; poi ritiro
-  domanda di sicurezza + codice STICK per i nuovi utenti.
-- **STEP 6 — DA FARE:** aggiornare privacy/policy (login Google = dato in più). Env Render: **già
+- **STEP 5 — ✅ FATTO (giu 2026):** "Continua con Email" (registrazione + accesso + reset password) via
+  Supabase Auth/Brevo. Frontend: `pages/auth/EmailAuth.tsx` (form con conferma password + occhio mostra/
+  nascondi, avviso "controlla lo SPAM"), funzioni in `lib/social-auth.ts` (`emailSignUp`/`emailSignIn`/
+  `emailResetPassword`). Verificato end-to-end (registrazione → mail consegnata → in spam per dominio gratuito).
+- **STEP 6 — DA FARE:** (1) **dominio email proprio** + DKIM/DMARC su Brevo per uscire dallo spam (prod);
+  (2) ritiro domanda di sicurezza + codice STICK per i nuovi utenti; (3) privacy/policy (login Google = dato
+  in più). Env Render: **già presenti tutte e 4** (`SUPABASE_URL`/`SUPABASE_ANON_KEY` backend + `VITE_SUPABASE_URL`/
   presenti tutte e 4** (`SUPABASE_URL`/`SUPABASE_ANON_KEY` backend + `VITE_SUPABASE_URL`/
   `VITE_SUPABASE_ANON_KEY` build) → il social parte in produzione senza altri interventi. Sono in
   Render ma NON in `render.yaml`: se un giorno si ricrea il servizio da blueprint, vanno re-inserite.

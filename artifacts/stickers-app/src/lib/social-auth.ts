@@ -95,3 +95,65 @@ export async function clearSocialSession(): Promise<void> {
   const supabase = getSupabaseAuthClient();
   if (supabase) await supabase.auth.signOut().catch(() => {});
 }
+
+// ---------------------------------------------------------------------------
+// Email + password (via Supabase Auth)
+// ---------------------------------------------------------------------------
+
+export type EmailResult =
+  | SocialResult
+  | { kind: "confirm_email"; email: string }; // registrazione: serve conferma via email
+
+/**
+ * Registra un nuovo utente con email + password. Con "Confirm email" attivo,
+ * Supabase NON crea subito una sessione: manda una mail di conferma. L'utente
+ * conferma, poi torna ad accedere (e lì parte il ponte identità).
+ */
+export async function emailSignUp(email: string, password: string): Promise<EmailResult> {
+  const supabase = getSupabaseAuthClient();
+  if (!supabase) return { kind: "error", message: "Accesso via email non disponibile" };
+  const emailRedirectTo = `${window.location.origin}/login`;
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo },
+  });
+  if (error) return { kind: "error", message: traduciAuthError(error.message) };
+  // Se la conferma è richiesta, non c'è sessione: chiediamo di controllare la mail.
+  if (!data.session) return { kind: "confirm_email", email };
+  // Conferma disattivata: sessione subito → scambio col backend.
+  return exchangeWithBackend(data.session.access_token);
+}
+
+/** Accesso con email + password già registrata e confermata. */
+export async function emailSignIn(email: string, password: string): Promise<EmailResult> {
+  const supabase = getSupabaseAuthClient();
+  if (!supabase) return { kind: "error", message: "Accesso via email non disponibile" };
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { kind: "error", message: traduciAuthError(error.message) };
+  if (!data.session) return { kind: "error", message: "Accesso non riuscito" };
+  return exchangeWithBackend(data.session.access_token);
+}
+
+/** Invia il link di reset password all'email indicata. */
+export async function emailResetPassword(email: string): Promise<{ ok: boolean; message?: string }> {
+  const supabase = getSupabaseAuthClient();
+  if (!supabase) return { ok: false, message: "Servizio non disponibile" };
+  const redirectTo = `${window.location.origin}/login`;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) return { ok: false, message: traduciAuthError(error.message) };
+  return { ok: true };
+}
+
+/** Traduce in italiano i messaggi d'errore più comuni di Supabase Auth. */
+function traduciAuthError(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes("invalid login")) return "Email o password non corretti.";
+  if (m.includes("already registered") || m.includes("already been registered"))
+    return "Questa email è già registrata. Prova ad accedere.";
+  if (m.includes("email not confirmed")) return "Conferma prima la tua email (controlla la posta).";
+  if (m.includes("password") && m.includes("least")) return "La password deve avere almeno 6 caratteri.";
+  if (m.includes("rate") || m.includes("too many")) return "Troppi tentativi. Riprova tra poco.";
+  if (m.includes("for security purposes")) return "Attendi qualche secondo prima di riprovare.";
+  return "Si è verificato un problema. Riprova.";
+}

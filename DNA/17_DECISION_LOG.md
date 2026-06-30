@@ -7,6 +7,11 @@
 
 ## 2026-06
 
+- **Accesso con Email/password (Brevo SMTP), no costi** — aggiunto "Continua con Email"
+  (registrazione+accesso+reset password) via Supabase Auth + Brevo (gratis 300/giorno). UI
+  `EmailAuth.tsx` (conferma password + occhio + avviso spam), template email brandizzati. Mittente
+  verificato su Brevo = `dero975@gmail.com`. **Nodo aperto:** mail consegnate ma in SPAM perché
+  inviate da dominio gratuito → per la prod serve un dominio proprio con DKIM/DMARC. Vedi `18_PIANO_AUTH.md`.
 - **Accesso moderno con Google (Supabase Auth), no costi** — adottato "Continua con Google" via
   Supabase Auth (già nel progetto), mantenendo nickname+PIN legacy. Ponte identità: il frontend
   ottiene l'access token Supabase → backend lo verifica presso Supabase (`lib/supabase-auth.ts`) →
