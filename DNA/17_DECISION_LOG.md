@@ -7,6 +7,23 @@
 
 ## 2026-06
 
+- **App azzerata a stato vergine (pre-pubblicazione)** — eliminati TUTTI gli utenti (60, admin
+  e Dero975 inclusi), chat, messaggi, sblocchi, pagamenti, conferme scambio, segnalazioni e
+  possessi (`user_albums`/`user_stickers`); resta INTATTO il catalogo (`albums` 23 + `stickers`
+  17.581) e `app_settings`. Anche `auth.users` Supabase = 0. Backup completo pre-operazione in
+  `BACKUP/db_pre_reset_*.sql.gz`. Motivo: l'app va pubblicata "come nuova". Eseguito in singola
+  transazione, ordine FK-safe (prima `reports`/`admin_actions` NO ACTION, poi cascata).
+- **Registrazione nickname+PIN RITIRATA** — i nuovi account si creano SOLO con Google o Email
+  (Supabase Auth). Rimossi dal frontend (`Login.tsx`): form di registrazione PIN, campi domanda/
+  risposta di sicurezza, schermata "salva il codice STICK". Rimossi dal backend (`routes/auth.ts`):
+  handler `register`, rotta `POST /api/auth/register`, `generateRecoveryCode`, import inutili. Il
+  form nickname+PIN resta SOLO come accesso (account storici/admin); login + `/recover` legacy intatti.
+  Schema generato `RegisterBody` (api-zod/api-client) lasciato com'è (codice generato, mai chiamato).
+- **Privacy/Termini aggiornati per Google/Email** — testi in `app_settings` (DB, unica fonte): la
+  privacy ora dichiara la raccolta dell'**email** (Google/Email), elenca **Google (OAuth)** e
+  **Brevo** tra i fornitori, e cifratura di password/PIN; rimossa la frase falsa "Non raccogliamo
+  email". Termini: account creato con Google/Email, nickname non modificabile, account PIN storici
+  ancora validi. Modifica via UPDATE su `privacy_policy`/`terms`, niente testo legale hardcoded.
 - **Accesso con Email/password (Brevo SMTP), no costi** — aggiunto "Continua con Email"
   (registrazione+accesso+reset password) via Supabase Auth + Brevo (gratis 300/giorno). UI
   `EmailAuth.tsx` (conferma password + occhio + avviso spam), template email brandizzati. Mittente

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  RegisterBody,
   LoginBody,
   RecoverAccountBody,
   GetRecoveryCodeBody,
@@ -10,7 +9,6 @@ import {
   signToken,
   hashPin,
   verifyPin,
-  hashAnswer,
   verifyAnswer,
   checkRateLimit,
   resetRateLimit,
@@ -106,15 +104,6 @@ function clientIp(req: { ip?: string }): string {
 
 const router = Router();
 
-function generateRecoveryCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const segment = () =>
-    Array.from({ length: 4 }, () =>
-      chars[Math.floor(Math.random() * chars.length)]
-    ).join("");
-  return `STICK-${segment()}-${segment()}-${segment()}`;
-}
-
 async function userPayload(user: any) {
   // Nuovo modello "paga per sbloccare la chat":
   //  - paywallEnabled riflette il master switch app_settings chat_paywall_enabled;
@@ -134,80 +123,9 @@ async function userPayload(user: any) {
   };
 }
 
-// POST /api/auth/register
-const register: RequestHandler = async (req, res) => {
-  try {
-    // GDPR: server-side enforcement of explicit consent (Privacy + Terms).
-    if (req.body?.acceptTerms !== true) {
-      res.status(400).json({
-        error: "CONSENT_REQUIRED",
-        message: "Devi accettare Privacy e Termini per registrarti",
-      });
-      return;
-    }
-    const body = RegisterBody.parse(req.body);
-    // Enforce stricter rules on top of generated schema: 5–12 caratteri
-    // (lettere/numeri/-/_), normalizzato a forma canonica (iniziale maiuscola).
-    const nickname = NicknameSchema.parse(body.nickname);
-
-    const { db } = await import("@workspace/db");
-    const { usersTable } = await import("@workspace/db");
-    const { sql } = await import("drizzle-orm");
-
-    // Nickname unico in tutta l'app (case-insensitive), non più "per CAP".
-    const existing = await db
-      .select()
-      .from(usersTable)
-      .where(sql`lower(${usersTable.nickname}) = ${nickname.toLowerCase()}`)
-      .limit(1);
-
-    if (existing.length > 0) {
-      res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
-      return;
-    }
-
-    const recoveryCode = generateRecoveryCode();
-    const area = deriveArea(body.cap);
-
-    let user;
-    try {
-      [user] = await db
-        .insert(usersTable)
-        .values({
-          nickname,
-          pinHash: await hashPin(body.pin),
-          cap: body.cap,
-          area,
-          securityQuestion: body.securityQuestion,
-          securityAnswerHash: await hashAnswer(body.securityAnswer),
-          recoveryCode,
-          isPremium: false,
-          acceptedTermsAt: new Date(),
-        })
-        .returning();
-    } catch (e: any) {
-      // Race-safe: collisione sull'indice unico (lower(nickname)).
-      if (e?.code === "23505") {
-        res.status(400).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" });
-        return;
-      }
-      throw e;
-    }
-
-    res.status(201).json({
-      user: await userPayload(user),
-      token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
-      recoveryCode,
-    });
-  } catch (err) {
-    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
-      res.status(400).json({ error: "VALIDATION_ERROR", message: (err as any)?.message });
-      return;
-    }
-    req.log?.error(err);
-    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
-  }
-};
+// NB: la registrazione con nickname+PIN è stata RITIRATA. I nuovi account si
+// creano solo con Google o Email (Supabase Auth → `social`/`socialComplete`).
+// Restano attivi login e recupero per gli account storici già esistenti.
 
 // POST /api/auth/login
 const login: RequestHandler = async (req, res) => {
@@ -813,7 +731,6 @@ const socialComplete: RequestHandler = async (req, res) => {
   }
 };
 
-router.post("/register", register);
 router.post("/login", login);
 router.post("/social", social);
 router.post("/social/complete", socialComplete);

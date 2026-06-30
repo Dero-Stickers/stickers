@@ -1,8 +1,9 @@
 # DNA — Sistema di accesso (auth)
 
 > Obiettivo: accesso moderno, semplice e sicuro, a **costo zero** fino a 2.000-3.000 utenti.
-> Stato: **Google + Email/password fatti e verificati** (giu 2026). Le email partono via Brevo
-> (consegnate, ma su dominio gratuito → finiscono in SPAM: serve un dominio proprio per la prod).
+> Stato: **Google + Email/password fatti e verificati** (giu 2026); registrazione nickname+PIN
+> **ritirata** (resta solo come accesso storico); privacy/termini aggiornati. App **azzerata** per
+> la pubblicazione. Unico nodo aperto: dominio email proprio + DKIM/DMARC (le email Brevo vanno in SPAM).
 
 ## 0. Configurazione e credenziali (riferimento operativo)
 
@@ -145,12 +146,25 @@ Conclusione: **costo zero** fino ai numeri previsti e oltre.
   Supabase Auth/Brevo. Frontend: `pages/auth/EmailAuth.tsx` (form con conferma password + occhio mostra/
   nascondi, avviso "controlla lo SPAM"), funzioni in `lib/social-auth.ts` (`emailSignUp`/`emailSignIn`/
   `emailResetPassword`). Verificato end-to-end (registrazione → mail consegnata → in spam per dominio gratuito).
-- **STEP 6 — DA FARE:** (1) **dominio email proprio** + DKIM/DMARC su Brevo per uscire dallo spam (prod);
-  (2) ritiro domanda di sicurezza + codice STICK per i nuovi utenti; (3) privacy/policy (login Google = dato
-  in più). Env Render: **già presenti tutte e 4** (`SUPABASE_URL`/`SUPABASE_ANON_KEY` backend + `VITE_SUPABASE_URL`/
-  presenti tutte e 4** (`SUPABASE_URL`/`SUPABASE_ANON_KEY` backend + `VITE_SUPABASE_URL`/
-  `VITE_SUPABASE_ANON_KEY` build) → il social parte in produzione senza altri interventi. Sono in
-  Render ma NON in `render.yaml`: se un giorno si ricrea il servizio da blueprint, vanno re-inserite.
+- **STEP 6 — PARZIALE (giu 2026):**
+  - (2) ✅ **FATTO** — ritiro registrazione nickname+PIN, domanda di sicurezza e codice STICK per i
+    NUOVI utenti: i nuovi account si creano solo con Google/Email. Frontend `Login.tsx` (rimossi form
+    register PIN, campi domanda/risposta, schermata codice STICK; il form nickname+PIN resta SOLO come
+    accesso storico/admin). Backend `routes/auth.ts` (rimossi handler `register`, rotta
+    `POST /api/auth/register`, `generateRecoveryCode`). Login + `/recover` legacy intatti.
+  - (3) ✅ **FATTO** — privacy/policy aggiornate (DB `app_settings`): raccolta email, fornitori Google
+    (OAuth) + Brevo, cifratura password/PIN; termini con creazione account Google/Email. Vedi `17`.
+  - (1) ⏳ **DA FARE (prima del lancio pubblico)** — **dominio email proprio** + DKIM/DMARC su Brevo
+    per uscire dallo spam in produzione. Non urgente: Google non manda email; email/password funziona
+    ma cade in spam (avviso già in app).
+  - Env Render: **già presenti tutte e 4** (`SUPABASE_URL`/`SUPABASE_ANON_KEY` backend +
+    `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` build) → il social parte in produzione senza altri
+    interventi. Sono in Render ma NON in `render.yaml`: se si ricrea il servizio da blueprint, vanno re-inserite.
+
+## 8bis. Stato dati (pre-pubblicazione, giu 2026)
+App **azzerata a stato vergine**: 0 utenti, 0 chat/match/possessi (DB app + `auth.users` Supabase).
+Catalogo intatto (23 album + 17.581 figurine) e `app_settings`. Backup pre-reset in `BACKUP/db_pre_reset_*.sql.gz`.
+Pronta per i primi utenti reali. Vedi `17_DECISION_LOG.md` e `09_DATABASE.md`.
 
 ## 9. Aperto / da decidere più avanti
 

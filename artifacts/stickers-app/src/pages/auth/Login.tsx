@@ -25,31 +25,18 @@ import type { AuthResponse } from "@workspace/api-client-react";
 
 // Allineato alla regola del backend: 5-12 caratteri (lettere, numeri, - o _),
 // ALFANUMERICO MISTO obbligatorio (almeno una lettera E almeno un numero).
+// Usato dalla schermata "Completa profilo" social.
 const NICKNAME_REGEX = /^[A-Za-z0-9_-]{5,12}$/;
-const NICKNAME_MSG =
-  "Il nickname deve avere 5-12 caratteri con almeno una lettera e un numero (ammessi - e _)";
 
+// La registrazione avviene SOLO con Google o Email (Supabase Auth). Il form
+// nickname+PIN resta come solo ACCESSO per gli account storici/admin: niente
+// più creazione account PIN, niente domanda di sicurezza, niente codice STICK.
 const loginSchema = z.object({
   nickname: z.string().min(1, "Inserisci il nickname"),
   pin: z.string().min(4, "Il PIN deve avere almeno 4 cifre").max(6),
 });
 
-const registerSchema = z.object({
-  nickname: z
-    .string()
-    .regex(NICKNAME_REGEX, NICKNAME_MSG)
-    .refine((s) => /[A-Za-z]/.test(s) && /[0-9]/.test(s), NICKNAME_MSG),
-  pin: z.string().min(4, "Il PIN deve avere almeno 4 cifre").max(6),
-  cap: z.string().length(5, "Il CAP deve essere di 5 cifre"),
-  securityQuestion: z.string().min(5, "Domanda di sicurezza obbligatoria"),
-  securityAnswer: z.string().min(2, "Risposta obbligatoria"),
-  acceptTerms: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare Privacy e Termini per registrarti" }),
-  }),
-});
-
 type LoginValues = z.infer<typeof loginSchema>;
-type RegisterValues = z.infer<typeof registerSchema>;
 
 export function Login() {
   const [, setLocation] = useLocation();
@@ -58,11 +45,10 @@ export function Login() {
   // Destinazione dopo il login (es. /admin), solo se path interno sicuro.
   const rawNext = new URLSearchParams(search).get("next");
   const nextPath = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
-  const [isRegister, setIsRegister] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showRecoveryCode, setShowRecoveryCode] = useState<string | null>(null);
-  // Accesso con nickname+PIN: opzione secondaria, nascosta di default.
+  // Accesso con nickname+PIN: opzione secondaria (solo login storico/admin),
+  // nascosta di default. La creazione account avviene solo con Google/Email.
   const [showLegacy, setShowLegacy] = useState(false);
   // Stato accesso social (Google / email via Supabase).
   const socialAvailable = isSocialAuthAvailable();
@@ -107,68 +93,39 @@ export function Login() {
     // Se ok: redirect a Google in corso; al ritorno parte l'useEffect.
   };
 
-  const form = useForm<RegisterValues>({
-    resolver: zodResolver(isRegister ? registerSchema : loginSchema),
+  const form = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       nickname: "",
       pin: "",
-      cap: "",
-      securityQuestion: "",
-      securityAnswer: "",
-      acceptTerms: false as unknown as true,
     },
   });
 
-  const onSubmit = async (data: RegisterValues) => {
+  // Solo ACCESSO nickname+PIN (account storici/admin). La creazione di nuovi
+  // account passa esclusivamente da Google/Email.
+  const onSubmit = async (data: LoginValues) => {
     setLoginError(null);
     setIsLoading(true);
 
     try {
       const normalizedNick = data.nickname.trim().toLowerCase();
-      if (isRegister) {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nickname: normalizedNick,
-            pin: data.pin,
-            cap: data.cap,
-            securityQuestion: data.securityQuestion,
-            securityAnswer: data.securityAnswer,
-            acceptTerms: data.acceptTerms === true,
-          }),
-        });
-        const json: AuthResponse & { recoveryCode?: string } = await res.json();
-        if (!res.ok) {
-          setLoginError((json as any)?.message ?? "Errore durante la registrazione");
-          return;
-        }
-        login(json.user, json.token);
-        setShowRecoveryCode(json.recoveryCode ?? null);
-      } else {
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nickname: normalizedNick, pin: data.pin }),
-        });
-        const json: AuthResponse = await res.json();
-        if (!res.ok) {
-          setLoginError((json as any)?.message ?? "Nickname o PIN non validi");
-          return;
-        }
-        login(json.user, json.token);
-        setLocation(json.user.isAdmin ? (nextPath ?? "/admin") : "/");
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname: normalizedNick, pin: data.pin }),
+      });
+      const json: AuthResponse = await res.json();
+      if (!res.ok) {
+        setLoginError((json as any)?.message ?? "Nickname o PIN non validi");
+        return;
       }
+      login(json.user, json.token);
+      setLocation(json.user.isAdmin ? (nextPath ?? "/admin") : "/");
     } catch {
       setLoginError("Errore di connessione. Riprova.");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const dismissRecovery = () => {
-    setShowRecoveryCode(null);
-    setLocation("/");
   };
 
   // --- Schermata "Completa profilo" per nuovi utenti social (Google/email) ---
@@ -181,31 +138,6 @@ export function Login() {
     return <EmailAuth onDone={finishSocial} onBack={() => { setShowEmail(false); setLoginError(null); }} />;
   }
 
-  if (showRecoveryCode) {
-    return (
-      <div className="h-full overflow-y-auto flex items-center justify-center bg-muted/30 p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-2xl font-bold text-primary">Registrazione completata</CardTitle>
-            <CardDescription>Salva il tuo codice di recupero</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-              <p className="font-mono text-xl font-bold tracking-widest text-foreground">{showRecoveryCode}</p>
-            </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Salva questo codice: serve per recuperare il profilo e gli eventuali acquisti.
-              Se lo perdi, il recupero potrebbe non essere possibile o potrebbe richiedere verifica manuale.
-            </p>
-            <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold h-12" onClick={dismissRecovery}>
-              Ho salvato il codice — Entra
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="h-full overflow-y-auto flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -214,7 +146,7 @@ export function Login() {
             <AppLogo className="h-24 w-auto" />
           </CardTitle>
           <CardDescription className="text-base font-medium text-foreground">
-            {isRegister ? "Crea un nuovo account" : "Accedi al tuo account"}
+            Accedi o crea il tuo account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -263,8 +195,9 @@ export function Login() {
             </div>
           )}
 
-          {/* Form nickname + PIN: principale se social non disponibile, altrimenti
-              opzione secondaria mostrata su richiesta. */}
+          {/* Form nickname + PIN: SOLO accesso (account storici/admin). I nuovi
+              account si creano con Google o Email. Principale se il social non è
+              disponibile, altrimenti opzione secondaria mostrata su richiesta. */}
           {(!socialAvailable || showLegacy) && (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -276,7 +209,7 @@ export function Login() {
                     <FormLabel>Nickname</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={isRegister ? "es. Marco95 (lettere + numeri)" : "es. Marco95"}
+                        placeholder="es. Marco95"
                         autoComplete="username"
                         spellCheck={false}
                         inputMode="text"
@@ -290,12 +223,6 @@ export function Login() {
                       />
                     </FormControl>
                     <FormMessage />
-                    {isRegister && (
-                      <p className="text-[11px] text-muted-foreground leading-snug">
-                        È il nome con cui ti vedranno gli altri. Scegli bene:{" "}
-                        <span className="font-medium text-foreground">non potrà essere modificato</span>.
-                      </p>
-                    )}
                   </FormItem>
                 )}
               />
@@ -313,98 +240,23 @@ export function Login() {
                 )}
               />
 
-              {isRegister && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="cap"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CAP (Codice Postale)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="es. 20100" maxLength={5} autoComplete="postal-code" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="securityQuestion"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Domanda di sicurezza</FormLabel>
-                        <FormControl>
-                          <Input placeholder="es. Il nome del tuo primo animale?" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="securityAnswer"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Risposta di sicurezza</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Risposta" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="acceptTerms"
-                    render={({ field }) => (
-                      <FormItem>
-                        <label className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="mt-0.5 h-4 w-4 accent-primary"
-                            checked={!!field.value}
-                            onChange={e => field.onChange(e.target.checked)}
-                          />
-                          <span>
-                            Dichiaro di avere almeno 14 anni e di aver letto la{" "}
-                            <a href="/legal/privacy" target="_blank" rel="noopener" className="underline text-primary">Privacy Policy</a>
-                            {" "}e i{" "}
-                            <a href="/legal/termini" target="_blank" rel="noopener" className="underline text-primary">Termini d'uso</a>.
-                          </span>
-                        </label>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-
               {loginError && (
                 <p className="text-sm text-destructive text-center bg-destructive/5 border border-destructive/20 rounded-lg p-2">{loginError}</p>
               )}
 
-              <div className="pt-2 flex flex-col space-y-3">
+              <div className="pt-2">
                 <Button
                   type="submit"
                   disabled={isLoading}
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base h-12"
                 >
-                  {isLoading ? "Attendi..." : isRegister ? "Inizia gratis" : "Accedi"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-11"
-                  onClick={() => { setIsRegister(!isRegister); setLoginError(null); form.reset(); }}
-                >
-                  {isRegister ? "Ho già un account" : "Crea un nuovo account"}
+                  {isLoading ? "Attendi..." : "Accedi"}
                 </Button>
               </div>
             </form>
           </Form>
           )}
-          {(!socialAvailable || showLegacy) && !isRegister && (
+          {(!socialAvailable || showLegacy) && (
             <div className="mt-3 text-center">
               <button
                 type="button"
