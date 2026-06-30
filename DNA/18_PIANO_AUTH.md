@@ -1,7 +1,52 @@
-# DNA — Scheda di lavoro: nuovo sistema di accesso (auth)
+# DNA — Sistema di accesso (auth)
 
-> Documento di **pianificazione** (non ancora implementato). Lo aggiorniamo mano a mano.
 > Obiettivo: accesso moderno, semplice e sicuro, a **costo zero** fino a 2.000-3.000 utenti.
+> Stato: **Google login fatto e verificato** (giu 2026). Email/password = da fare (serve SMTP).
+
+## 0. Configurazione e credenziali (riferimento operativo)
+
+> Valori non sensibili qui; i segreti stanno in `.env` / App Control / Render (mai nel repo).
+
+**Account & servizi**
+- **Email Google Auth (owner/admin del progetto OAuth):** `dero975@gmail.com`. È l'account Google
+  con cui è stato creato il progetto Cloud e la schermata di consenso; è anche l'email di contatto
+  assistenza/sviluppatore. (L'email di supporto pubblica dell'app resta l'hotmail `stickersmatchbox@hotmail.com`.)
+- **Google Cloud project:** nome **"stikers"** (ID progetto `stikers-500923`), console.cloud.google.com.
+  - OAuth: tipo app **Esterno**; schermata di consenso "Stickers".
+  - **Client OAuth "Web"**: tipo Applicazione web. Client ID e Secret salvati in Supabase (provider
+    Google) e tracciati come segreti — NON in chiaro nel DNA.
+  - **Origini JS autorizzate:** `https://kuigzaqaewgcosfhahkv.supabase.co`
+  - **Redirect URI autorizzato:** `https://kuigzaqaewgcosfhahkv.supabase.co/auth/v1/callback`
+- **Supabase (progetto `kuigzaqaewgcosfhahkv`)** → Authentication:
+  - Provider **Google = ON** (Client ID + Secret di Google Cloud incollati lì).
+  - **URL Configuration:** Site URL = `https://stickers-matchbox.onrender.com`; Redirect URLs =
+    `https://stickers-matchbox.onrender.com/**` e `http://localhost:5001/**`.
+  - "Confirm email" resta ON (vale per email/password; Google è già verificato → nessuna mail).
+- **Render (`stickers-matchbox`):** env necessarie all'auth **già presenti** — backend
+  `SUPABASE_URL`, `SUPABASE_ANON_KEY`; build frontend `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+- **Brevo (SMTP per email/password):** ancora **da registrare** (gratis, 300 email/giorno).
+
+**Mappa file (dove vive cosa)**
+- Frontend: `pages/auth/Login.tsx` (schermata + `CompleteProfile`), `lib/social-auth.ts` (flusso),
+  `lib/supabase.ts` (`getSupabaseAuthClient` client auth dedicato), `components/brand/GoogleIcon.tsx`.
+- Backend: `lib/supabase-auth.ts` (verifica token Supabase), `routes/auth.ts`
+  (`POST /api/auth/social`, `POST /api/auth/social/complete`).
+- DB: migrazione `lib/db/migrations/0006_auth_providers.sql`; schema `lib/db/src/schema/users.ts`.
+
+**Colonne DB aggiunte (0006, additiva, applicata)**
+- `email` (text, nullable), `auth_provider` (text NOT NULL default `'pin'` → `'pin'|'google'|'email'`),
+  `supabase_user_id` (uuid, nullable). Resi nullable: `pin_hash`, `security_question`,
+  `security_answer_hash`, `recovery_code`. Indici unici **parziali** (solo valori non NULL) su email,
+  supabase_user_id, recovery_code. Gli utenti storici restano `auth_provider='pin'`.
+
+**Come funziona il "ponte identità" (in breve)**
+1. L'utente fa "Continua con Google" → Supabase autentica e torna all'app con un access token.
+2. Il frontend invia il token a `POST /api/auth/social`; il backend lo **verifica presso Supabase**
+   (`/auth/v1/user`) ricavando `supabase_user_id` + email.
+3. Se l'utente esiste (per uuid o email) → login e rilascio del **nostro** token HMAC. Se è nuovo →
+   risposta `needsProfile` → schermata "Completa profilo" → `POST /api/auth/social/complete` crea
+   l'utente (nickname permanente + CAP, senza PIN) e rilascia il nostro token.
+4. Da qui in poi l'app usa il token HMAC di sempre: nessun'altra parte cambia.
 
 ## 1. Perché cambiamo (problema attuale)
 
@@ -92,9 +137,10 @@ Conclusione: **costo zero** fino ai numeri previsti e oltre.
   **Verificato end-to-end in locale** (login Google reale → profilo → app).
 - **STEP 5 — DA FARE (dopo Brevo):** "Continua con Email" + reset password via email; poi ritiro
   domanda di sicurezza + codice STICK per i nuovi utenti.
-- **STEP 6 — DA FARE:** aggiornare privacy/policy (login Google = dato in più). **Prima del deploy:**
-  aggiungere su Render le env del backend `SUPABASE_URL` + `SUPABASE_ANON_KEY` (oggi NON in render.yaml)
-  e per il frontend `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`, altrimenti il social non parte in prod.
+- **STEP 6 — DA FARE:** aggiornare privacy/policy (login Google = dato in più). Env Render: **già
+  presenti tutte e 4** (`SUPABASE_URL`/`SUPABASE_ANON_KEY` backend + `VITE_SUPABASE_URL`/
+  `VITE_SUPABASE_ANON_KEY` build) → il social parte in produzione senza altri interventi. Sono in
+  Render ma NON in `render.yaml`: se un giorno si ricrea il servizio da blueprint, vanno re-inserite.
 
 ## 9. Aperto / da decidere più avanti
 
