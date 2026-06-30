@@ -7,6 +7,14 @@
 
 ## 2026-06
 
+- **Sezione Messaggi admin — moderazione completa + scaling** — preparata per 2.000-3.000 utenti.
+  (1) `listChats` riscritto da N+1 (1 + 4·N query) a **poche query aggregate** (nickname via
+  `id = ANY`, conteggi messaggi GROUP BY, ultima segnalazione DISTINCT ON) → regge migliaia di chat;
+  aggiunti `user1Id`/`user2Id` al payload. (2) Nuovo `DELETE /api/admin/chats/:chatId` (solo admin):
+  toglie prima le `reports` collegate (FK NO ACTION) poi la chat → messaggi/conferme spariscono per
+  CASCADE. (3) Dialog Messaggi: pulsanti **Elimina chat** + **Blocca** (per ciascun partecipante,
+  riusa `PATCH /users/:id/block`), con conferma. Frontend usa `fetch`+`authHeaders` (no rigenerazione
+  OpenAPI). Verificato live (lista campi ok, delete a cascata ok). Vedi `08_NAVIGAZIONE_UI.md`.
 - **⛔ Pulsante switch U/A (DevQuickSwitch) — INTOCCABILE per regola dell'owner** — il pulsante
   tondo "U/A" (in `components/dev/DevQuickSwitch.tsx`) **bypassa l'autenticazione** (login automatico
   con account demo Dero975/admin, switch istantaneo vista Utente↔Admin) ed è una scelta INTENZIONALE,

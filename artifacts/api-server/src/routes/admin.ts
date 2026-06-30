@@ -125,32 +125,60 @@ const toggleBlock: RequestHandler = async (req, res) => {
 };
 
 // GET /api/admin/chats
+// Ottimizzato per scalare a migliaia di chat: niente N+1 (prima 1 + 4·N query).
+// Ora poche query totali — nickname, conteggi messaggi e report aggregati in blocco.
 const listChats: RequestHandler = async (req, res) => {
   try {
     const session = await requireAdmin(req, res);
     if (!session) return;
     const { db } = await import("@workspace/db");
-    const { chatsTable, usersTable, messagesTable, reportsTable } = await import("@workspace/db");
+    const { chatsTable } = await import("@workspace/db");
 
     const chats = await db.select().from(chatsTable).orderBy(desc(chatsTable.createdAt));
-    const result = await Promise.all(chats.map(async chat => {
-      const [u1] = await db.select().from(usersTable).where(eq(usersTable.id, chat.user1Id)).limit(1);
-      const [u2] = await db.select().from(usersTable).where(eq(usersTable.id, chat.user2Id)).limit(1);
-      const msgCount = (await db.select().from(messagesTable).where(eq(messagesTable.chatId, chat.id))).length;
-      const reports = await db.select().from(reportsTable).where(eq(reportsTable.chatId, chat.id)).orderBy(desc(reportsTable.createdAt));
-      return {
-        id: chat.id,
-        user1Nickname: u1?.nickname ?? "",
-        user2Nickname: u2?.nickname ?? "",
-        status: chat.status,
-        messageCount: msgCount,
-        hasReport: reports.length > 0,
-        reportReason: reports[0]?.reason ?? null,
-        createdAt: chat.createdAt.toISOString(),
-      };
+    if (chats.length === 0) { res.json([]); return; }
+
+    // 1) Nickname di tutti i partecipanti in UNA query (solo gli id coinvolti).
+    const userIds = Array.from(new Set(chats.flatMap(c => [c.user1Id, c.user2Id])));
+    const nickRows = await db.execute<{ id: number; nickname: string }>(
+      sql`SELECT id, nickname FROM users WHERE id = ANY(${sql.raw(`ARRAY[${userIds.join(",")}]`)})`,
+    );
+    const nickMap = new Map<number, string>(
+      (((nickRows as any).rows ?? nickRows) as { id: number; nickname: string }[]).map(r => [r.id, r.nickname]),
+    );
+
+    // 2) Conteggio messaggi per chat in UNA query (GROUP BY).
+    const msgRows = await db.execute<{ chat_id: number; n: number }>(
+      sql`SELECT chat_id, COUNT(*)::int AS n FROM messages GROUP BY chat_id`,
+    );
+    const msgMap = new Map<number, number>(
+      (((msgRows as any).rows ?? msgRows) as { chat_id: number; n: number }[]).map(r => [r.chat_id, r.n]),
+    );
+
+    // 3) Ultima segnalazione per chat in UNA query (DISTINCT ON, più recente).
+    const repRows = await db.execute<{ chat_id: number; reason: string }>(
+      sql`SELECT DISTINCT ON (chat_id) chat_id, reason
+          FROM reports WHERE chat_id IS NOT NULL
+          ORDER BY chat_id, created_at DESC`,
+    );
+    const repMap = new Map<number, string>(
+      (((repRows as any).rows ?? repRows) as { chat_id: number; reason: string }[]).map(r => [r.chat_id, r.reason]),
+    );
+
+    const result = chats.map(chat => ({
+      id: chat.id,
+      user1Id: chat.user1Id,
+      user2Id: chat.user2Id,
+      user1Nickname: nickMap.get(chat.user1Id) ?? "",
+      user2Nickname: nickMap.get(chat.user2Id) ?? "",
+      status: chat.status,
+      messageCount: msgMap.get(chat.id) ?? 0,
+      hasReport: repMap.has(chat.id),
+      reportReason: repMap.get(chat.id) ?? null,
+      createdAt: chat.createdAt.toISOString(),
     }));
     res.json(result);
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -166,6 +194,28 @@ const closeChat: RequestHandler = async (req, res) => {
     await db.update(chatsTable).set({ status: "closed" }).where(eq(chatsTable.id, chatId));
     res.json({ success: true, message: "Chat chiusa" });
   } catch {
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
+// DELETE /api/admin/chats/:chatId
+// Elimina definitivamente una chat. Messaggi e conferme scambio collegati spariscono
+// per FK CASCADE; le segnalazioni (FK NO ACTION) vanno rimosse prima per non bloccare.
+const deleteChat: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    const chatId = parseInt(req.params.chatId as string, 10);
+    if (!Number.isFinite(chatId)) { res.status(400).json({ error: "INVALID_ID" }); return; }
+    const { db } = await import("@workspace/db");
+    const { chatsTable, reportsTable } = await import("@workspace/db");
+    // Toglie prima le segnalazioni legate (vincolo FK NO ACTION), poi la chat.
+    await db.delete(reportsTable).where(eq(reportsTable.chatId, chatId));
+    const deleted = await db.delete(chatsTable).where(eq(chatsTable.id, chatId)).returning({ id: chatsTable.id });
+    if (deleted.length === 0) { res.status(404).json({ error: "NOT_FOUND" }); return; }
+    res.json({ success: true, message: "Chat eliminata" });
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -325,6 +375,7 @@ router.patch("/users/:userId/block", toggleBlock);
 router.post("/users/:userId/premium", setUserPremium);
 router.get("/chats", listChats);
 router.patch("/chats/:chatId/close", closeChat);
+router.delete("/chats/:chatId", deleteChat);
 router.get("/chats/:chatId/messages", getChatMessages);
 router.get("/reports", listReports);
 router.get("/paywall/config", getPaywallConfig);
