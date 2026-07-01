@@ -18,5 +18,7 @@ export interface UserProfile {
   hasAllChats: boolean;
   exchangesCompleted: number;
   isAdmin: boolean;
+  /** Esiste almeno una segnalazione pendente a carico dell'utente. Mostra un avviso generico "conversazioni sotto revisione" senza rivelare chi ha segnalato. */
+  underReview?: boolean;
   createdAt?: string;
 }

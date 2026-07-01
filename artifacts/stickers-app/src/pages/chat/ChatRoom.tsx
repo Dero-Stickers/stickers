@@ -80,7 +80,7 @@ export function ChatRoom() {
   const reportChat = useReportChat({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Segnalazione inviata", description: "Il team di moderazione verificherà la chat al più presto.", duration: 3000 });
+        toast({ title: "Segnalazione inviata", description: "L'admin sta esaminando il caso. Grazie per la segnalazione.", duration: 3500 });
         setShowReport(false);
         setReportReason("");
         setReportNotes("");

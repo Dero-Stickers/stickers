@@ -222,6 +222,30 @@ const reopenChat: RequestHandler = async (req, res) => {
   }
 };
 
+// PATCH /api/admin/chats/:chatId/resolve-report — segna come GESTITE le segnalazioni
+// di questa chat (status pending → resolved). Conserva lo storico ma toglie l'utente
+// dallo stato "sotto revisione" (il banner lato utente si basa sui soli report pending).
+const resolveChatReports: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    const chatId = parseInt(req.params.chatId as string, 10);
+    if (!Number.isFinite(chatId)) { res.status(400).json({ error: "INVALID_ID" }); return; }
+    const { db } = await import("@workspace/db");
+    const { reportsTable } = await import("@workspace/db");
+    const { and } = await import("drizzle-orm");
+    const updated = await db
+      .update(reportsTable)
+      .set({ status: "resolved" })
+      .where(and(eq(reportsTable.chatId, chatId), eq(reportsTable.status, "pending")))
+      .returning({ id: reportsTable.id });
+    res.json({ success: true, resolved: updated.length, message: "Segnalazione gestita" });
+  } catch (err) {
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
 // DELETE /api/admin/chats/:chatId
 // Elimina definitivamente una chat. Messaggi e conferme scambio collegati spariscono
 // per FK CASCADE; le segnalazioni (FK NO ACTION) vanno rimosse prima per non bloccare.
@@ -400,6 +424,7 @@ router.post("/users/:userId/premium", setUserPremium);
 router.get("/chats", listChats);
 router.patch("/chats/:chatId/close", closeChat);
 router.patch("/chats/:chatId/reopen", reopenChat);
+router.patch("/chats/:chatId/resolve-report", resolveChatReports);
 router.delete("/chats/:chatId", deleteChat);
 router.get("/chats/:chatId/messages", getChatMessages);
 router.get("/reports", listReports);

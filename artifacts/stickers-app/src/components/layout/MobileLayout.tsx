@@ -1,6 +1,6 @@
-import { ReactNode, useRef } from "react";
+import { ReactNode, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, BookOpen, Users, User } from "lucide-react";
+import { Home, BookOpen, Users, User, ShieldAlert, X } from "lucide-react";
 import { useListChats, getListChatsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +26,13 @@ export function MobileLayout({ children }: { children: ReactNode }) {
 
   const unreadCount = chats?.reduce((sum, c) => sum + ((c as any).unreadCount ?? 0), 0) ?? 0;
 
+  // Avviso "sotto revisione": generico, staccato dalla singola chat, così non
+  // rivela chi ha segnalato. Chiudibile per la sessione (non martellante).
+  const [reviewDismissed, setReviewDismissed] = useState(
+    () => typeof sessionStorage !== "undefined" && sessionStorage.getItem("review_banner_dismissed") === "1",
+  );
+  const showReviewBanner = Boolean((currentUser as any)?.underReview) && !reviewDismissed;
+
   const navItems = [
     { icon: Home, label: "Home", path: "/", badge: 0 },
     { icon: BookOpen, label: "Album", path: "/album", badge: 0 },
@@ -38,6 +45,26 @@ export function MobileLayout({ children }: { children: ReactNode }) {
     // (max ~448px) con sfondo neutro ai lati; su telefono occupa tutto lo schermo.
     <div className="h-full bg-muted/40">
       <div className="relative mx-auto flex h-full w-full max-w-md md:max-w-2xl flex-col overflow-hidden bg-background md:shadow-xl">
+        {showReviewBanner && (
+          <div className="shrink-0 flex items-start gap-2 bg-amber-50 border-b border-amber-200 px-4 py-2 text-amber-900">
+            <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+            <p className="text-xs leading-snug flex-1">
+              Alcune tue conversazioni sono sotto revisione. Ricorda di mantenere un
+              comportamento corretto: le violazioni possono portare al blocco dell'account.
+            </p>
+            <button
+              type="button"
+              aria-label="Chiudi avviso"
+              className="shrink-0 -mr-1 p-0.5 text-amber-500 hover:text-amber-700"
+              onClick={() => {
+                setReviewDismissed(true);
+                try { sessionStorage.setItem("review_banner_dismissed", "1"); } catch { /* no-op */ }
+              }}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
         <main
           ref={mainRef}
           className="flex-1 min-h-0 overflow-hidden"

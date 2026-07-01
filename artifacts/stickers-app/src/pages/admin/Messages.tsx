@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MessageSquare, Eye, X, Flag, AlertTriangle, Trash2, Ban, RotateCcw } from "lucide-react";
+import { MessageSquare, Eye, X, Flag, AlertTriangle, Trash2, Ban, RotateCcw, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -127,6 +127,29 @@ export function AdminMessages() {
       toast({ title: "Chat riaperta", description: "Gli utenti possono di nuovo scrivere." });
     } catch {
       toast({ title: "Errore", description: "Riapertura non riuscita.", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Segna come gestita la segnalazione della chat (status pending → resolved):
+  // conserva lo storico ma toglie l'utente dallo stato "sotto revisione".
+  const resolveReport = async (chat: AdminChatExt) => {
+    const ok = await confirm({
+      title: "Segnare come gestita?",
+      description: "La segnalazione verrà archiviata e l'avviso \"sotto revisione\" sparirà per gli utenti coinvolti. Lo storico resta consultabile. Se serve, puoi comunque bloccare un utente.",
+      confirmLabel: "Segna come gestita",
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/chats/${chat.id}/resolve-report`, { method: "PATCH", headers: authHeaders() });
+      if (!res.ok) throw new Error();
+      setSelectedChat(null);
+      refreshChats();
+      toast({ title: "Segnalazione gestita", description: "L'avviso \"sotto revisione\" è stato rimosso." });
+    } catch {
+      toast({ title: "Errore", description: "Operazione non riuscita.", variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -293,6 +316,16 @@ export function AdminMessages() {
           {selectedChat && (
             <div className="border-t border-border pt-3 mt-1 space-y-2">
               <p className="text-xs font-semibold text-muted-foreground">Azioni di moderazione</p>
+              {selectedChat.hasReport && (
+                <Button
+                  size="sm" variant="outline" disabled={busy}
+                  className="w-full h-9 gap-1.5 text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                  onClick={() => resolveReport(selectedChat)}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Segna come gestita
+                </Button>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   size="sm" variant="outline" disabled={busy}

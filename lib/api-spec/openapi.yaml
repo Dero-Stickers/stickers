@@ -1052,6 +1052,9 @@ components:
           type: integer
         isAdmin:
           type: boolean
+        underReview:
+          type: boolean
+          description: Esiste almeno una segnalazione pendente a carico dell'utente. Mostra un avviso generico "conversazioni sotto revisione" senza rivelare chi ha segnalato.
         createdAt:
           type: string
       required: [id, nickname, cap, isPremium, paywallEnabled, hasAllChats, exchangesCompleted, isAdmin]

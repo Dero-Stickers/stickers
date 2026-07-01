@@ -20,8 +20,12 @@ import {
   type SocialResult,
 } from "@/lib/social-auth";
 import { EmailAuth } from "@/pages/auth/EmailAuth";
-import { Mail } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Mail, ShieldX } from "lucide-react";
 import type { AuthResponse } from "@workspace/api-client-react";
+
+// Email di supporto per richiesta sblocco account (dominio deroarts.com).
+const SUPPORT_EMAIL = "stickers@deroarts.com";
 
 // Allineato alla regola del backend: 5-12 caratteri (lettere, numeri, - o _),
 // ALFANUMERICO MISTO obbligatorio (almeno una lettera E almeno un numero).
@@ -46,6 +50,7 @@ export function Login() {
   const rawNext = new URLSearchParams(search).get("next");
   const nextPath = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [blockedOpen, setBlockedOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   // Accesso con nickname+PIN: opzione secondaria (solo login storico/admin),
   // nascosta di default. La creazione account avviene solo con Google/Email.
@@ -65,6 +70,15 @@ export function Login() {
       setLocation(r.user.isAdmin ? (nextPath ?? "/admin") : "/");
     } else if (r.kind === "needs_profile") {
       setPendingProfile({ accessToken: r.accessToken, email: r.email });
+    } else if (r.kind === "blocked") {
+      // Account sospeso via Google/Email: stesso modale del login PIN, così
+      // l'utente non resta a vedere una schermata muta e ha la via d'uscita.
+      // Chiudo la schermata Email per tornare al Login principale, dove vive
+      // il modale (EmailAuth sostituisce il render di Login mentre è aperta).
+      void clearSocialSession();
+      setShowEmail(false);
+      setPendingProfile(null);
+      setBlockedOpen(true);
     } else {
       setLoginError(r.message);
     }
@@ -116,6 +130,13 @@ export function Login() {
       });
       const json: AuthResponse = await res.json();
       if (!res.ok) {
+        const code = (json as any)?.error;
+        // Account bloccato: modale dedicato con via d'uscita (email supporto),
+        // invece di una scritta rossa che si perde nel form.
+        if (code === "ACCOUNT_BLOCKED" || code === "BLOCKED") {
+          setBlockedOpen(true);
+          return;
+        }
         setLoginError((json as any)?.message ?? "Nickname o PIN non validi");
         return;
       }
@@ -139,6 +160,7 @@ export function Login() {
   }
 
   return (
+    <>
     <div className="h-full overflow-y-auto flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2">
@@ -275,6 +297,37 @@ export function Login() {
         </CardContent>
       </Card>
     </div>
+
+    {/* Modale "Account bloccato": via d'uscita chiara (email supporto) invece
+        di una scritta rossa nel form. Non rivela il motivo del blocco. */}
+    <Dialog open={blockedOpen} onOpenChange={setBlockedOpen}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShieldX className="h-5 w-5 text-destructive" />
+            Account bloccato
+          </DialogTitle>
+          <DialogDescription className="pt-1 text-left">
+            Il tuo account è stato sospeso e al momento non puoi accedere.
+            Se pensi si tratti di un errore, scrivici per chiedere lo sblocco:
+            indica il tuo nickname nella richiesta.
+          </DialogDescription>
+        </DialogHeader>
+        <a
+          href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Richiesta sblocco account")}`}
+          className="flex items-center justify-center gap-2 w-full h-11 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+        >
+          <Mail className="h-4 w-4" />
+          Scrivi a {SUPPORT_EMAIL}
+        </a>
+        <DialogFooter>
+          <Button variant="ghost" className="w-full" onClick={() => setBlockedOpen(false)}>
+            Chiudi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

@@ -104,10 +104,11 @@ function clientIp(req: { ip?: string }): string {
 
 const router = Router();
 
-async function userPayload(user: any) {
+async function userPayload(user: any, underReview = false) {
   // Nuovo modello "paga per sbloccare la chat":
   //  - paywallEnabled riflette il master switch app_settings chat_paywall_enabled;
   //  - hasAllChats = isPremium (l'utente ha sbloccato TUTTE le chat).
+  // underReview è calcolato solo in getMe (non a ogni login) per il banner "sotto revisione".
   const paywallEnabled = await isChatPaywallEnabled();
   return {
     id: user.id,
@@ -119,6 +120,7 @@ async function userPayload(user: any) {
     hasAllChats: user.isPremium,
     exchangesCompleted: user.exchangesCompleted,
     isAdmin: user.isAdmin,
+    underReview,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -257,8 +259,8 @@ const getMe: RequestHandler = async (req, res) => {
     const session = req.session!;
 
     const { db } = await import("@workspace/db");
-    const { usersTable } = await import("@workspace/db");
-    const { eq } = await import("drizzle-orm");
+    const { usersTable, reportsTable } = await import("@workspace/db");
+    const { eq, and } = await import("drizzle-orm");
 
     const [user] = await db
       .select()
@@ -271,7 +273,15 @@ const getMe: RequestHandler = async (req, res) => {
       return;
     }
 
-    res.json(await userPayload(user));
+    // Avviso generico "sotto revisione": vero se esiste almeno una segnalazione
+    // pendente a carico dell'utente. Non rivela chi ha segnalato né quale chat.
+    const [pending] = await db
+      .select({ id: reportsTable.id })
+      .from(reportsTable)
+      .where(and(eq(reportsTable.reportedUserId, user.id), eq(reportsTable.status, "pending")))
+      .limit(1);
+
+    res.json(await userPayload(user, Boolean(pending)));
   } catch (err) {
     req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });

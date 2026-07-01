@@ -51,6 +51,12 @@ export const LoginResponse = zod.object({
       .describe("L'utente ha sbloccato TUTTE le chat (= isPremium)."),
     exchangesCompleted: zod.number(),
     isAdmin: zod.boolean(),
+    underReview: zod
+      .boolean()
+      .optional()
+      .describe(
+        'Esiste almeno una segnalazione pendente a carico dell\'utente. Mostra un avviso generico \"conversazioni sotto revisione\" senza rivelare chi ha segnalato.',
+      ),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -90,6 +96,12 @@ export const RecoverAccountResponse = zod.object({
       .describe("L'utente ha sbloccato TUTTE le chat (= isPremium)."),
     exchangesCompleted: zod.number(),
     isAdmin: zod.boolean(),
+    underReview: zod
+      .boolean()
+      .optional()
+      .describe(
+        'Esiste almeno una segnalazione pendente a carico dell\'utente. Mostra un avviso generico \"conversazioni sotto revisione\" senza rivelare chi ha segnalato.',
+      ),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -115,6 +127,12 @@ export const GetMeResponse = zod.object({
     .describe("L'utente ha sbloccato TUTTE le chat (= isPremium)."),
   exchangesCompleted: zod.number(),
   isAdmin: zod.boolean(),
+  underReview: zod
+    .boolean()
+    .optional()
+    .describe(
+      'Esiste almeno una segnalazione pendente a carico dell\'utente. Mostra un avviso generico \"conversazioni sotto revisione\" senza rivelare chi ha segnalato.',
+    ),
   createdAt: zod.string().optional(),
 });
 

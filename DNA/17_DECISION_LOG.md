@@ -7,6 +7,23 @@
 
 ## 2026-07
 
+- **Comunicazione blocco/segnalazioni all'utente** — concetto unico "l'utente sa cosa succede, senza
+  mai sapere chi lo ha segnalato". 3 pezzi non invasivi: (1) **bloccato** → modale dedicato con email
+  supporto cliccabile `stickers@deroarts.com` (segnaposto, casella da creare). Scatta su TUTTI i canali:
+  login PIN (`Login.tsx`, intercetta `error: ACCOUNT_BLOCKED`), Google ed Email — `social-auth.ts`
+  propaga un `kind:"blocked"` (prima il codice si perdeva → login Google bloccato restava MUTO; bug
+  trovato in revisione adversarial). (2) **chi segnala** → toast "L'admin sta esaminando il caso"
+  (`ChatRoom.tsx`). (3) **segnalato** → banner generico di sistema in `MobileLayout` ("Alcune tue
+  conversazioni sono sotto revisione"), chiudibile per sessione, guidato dal campo `UserProfile.underReview`
+  (calcolato SOLO in `GET /api/auth/me`: esiste ≥1 report **pending** a suo carico). Scartate: rivelare il
+  segnalante e bloccare la chat in automatico (ritorsioni + abuso). L'avviso NON è agganciato alla singola
+  chat né al momento.
+  **Archiviazione segnalazioni (admin):** nuovo `PATCH /api/admin/chats/:chatId/resolve-report`
+  (`resolveChatReports`, solo admin) porta i report pending→**resolved** (storico conservato). Pulsante
+  verde "Segna come gestita" nel dettaglio chat (`Messages.tsx`). Serviva perché prima nessun flusso
+  cambiava lo status → il banner "sotto revisione" restava a vita su utenti innocenti (bug di design
+  trovato in revisione). Ora sparisce quando l'admin archivia. Verificato E2E: pending→resolve→underReview
+  passa true→false; endpoint nega non-admin (403) e anonimi (401).
 - **Admin UI consolidata (componenti condivisi)** — creati 3 componenti riusabili per uniformare
   tutte le tabelle admin: `SortHeader` (una sola icona a 3 linee crescenti, senza testo, colorata
   quando attiva), `AdminFilterBar` (ricerca + chip di stato, sfondo bianco, gap minimo con la

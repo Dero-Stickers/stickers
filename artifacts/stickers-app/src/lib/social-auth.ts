@@ -16,7 +16,14 @@ import type { UserProfile } from "@workspace/api-client-react";
 export type SocialResult =
   | { kind: "logged_in"; user: UserProfile; token: string }
   | { kind: "needs_profile"; accessToken: string; email: string | null }
+  | { kind: "blocked" } // account bloccato: la UI mostra il modale con l'email supporto
   | { kind: "error"; message: string };
+
+// Il backend risponde con questi codici quando l'account è sospeso. Serve a
+// distinguere il blocco da un errore generico e mostrare il modale coerente.
+function isBlockedError(j: any): boolean {
+  return j?.error === "BLOCKED" || j?.error === "ACCOUNT_BLOCKED";
+}
 
 /** Avvia il login con Google (redirect). Ritorna false se non configurato. */
 export async function startGoogleLogin(): Promise<boolean> {
@@ -53,6 +60,7 @@ export async function exchangeWithBackend(accessToken: string): Promise<SocialRe
     if (res.ok && j?.token) {
       return { kind: "logged_in", user: j.user, token: j.token };
     }
+    if (isBlockedError(j)) return { kind: "blocked" };
     return { kind: "error", message: j?.message ?? "Accesso non riuscito" };
   } catch {
     return { kind: "error", message: "Errore di connessione" };
@@ -84,6 +92,7 @@ export async function completeSocialProfile(input: {
     });
     const j = await res.json().catch(() => ({}));
     if (res.ok && j?.token) return { kind: "logged_in", user: j.user, token: j.token };
+    if (isBlockedError(j)) return { kind: "blocked" };
     return { kind: "error", message: j?.message ?? "Registrazione non riuscita" };
   } catch {
     return { kind: "error", message: "Errore di connessione" };
