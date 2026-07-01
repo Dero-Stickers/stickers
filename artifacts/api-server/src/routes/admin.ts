@@ -23,29 +23,32 @@ const getStats: RequestHandler = async (req, res) => {
     const session = await requireAdmin(req, res);
     if (!session) return;
     const { db } = await import("@workspace/db");
-    const { usersTable, albumsTable, chatsTable, reportsTable, messagesTable, chatUnlocksTable } = await import("@workspace/db");
 
-    const users = await db.select().from(usersTable).where(eq(usersTable.isAdmin, false));
-    const albums = await db.select().from(albumsTable);
-    const chats = await db.select().from(chatsTable);
-    const reports = await db.select().from(reportsTable);
-    const messages = await db.select().from(messagesTable);
-    const unlockRows = await db.select().from(chatUnlocksTable);
-
-    const premiumUsers = users.filter(u => u.isPremium).length;
-    const blockedUsers = users.filter(u => u.isBlocked).length;
-    const activeChats = chats.filter(c => c.status === "active").length;
-    const pendingReports = reports.filter(r => r.status === "pending").length;
+    // Conteggi calcolati a DB con COUNT(*) — NON scaricare intere tabelle in
+    // memoria solo per contarle (con molti messaggi/figurine sarebbe lento e
+    // sprecone di RAM). Una sola query aggregata.
+    const statRows = await db.execute<Record<string, number>>(sql`
+      SELECT
+        (SELECT COUNT(*)::int FROM users WHERE is_admin = false)              AS total_users,
+        (SELECT COUNT(*)::int FROM users WHERE is_admin = false AND is_premium) AS premium_users,
+        (SELECT COUNT(*)::int FROM users WHERE is_admin = false AND is_blocked) AS blocked_users,
+        (SELECT COUNT(*)::int FROM albums)                                    AS total_albums,
+        (SELECT COUNT(*)::int FROM messages)                                  AS total_messages,
+        (SELECT COUNT(*)::int FROM chats WHERE status = 'active')             AS active_chats,
+        (SELECT COUNT(*)::int FROM chat_unlocks)                              AS unlocks,
+        (SELECT COUNT(*)::int FROM reports WHERE status = 'pending')          AS pending_reports
+    `);
+    const s = (((statRows as any).rows ?? statRows) as Record<string, number>[])[0] ?? {};
 
     res.json({
-      totalUsers: users.length,
-      totalAlbums: albums.length,
-      totalMessages: messages.length,
-      activeChats,
-      premiumUsers,
-      unlocks: unlockRows.length,
-      blockedUsers,
-      pendingReports,
+      totalUsers: s.total_users ?? 0,
+      totalAlbums: s.total_albums ?? 0,
+      totalMessages: s.total_messages ?? 0,
+      activeChats: s.active_chats ?? 0,
+      premiumUsers: s.premium_users ?? 0,
+      unlocks: s.unlocks ?? 0,
+      blockedUsers: s.blocked_users ?? 0,
+      pendingReports: s.pending_reports ?? 0,
     });
   } catch (err) {
     req.log?.error(err);
@@ -59,7 +62,7 @@ const listUsers: RequestHandler = async (req, res) => {
     const session = await requireAdmin(req, res);
     if (!session) return;
     const { db } = await import("@workspace/db");
-    const { usersTable, userAlbumsTable } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
 
     const users = await db.select().from(usersTable).where(eq(usersTable.isAdmin, false)).orderBy(desc(usersTable.createdAt));
 
@@ -71,25 +74,31 @@ const listUsers: RequestHandler = async (req, res) => {
       (((unlockRows as any).rows ?? unlockRows) as { user_id: number; n: number }[]).map(r => [r.user_id, r.n]),
     );
 
-    const result = await Promise.all(users.map(async u => {
-      const albums = await db.select().from(userAlbumsTable).where(eq(userAlbumsTable.userId, u.id));
+    // Conteggio album per utente in UNA query (GROUP BY) — evita N+1 (prima una
+    // query per ogni utente: con 3000 utenti saturava il pool e andava in timeout).
+    const albumRows = await db.execute<{ user_id: number; n: number }>(
+      sql`SELECT user_id, COUNT(*)::int AS n FROM user_albums GROUP BY user_id`,
+    );
+    const albumMap = new Map<number, number>(
+      (((albumRows as any).rows ?? albumRows) as { user_id: number; n: number }[]).map(r => [r.user_id, r.n]),
+    );
 
-      return {
-        id: u.id,
-        nickname: u.nickname,
-        cap: u.cap,
-        area: u.area,
-        isPremium: u.isPremium,
-        hasAllChats: u.isPremium,
-        unlockedChats: unlockMap.get(u.id) ?? 0,
-        albumCount: albums.length,
-        exchangesCompleted: u.exchangesCompleted,
-        isBlocked: u.isBlocked,
-        createdAt: u.createdAt.toISOString(),
-      };
+    const result = users.map(u => ({
+      id: u.id,
+      nickname: u.nickname,
+      cap: u.cap,
+      area: u.area,
+      isPremium: u.isPremium,
+      hasAllChats: u.isPremium,
+      unlockedChats: unlockMap.get(u.id) ?? 0,
+      albumCount: albumMap.get(u.id) ?? 0,
+      exchangesCompleted: u.exchangesCompleted,
+      isBlocked: u.isBlocked,
+      createdAt: u.createdAt.toISOString(),
     }));
     res.json(result);
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };

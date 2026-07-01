@@ -5,8 +5,19 @@
 > ogni scelta architetturale/di prodotto non ricavabile rapidamente dal codice.
 > Riferito dalla governance (`AGENTS.md`, `CLAUDE.md §3.5`).
 
-## 2026-06
+## 2026-07
 
+- **HARD TEST 3.000 utenti — 2 bug di scaling admin trovati e risolti** — popolata l'app come
+  "pubblicata da tempo" (3.000 utenti su 50 città, ~116k figurine, media 34.9 doppie+mancanti/utente,
+  400 chat, 2009 messaggi, 34 segnalazioni) via `lib/db/src/seed-hardtest.ts` (additivo, marchio
+  `STICK-TST-`, non tocca il catalogo). Peso DB: **33 MB / 500 MB** (6.6%, ampio margine). I test di
+  performance hanno scoperto 2 endpoint admin che collassavano sotto carico:
+  (1) **`GET /api/admin/users`** — N+1 (una query album per ogni utente) → con 3.000 utenti **500 dopo
+  10s** (pool saturo). Fix: conteggio album in UNA query `GROUP BY` → **445 ms**.
+  (2) **`GET /api/admin/stats`** — scaricava intere tabelle in RAM per contarle (`select().from(messages)`
+  ecc.) → lento e sprecone. Fix: unica query con `COUNT(*)` → **491 ms → 44 ms**.
+  Gli endpoint match (cache 60s) e `listChats` (già ottimizzato) erano OK. La cattura errori funziona
+  (2 crash residui vecchi in `error_reports`, non del test). Pulizia post-test: `DELETE ... STICK-TST-%`.
 - **Sezione Messaggi admin — moderazione completa + scaling** — preparata per 2.000-3.000 utenti.
   (1) `listChats` riscritto da N+1 (1 + 4·N query) a **poche query aggregate** (nickname via
   `id = ANY`, conteggi messaggi GROUP BY, ultima segnalazione DISTINCT ON) → regge migliaia di chat;
