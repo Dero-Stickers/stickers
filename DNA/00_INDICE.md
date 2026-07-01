@@ -30,6 +30,8 @@ riunisce la specifica funzionale, lo stato di sviluppo e le guide operative.
 | `15_PROSSIMO_PROMPT.md` | Prompt operativo per la prossima sessione |
 | `16_STRESS_TEST_AUDIT.md` | Audit stress test: soglie di tenuta free tier, misure, migliorie |
 | `17_DECISION_LOG.md` | Decisioni tecniche rilevanti (registro, le più recenti in alto) |
+| `18_PIANO_AUTH.md` | Sistema di accesso: Google + Email/password, nickname, stato |
+| `19_DOMINIO_DEROARTS.md` | Dominio deroarts.com (Cloudflare + Zoho Mail): riferimento per l'integrazione FUTURA di Stickers (sottodomini, email dedicata, anti-spam) |
 
 ### Archivio
 | File | Contenuto |

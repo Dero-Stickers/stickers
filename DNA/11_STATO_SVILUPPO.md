@@ -1,14 +1,50 @@
 # DNA — Stato Sviluppo
 
-Aggiornato: 29 giugno 2026
+Aggiornato: 1 luglio 2026
 
 > Fotografia dello **stato attuale** (non un changelog). Tenere aggiornato questo
-> file a fine sessione. I dati nel DB sono di **test/finti**.
+> file a fine sessione.
 
 ## In sintesi
 
 Sticker Matchbox è **funzionante in locale e live in produzione** su Render.
 Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
+
+> **⚡ AGGIORNAMENTO 1 lug 2026 — leggere prima:** accesso modernizzato (Google +
+> Email/password via Supabase Auth), registrazione nickname+PIN **ritirata** (resta
+> solo login storico/admin), app **AZZERATA a stato vergine** per la pubblicazione
+> (0 utenti/chat/match, catalogo intatto), sezione Messaggi admin potenziata. Vedi
+> il blocco "Sessioni giu-lug 2026" più sotto e `17_DECISION_LOG.md`. **Per pubblicare
+> mancano: env Supabase su Render + decisione sul pulsante U/A** (vedi "Da fare").
+
+## Sessioni giu-lug 2026 — novità principali (fatte)
+
+- **Accesso moderno (Google + Email/password)** via Supabase Auth, accanto al login storico
+  nickname+PIN. Ponte identità: frontend prende l'access token Supabase → backend lo verifica
+  (`api-server/src/lib/supabase-auth.ts`) → `POST /api/auth/social` (+ `/social/complete`) → rilascia
+  il NOSTRO token HMAC. Nuovo utente social: nickname (permanente) + CAP, niente PIN. Email/password +
+  reset via **Brevo** SMTP (gratis 300/giorno, configurato in Supabase; mittente `dero975@gmail.com`).
+  Migrazione **0006** (email/auth_provider/supabase_user_id; PIN/domanda/recovery nullable). Frontend:
+  `pages/auth/{Login,EmailAuth}.tsx`, `lib/social-auth.ts`, `lib/supabase.ts`. Dettaglio in `18_PIANO_AUTH.md`.
+  ⚠️ Le email Brevo partono ma **cadono in SPAM** (mittente su dominio gratuito) → fix con dominio proprio
+  `deroarts.com` + DKIM/DMARC (vedi `19_DOMINIO_DEROARTS.md`).
+- **Registrazione nickname+PIN RITIRATA** — i nuovi account si creano SOLO con Google/Email. Rimossi dal
+  frontend il form register PIN, domanda di sicurezza, schermata codice STICK; dal backend l'handler
+  `register`, la rotta `POST /api/auth/register`, `generateRecoveryCode`. Il form nickname+PIN resta SOLO
+  come **accesso** (account storici/admin); login + `/recover` legacy intatti.
+- **Nickname** alfanumerico MISTO obbligatorio (≥1 lettera E ≥1 numero), **non modificabile** dopo la creazione.
+- **App AZZERATA a stato vergine (pre-pubblicazione)** — eliminati TUTTI gli utenti (admin/Dero975 inclusi),
+  chat, messaggi, sblocchi, pagamenti, conferme, segnalazioni, possessi; catalogo (23 album + 17.581 figurine)
+  e `app_settings` INTATTI. `auth.users` Supabase = 0. Backup pre-reset in `BACKUP/db_pre_reset_*.sql.gz`.
+- **Account demo ricreati per il pulsante U/A**: `Dero975` (pin 1234, utente) + `admin` (pin 0000, admin) —
+  servono al `DevQuickSwitch` per il bypass. ⛔ NON eliminarli, NON toccare il pulsante U/A senza ordine
+  esplicito dell'owner: vedi memoria `sticker-pulsante-ua-non-toccare` e `17_DECISION_LOG.md`.
+- **Cattura errori completa** (mini-Sentry self-hosted, no dipendenze esterne): ogni errore → Segnalazioni.
+- **Sezione Messaggi admin potenziata (per 2.000-3.000 utenti)**: `listChats` senza N+1 (poche query aggregate);
+  nuovo `DELETE /api/admin/chats/:chatId`; dialog con **Elimina chat** + **Blocca partecipante**. Vedi `07`.
+- **Privacy/Termini aggiornati** (DB `app_settings`) per Google/Email: raccolta email, fornitori Google(OAuth)+Brevo.
+- **Dominio `deroarts.com`** dell'owner acquistato (Cloudflare + Zoho Mail) — per l'integrazione FUTURA di
+  Stickers (`stickers.deroarts.com`, email `info-stickers@`, anti-spam). Solo documentato, non collegato. Vedi `19`.
 
 ## Fatto
 
@@ -56,12 +92,35 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Da fare
 
-### Alta priorità
-- [ ] **Email di recupero**: attivare un servizio di invio email (SMTP / Supabase). La struttura auth è già pronta (login nickname+PIN, identità slegata dal CAP); una volta attiva, il recupero può passare all'email e si può ritirare la domanda di sicurezza. Vedi `02_UTENTI_AUTENTICAZIONE.md` → "Email di recupero (futuro)".
-- [ ] **Verifica da telefono** i flussi cambiati (sessione 28 giu 2026): login **solo nickname+PIN**, Profilo → **Cambia zona (CAP)**, dettaglio match **a fisarmonica**, match **cross-album multi-album**.
-- [ ] Test PWA installata su iOS Safari / Android Chrome reali (service worker già attivo)
-- [ ] Attivare il realtime in produzione: aggiungere su Render `SUPABASE_SERVICE_ROLE_KEY` (backend) e `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (build frontend). Senza queste, la chat resta in fallback polling 30s.
-- [ ] Onboarding interattivo (ora mostra un toast placeholder)
+### 🚩 PER PUBBLICARE (checklist lancio — stato 1 lug 2026)
+
+**Bloccanti (senza, in produzione non funziona bene):**
+- [ ] **Env Supabase su Render** (a mano nel pannello Render, NON in `render.yaml` per non committare segreti):
+  backend `SUPABASE_URL` + `SUPABASE_ANON_KEY` (+ `SUPABASE_SERVICE_ROLE_KEY` per il realtime chat);
+  build frontend `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`. **Senza queste il login Google/Email e la
+  chat realtime NON partono in produzione.** (Nota storica: in passato risultavano "già presenti" su Render
+  ma NON in `render.yaml` — **verificare nel pannello Render** che ci siano davvero tutte e 5.)
+- [ ] **Push del lavoro locale** = deploy su Render (autoDeploy su `main`).
+
+**Decisione dell'owner richiesta prima del pubblico:**
+- [ ] **Pulsante U/A (`DevQuickSwitch`)**: è in `App.tsx` e **visibile anche in produzione** → con utenti veri
+  chiunque può entrare come admin/utente demo (**buco di sicurezza**). Va deciso cosa farne (rimuovere da
+  `App.tsx` o nascondere) + cambiare i PIN demo. ⛔ Da NON toccare senza ordine ESPLICITO dell'owner
+  (`sticker-pulsante-ua-non-toccare`). **Solo segnalazione, non intervenire.**
+
+**Non bloccanti (si possono fare dopo il lancio gratuito):**
+- [ ] **Pagamento chat reale (PayPal)**: oggi `routes/billing.ts` è uno **stub** (nessun pagamento). Se si
+  pubblica con paywall **OFF** (chat gratis per tutti, default) NON è bloccante. Provider deciso: **PayPal
+  Business** senza P.IVA (l'unico con verifica automatica del pagamento; PayPal privato/link non si collega,
+  Stripe richiede P.IVA). Owner sta valutando l'apertura account. Poi: checkout crea `payments` pending + URL,
+  webhook conferma → `grantChatUnlock`/`grantAllChats`. Vedi `06_PREMIUM_DEMO.md`.
+- [ ] **Email anti-spam**: mittente su `deroarts.com` (Zoho/Brevo con DKIM/DMARC) al posto del gmail → esce
+  dallo spam. Vedi `19_DOMINIO_DEROARTS.md`.
+- [ ] **Dominio proprio** `stickers.deroarts.com` (CNAME Render → Cloudflare + update Supabase URL/CSP). Vedi `19`.
+- [ ] Email supporto **hardcoded** (`stickersmatchbox@hotmail.com`) in `MatchDetail.tsx` → aggiornare al nuovo dominio.
+- [ ] Test **PWA installata** su iOS Safari / Android Chrome reali (service worker già attivo).
+- [ ] Verifica **da telefono** dei flussi (login Google/Email, chat, match multi-album, cambio CAP).
+- [ ] Onboarding interattivo (ora toast placeholder).
 
 ### Media priorità
 - [ ] **Scaling oltre ~2.000 utenti (free)**: leva #1 = non salvare le righe "mancante" (mancante = album posseduto + nessuna riga) → 2-3× tetto storage; poi modello bitmap per album per i 50k. Intervento profondo, vedi `16_STRESS_TEST_AUDIT.md`
@@ -79,10 +138,20 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - Soglia di affidabilità utente (quanti scambi = affidabile?)
 - Gestione minori (serve verifica età?)
 
-## Utenti nel DB (Supabase)
+## Utenti nel DB (Supabase) — STATO VERGINE (1 lug 2026)
 
-Account base: **admin** (id 6) e **Dero975** (id 1, free, CAP 40138 Bologna).
-Dero975 possiede gli album **11, 12, 13, 14** (collezione ampliata per i match incrociati multi-album).
+App **azzerata per la pubblicazione**: nel DB restano **solo 2 account demo** (per il pulsante U/A),
+nessun possesso, nessuna chat/match. `auth.users` Supabase = 0. Catalogo intatto (23 album + 17.581 figurine).
+
+| Nickname | PIN | Ruolo | Note |
+|----------|-----|-------|------|
+| `admin`  | 0000 | admin | account admin + vista "A" del DevQuickSwitch |
+| `Dero975`| 1234 | utente | vista "U" del DevQuickSwitch |
+
+⛔ Questi 2 account **non vanno eliminati** (senza di loro il pulsante U/A si rompe). Se si ri-azzera
+l'app, vanno **ricreati** (insert con `hashPin`, `auth_provider='pin'`, `cap`/`area`, `acceptedTermsAt`).
+
+<details><summary>Storico dati di test (cancellati il 30 giu 2026) — solo per riferimento</summary>
 
 **Dati di test PERSISTENTI** (giu 2026) — creati per provare l'app popolata da telefono.
 Utenti id 7-12 e 14-15, tutti vicino a Bologna, registrati via API (PIN reali, login funzionante).
@@ -151,6 +220,8 @@ DELETE FROM user_stickers WHERE user_id IN (1,6);
 DELETE FROM user_albums   WHERE user_id IN (1,6);
 ```
 
+</details>
+
 ## Dove stanno i segreti
 
 | Variabile | Dove |
@@ -160,6 +231,8 @@ DELETE FROM user_albums   WHERE user_id IN (1,6);
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (realtime, build frontend) | `.env` locale — **da aggiungere su Render** |
 | `SESSION_SECRET` | Render (auto) + `.env` locale |
 | `GITHUB_TOKEN`, `RENDER_API_KEY` | `.env` locale |
+| `GOOGLE_OAUTH_CLIENT_ID` / `_SECRET` (login Google) | `.env` locale + incollati in Supabase (provider Google) |
+| `BREVO_SMTP_*` (email auth) | `.env` locale + configurati in Supabase → Auth → SMTP |
 
 > `.env`, `.agent/`, `CLAUDE.md` sono in `.gitignore` — mai committarli.
 
