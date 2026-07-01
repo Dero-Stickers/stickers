@@ -303,6 +303,37 @@ const updateError: RequestHandler = async (req, res) => {
 };
 
 // ---------------------------------------------------------------------------
+// DELETE /api/admin/errors — elimina una o più segnalazioni (bulk)
+// Body: { ids: string[] }. Usata dalla pagina Segnalazioni (singola o selezione).
+// ---------------------------------------------------------------------------
+
+const deleteInput = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(200),
+});
+
+const deleteErrors: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    const parsed = deleteInput.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: "BAD_REQUEST" });
+      return;
+    }
+    const { db } = await import("@workspace/db");
+    const { errorReportsTable } = await import("@workspace/db");
+    const deleted = await db
+      .delete(errorReportsTable)
+      .where(inArray(errorReportsTable.id, parsed.data.ids))
+      .returning({ id: errorReportsTable.id });
+    res.json({ ok: true, deleted: deleted.length });
+  } catch (err) {
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
+// ---------------------------------------------------------------------------
 // POST /api/admin/errors/report — consolidated markdown for ChatGPT/Codex
 // ---------------------------------------------------------------------------
 
@@ -406,6 +437,7 @@ const consolidatedReport: RequestHandler = async (req, res) => {
 router.post("/errors/report", submitReport);
 router.get("/admin/errors", listErrors);
 router.patch("/admin/errors/:id", updateError);
+router.delete("/admin/errors", deleteErrors);
 router.post("/admin/errors/report", consolidatedReport);
 
 export default router;

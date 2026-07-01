@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { AlertTriangle, CheckCircle2, Copy, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Copy, RefreshCw, Search, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -99,6 +99,35 @@ export function AdminErrors() {
         description: "Non sono riuscito ad aggiornare.",
         variant: "destructive",
       });
+    }
+  };
+
+  // Elimina una o più segnalazioni (smart: singola dal dettaglio o in blocco
+  // dalle selezionate). Conferma prima, poi ricarica la lista.
+  const deleteReports = async (ids: string[]) => {
+    if (!ids.length) return;
+    const msg = ids.length === 1
+      ? "Eliminare questa segnalazione? L'azione è definitiva."
+      : `Eliminare ${ids.length} segnalazioni selezionate? L'azione è definitiva.`;
+    if (!window.confirm(msg)) return;
+    try {
+      const res = await fetch("/api/admin/errors", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const j = await res.json().catch(() => ({ deleted: ids.length }));
+      toast({ title: "Eliminate", description: `${j.deleted ?? ids.length} segnalazioni rimosse.` });
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      if (selected && ids.includes(selected.id)) setSelected(null);
+      void fetchData();
+    } catch {
+      toast({ title: "Errore", description: "Eliminazione non riuscita.", variant: "destructive" });
     }
   };
 
@@ -248,6 +277,15 @@ export function AdminErrors() {
                 </Button>
                 <Button
                   size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5"
+                  onClick={() => deleteReports(Array.from(selectedIds))}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Elimina
+                </Button>
+                <Button
+                  size="sm"
                   className="h-8 gap-1.5 bg-primary text-primary-foreground"
                   disabled={generating}
                   onClick={() => generateReport(Array.from(selectedIds))}
@@ -302,6 +340,7 @@ export function AdminErrors() {
         onClose={() => setSelected(null)}
         onUpdate={updateRow}
         onGenerateReport={generateReport}
+        onDelete={deleteReports}
       />
     </AdminPage>
   );
