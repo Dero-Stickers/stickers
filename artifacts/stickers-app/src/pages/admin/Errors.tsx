@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ErrorRow } from "./errors/ErrorRow";
 import { ErrorDetailDialog } from "./errors/ErrorDetailDialog";
 import { AdminPage } from "@/components/admin/AdminPage";
+import { useConfirm } from "@/components/admin/ConfirmDialog";
 import {
   authHeaders,
   STATUS_LABEL,
@@ -20,6 +21,7 @@ import {
 
 export function AdminErrors() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [data, setData] = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
@@ -106,10 +108,13 @@ export function AdminErrors() {
   // dalle selezionate). Conferma prima, poi ricarica la lista.
   const deleteReports = async (ids: string[]) => {
     if (!ids.length) return;
-    const msg = ids.length === 1
-      ? "Eliminare questa segnalazione? L'azione è definitiva."
-      : `Eliminare ${ids.length} segnalazioni selezionate? L'azione è definitiva.`;
-    if (!window.confirm(msg)) return;
+    const ok = await confirm({
+      title: ids.length === 1 ? "Eliminare la segnalazione?" : `Eliminare ${ids.length} segnalazioni?`,
+      description: "L'azione è definitiva e non reversibile.",
+      confirmLabel: "Elimina",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch("/api/admin/errors", {
         method: "DELETE",

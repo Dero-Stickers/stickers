@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Shield, ShieldOff, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
+import { Shield, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -11,23 +11,51 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { ChatAccessBadge, classifyAccess } from "@/components/admin/ChatAccessBadge";
+import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
+import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
+import { useConfirm } from "@/components/admin/ConfirmDialog";
 
-type SortDir = "asc" | "desc";
+type SortKey = "nickname" | "cap" | "area";
 
 export function AdminUsers() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
+  const [sortKey, setSortKey] = useState<SortKey>("nickname");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const { data: users, isLoading } = useAdminListUsers();
 
   const regularUsers = useMemo(() => {
-    const list = users ?? [];
-    const sorted = [...list].sort((a, b) =>
-      a.nickname.toLowerCase().localeCompare(b.nickname.toLowerCase(), "it"),
-    );
-    return sortDir === "asc" ? sorted : sorted.reverse();
-  }, [users, sortDir]);
+    const list = [...(users ?? [])];
+    list.sort((a, b) => {
+      // CAP: confronto numerico (i CAP sono codici a 5 cifre); testo per il resto.
+      if (sortKey === "cap") return Number(a.cap) - Number(b.cap);
+      const va = String(a[sortKey] ?? "").toLowerCase();
+      const vb = String(b[sortKey] ?? "").toLowerCase();
+      return va.localeCompare(vb, "it");
+    });
+    return sortDir === "asc" ? list : list.reverse();
+  }, [users, sortKey, sortDir]);
+
+  // Ricerca (nickname/CAP/area) + filtro rapido di stato. Si combinano tra loro.
+  // Lo stato chat usa la stessa classificazione dei badge (none/some/full).
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "free" | "some" | "full" | "blocked">("all");
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return regularUsers.filter(u => {
+      const access = classifyAccess(u); // "none" | "some" | "full"
+      if (statusFilter === "free" && access !== "none") return false;
+      if (statusFilter === "some" && access !== "some") return false;
+      if (statusFilter === "full" && access !== "full") return false;
+      if (statusFilter === "blocked" && !u.isBlocked) return false;
+      if (!q) return true;
+      return u.nickname.toLowerCase().includes(q)
+        || String(u.cap).includes(q)
+        || (u.area ?? "").toLowerCase().includes(q);
+    });
+  }, [regularUsers, search, statusFilter]);
 
   const toggleBlock = useToggleBlockUser({
     mutation: {
@@ -38,8 +66,14 @@ export function AdminUsers() {
     },
   });
 
-  const toggleSort = () => setSortDir(d => (d === "asc" ? "desc" : "asc"));
-  const SortIcon = sortDir === "asc" ? ArrowDownAZ : ArrowUpAZ;
+  // Clic su una colonna: se già attiva inverte la direzione, altrimenti passa a
+  // quella colonna in ordine crescente.
+  const handleSort = (col: SortKey) =>
+    setSortKey(prev => {
+      if (prev === col) { setSortDir(d => (d === "asc" ? "desc" : "asc")); return prev; }
+      setSortDir("asc");
+      return col;
+    });
 
   return (
     <AdminPage
@@ -47,46 +81,57 @@ export function AdminUsers() {
       subtitle="Visualizza e gestisci gli utenti registrati"
       actions={
         <div className="bg-primary text-primary-foreground text-sm font-bold px-3 py-1.5 rounded-lg">
-          {isLoading ? "..." : `${regularUsers.length} utenti`}
+          {isLoading ? "..." : `${filteredUsers.length} utenti`}
         </div>
       }
     >
+      <AdminFilterBar<"all" | "free" | "some" | "full" | "blocked">
+        search={search}
+        onSearch={setSearch}
+        placeholder="Cerca nickname, CAP o area…"
+        filter={statusFilter}
+        onFilter={setStatusFilter}
+        options={[
+          ["all", "Tutti"],
+          ["free", "Free"],
+          ["some", "Alcune chat"],
+          ["full", "Tutte le chat"],
+          ["blocked", "Bloccati"],
+        ]}
+      />
+      {/* -mt riduce il gap del contenitore AdminPage: tabella più vicina alla barra. */}
+      <div className="-mt-4 md:-mt-6 flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}
         head={
           <>
             <th>
-              <button
-                type="button"
-                onClick={toggleSort}
-                className="inline-flex items-center gap-1.5 mx-auto hover:text-foreground transition-colors uppercase tracking-wide"
-                aria-label={`Ordina utenti ${sortDir === "asc" ? "Z-A" : "A-Z"}`}
-                title={sortDir === "asc" ? "Ordinato A → Z (clicca per Z → A)" : "Ordinato Z → A (clicca per A → Z)"}
-                data-testid="sort-users-nickname"
-              >
-                Utente
-                <SortIcon className="h-3.5 w-3.5" />
-                <span className="font-semibold text-[10px] text-primary">
-                  {sortDir === "asc" ? "A→Z" : "Z→A"}
-                </span>
-              </button>
+              <SortHeader label="Utente" col="nickname" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
             </th>
-            <th className="hidden sm:table-cell">CAP</th>
-            <th className="hidden sm:table-cell">Area</th>
+            <th className="hidden sm:table-cell">
+              <SortHeader label="CAP" col="cap" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+            </th>
+            <th className="hidden sm:table-cell">
+              <SortHeader label="Area" col="area" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+            </th>
             <th>Stato</th>
             <th className="hidden md:table-cell">Scambi</th>
             <th>Azioni</th>
           </>
         }
       >
-        {regularUsers.length === 0 && (
+        {!isLoading && filteredUsers.length === 0 && (
           <tr>
             <td colSpan={6} className="text-center text-muted-foreground">
-              <div className="py-8">Nessun utente da mostrare.</div>
+              <div className="py-8">
+                {regularUsers.length === 0
+                  ? "Nessun utente da mostrare."
+                  : "Nessun risultato per la ricerca o il filtro"}
+              </div>
             </td>
           </tr>
         )}
-        {regularUsers.map(user => {
+        {filteredUsers.map(user => {
           const nick = user.nickname;
           return (
             <tr key={user.id} className={user.isBlocked ? "opacity-60" : ""}>
@@ -107,7 +152,19 @@ export function AdminUsers() {
                     variant="ghost"
                     className={`h-7 px-2 gap-1 text-xs ${user.isBlocked ? "text-green-600 hover:text-green-700" : "text-destructive hover:text-destructive/80"}`}
                     disabled={toggleBlock.isPending}
-                    onClick={() => toggleBlock.mutate({ userId: user.id, data: { isBlocked: !user.isBlocked } })}
+                    onClick={async () => {
+                      // Solo il blocco (azione rossa) chiede conferma; lo sblocco è innocuo.
+                      if (!user.isBlocked) {
+                        const ok = await confirm({
+                          title: `Bloccare ${user.nickname}?`,
+                          description: "L'utente non potrà più accedere all'app finché non lo sblocchi.",
+                          confirmLabel: "Blocca",
+                          destructive: true,
+                        });
+                        if (!ok) return;
+                      }
+                      toggleBlock.mutate({ userId: user.id, data: { isBlocked: !user.isBlocked } });
+                    }}
                   >
                     {user.isBlocked ? <ShieldOff className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
                     <span className="hidden sm:inline">{user.isBlocked ? "Sblocca" : "Blocca"}</span>
@@ -118,6 +175,7 @@ export function AdminUsers() {
           );
         })}
       </AdminTable>
+      </div>
     </AdminPage>
   );
 }

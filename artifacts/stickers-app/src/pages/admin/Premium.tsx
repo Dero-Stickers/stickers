@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { ChatAccessBadge, classifyAccess, type ChatAccess } from "@/components/admin/ChatAccessBadge";
+import { useConfirm } from "@/components/admin/ConfirmDialog";
 
 // Centesimi interi → stringa euro (es. 199 → "1.99") per gli input.
 const centsToEuro = (cents: number) => (cents / 100).toFixed(2);
@@ -27,6 +28,7 @@ type Filter = "all" | ChatAccess;
 
 export function AdminPremium() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
 
   const { data: config, isLoading: loadingConfig } = useGetPaywallConfig();
@@ -223,7 +225,15 @@ export function AdminPremium() {
                       size="sm" variant="ghost"
                       className="h-7 px-2 gap-1 text-xs text-destructive hover:text-destructive/80"
                       disabled={setPremium.isPending}
-                      onClick={() => setPremium.mutate({ userId: u.id, data: { grant: false } })}
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: `Revocare l'accesso a ${u.nickname}?`,
+                          description: "L'utente perderà lo sblocco di tutte le chat. Per riaverlo dovrà pagare di nuovo.",
+                          confirmLabel: "Revoca",
+                          destructive: true,
+                        });
+                        if (ok) setPremium.mutate({ userId: u.id, data: { grant: false } });
+                      }}
                     >
                       <Lock className="h-3.5 w-3.5" /> Revoca
                     </Button>

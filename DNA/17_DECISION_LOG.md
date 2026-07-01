@@ -7,6 +7,20 @@
 
 ## 2026-07
 
+- **Admin UI consolidata (componenti condivisi)** — creati 3 componenti riusabili per uniformare
+  tutte le tabelle admin: `SortHeader` (una sola icona a 3 linee crescenti, senza testo, colorata
+  quando attiva), `AdminFilterBar` (ricerca + chip di stato, sfondo bianco, gap minimo con la
+  tabella via `-mt`) e `ConfirmDialog`/`useConfirm` (modale coerente Radix AlertDialog che sostituisce
+  TUTTI i `window.confirm` nativi). Applicati a Utenti, Album, Messaggi, Segnalazioni, Monetizzazione.
+  Regole: ricerca + filtro stato + ordinamento si combinano (AND); ogni pulsante rosso/distruttivo
+  chiede conferma; nessun popup nativo del browser. Motivo: coerenza visiva e sicurezza uniforme.
+- **Stato accesso chat a 3 livelli in Gestione Utenti** — filtro utenti allineato ai badge reali:
+  Free (nessuno sblocco), Alcune chat (`chat_unlocks` singoli), Tutte le chat (premium/sblocco totale),
+  più Bloccati. Classificazione unica via `classifyAccess` (none/some/full), stessa fonte dei badge.
+- **Chat admin — Elimina + Riapri** — `deleteChat` (DELETE, rimuove prima le segnalazioni poi la chat)
+  e `reopenChat` (PATCH `/reopen`, status→active). "Chiudi" ora è realmente reversibile (Riapri) e
+  chiede conferma con nota sulla sua funzione. Segnalazioni: `deleteErrors` (DELETE bulk, singola o
+  selezione multipla). Vedi `07_ADMIN_PANNELLO.md`.
 - **HARD TEST 3.000 utenti — 2 bug di scaling admin trovati e risolti** — popolata l'app come
   "pubblicata da tempo" (3.000 utenti su 50 città, ~116k figurine, media 34.9 doppie+mancanti/utente,
   400 chat, 2009 messaggi, 34 segnalazioni) via `lib/db/src/seed-hardtest.ts` (additivo, marchio

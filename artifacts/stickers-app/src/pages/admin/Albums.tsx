@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Eye, EyeOff, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AlbumStickersManager } from "@/components/admin/AlbumStickersManager";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
+import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
+import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
 
 // Chiave di cache DEDICATA all'admin: la lista admin (TUTTI gli album, anche
 // Off Line) non deve condividere cache con la vista utente (solo On Line),
@@ -74,6 +76,37 @@ export function AdminAlbums() {
   const [manageAlbum, setManageAlbum] = useState<Album | null>(null);
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ADMIN_ALBUMS_KEY });
 
+  // Ordinamento colonne (Titolo / Figurine) — default: ordine originale per id.
+  const [sortKey, setSortKey] = useState<"title" | "totalStickers" | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const handleSort = (col: "title" | "totalStickers") =>
+    setSortKey(prev => {
+      if (prev === col) { setSortDir(d => (d === "asc" ? "desc" : "asc")); return prev; }
+      setSortDir("asc");
+      return col;
+    });
+  const sortedAlbums = useMemo(() => {
+    const list = [...(albums ?? [])];
+    if (!sortKey) return list; // ordine naturale (per id / stagione) se non si ordina
+    list.sort((a, b) => sortKey === "totalStickers"
+      ? a.totalStickers - b.totalStickers
+      : a.title.toLowerCase().localeCompare(b.title.toLowerCase(), "it"));
+    return sortDir === "asc" ? list : list.reverse();
+  }, [albums, sortKey, sortDir]);
+
+  // Ricerca per titolo + filtro stato (On Line / Off Line). Si combinano tra loro.
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "online" | "offline">("all");
+  const filteredAlbums = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return sortedAlbums.filter(a => {
+      if (statusFilter === "online" && !a.isPublished) return false;
+      if (statusFilter === "offline" && a.isPublished) return false;
+      if (!q) return true;
+      return a.title.toLowerCase().includes(q);
+    });
+  }, [sortedAlbums, search, statusFilter]);
+
   const createAlbum = useCreateAlbum({
     mutation: {
       onSuccess: () => {
@@ -108,19 +141,44 @@ export function AdminAlbums() {
         </Button>
       }
     >
+      <AdminFilterBar<"all" | "online" | "offline">
+        search={search}
+        onSearch={setSearch}
+        placeholder="Cerca un album…"
+        filter={statusFilter}
+        onFilter={setStatusFilter}
+        options={[
+          ["all", "Tutti"],
+          ["online", "On Line"],
+          ["offline", "Off Line"],
+        ]}
+      />
+      {/* -mt riduce il gap del contenitore AdminPage: tabella più vicina alla barra. */}
+      <div className="-mt-4 md:-mt-6 flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}
         head={
           <>
-            <th>Titolo</th>
-            <th className="hidden md:table-cell">Figurine</th>
+            <th>
+              <SortHeader label="Titolo" col="title" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} />
+            </th>
+            <th className="hidden md:table-cell">
+              <SortHeader label="Figurine" col="totalStickers" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} />
+            </th>
             <th>Stato</th>
             <th>Utenti</th>
             <th>Azioni</th>
           </>
         }
       >
-        {(albums ?? []).map(album => (
+        {!isLoading && filteredAlbums.length === 0 && (
+          <tr>
+            <td colSpan={5} className="text-center text-muted-foreground">
+              <div className="py-8">Nessun risultato per la ricerca o il filtro</div>
+            </td>
+          </tr>
+        )}
+        {filteredAlbums.map(album => (
           <tr key={album.id}>
             <td>
               <span className="font-medium text-foreground">{album.title}</span>
@@ -160,6 +218,7 @@ export function AdminAlbums() {
           </tr>
         )}
       </AdminTable>
+      </div>
 
       {/* Gestione album: rinomina + figurine in un unico posto */}
       <Dialog open={!!manageAlbum} onOpenChange={v => { if (!v) setManageAlbum(null); }}>

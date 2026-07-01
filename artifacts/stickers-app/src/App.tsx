@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/not-found";
 import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
 import { CookieBanner } from "@/components/CookieBanner";
+import { ConfirmProvider } from "@/components/admin/ConfirmDialog";
 import { dismissBootSplash } from "@/components/brand/SplashScreen";
 import { setFetchFailureObserver } from "@workspace/api-client-react";
 import { installGlobalErrorCapture, reportApiFailure } from "@/lib/error-capture";
@@ -236,13 +237,15 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <AuthProvider>
-            <BootEffects />
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-              <DevQuickSwitch />
-              <CookieBanner />
-            </WouterRouter>
-            <Toaster />
+            <ConfirmProvider>
+              <BootEffects />
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+                <DevQuickSwitch />
+                <CookieBanner />
+              </WouterRouter>
+              <Toaster />
+            </ConfirmProvider>
           </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>

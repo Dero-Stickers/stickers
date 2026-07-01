@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { MessageSquare, Eye, X, Flag, AlertTriangle, Trash2, Ban } from "lucide-react";
+import { useState, useMemo } from "react";
+import { MessageSquare, Eye, X, Flag, AlertTriangle, Trash2, Ban, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +15,9 @@ import type { AdminChat } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
+import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
+import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
+import { useConfirm } from "@/components/admin/ConfirmDialog";
 import { authHeaders } from "@/pages/admin/errors/types";
 
 // Il backend restituisce anche gli id dei partecipanti (per il blocco utente),
@@ -39,11 +42,45 @@ function ChatMessages({ chatId }: { chatId: number }) {
 
 export function AdminMessages() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [selectedChat, setSelectedChat] = useState<AdminChatExt | null>(null);
   const [busy, setBusy] = useState(false);
 
   const { data: chats, isLoading } = useAdminListChats();
+
+  // Ordinamento colonne (Partecipanti / Messaggi) — default: ordine originale.
+  const [sortKey, setSortKey] = useState<"participants" | "messageCount" | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const handleSort = (col: "participants" | "messageCount") =>
+    setSortKey(prev => {
+      if (prev === col) { setSortDir(d => (d === "asc" ? "desc" : "asc")); return prev; }
+      setSortDir("asc");
+      return col;
+    });
+  const sortedChats = useMemo(() => {
+    const list = [...(chats ?? [])];
+    if (!sortKey) return list;
+    list.sort((a, b) => sortKey === "messageCount"
+      ? a.messageCount - b.messageCount
+      : (a.user1Nickname ?? "").toLowerCase().localeCompare((b.user1Nickname ?? "").toLowerCase(), "it"));
+    return sortDir === "asc" ? list : list.reverse();
+  }, [chats, sortKey, sortDir]);
+
+  // Ricerca minimale: per nickname di un partecipante + filtro rapido di stato.
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "closed" | "reported">("all");
+  const filteredChats = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return sortedChats.filter(c => {
+      if (statusFilter === "reported" && !c.hasReport) return false;
+      if (statusFilter === "active" && c.status !== "active") return false;
+      if (statusFilter === "closed" && c.status !== "closed") return false;
+      if (!q) return true;
+      return (c.user1Nickname ?? "").toLowerCase().includes(q)
+        || (c.user2Nickname ?? "").toLowerCase().includes(q);
+    });
+  }, [sortedChats, search, statusFilter]);
 
   const refreshChats = () =>
     queryClient.invalidateQueries({ queryKey: getAdminListChatsQueryKey() });
@@ -59,7 +96,13 @@ export function AdminMessages() {
 
   // Elimina definitivamente la chat (e i suoi messaggi). Azione irreversibile.
   const deleteChat = async (chat: AdminChatExt) => {
-    if (!window.confirm(`Eliminare la chat tra ${chat.user1Nickname} e ${chat.user2Nickname}? I messaggi saranno cancellati. L'azione è irreversibile.`)) return;
+    const ok = await confirm({
+      title: "Eliminare la chat?",
+      description: `Chat tra ${chat.user1Nickname} e ${chat.user2Nickname}. I messaggi saranno cancellati. L'azione è definitiva e non reversibile.`,
+      confirmLabel: "Elimina",
+      destructive: true,
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/admin/chats/${chat.id}`, { method: "DELETE", headers: authHeaders() });
@@ -74,10 +117,31 @@ export function AdminMessages() {
     }
   };
 
+  // Riapre una chat chiusa (rimette lo stato "attiva"): rende "Chiudi" reversibile.
+  const reopenChat = async (chatId: number) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/chats/${chatId}/reopen`, { method: "PATCH", headers: authHeaders() });
+      if (!res.ok) throw new Error();
+      refreshChats();
+      toast({ title: "Chat riaperta", description: "Gli utenti possono di nuovo scrivere." });
+    } catch {
+      toast({ title: "Errore", description: "Riapertura non riuscita.", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // Blocca un partecipante (riusa l'endpoint utenti). Il bloccato non potrà più accedere.
   const blockUser = async (userId: number | undefined, nickname: string) => {
     if (!userId) { toast({ title: "Utente non disponibile", variant: "destructive" }); return; }
-    if (!window.confirm(`Bloccare l'utente ${nickname}? Non potrà più accedere all'app finché non lo sblocchi da Utenti.`)) return;
+    const ok = await confirm({
+      title: `Bloccare ${nickname}?`,
+      description: "L'utente non potrà più accedere all'app finché non lo sblocchi dalla sezione Utenti.",
+      confirmLabel: "Blocca",
+      destructive: true,
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/admin/users/${userId}/block`, {
@@ -96,18 +160,37 @@ export function AdminMessages() {
 
   return (
     <AdminPage title="Gestione Messaggi" subtitle="Monitora le chat tra utenti">
+      <AdminFilterBar<"all" | "active" | "closed" | "reported">
+        search={search}
+        onSearch={setSearch}
+        placeholder="Cerca un partecipante…"
+        filter={statusFilter}
+        onFilter={setStatusFilter}
+        options={[
+          ["all", "Tutte"],
+          ["active", "Attive"],
+          ["closed", "Chiuse"],
+          ["reported", "Segnalate"],
+        ]}
+      />
+      {/* -mt riassorbe il gap del contenitore AdminPage: barra filtri attaccata alla tabella. */}
+      <div className="-mt-4 md:-mt-6 flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}
         head={
           <>
-            <th>Partecipanti</th>
-            <th className="hidden md:table-cell">Messaggi</th>
+            <th>
+              <SortHeader label="Partecipanti" col="participants" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} />
+            </th>
+            <th className="hidden md:table-cell">
+              <SortHeader label="Messaggi" col="messageCount" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} />
+            </th>
             <th>Stato</th>
             <th>Azioni</th>
           </>
         }
       >
-        {(chats ?? []).map(chat => (
+        {filteredChats.map(chat => (
           <tr key={chat.id}>
             <td>
               <div className="flex items-center gap-1.5">
@@ -141,30 +224,53 @@ export function AdminMessages() {
                   <Eye className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Vedi</span>
                 </Button>
-                {chat.status !== "closed" && (
+                {chat.status !== "closed" ? (
                   <Button
                     size="sm"
                     variant="ghost"
                     className="h-7 px-2 gap-1 text-xs text-destructive hover:text-destructive/80"
                     disabled={closeChat.isPending}
-                    onClick={() => closeChat.mutate({ chatId: chat.id })}
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: "Chiudere la chat?",
+                        description: `Chat tra ${chat.user1Nickname} e ${chat.user2Nickname}. I due utenti non potranno più scriversi qui. I messaggi restano visibili e potrai riaprirla in qualsiasi momento.`,
+                        confirmLabel: "Chiudi chat",
+                      });
+                      if (ok) closeChat.mutate({ chatId: chat.id });
+                    }}
                   >
                     <X className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Chiudi</span>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 gap-1 text-xs text-green-600 hover:text-green-700"
+                    disabled={busy}
+                    onClick={() => reopenChat(chat.id)}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Riapri</span>
                   </Button>
                 )}
               </div>
             </td>
           </tr>
         ))}
-        {(chats?.length ?? 0) === 0 && (
+        {!isLoading && filteredChats.length === 0 && (
           <tr>
             <td colSpan={4} className="text-center text-muted-foreground">
-              <div className="py-8">Nessuna chat trovata</div>
+              <div className="py-8">
+                {(chats?.length ?? 0) === 0
+                  ? "Nessuna chat trovata"
+                  : "Nessun risultato per la ricerca o il filtro"}
+              </div>
             </td>
           </tr>
         )}
       </AdminTable>
+      </div>
 
       <Dialog open={!!selectedChat} onOpenChange={() => setSelectedChat(null)}>
         <DialogContent className="max-w-md">

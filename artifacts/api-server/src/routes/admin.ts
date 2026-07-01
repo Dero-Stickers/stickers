@@ -207,6 +207,21 @@ const closeChat: RequestHandler = async (req, res) => {
   }
 };
 
+// PATCH /api/admin/chats/:chatId/reopen — rimette una chat chiusa in stato attivo
+const reopenChat: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    const chatId = parseInt(req.params.chatId as string, 10);
+    const { db } = await import("@workspace/db");
+    const { chatsTable } = await import("@workspace/db");
+    await db.update(chatsTable).set({ status: "active" }).where(eq(chatsTable.id, chatId));
+    res.json({ success: true, message: "Chat riaperta" });
+  } catch {
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
 // DELETE /api/admin/chats/:chatId
 // Elimina definitivamente una chat. Messaggi e conferme scambio collegati spariscono
 // per FK CASCADE; le segnalazioni (FK NO ACTION) vanno rimosse prima per non bloccare.
@@ -384,6 +399,7 @@ router.patch("/users/:userId/block", toggleBlock);
 router.post("/users/:userId/premium", setUserPremium);
 router.get("/chats", listChats);
 router.patch("/chats/:chatId/close", closeChat);
+router.patch("/chats/:chatId/reopen", reopenChat);
 router.delete("/chats/:chatId", deleteChat);
 router.get("/chats/:chatId/messages", getChatMessages);
 router.get("/reports", listReports);
