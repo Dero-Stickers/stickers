@@ -10,6 +10,10 @@ export const chatsTable = pgTable(
     user1Id: integer("user1_id").references(() => usersTable.id, { onDelete: "cascade" }).notNull(),
     user2Id: integer("user2_id").references(() => usersTable.id, { onDelete: "cascade" }).notNull(),
     status: text("status").notNull().default("active"),
+    // Soft-delete per-utente (stile WhatsApp): ognuno elimina la chat dal proprio
+    // lato. Quando entrambi = true, il backend la cancella davvero dal DB.
+    deletedByUser1: boolean("deleted_by_user1").notNull().default(false),
+    deletedByUser2: boolean("deleted_by_user2").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({

@@ -50,7 +50,11 @@ const listChats: RequestHandler = async (req, res) => {
         SELECT COUNT(*) AS unread FROM messages
         WHERE chat_id = c.id AND sender_id <> ${me} AND is_read = false
       ) uc ON true
-      WHERE c.user1_id = ${me} OR c.user2_id = ${me}
+      WHERE (c.user1_id = ${me} OR c.user2_id = ${me})
+        -- Nasconde le chat che QUESTO utente ha eliminato dal proprio lato
+        -- (soft-delete WhatsApp): l'altro continua a vederle.
+        AND NOT (c.user1_id = ${me} AND c.deleted_by_user1 = true)
+        AND NOT (c.user2_id = ${me} AND c.deleted_by_user2 = true)
       ORDER BY COALESCE(lm.created_at, c.created_at) DESC
     `);
 
@@ -222,6 +226,15 @@ const sendMessage: RequestHandler = async (req, res) => {
     if (chat.status === "closed") { res.status(400).json({ error: "CHAT_CLOSED" }); return; }
 
     const [msg] = await db.insert(messagesTable).values({ chatId, senderId: session.userId, text: text.trim() }).returning();
+
+    // Un nuovo messaggio "risuscita" la chat: se uno dei due l'aveva eliminata
+    // dal proprio lato, riappare in lista per entrambi (comportamento WhatsApp).
+    if (chat.deletedByUser1 || chat.deletedByUser2) {
+      await db.update(chatsTable)
+        .set({ deletedByUser1: false, deletedByUser2: false })
+        .where(eq(chatsTable.id, chatId));
+    }
+
     const [u] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
 
     // Segnale realtime (fire-and-forget, nessun contenuto): aggiorna la stanza
@@ -258,6 +271,61 @@ const reportChat: RequestHandler = async (req, res) => {
   }
 };
 
+// DELETE /api/chats/:chatId — soft-delete per-utente (stile WhatsApp).
+// L'utente elimina la chat dal PROPRIO lato: sparisce dalla sua lista, l'altro
+// la conserva. Quando ENTRAMBI hanno eliminato, la chat viene cancellata davvero
+// (cascade su messages/reports/trade_confirmations) → DB leggero.
+// ECCEZIONE MODERAZIONE: se sulla chat c'è una segnalazione ancora aperta
+// (report pending), la cancellazione definitiva è BLOCCATA — la chat sparisce
+// dalle liste dei due utenti ma resta nel DB come prova per l'admin. Un utente
+// segnalato non può far sparire le prove eliminando la chat.
+const deleteChat: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+    const chatId = parseInt(req.params.chatId as string, 10);
+    if (!Number.isFinite(chatId)) { res.status(400).json({ error: "BAD_REQUEST" }); return; }
+
+    const { db } = await import("@workspace/db");
+    const { chatsTable, reportsTable } = await import("@workspace/db");
+
+    const [chat] = await db.select().from(chatsTable).where(eq(chatsTable.id, chatId)).limit(1);
+    if (!chat || (chat.user1Id !== session.userId && chat.user2Id !== session.userId)) {
+      res.status(403).json({ error: "FORBIDDEN" }); return;
+    }
+
+    const iAmUser1 = chat.user1Id === session.userId;
+    const otherAlreadyDeleted = iAmUser1 ? chat.deletedByUser2 : chat.deletedByUser1;
+
+    // La chat può essere DAVVERO cancellata solo se entrambi l'hanno eliminata
+    // E non c'è nessuna segnalazione aperta a suo carico (la moderazione vince).
+    let hasPendingReport = false;
+    if (otherAlreadyDeleted) {
+      const [pending] = await db.select({ id: reportsTable.id })
+        .from(reportsTable)
+        .where(and(eq(reportsTable.chatId, chatId), eq(reportsTable.status, "pending")))
+        .limit(1);
+      hasPendingReport = Boolean(pending);
+    }
+
+    if (otherAlreadyDeleted && !hasPendingReport) {
+      // Entrambi eliminata + nessuna indagine aperta → cancellazione reale.
+      await db.delete(chatsTable).where(eq(chatsTable.id, chatId));
+    } else {
+      // Solo il mio lato, OPPURE c'è un report pending: soft-delete (imposto il
+      // mio flag). La chat resta nel DB per l'altro utente e/o per l'admin.
+      await db.update(chatsTable)
+        .set(iAmUser1 ? { deletedByUser1: true } : { deletedByUser2: true })
+        .where(eq(chatsTable.id, chatId));
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
 // Route order matters — static paths before dynamic
 router.get("/", listChats);
 router.post("/", openChat);
@@ -265,5 +333,6 @@ router.get("/unread-count", getUnreadCount);
 router.get("/:chatId/messages", getChatMessages);
 router.post("/:chatId/messages", sendMessage);
 router.post("/:chatId/report", reportChat);
+router.delete("/:chatId", deleteChat);
 
 export default router;

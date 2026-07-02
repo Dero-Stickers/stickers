@@ -2360,6 +2360,90 @@ export const useOpenChat = <
 };
 
 /**
+ * @summary Delete a chat for the current user (soft-delete, WhatsApp-style)
+ */
+export const getDeleteChatUrl = (chatId: number) => {
+  return `/api/chats/${chatId}`;
+};
+
+export const deleteChat = async (
+  chatId: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteChatUrl(chatId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteChatMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteChat>>,
+    TError,
+    { chatId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteChat>>,
+  TError,
+  { chatId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteChat"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteChat>>,
+    { chatId: number }
+  > = (props) => {
+    const { chatId } = props ?? {};
+
+    return deleteChat(chatId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteChatMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteChat>>
+>;
+
+export type DeleteChatMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a chat for the current user (soft-delete, WhatsApp-style)
+ */
+export const useDeleteChat = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteChat>>,
+    TError,
+    { chatId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteChat>>,
+  TError,
+  { chatId: number },
+  TContext
+> => {
+  return useMutation(getDeleteChatMutationOptions(options));
+};
+
+/**
  * @summary Get messages for a chat
  */
 export const getGetChatMessagesUrl = (chatId: number) => {

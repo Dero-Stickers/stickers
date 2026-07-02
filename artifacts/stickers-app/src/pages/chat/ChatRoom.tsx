@@ -135,12 +135,7 @@ export function ChatRoom() {
         {/* Sub-header: indietro + nome centrato + segnala (no avatar) */}
         <div className="shrink-0 flex items-center gap-2 px-4 py-2.5 border-b border-border/60">
           <button
-            onClick={() => {
-              // Torna da dove si è arrivati (Match o Messaggi). Se non c'è
-              // storico (link diretto/refresh), fallback all'elenco Messaggi.
-              if (window.history.length > 1) window.history.back();
-              else setLocation("/messaggi");
-            }}
+            onClick={() => setLocation("/messaggi")}
             aria-label="Indietro"
             className="shrink-0 -ml-1 p-1.5 rounded-full text-foreground active:scale-95 transition-transform"
           >

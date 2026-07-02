@@ -603,6 +603,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/PremiumRequiredResponse"
 
+  /chats/{chatId}:
+    delete:
+      operationId: deleteChat
+      tags: [chats]
+      summary: Delete a chat for the current user (soft-delete, WhatsApp-style)
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chat deleted for the current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
   /chats/{chatId}/messages:
     get:
       operationId: getChatMessages

@@ -1,14 +1,50 @@
-import { useMemo } from "react";
-import { Link } from "wouter";
+import { useMemo, useState } from "react";
 import { MessageCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useListChats, getListChatsQueryKey } from "@workspace/api-client-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  useListChats,
+  getListChatsQueryKey,
+  useDeleteChat,
+  type Chat,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { ChatRow } from "@/components/chat/ChatRow";
 
 export function Messages() {
-  const { data: chats, isLoading } = useListChats({
-    query: { queryKey: getListChatsQueryKey() },
+  const queryClient = useQueryClient();
+  const listKey = getListChatsQueryKey();
+  const { data: chats, isLoading } = useListChats({ query: { queryKey: listKey } });
+
+  // Chat in attesa di conferma eliminazione (null = nessun dialog aperto).
+  const [toDelete, setToDelete] = useState<number | null>(null);
+
+  const deleteChat = useDeleteChat({
+    mutation: {
+      // Ottimistico: la conversazione sparisce subito dalla lista; se l'API
+      // fallisce, si ripristina.
+      onMutate: async (vars: { chatId: number }) => {
+        await queryClient.cancelQueries({ queryKey: listKey });
+        const prev = queryClient.getQueryData<Chat[]>(listKey);
+        queryClient.setQueryData<Chat[]>(listKey, old => old?.filter(c => c.id !== vars.chatId));
+        return { prev };
+      },
+      onError: (_e, _v, ctx) => {
+        const prev = (ctx as { prev?: Chat[] } | undefined)?.prev;
+        if (prev) queryClient.setQueryData(listKey, prev);
+      },
+      onSettled: () => queryClient.invalidateQueries({ queryKey: listKey }),
+    },
   });
 
   // Non lette in cima, poi per messaggio più recente. Ordine stabile e naturale.
@@ -49,33 +85,34 @@ export function Messages() {
         )}
 
         <div className="space-y-2">
-          {sorted.map(chat => {
-            const unread = chat.unreadCount > 0;
-            return (
-              <Link key={chat.id} href={`/chat/${chat.id}`}>
-                <Card className="shadow-sm cursor-pointer transition-colors hover:border-primary">
-                  <CardContent className="p-3 flex items-center gap-1">
-                    {/* Contenitore icona alto 40px: fissa l'altezza della card
-                        esattamente come l'originale (che aveva un cerchietto 40px),
-                        ma senza sfondo/contorno. */}
-                    <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                      <MessageCircle className={`h-5 w-5 ${unread ? "text-accent" : "text-muted-foreground"}`} />
-                    </div>
-                    <p className={`text-sm truncate flex-1 ${unread ? "font-bold text-foreground" : "font-medium text-muted-foreground"}`}>
-                      {chat.otherUserNickname}
-                    </p>
-                    {unread && (
-                      <span className="shrink-0 text-[11px] font-semibold text-green-600">
-                        Nuovi messaggi
-                      </span>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+          {sorted.map(chat => (
+            <ChatRow key={chat.id} chat={chat} onDelete={setToDelete} />
+          ))}
         </div>
       </div>
+
+      <AlertDialog open={toDelete !== null} onOpenChange={(open) => { if (!open) setToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare questa conversazione?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sparirà dalla tua lista. L'altra persona continuerà a vederla finché non la elimina anche lei.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (toDelete !== null) deleteChat.mutate({ chatId: toDelete });
+                setToDelete(null);
+              }}
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

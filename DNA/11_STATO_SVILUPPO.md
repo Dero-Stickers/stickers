@@ -19,6 +19,10 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Sessioni giu-lug 2026 — novità principali (fatte)
 
+- **[3 lug] Eliminazione chat (soft-delete WhatsApp)** — swipe-sinistra sulla card in /messaggi → cestino →
+  conferma. L'utente elimina la chat dal proprio lato (l'altro la conserva); quando entrambi eliminano, il
+  DB la cancella davvero. Un nuovo messaggio la fa riapparire. Migrazione additiva **0007**
+  (`chats.deleted_by_user1/2`), endpoint `DELETE /api/chats/:chatId`. Dettagli in `17_DECISION_LOG.md`.
 - **[3 lug] Ricerca mirata per singola figurina** — 3ª tab "Cerca figurina" in Match (album → figurina →
   chi la offre come doppia, ordinati per distanza). Endpoint `GET /api/matches/by-sticker/:stickerId`
   (indice esistente, zero migrazioni). Ingressi: lente 🔍 in Home (box Migliori match) e pulsante

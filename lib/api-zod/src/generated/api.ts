@@ -587,6 +587,18 @@ export const OpenChatResponse = zod.object({
 });
 
 /**
+ * @summary Delete a chat for the current user (soft-delete, WhatsApp-style)
+ */
+export const DeleteChatParams = zod.object({
+  chatId: zod.coerce.number(),
+});
+
+export const DeleteChatResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
  * @summary Get messages for a chat
  */
 export const GetChatMessagesParams = zod.object({

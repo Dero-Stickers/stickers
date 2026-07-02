@@ -7,6 +7,26 @@
 
 ## 2026-07
 
+- **Eliminazione chat — soft-delete per-utente (stile WhatsApp)** — ognuno elimina la chat DAL PROPRIO
+  lato, l'altro la conserva (policy + moderazione salve: nessuno distrugge la copia altrui). Migrazione
+  additiva **0007** → `chats.deleted_by_user1/2` (bool, default false). `DELETE /api/chats/:chatId`
+  (`chats.ts`, `deleteChat`): imposta il flag del chiamante; se l'altro l'aveva GIÀ eliminata → cancella
+  davvero la riga (cascade su messages/reports/trade_confirmations) = **DB leggero senza violare la
+  policy**, esattamente l'obiettivo dell'owner. `listChats` filtra via le chat eliminate dal lato del
+  richiedente. **Resurrezione:** un nuovo messaggio (`sendMessage`) azzera entrambi i flag → la chat
+  riappare per tutti (comportamento WhatsApp). Frontend: swipe-sinistra sulla card in `/messaggi`
+  (`components/chat/ChatRow.tsx`, touch nativi, cassetto cestino 80px) → conferma AlertDialog → delete
+  ottimistico. Scartati: "elimina per tutti" (sabota la moderazione) e cestino fisso nell'header (tap
+  accidentale). Solo nella lista, non dentro la ChatRoom.
+  **Protezione moderazione (la moderazione vince):** la cancellazione DEFINITIVA dal DB (quando entrambi
+  eliminano) è bloccata se esiste un `report` con status `pending` sulla chat → resta nel DB come prova
+  per l'admin, sparisce solo dalle liste utenti. Impedisce a un utente segnalato di distruggere le prove
+  eliminando la chat. Il **blocco utente** è sull'account (`users.is_blocked`), indipendente dalla chat →
+  eliminare la chat non sblocca nessuno. Bug trovato dall'owner in review: la FK `reports.chat_id` avrebbe
+  perso il riferimento alla cancellazione.
+  **Nota UX collegata:** freccia indietro della ChatRoom riportata a `setLocation("/messaggi")` fisso —
+  `window.history.back()` era inaffidabile (history con redirect auth / dopo refresh → il pulsante non
+  reagiva). Messaggi è ora la destinazione naturale dell'elenco chat da qualsiasi ingresso.
 - **Sezione "Messaggi" dedicata (5ª voce navbar)** — le conversazioni escono dall'ambiguità con "Match":
   nuova pagina `pages/chat/Messages.tsx` (rotta `/messaggi`, lazy + prefetch) che elenca TUTTE le chat
   (non lette in cima, poi per recency), card minimali volute dall'owner: icona + nickname + scritta verde

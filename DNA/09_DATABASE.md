@@ -66,6 +66,8 @@ export const chatsTable = pgTable("chats", {
   user1Id: integer("user1_id").references(() => usersTable.id).notNull(),
   user2Id: integer("user2_id").references(() => usersTable.id).notNull(),
   status: text("status").notNull().default("active"), // active|closed
+  deletedByUser1: boolean("deleted_by_user1").notNull().default(false), // soft-delete per-utente (mig. 0007)
+  deletedByUser2: boolean("deleted_by_user2").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
