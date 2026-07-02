@@ -24,6 +24,10 @@
   eliminando la chat. Il **blocco utente** è sull'account (`users.is_blocked`), indipendente dalla chat →
   eliminare la chat non sblocca nessuno. Bug trovato dall'owner in review: la FK `reports.chat_id` avrebbe
   perso il riferimento alla cancellazione.
+  **Rimosso "Elimina chat" ADMIN** (pulsante + `DELETE /api/admin/chats/:chatId`): cancellava
+  chat+messaggi+segnalazioni in modo irreversibile e SENZA la protezione moderazione → distruggeva prove.
+  Per moderare bastano Chiudi (reversibile) + Blocca + Segna gestita, tutti non distruttivi. L'endpoint admin
+  non era nello spec OpenAPI (era una fetch diretta), quindi nessun client da rigenerare.
   **Nota UX collegata:** freccia indietro della ChatRoom riportata a `setLocation("/messaggi")` fisso —
   `window.history.back()` era inaffidabile (history con redirect auth / dopo refresh → il pulsante non
   reagiva). Messaggi è ora la destinazione naturale dell'elenco chat da qualsiasi ingresso.
