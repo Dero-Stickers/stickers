@@ -285,7 +285,7 @@ export function AdminErrors() {
 
   return (
     <AdminPage
-      title="Segnalazioni"
+      title="Errori ricevuti"
       icon={<AlertTriangle className="h-6 w-6 text-amber-500" />}
       subtitle="Errori e problemi segnalati dagli utenti o catturati dall'app."
     >

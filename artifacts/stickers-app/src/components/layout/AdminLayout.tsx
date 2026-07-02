@@ -17,7 +17,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     { icon: BookOpen, label: "Album", path: "/admin/album" },
     { icon: Users, label: "Utenti", path: "/admin/utenti" },
     { icon: MessageSquare, label: "Messaggi", path: "/admin/messaggi" },
-    { icon: AlertTriangle, label: "Segnalazioni", path: "/admin/segnalazioni" },
+    { icon: AlertTriangle, label: "Errori ricevuti", path: "/admin/segnalazioni" },
     { icon: Crown, label: "Monetizzazione", path: "/admin/premium" },
     { icon: Settings, label: "Impostazioni", path: "/admin/impostazioni" },
   ];

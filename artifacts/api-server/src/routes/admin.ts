@@ -246,28 +246,6 @@ const resolveChatReports: RequestHandler = async (req, res) => {
   }
 };
 
-// DELETE /api/admin/chats/:chatId
-// Elimina definitivamente una chat. Messaggi e conferme scambio collegati spariscono
-// per FK CASCADE; le segnalazioni (FK NO ACTION) vanno rimosse prima per non bloccare.
-const deleteChat: RequestHandler = async (req, res) => {
-  try {
-    const session = await requireAdmin(req, res);
-    if (!session) return;
-    const chatId = parseInt(req.params.chatId as string, 10);
-    if (!Number.isFinite(chatId)) { res.status(400).json({ error: "INVALID_ID" }); return; }
-    const { db } = await import("@workspace/db");
-    const { chatsTable, reportsTable } = await import("@workspace/db");
-    // Toglie prima le segnalazioni legate (vincolo FK NO ACTION), poi la chat.
-    await db.delete(reportsTable).where(eq(reportsTable.chatId, chatId));
-    const deleted = await db.delete(chatsTable).where(eq(chatsTable.id, chatId)).returning({ id: chatsTable.id });
-    if (deleted.length === 0) { res.status(404).json({ error: "NOT_FOUND" }); return; }
-    res.json({ success: true, message: "Chat eliminata" });
-  } catch (err) {
-    req.log?.error(err);
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
 // GET /api/admin/chats/:chatId/messages
 const getChatMessages: RequestHandler = async (req, res) => {
   try {
@@ -425,7 +403,6 @@ router.get("/chats", listChats);
 router.patch("/chats/:chatId/close", closeChat);
 router.patch("/chats/:chatId/reopen", reopenChat);
 router.patch("/chats/:chatId/resolve-report", resolveChatReports);
-router.delete("/chats/:chatId", deleteChat);
 router.get("/chats/:chatId/messages", getChatMessages);
 router.get("/reports", listReports);
 router.get("/paywall/config", getPaywallConfig);

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MessageSquare, Eye, X, Flag, AlertTriangle, Trash2, Ban, RotateCcw, CheckCircle2, Copy, Search } from "lucide-react";
+import { MessageSquare, Eye, X, Flag, AlertTriangle, Ban, RotateCcw, CheckCircle2, Copy, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -93,29 +93,6 @@ export function AdminMessages() {
       },
     },
   });
-
-  // Elimina definitivamente la chat (e i suoi messaggi). Azione irreversibile.
-  const deleteChat = async (chat: AdminChatExt) => {
-    const ok = await confirm({
-      title: "Eliminare la chat?",
-      description: `Chat tra ${chat.user1Nickname} e ${chat.user2Nickname}. I messaggi saranno cancellati. L'azione è definitiva e non reversibile.`,
-      confirmLabel: "Elimina",
-      destructive: true,
-    });
-    if (!ok) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/admin/chats/${chat.id}`, { method: "DELETE", headers: authHeaders() });
-      if (!res.ok) throw new Error();
-      setSelectedChat(null);
-      refreshChats();
-      toast({ title: "Chat eliminata", description: "La chat e i suoi messaggi sono stati rimossi." });
-    } catch {
-      toast({ title: "Errore", description: "Eliminazione non riuscita.", variant: "destructive" });
-    } finally {
-      setBusy(false);
-    }
-  };
 
   // Riapre una chat chiusa (rimette lo stato "attiva"): rende "Chiudi" reversibile.
   const reopenChat = async (chatId: number) => {
@@ -363,14 +340,7 @@ export function AdminMessages() {
             <td className="hidden md:table-cell text-center text-foreground">{chat.messageCount}</td>
             <td className="text-center">
               {chat.hasReport ? (
-                <div className="flex flex-col items-center gap-0.5">
-                  <Badge className="bg-red-100 text-red-700 border-0 text-xs">Segnalata</Badge>
-                  {chat.reportReason && (
-                    <span className="text-[10px] text-muted-foreground max-w-[140px] truncate" title={chat.reportReason}>
-                      {chat.reportReason}
-                    </span>
-                  )}
-                </div>
+                <Badge className="bg-red-100 text-red-700 border-0 text-xs">Segnalata</Badge>
               ) : chat.status === "closed" ? (
                 <Badge className="bg-gray-100 text-gray-600 border-0 text-xs">Chiusa</Badge>
               ) : (
@@ -451,7 +421,7 @@ export function AdminMessages() {
 
           {selectedChat && (
             <div className="border-t border-border pt-3 mt-1 space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground">Azioni di moderazione</p>
+              <p className="text-xs font-semibold text-muted-foreground text-center">Azioni di moderazione</p>
               {selectedChat.hasReport && (
                 <Button
                   size="sm" variant="outline" disabled={busy}
@@ -480,14 +450,6 @@ export function AdminMessages() {
                   Blocca {selectedChat.user2Nickname}
                 </Button>
               </div>
-              <Button
-                size="sm" variant="destructive" disabled={busy}
-                className="w-full h-9 gap-1.5 text-xs"
-                onClick={() => deleteChat(selectedChat)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Elimina chat
-              </Button>
             </div>
           )}
         </DialogContent>
