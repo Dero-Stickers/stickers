@@ -136,6 +136,105 @@ export function AdminErrors() {
     }
   };
 
+  // Copia gli errori visibili in un formato OTTIMIZZATO PER DEBUG con un AI
+  // (es. Claude Code): errori RAGGRUPPATI per messaggio identico (così un crash
+  // che colpisce 5 pagine è una voce sola), ognuno con la posizione precisa nel
+  // codice dell'app (file:riga, ripulito da node_modules/vite/localhost) e le
+  // pagine/occorrenze impattate. Ordinati per gravità (occorrenze totali).
+  const copyAll = async () => {
+    if (!filtered.length) {
+      toast({ title: "Nessun errore da copiare" });
+      return;
+    }
+
+    // Estrae i frame del SOLO codice dell'app come "file:riga:col", scartando
+    // node_modules/vite/localhost e le query string. Il primo frame utile è la
+    // causa più probabile.
+    const appFrames = (stack: string | null): string[] => {
+      if (!stack) return [];
+      return stack
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l.includes("/src/") && !l.includes("node_modules"))
+        .map((l) => {
+          const m = l.match(/\/src\/[^?)\s]+/);
+          const path = m ? m[0].replace(/:\d+:\d+.*$/, (s) => s) : l;
+          // "at fn (/src/x.tsx:10:5)" → "fn — src/x.tsx:10:5"
+          const fnMatch = l.match(/at\s+([^\s(]+)\s*\(/);
+          const clean = path.replace(/^\//, "").replace(/\?[tv]=[^:)\s]+/g, "");
+          return fnMatch ? `${clean}  (${fnMatch[1]})` : clean;
+        })
+        .filter((v, i, arr) => arr.indexOf(v) === i) // dedup
+        .slice(0, 3);
+    };
+
+    // Raggruppa per messaggio d'errore normalizzato: stessi crash → una voce.
+    type Group = {
+      message: string;
+      type: string;
+      totalCount: number;
+      pages: Set<string>;
+      users: Set<string>;
+      frames: string[];
+      status: string;
+    };
+    const groups = new Map<string, Group>();
+    for (const r of filtered) {
+      const key = `${r.errorType}::${r.messageClean ?? friendlyTitle(r)}`;
+      const g = groups.get(key) ?? {
+        message: r.messageClean ?? friendlyTitle(r),
+        type: r.errorType,
+        totalCount: 0,
+        pages: new Set<string>(),
+        users: new Set<string>(),
+        frames: appFrames(r.stackTop),
+        status: STATUS_LABEL[r.status],
+      };
+      g.totalCount += r.count;
+      if (r.page) g.pages.add(r.page);
+      g.users.add(userLabel(r));
+      if (!g.frames.length) g.frames = appFrames(r.stackTop);
+      groups.set(key, g);
+    }
+    const sorted = [...groups.values()].sort((a, b) => b.totalCount - a.totalCount);
+
+    const header = [
+      `# ERRORI APP STICKER — per debug`,
+      `Export: ${new Date().toLocaleString("it-IT")}`,
+      `${filtered.length} righe → ${sorted.length} errori distinti` +
+        `${statusFilter !== "all" ? ` (filtro stato: ${STATUS_LABEL[statusFilter as Status]})` : ""}` +
+        `${search.trim() ? ` (ricerca: "${search.trim()}")` : ""}`,
+      ``,
+      `Errori raggruppati per messaggio identico, ordinati per occorrenze totali.`,
+      `Ogni voce ha la posizione nel codice app (file:riga) e le pagine colpite.`,
+      `====================================================`,
+    ].join("\n");
+
+    const blocks = sorted.map((g, i) => {
+      const pages = [...g.pages].join(", ") || "—";
+      const lines = [
+        `## ${i + 1}. ${g.message}`,
+        `Tipo: ${g.type}  ·  Occorrenze totali: ${g.totalCount}  ·  Stato: ${g.status}`,
+        `Pagine colpite: ${pages}`,
+        g.frames.length
+          ? `Posizione nel codice:\n${g.frames.map((f) => `    → ${f}`).join("\n")}`
+          : `Posizione nel codice: (nessun frame app nello stack)`,
+      ];
+      return lines.join("\n");
+    });
+
+    const text = `${header}\n\n${blocks.join("\n\n")}\n`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Segnalazioni copiate",
+        description: `${filtered.length} segnalazioni negli appunti, pronte per l'analisi AI.`,
+      });
+    } catch {
+      toast({ title: "Copia non riuscita", variant: "destructive" });
+    }
+  };
+
   const generateReport = async (ids: string[]) => {
     if (!ids.length) {
       toast({
@@ -264,6 +363,15 @@ export function AdminErrors() {
                 </button>
               ),
             )}
+            <button
+              onClick={copyAll}
+              disabled={loading || !filtered.length}
+              aria-label="Copia tutte le segnalazioni"
+              className="ml-auto shrink-0 flex items-center gap-1.5 px-2 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Copy className="h-4 w-4" />
+              Copia tutte le segnalazioni
+            </button>
           </div>
 
           {selectedIds.size > 0 && (

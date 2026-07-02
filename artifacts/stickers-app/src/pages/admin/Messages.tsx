@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MessageSquare, Eye, X, Flag, AlertTriangle, Trash2, Ban, RotateCcw, CheckCircle2 } from "lucide-react";
+import { MessageSquare, Eye, X, Flag, AlertTriangle, Trash2, Ban, RotateCcw, CheckCircle2, Copy, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,7 +16,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
-import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
 import { useConfirm } from "@/components/admin/ConfirmDialog";
 import { authHeaders } from "@/pages/admin/errors/types";
 
@@ -46,6 +45,7 @@ export function AdminMessages() {
   const queryClient = useQueryClient();
   const [selectedChat, setSelectedChat] = useState<AdminChatExt | null>(null);
   const [busy, setBusy] = useState(false);
+  const [copying, setCopying] = useState(false);
 
   const { data: chats, isLoading } = useAdminListChats();
 
@@ -155,6 +155,113 @@ export function AdminMessages() {
     }
   };
 
+  // Copia TUTTE le chat visibili in un formato ottimizzato per l'analisi con un
+  // AI (ChatGPT/Claude): riepilogo in testa + conversazione completa di ogni
+  // chat (scaricata al volo). Le segnalate vengono in cima col motivo, così la
+  // moderazione ha subito ciò che conta. Date leggibili, niente rumore tecnico.
+  const copyAll = async () => {
+    if (!filteredChats.length) {
+      toast({ title: "Nessuna chat da copiare" });
+      return;
+    }
+    setCopying(true);
+    try {
+      const hhmm = (iso?: string) => {
+        if (!iso) return "";
+        const d = new Date(iso);
+        const p = (n: number) => String(n).padStart(2, "0");
+        return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+      };
+
+      // Segnalate prima, poi per numero messaggi decrescente.
+      const ordered = [...filteredChats].sort((a, b) => {
+        if (a.hasReport !== b.hasReport) return a.hasReport ? -1 : 1;
+        return b.messageCount - a.messageCount;
+      });
+
+      // Scarica i messaggi di ogni chat (endpoint admin).
+      const withMessages = await Promise.all(
+        ordered.map(async (c) => {
+          try {
+            const res = await fetch(`/api/admin/chats/${c.id}/messages`, { headers: authHeaders() });
+            const msgs = res.ok ? await res.json() : [];
+            return { chat: c, msgs: msgs as { senderNickname: string; text: string; createdAt: string }[] };
+          } catch {
+            return { chat: c, msgs: [] as { senderNickname: string; text: string; createdAt: string }[] };
+          }
+        }),
+      );
+
+      const reported = filteredChats.filter((c) => c.hasReport).length;
+      const closed = filteredChats.filter((c) => c.status === "closed").length;
+      const header = [
+        `# CHAT UTENTI — STICKER (moderazione)`,
+        `Export: ${new Date().toLocaleString("it-IT")}`,
+        `${filteredChats.length} chat` +
+          `${statusFilter !== "all" ? ` (filtro: ${statusFilter})` : ""}` +
+          `${search.trim() ? ` (ricerca: "${search.trim()}")` : ""}` +
+          `  ·  ${reported} segnalate  ·  ${closed} chiuse`,
+        ``,
+        `Chat segnalate in cima. Ogni voce: partecipanti, stato, motivo (se segnalata) e conversazione completa.`,
+        `====================================================`,
+      ].join("\n");
+
+      const blocks = withMessages.map(({ chat, msgs }, i) => {
+        const tag = chat.hasReport ? "⚠️ SEGNALATA" : chat.status === "closed" ? "CHIUSA" : "ATTIVA";
+        const head = [
+          `## ${i + 1}. [${tag}] ${chat.user1Nickname} ↔ ${chat.user2Nickname}`,
+          `Messaggi: ${chat.messageCount}${chat.hasReport && chat.reportReason ? `  ·  Motivo segnalazione: ${chat.reportReason}` : ""}`,
+        ];
+        const convo = msgs.length
+          ? msgs.map((m) => `  [${hhmm(m.createdAt)}] ${m.senderNickname}: ${m.text}`).join("\n")
+          : "  (nessun messaggio)";
+        return `${head.join("\n")}\nConversazione:\n${convo}`;
+      });
+
+      const text = `${header}\n\n${blocks.join("\n\n──────────\n\n")}\n`;
+
+      // La clipboard può fallire se il "gesto utente" è scaduto dopo le fetch
+      // (Safari/iOS): provo la Clipboard API, poi execCommand, infine apro il
+      // testo in una nuova finestra da cui copiare a mano. Mai fallire in silenzio.
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          copied = document.execCommand("copy");
+          document.body.removeChild(ta);
+        } catch { copied = false; }
+      }
+
+      if (copied) {
+        toast({
+          title: "Chat copiate",
+          description: `${filteredChats.length} conversazioni negli appunti, pronte per l'analisi AI.`,
+        });
+      } else {
+        const w = window.open("", "_blank");
+        if (w) {
+          const safe = text.replace(/[<&>]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] ?? c);
+          w.document.write(`<pre style="white-space:pre-wrap;font-family:monospace;padding:1rem">${safe}</pre>`);
+          toast({ title: "Testo pronto", description: "Copialo dalla nuova scheda aperta." });
+        } else {
+          toast({ title: "Copia non riuscita", variant: "destructive" });
+        }
+      }
+    } catch {
+      toast({ title: "Copia non riuscita", variant: "destructive" });
+    } finally {
+      setCopying(false);
+    }
+  };
+
   // Blocca un partecipante (riusa l'endpoint utenti). Il bloccato non potrà più accedere.
   const blockUser = async (userId: number | undefined, nickname: string) => {
     if (!userId) { toast({ title: "Utente non disponibile", variant: "destructive" }); return; }
@@ -183,21 +290,50 @@ export function AdminMessages() {
 
   return (
     <AdminPage title="Gestione Messaggi" subtitle="Monitora le chat tra utenti">
-      <AdminFilterBar<"all" | "active" | "closed" | "reported">
-        search={search}
-        onSearch={setSearch}
-        placeholder="Cerca un partecipante…"
-        filter={statusFilter}
-        onFilter={setStatusFilter}
-        options={[
-          ["all", "Tutte"],
-          ["active", "Attive"],
-          ["closed", "Chiuse"],
-          ["reported", "Segnalate"],
-        ]}
-      />
-      {/* -mt riassorbe il gap del contenitore AdminPage: barra filtri attaccata alla tabella. */}
-      <div className="-mt-4 md:-mt-6 flex-1 min-h-0 flex flex-col">
+      {/* Riga filtri custom (non AdminFilterBar condivisa): box ricerca più corto
+          per far spazio, chip di stato, e il pulsante "Copia" a destra. */}
+      <div className="shrink-0 flex flex-wrap items-center gap-2">
+        <div className="relative w-48 md:w-56 shrink-0">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Cerca partecipante…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-9 pl-8 pr-3 rounded-md border border-input bg-white text-sm"
+          />
+        </div>
+        <div className="flex flex-wrap gap-1.5 text-xs">
+          {([
+            ["all", "Tutte"],
+            ["active", "Attive"],
+            ["closed", "Chiuse"],
+            ["reported", "Segnalate"],
+          ] as const).map(([val, lbl]) => (
+            <button
+              key={val}
+              onClick={() => setStatusFilter(val)}
+              className={`px-2.5 py-1 rounded-full border transition-colors ${
+                statusFilter === val
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border hover:bg-muted"
+              }`}
+            >
+              {lbl}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={copyAll}
+          disabled={copying || !filteredChats.length}
+          aria-label="Copia tutte le chat"
+          className="ml-auto shrink-0 flex items-center gap-1.5 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Copy className="h-4 w-4" />
+          {copying ? "Copio…" : "Copia tutte le chat"}
+        </button>
+      </div>
+      <div className="flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}
         head={

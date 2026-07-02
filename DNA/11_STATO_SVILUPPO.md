@@ -19,6 +19,9 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Sessioni giu-lug 2026 — novità principali (fatte)
 
+- **[3 lug] Export admin per AI** — pulsante "Copia" in admin Segnalazioni (errori raggruppati per messaggio
+  + file:riga del codice, per debug) e in admin Messaggi (riepilogo + conversazioni complete, segnalate in
+  cima, per moderazione). Testo ottimizzato da incollare in ChatGPT/Claude. Fallback clipboard multipli.
 - **[3 lug] Eliminazione chat (soft-delete WhatsApp)** — swipe-sinistra sulla card in /messaggi → cestino →
   conferma. L'utente elimina la chat dal proprio lato (l'altro la conserva); quando entrambi eliminano, il
   DB la cancella davvero. Un nuovo messaggio la fa riapparire. Migrazione additiva **0007**
