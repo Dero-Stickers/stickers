@@ -524,6 +524,27 @@ paths:
                 items:
                   $ref: "#/components/schemas/MatchSummary"
 
+  /matches/by-sticker/{stickerId}:
+    get:
+      operationId: getMatchesBySticker
+      tags: [matches]
+      summary: Get users who have this single sticker as a duplicate
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Users offering this sticker as a duplicate, sorted by distance
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchSummary"
+
   /matches/{userId}:
     get:
       operationId: getMatchDetail

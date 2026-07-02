@@ -16,6 +16,7 @@ import {
   useReportChat,
   useListChats,
   getGetChatMessagesQueryKey,
+  getListChatsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRealtimeSignal } from "@/hooks/useRealtimeSignal";
@@ -67,6 +68,17 @@ export function ChatRoom() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Aprendo la chat, il backend segna letti i messaggi (in getChatMessages).
+  // Qui rinfreschiamo la LISTA chat così il pallino "Da leggere" e il badge
+  // rosso in navbar si spengono subito, senza dover ricaricare l'app.
+  useEffect(() => {
+    if (!Number.isFinite(chatIdNum)) return;
+    const thisChat = chats?.find(c => c.id === chatIdNum);
+    if (thisChat && thisChat.unreadCount > 0 && messages) {
+      queryClient.invalidateQueries({ queryKey: getListChatsQueryKey() });
+    }
+  }, [chatIdNum, chats, messages, queryClient]);
 
   const sendMessage = useSendMessage({
     mutation: {
@@ -123,7 +135,12 @@ export function ChatRoom() {
         {/* Sub-header: indietro + nome centrato + segnala (no avatar) */}
         <div className="shrink-0 flex items-center gap-2 px-4 py-2.5 border-b border-border/60">
           <button
-            onClick={() => setLocation("/match")}
+            onClick={() => {
+              // Torna da dove si è arrivati (Match o Messaggi). Se non c'è
+              // storico (link diretto/refresh), fallback all'elenco Messaggi.
+              if (window.history.length > 1) window.history.back();
+              else setLocation("/messaggi");
+            }}
             aria-label="Indietro"
             className="shrink-0 -ml-1 p-1.5 rounded-full text-foreground active:scale-95 transition-transform"
           >

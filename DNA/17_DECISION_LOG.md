@@ -7,6 +7,27 @@
 
 ## 2026-07
 
+- **Sezione "Messaggi" dedicata (5ª voce navbar)** — le conversazioni escono dall'ambiguità con "Match":
+  nuova pagina `pages/chat/Messages.tsx` (rotta `/messaggi`, lazy + prefetch) che elenca TUTTE le chat
+  (non lette in cima, poi per recency), card minimali volute dall'owner: icona + nickname + scritta verde
+  "Nuovi messaggi" (niente anteprima/contatore nella card). Il **badge rosso non-letti spostato da Match
+  a Messaggi** in navbar (5 icone: Home, Album, Match, Messaggi, Profilo — verificato touch-friendly,
+  ~72px/icona su iPhone SE ≥ minimo 44px), cap visualizzazione **99+**. Fix coerenza: (1) `ChatRoom`
+  ora invalida `listChats` quando apre una chat con non-letti → segnale card + badge navbar si spengono
+  subito senza reload (prima il backend marcava letto ma la cache lista restava stantia); (2) freccia
+  indietro della chat = `history.back()` con fallback `/messaggi` (prima era fissa su `/match`, incoerente
+  arrivando da Messaggi). Scartata l'alternativa "badge sulle card match": mescolava scoperta persone e
+  conversazioni. Rollback point: `.rollback-messaggi/` (gitignored).
+- **Ricerca mirata per singola figurina** — l'utente cerca UNA figurina e vede chi la offre come doppia.
+  Backend: `GET /api/matches/by-sticker/:stickerId` (`matches.ts`), query leggera sull'indice esistente
+  `(sticker_id, state)` — nessuna migrazione DB — LIMIT 500 SQL, top 100 per distanza CAP; cache dedicata
+  `u:{id}:sticker:{stickerId}` (pulita da `invalidateUser`). Spec OpenAPI + client orval rigenerati
+  (`useGetMatchesBySticker`). Frontend: 3ª tab "Cerca figurina" in `MatchList` (select album → figurina,
+  pre-compilabile via query string `?tab=search&album=&sticker=`), card risultato estratta nel condiviso
+  `components/match/MatchCard.tsx` (riusata da tutte le tab, niente markup duplicato). Ingressi: lente 🔍
+  nel box "Migliori match" in Home (solo icona, sobria) e pulsante "Chi ha questo doppione?" nel dialog
+  figurina di `AlbumDetail` (SOLO se stato `mancante`). `totalExchanges:1` fisso nel risultato = shape
+  `MatchSummary` riusato; il dettaglio vero resta su `/matches/:userId`.
 - **Comunicazione blocco/segnalazioni all'utente** — concetto unico "l'utente sa cosa succede, senza
   mai sapere chi lo ha segnalato". 3 pezzi non invasivi: (1) **bloccato** → modale dedicato con email
   supporto cliccabile `stickers@deroarts.com` (segnaposto, casella da creare). Scatta su TUTTI i canali:

@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useCallback } from "react";
-import { useParams, useLocation } from "wouter";
-import { ArrowLeft } from "lucide-react";
+import { useParams, useLocation, Link } from "wouter";
+import { ArrowLeft, Search } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -309,6 +309,21 @@ export function AlbumDetail() {
                   </Button>
                 ))}
               </div>
+              {/* Solo per le figurine che MANCANO: trova chi le ha come doppia.
+                  Apre la ricerca mirata già pre-compilata su questa figurina. */}
+              {(selectedSticker.state ?? "mancante") === "mancante" && (
+                <Link href={`/match?tab=search&album=${albumId}&sticker=${selectedSticker.stickerId}`}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => setSelectedSticker(null)}
+                  >
+                    <Search className="h-4 w-4" />
+                    Chi ha questo doppione?
+                  </Button>
+                </Link>
+              )}
             </div>
           )}
         </DialogContent>

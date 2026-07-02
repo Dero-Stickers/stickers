@@ -49,6 +49,7 @@ import { LegalPage } from "@/pages/LegalPage";
 const importAlbumDetail = () => import("@/pages/album/AlbumDetail");
 const importMatchList = () => import("@/pages/match/MatchList");
 const importMatchDetail = () => import("@/pages/match/MatchDetail");
+const importMessages = () => import("@/pages/chat/Messages");
 const importChatRoom = () => import("@/pages/chat/ChatRoom");
 const importProfile = () => import("@/pages/Profile");
 const importAdminDashboard = () => import("@/pages/admin/Dashboard");
@@ -62,6 +63,7 @@ const importAdminSettings = () => import("@/pages/admin/Settings");
 const AlbumDetail = lazy(() => importAlbumDetail().then((m) => ({ default: m.AlbumDetail })));
 const MatchList = lazy(() => importMatchList().then((m) => ({ default: m.MatchList })));
 const MatchDetail = lazy(() => importMatchDetail().then((m) => ({ default: m.MatchDetail })));
+const Messages = lazy(() => importMessages().then((m) => ({ default: m.Messages })));
 const ChatRoom = lazy(() => importChatRoom().then((m) => ({ default: m.ChatRoom })));
 const Profile = lazy(() => importProfile().then((m) => ({ default: m.Profile })));
 
@@ -78,6 +80,7 @@ function prefetchUserChunks() {
   void importAlbumDetail();
   void importMatchList();
   void importMatchDetail();
+  void importMessages();
   void importChatRoom();
   void importProfile();
 }
@@ -193,6 +196,7 @@ function Router() {
         <Route path="/album/:id" component={() => <ProtectedUserRoute component={AlbumDetail} />} />
         <Route path="/match" component={() => <ProtectedUserRoute component={MatchList} />} />
         <Route path="/match/:userId" component={() => <ProtectedUserRoute component={MatchDetail} />} />
+        <Route path="/messaggi" component={() => <ProtectedUserRoute component={Messages} />} />
         <Route path="/chat/:chatId" component={() => <ProtectedChatRoute component={ChatRoom} />} />
         <Route path="/profilo" component={() => <ProtectedUserRoute component={Profile} />} />
 

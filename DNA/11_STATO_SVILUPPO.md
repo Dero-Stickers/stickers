@@ -1,6 +1,6 @@
 # DNA — Stato Sviluppo
 
-Aggiornato: 1 luglio 2026
+Aggiornato: 3 luglio 2026
 
 > Fotografia dello **stato attuale** (non un changelog). Tenere aggiornato questo
 > file a fine sessione.
@@ -19,6 +19,15 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Sessioni giu-lug 2026 — novità principali (fatte)
 
+- **[3 lug] Ricerca mirata per singola figurina** — 3ª tab "Cerca figurina" in Match (album → figurina →
+  chi la offre come doppia, ordinati per distanza). Endpoint `GET /api/matches/by-sticker/:stickerId`
+  (indice esistente, zero migrazioni). Ingressi: lente 🔍 in Home (box Migliori match) e pulsante
+  "Chi ha questo doppione?" nel dialog figurina (solo se mancante). Card match condivisa in
+  `components/match/MatchCard.tsx`. Dettagli in `17_DECISION_LOG.md`.
+- **[3 lug] Sezione "Messaggi" (5ª voce navbar)** — pagina `/messaggi` con tutte le chat (card minimali:
+  icona + nome + "Nuovi messaggi" in verde); badge non-letti spostato da Match a Messaggi (cap 99+).
+  Fix: apertura chat spegne subito segnali/badge (invalidazione lista); freccia indietro chat =
+  history.back (non più fissa su /match). Dettagli in `17_DECISION_LOG.md`.
 - **Accesso moderno (Google + Email/password)** via Supabase Auth, accanto al login storico
   nickname+PIN. Ponte identità: frontend prende l'access token Supabase → backend lo verifica
   (`api-server/src/lib/supabase-auth.ts`) → `POST /api/auth/social` (+ `/social/complete`) → rilascia

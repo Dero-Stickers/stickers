@@ -187,6 +187,76 @@ const getNearbyMatches: RequestHandler = async (req, res) => {
   }
 };
 
+interface StickerHolderRow extends Record<string, unknown> {
+  id: number;
+  nickname: string;
+  area: string | null;
+  cap: string;
+  exchanges_completed: number;
+}
+
+// GET /api/matches/by-sticker/:stickerId — chi ha QUESTA figurina come doppia.
+// Ricerca mirata: l'utente cerca una singola figurina e vede chi la offre.
+// Molto più leggera di fetchCandidates: nessuna aggregazione sull'intero set,
+// solo l'indice (sticker_id, state) su user_stickers. Ordina per distanza CAP.
+const getMatchesBySticker: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    const stickerId = parseInt(req.params.stickerId as string, 10);
+    if (!Number.isFinite(stickerId)) { res.status(400).json({ error: "BAD_REQUEST" }); return; }
+
+    // Cache dedicata per figurina, distinta da quella dei match a coppie.
+    // Chiave sotto il prefisso `u:{id}:` così invalidateUser la ripulisce quando
+    // l'utente tocca le proprie figurine (la sua zona/CAP influisce sull'ordine).
+    const cacheKey = `u:${session.userId}:sticker:${stickerId}`;
+    const cached = getCached<unknown[]>(cacheKey);
+    if (cached) { res.json(cached); return; }
+
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const [me] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+
+    // Tutti gli utenti (non bloccati, escluso me) con la figurina come doppia.
+    // LIMIT 500 in SQL come tetto di sicurezza sul DB; dopo l'ordinamento per
+    // distanza si restituiscono al massimo 100 risultati (i più vicini).
+    const rows = await db.execute<StickerHolderRow>(sql`
+      SELECT u.id, u.nickname, u.area, u.cap, u.exchanges_completed
+      FROM user_stickers us
+      JOIN users u ON u.id = us.user_id
+      WHERE us.sticker_id = ${stickerId}
+        AND us.state = 'doppia'
+        AND u.id <> ${session.userId}
+        AND u.is_blocked = false
+      LIMIT 500
+    `);
+    const holders: StickerHolderRow[] = (rows as any).rows ?? (rows as any);
+
+    const result = holders
+      .map(h => ({
+        userId: h.id,
+        nickname: h.nickname,
+        area: h.area,
+        cap: h.cap,
+        // "1" scambio possibile: questa figurina. Coerente con lo shape delle
+        // card match; il dettaglio reale resta su /matches/:userId.
+        totalExchanges: 1,
+        distanceKm: parseFloat(estimateDistance(me?.cap ?? "00000", h.cap).toFixed(1)),
+        exchangesCompleted: h.exchanges_completed,
+        albumsInCommon: 0,
+      }))
+      .sort((a, b) => a.distanceKm - b.distanceKm || a.nickname.localeCompare(b.nickname))
+      .slice(0, 100);
+
+    setCached(cacheKey, result);
+    res.json(result);
+  } catch (err) {
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
 // GET /api/matches/:userId  — detailed per-album sticker breakdown
 const getMatchDetail: RequestHandler = async (req, res) => {
   try {
@@ -238,6 +308,8 @@ const getMatchDetail: RequestHandler = async (req, res) => {
 
 router.get("/", getBestMatches);
 router.get("/nearby", getNearbyMatches);
+// DEVE stare prima di "/:userId": altrimenti "by-sticker" verrebbe letto come userId.
+router.get("/by-sticker/:stickerId", getMatchesBySticker);
 router.get("/:userId", getMatchDetail);
 
 export default router;

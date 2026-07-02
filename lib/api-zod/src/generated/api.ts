@@ -476,6 +476,27 @@ export const GetNearbyMatchesResponseItem = zod.object({
 export const GetNearbyMatchesResponse = zod.array(GetNearbyMatchesResponseItem);
 
 /**
+ * @summary Get users who have this single sticker as a duplicate
+ */
+export const GetMatchesByStickerParams = zod.object({
+  stickerId: zod.coerce.number(),
+});
+
+export const GetMatchesByStickerResponseItem = zod.object({
+  userId: zod.number(),
+  nickname: zod.string(),
+  area: zod.string().optional(),
+  cap: zod.string().optional(),
+  totalExchanges: zod.number(),
+  distanceKm: zod.number().nullish(),
+  exchangesCompleted: zod.number(),
+  albumsInCommon: zod.number(),
+});
+export const GetMatchesByStickerResponse = zod.array(
+  GetMatchesByStickerResponseItem,
+);
+
+/**
  * @summary Get detailed match with a user (multi-album)
  */
 export const GetMatchDetailParams = zod.object({

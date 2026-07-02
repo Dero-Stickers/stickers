@@ -2033,6 +2033,95 @@ export function useGetNearbyMatches<
 }
 
 /**
+ * @summary Get users who have this single sticker as a duplicate
+ */
+export const getGetMatchesByStickerUrl = (stickerId: number) => {
+  return `/api/matches/by-sticker/${stickerId}`;
+};
+
+export const getMatchesBySticker = async (
+  stickerId: number,
+  options?: RequestInit,
+): Promise<MatchSummary[]> => {
+  return customFetch<MatchSummary[]>(getGetMatchesByStickerUrl(stickerId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMatchesByStickerQueryKey = (stickerId: number) => {
+  return [`/api/matches/by-sticker/${stickerId}`] as const;
+};
+
+export const getGetMatchesByStickerQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMatchesBySticker>>,
+  TError = ErrorType<unknown>,
+>(
+  stickerId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMatchesBySticker>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetMatchesByStickerQueryKey(stickerId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMatchesBySticker>>
+  > = ({ signal }) =>
+    getMatchesBySticker(stickerId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!stickerId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMatchesBySticker>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMatchesByStickerQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMatchesBySticker>>
+>;
+export type GetMatchesByStickerQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get users who have this single sticker as a duplicate
+ */
+
+export function useGetMatchesBySticker<
+  TData = Awaited<ReturnType<typeof getMatchesBySticker>>,
+  TError = ErrorType<unknown>,
+>(
+  stickerId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMatchesBySticker>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMatchesByStickerQueryOptions(stickerId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Get detailed match with a user (multi-album)
  */
 export const getGetMatchDetailUrl = (userId: number) => {

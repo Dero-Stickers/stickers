@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
-import { Zap, ArrowRight, MapPin, MessageCircle, Library } from "lucide-react";
+import { Zap, ArrowRight, MapPin, MessageCircle, Library, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -131,6 +131,15 @@ export function Home() {
           <Card className="border-0 shadow-md overflow-hidden bg-linear-to-br from-primary to-chart-1 text-primary-foreground">
             <CardContent className="p-4 space-y-2.5">
               <div className="relative flex items-center justify-center gap-2">
+                <Link href="/match?tab=search">
+                  <button
+                    type="button"
+                    aria-label="Cerca una figurina"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-white/15 p-1.5 text-white/90 transition-colors hover:bg-white/25"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                  </button>
+                </Link>
                 <span className="text-xs font-semibold uppercase tracking-wide text-white/90">Migliori match</span>
                 <div className="absolute right-0 flex items-center gap-0.5 rounded-full bg-white/15 p-0.5">
                   <button

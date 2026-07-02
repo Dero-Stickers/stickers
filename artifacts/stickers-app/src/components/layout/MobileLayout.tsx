@@ -1,6 +1,6 @@
 import { ReactNode, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, BookOpen, Users, User, ShieldAlert, X } from "lucide-react";
+import { Home, BookOpen, Users, MessageCircle, User, ShieldAlert, X } from "lucide-react";
 import { useListChats, getListChatsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +36,8 @@ export function MobileLayout({ children }: { children: ReactNode }) {
   const navItems = [
     { icon: Home, label: "Home", path: "/", badge: 0 },
     { icon: BookOpen, label: "Album", path: "/album", badge: 0 },
-    { icon: Users, label: "Match", path: "/match", badge: unreadCount },
+    { icon: Users, label: "Match", path: "/match", badge: 0 },
+    { icon: MessageCircle, label: "Messaggi", path: "/messaggi", badge: unreadCount },
     { icon: User, label: "Profilo", path: "/profilo", badge: 0 },
   ];
 
@@ -77,24 +78,24 @@ export function MobileLayout({ children }: { children: ReactNode }) {
         className="shrink-0 w-full bg-card border-t border-border z-50"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div className="flex items-center justify-around h-16 px-2">
+        <div className="flex items-center justify-around h-16 px-1">
         {navItems.map((item) => {
           const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path));
           return (
             <Link
               key={item.path}
               href={item.path}
-              className={`flex flex-col items-center justify-center w-full h-full space-y-1 relative ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex flex-col items-center justify-center min-w-0 flex-1 h-full gap-1 relative ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
             >
               <div className="relative">
                 <item.icon className="h-5 w-5" />
                 {item.badge > 0 && (
-                  <span className="absolute -top-1 -right-1.5 bg-destructive text-destructive-foreground text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center leading-none">
-                    {item.badge > 9 ? "9+" : item.badge}
+                  <span className="absolute -top-1 -right-1.5 bg-destructive text-destructive-foreground text-[9px] font-bold h-4 min-w-4 px-1 rounded-full flex items-center justify-center leading-none">
+                    {item.badge > 99 ? "99+" : item.badge}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-[10px] font-medium leading-none tracking-tight w-full text-center truncate px-0.5">{item.label}</span>
             </Link>
           );
         })}
