@@ -1,15 +1,13 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
-import { Zap, ArrowRight, MapPin, MessageCircle, Library, Search } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Zap, ArrowRight, MapPin, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useGetUserAlbums,
   useGetBestMatches,
-  useListChats,
 } from "@workspace/api-client-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 
@@ -20,7 +18,6 @@ export function Home() {
 
   const { data: myAlbums, isLoading: loadingAlbums } = useGetUserAlbums();
   const { data: bestMatches, isLoading: loadingMatches } = useGetBestMatches();
-  const { data: chats } = useListChats();
 
   // 1 · Sintesi collezione — aggregato su TUTTI gli album
   const albums = myAlbums ?? [];
@@ -37,10 +34,7 @@ export function Home() {
   ), [albums]);
   const overallPercent = agg.slots > 0 ? Math.round((agg.owned / agg.slots) * 100) : 0;
 
-  // 2 · Azioni richieste — chat con messaggi non letti
-  const unreadChats = useMemo(() => (chats ?? []).filter(c => c.unreadCount > 0), [chats]);
-
-  // 3 · Match — l'eroe della pagina
+  // 2 · Match — l'eroe della pagina
   const matches = bestMatches ?? [];
   const topMatches = useMemo(() => [...matches]
     .sort((a, b) =>
@@ -66,16 +60,17 @@ export function Home() {
         {!loadingAlbums && albums.length > 0 && (
           <Card className="shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Library className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">La tua collezione</span>
-                  <span className="text-xs text-muted-foreground">· {albums.length} album</span>
-                </div>
-                <span className="text-primary font-bold text-lg leading-none">{overallPercent}%</span>
+              {/* Titolo centrato (senza icona), percentuale ancorata a destra */}
+              <div className="relative flex items-center justify-center mb-3">
+                <span className="text-sm font-semibold text-foreground">La tua collezione</span>
+                <span className="absolute right-0 text-primary font-bold text-lg leading-none">{overallPercent}%</span>
               </div>
               <Progress value={overallPercent} className="h-2 mb-3" />
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-primary leading-none">{albums.length}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">album</p>
+                </div>
                 <div className="text-center">
                   <p className="text-lg font-bold text-chart-3 leading-none">{agg.owned}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">possedute</p>
@@ -100,29 +95,8 @@ export function Home() {
           </Card>
         )}
 
-        {/* 2 · Nuovi messaggi — segnale compatto su una riga, senza anteprime
-            (niente contenuti in Home: la lettura avviene in /messaggi).
-            Visibile SOLO quando c'è almeno una chat non letta. */}
-        {unreadChats.length > 0 && (
-          <Link href="/messaggi">
-            <Card className="shadow-sm cursor-pointer hover:border-primary transition-colors">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
-                  <MessageCircle className="h-4 w-4 text-accent" />
-                </div>
-                <p className="flex-1 font-semibold text-sm text-foreground truncate">
-                  Hai nuovi messaggi
-                </p>
-                <Badge className="bg-accent text-accent-foreground border-0 text-xs font-bold shrink-0">
-                  {unreadChats.length}
-                </Badge>
-                <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-
-        {/* 3 · Match — hero */}
+        {/* 2 · Match — hero (i nuovi messaggi si vedono SOLO in /messaggi:
+            il badge rosso in navbar è già il segnale, niente doppioni in Home) */}
         {loadingMatches && <Skeleton className="h-48 rounded-2xl" />}
         {!loadingMatches && topMatches.length > 0 && (
           <Card className="border-0 shadow-md overflow-hidden bg-linear-to-br from-primary to-chart-1 text-primary-foreground">
