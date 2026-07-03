@@ -14,7 +14,7 @@ import {
 } from "@workspace/api-client-react";
 import { TRADE_DIRECTION } from "@/lib/trade-labels";
 
-type MatchGroup = { albumId: number; albumTitle: string; stickers: { id: number; number: number }[] };
+type MatchGroup = { albumId: number; albumTitle: string; stickers: { id: number; number: number; code?: string }[] };
 
 // Oltre questa soglia un album mostra prima un'anteprima, poi "Mostra tutte".
 const PREVIEW_LIMIT = 60;
@@ -93,7 +93,7 @@ function DirectionSection({
                           key={s.id}
                           className={`flex items-center justify-center h-9 rounded-lg text-sm font-bold tabular-nums ${tone.chip}`}
                         >
-                          {s.number}
+                          {s.code || s.number}
                         </span>
                       ))}
                     </div>

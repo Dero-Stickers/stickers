@@ -146,7 +146,7 @@ function Section({
                             on ? tone.chip : "bg-muted/40 text-muted-foreground/70 border-transparent line-through"
                           }`}
                         >
-                          {s.number}
+                          {s.code || s.number}
                         </button>
                       );
                     })}

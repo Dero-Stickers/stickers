@@ -41,9 +41,13 @@ Ciclo tapping: Mancante → Posseduta → Doppia → Mancante
 - Compatta, scrollabile, touch-friendly
 - Ogni card mostra: codice stampato (o numero) + colore stato
 - **Griglia adattiva (lug 2026)**: se l'album ha codici alfanumerici lunghi (Mondiali:
-  MEX10, FWC19) → 5 colonne su mobile (celle più grandi) e codice su 2 righe
-  (sigla sopra, numero sotto) in `StickerCell`. I Calciatori restano a 7 colonne.
+  MEX10, FWC19) → 6 colonne su mobile e codice su 2 righe (sigla sopra, numero sotto,
+  stesso font/size delle celle standard) in `StickerCell`; **divisori di blocco** discreti
+  al cambio sigla (etichetta = squadra o sigla, riga sottile `col-span-full`) per vedere
+  dove finisce una nazionale scorrendo veloce. I Calciatori restano a 7 colonne, identici.
 - Mondiali: icona coppa (`world-cup.png`) sulla card album + pin in cima alla lista.
+- Scambi/match: le chip mostrano il **codice stampato** (`code || number`) — `lib/trade.ts`
+  include `code` (era già required nello schema OpenAPI `Sticker`).
 - Pressione lunga → modal centrato con numero + nome/descrizione
 
 ## Filtri Album

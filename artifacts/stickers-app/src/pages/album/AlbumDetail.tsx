@@ -176,12 +176,49 @@ export function AlbumDetail() {
     .sort((a, b) => a.number - b.number), [stickers, filter]);
 
   // Album con codici ALFANUMERICI lunghi (es. Mondiali: MEX10, FWC19): celle
-  // più larghe (5 colonne su mobile) per restare leggibili e touch-friendly.
+  // più larghe (6 colonne su mobile) per restare leggibili e touch-friendly.
   // I Calciatori (codici a 3 cifre) mantengono la griglia fitta di sempre.
   const hasLongCodes = useMemo(
     () => (stickers ?? []).some(s => (s.code?.length ?? 0) > 3),
     [stickers],
   );
+
+  // Divisori di blocco (SOLO album a codici alfanumerici): quando cambia la
+  // sigla (MEX → RSA) si inserisce una riga-divisore discreta con il nome del
+  // blocco, così scorrendo veloce si vede subito dove finisce una squadra.
+  // Etichetta = suffisso " - Squadra" condiviso dalla maggioranza del blocco
+  // (es. "Mexico", "FIFA Museum"); altrimenti la sigla stessa (FWC, CC).
+  type GridRow =
+    | { kind: "header"; key: string; label: string }
+    | { kind: "sticker"; s: (typeof filteredStickers)[number] };
+  const gridRows = useMemo<GridRow[]>(() => {
+    if (!hasLongCodes) return filteredStickers.map(s => ({ kind: "sticker" as const, s }));
+    const rows: GridRow[] = [];
+    let run: (typeof filteredStickers)[number][] = [];
+    let prevPrefix: string | null = null;
+    const prefixOf = (code: string) => code.match(/^[A-Za-z]+/)?.[0] ?? code;
+    const flush = () => {
+      if (run.length === 0) return;
+      const counts = new Map<string, number>();
+      for (const s of run) {
+        const m = s.name?.match(/ - ([^-]+)$/);
+        if (m) counts.set(m[1], (counts.get(m[1]) ?? 0) + 1);
+      }
+      const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+      const label = top && top[1] >= run.length / 2 ? top[0] : (prevPrefix ?? "");
+      // Niente divisore per blocchi singoli senza etichetta (es. il logo "00").
+      if (run.length > 1) rows.push({ kind: "header", key: `h-${rows.length}`, label });
+      for (const s of run) rows.push({ kind: "sticker", s });
+      run = [];
+    };
+    for (const s of filteredStickers) {
+      const p = prefixOf(s.code || String(s.number));
+      if (p !== prevPrefix) { flush(); prevPrefix = p; }
+      run.push(s);
+    }
+    flush();
+    return rows;
+  }, [filteredStickers, hasLongCodes]);
 
   // bulkState = stato applicato col long-press. "Tutte" non ha azione (solo filtro).
   const filterOptions: { key: FilterType; label: string; bulkState?: BulkState }[] = [
@@ -267,12 +304,17 @@ export function AlbumDetail() {
           </div>
         )}
         <div className={`grid gap-1.5 ${hasLongCodes
-          ? "grid-cols-5 sm:grid-cols-7 md:grid-cols-8 lg:grid-cols-10"
+          ? "grid-cols-6 sm:grid-cols-8 md:grid-cols-9 lg:grid-cols-11"
           : "grid-cols-7 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12"}`}>
-          {filteredStickers.map(s => (
+          {gridRows.map(row => row.kind === "header" ? (
+            <div key={row.key} className="col-span-full flex items-center gap-2 pt-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{row.label}</span>
+              <div className="flex-1 border-t border-border" />
+            </div>
+          ) : (
             <StickerCell
-              key={s.stickerId}
-              sticker={s}
+              key={row.s.stickerId}
+              sticker={row.s}
               onTap={tapSticker}
               onPressStart={handlePointerDown}
               onPressEnd={handlePointerUp}

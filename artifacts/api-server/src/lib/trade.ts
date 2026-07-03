@@ -4,6 +4,10 @@ export interface TradeStickerDetail {
   id: number;
   albumId: number;
   number: number;
+  // Codice STAMPATO (può essere alfanumerico, es. "MEX10"): è ciò che la UI
+  // mostra; `number` resta solo posizione/ordinamento. Già required nello
+  // schema OpenAPI `Sticker`.
+  code: string;
   name: string;
 }
 
@@ -54,7 +58,7 @@ export async function computeTradeBreakdown(meId: number, otherId: number): Prom
   ]);
 
   const stickerMap = new Map<number, TradeStickerDetail>();
-  for (const s of allStickers) stickerMap.set(s.id, { id: s.id, albumId: s.albumId, number: s.number, name: s.name });
+  for (const s of allStickers) stickerMap.set(s.id, { id: s.id, albumId: s.albumId, number: s.number, code: s.code ?? "", name: s.name });
   const toDetail = (ids: number[]) =>
     (ids.map(id => stickerMap.get(id)).filter(Boolean) as TradeStickerDetail[]).sort((a, b) => a.number - b.number);
 

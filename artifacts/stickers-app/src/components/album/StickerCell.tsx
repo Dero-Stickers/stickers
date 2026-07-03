@@ -39,8 +39,10 @@ export const StickerCell = memo(function StickerCell({ sticker, onTap, onPressSt
       onPointerLeave={onPressEnd}
     >
       {split ? (
+        // Stesso font/dimensione delle celle standard (text-xs bold ereditato);
+        // solo la sigla è attenuata per far emergere il numero.
         <>
-          <span className="text-[10px] leading-none opacity-70">{split.prefix}</span>
+          <span className="leading-none opacity-70">{split.prefix}</span>
           <span className="leading-tight">{split.digits}</span>
         </>
       ) : (
