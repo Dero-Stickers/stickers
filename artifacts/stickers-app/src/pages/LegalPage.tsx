@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { ArrowLeft } from "lucide-react";
-import { AppLogo } from "@/components/brand/AppLogo";
-import { Button } from "@/components/ui/button";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 // Nessun testo legale è hardcoded qui: l'unica fonte è il DB (app_settings,
 // modificabile da admin → /api/settings). Se il documento non è ancora stato
@@ -56,30 +55,38 @@ export function LegalPage() {
   const loading = privacy === null || terms === null;
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
-      <div className="bg-sidebar text-sidebar-foreground px-4 pt-10 pb-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-sidebar-foreground hover:bg-sidebar-foreground/10"
-            onClick={() => (window.history.length > 1 ? window.history.back() : setLocation("/login"))}
+    <div className="flex flex-col h-full bg-background">
+      <AppHeader />
+      {/* Stesso pattern delle pagine di dettaglio (AlbumDetail/MatchDetail):
+          freccia a sinistra + titolo centrato sulla stessa riga, sotto la head bar. */}
+      <div className="px-4 pt-3 pb-1 shrink-0">
+        <div className="flex items-center gap-2">
+          <button
+            className="shrink-0 -ml-1 p-1.5 rounded-full text-foreground active:scale-95 transition-transform"
+            onClick={() => {
+              // "note" si apre dal Profilo (via wouter): torno lì con setLocation
+              // (history.back non è affidabile con wouter/PWA standalone).
+              // "privacy"/"termini" si aprono dal login (navigazione nativa <a>):
+              // lì il back del browser funziona; fallback al login.
+              if (doc === "note") setLocation("/profilo");
+              else if (window.history.length > 1) window.history.back();
+              else setLocation("/login");
+            }}
             aria-label="Indietro"
           >
             <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <AppLogo className="h-8 w-auto" />
+          </button>
+          <h1 className="flex-1 text-xl font-bold leading-tight text-foreground text-center pr-7">{title}</h1>
         </div>
-        <h1 className="text-xl font-bold mt-3">{title}</h1>
       </div>
-      <div className="px-4 py-5 max-w-2xl mx-auto space-y-8">
+      <div className="flex-1 overflow-y-auto px-4 py-5 max-w-2xl mx-auto w-full space-y-8">
         {loading ? (
           <p className="text-sm text-muted-foreground">Caricamento…</p>
         ) : (
           sections.map((s, i) => (
             <section key={i}>
               {doc === "note" && (
-                <h2 className="text-lg font-bold mb-2 text-foreground">{s.heading}</h2>
+                <h2 className="text-lg font-bold mb-2 text-foreground text-center">{s.heading}</h2>
               )}
               <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
                 {s.body}
@@ -89,10 +96,14 @@ export function LegalPage() {
         )}
 
         <div className="border-t border-border pt-4 text-xs text-muted-foreground leading-relaxed">
-          App indipendente, non affiliata né approvata da Panini S.p.A. o da altri editori.
-          Non riproduciamo immagini, copertine o loghi di terzi: gestiamo solo dati testuali
-          (numero, nome, squadra) a fini di collezione e scambio. I marchi e i nomi citati
-          appartengono ai rispettivi titolari e sono usati a soli fini descrittivi.
+          App indipendente, non affiliata, sponsorizzata né approvata da Panini S.p.A.,
+          dalla FIFA, dall'UEFA o da qualsiasi altro editore, federazione o organizzatore.
+          Non riproduciamo immagini, fotografie, copertine, loghi, emblemi o stemmi di terzi:
+          gestiamo esclusivamente dati testuali descrittivi delle figurine (codice identificativo,
+          nome del giocatore o descrizione, squadra o nazionale) a fini di catalogazione,
+          collezione e scambio tra utenti. I nomi, i marchi e le denominazioni eventualmente
+          citati appartengono ai rispettivi titolari e sono utilizzati a soli fini descrittivi
+          e identificativi, senza alcuna finalità di sfruttamento commerciale del marchio altrui.
         </div>
       </div>
     </div>

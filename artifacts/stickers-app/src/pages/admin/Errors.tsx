@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { AlertTriangle, CheckCircle2, Copy, RefreshCw, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Copy, RefreshCw, Search, Trash2, MessageSquarePlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,9 +19,29 @@ import {
   type Status,
 } from "./errors/types";
 
-export function AdminErrors() {
+// La pagina serve due sezioni distinte tramite la prop `group`:
+//  - "auto"   → "Errori ricevuti": crash/errori di sistema (default storico);
+//  - "manual" → "Segnalazioni & proposte": bug/contenuti/proposte scritti dagli utenti.
+// Stessa tabella e stesso codice: cambia solo il filtro e i testi.
+type ErrorsGroup = "auto" | "manual";
+
+const GROUP_UI: Record<ErrorsGroup, { title: string; subtitle: string; empty: string }> = {
+  auto: {
+    title: "Errori ricevuti",
+    subtitle: "Errori e blocchi catturati automaticamente dall'app.",
+    empty: "Nessun errore di sistema",
+  },
+  manual: {
+    title: "Segnalazioni & proposte",
+    subtitle: "Bug, errori nei contenuti e proposte scritti dagli utenti.",
+    empty: "Nessuna segnalazione dagli utenti",
+  },
+};
+
+export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
   const { toast } = useToast();
   const confirm = useConfirm();
+  const ui = GROUP_UI[group];
   const [data, setData] = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
@@ -35,6 +55,7 @@ export function AdminErrors() {
     try {
       const qs = new URLSearchParams();
       if (statusFilter !== "all") qs.set("status", statusFilter);
+      qs.set("group", group);
       const res = await fetch(`/api/admin/errors?${qs.toString()}`, {
         headers: authHeaders(),
       });
@@ -55,7 +76,7 @@ export function AdminErrors() {
   useEffect(() => {
     void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [statusFilter, group]);
 
   const filtered = useMemo(() => {
     if (!data) return [];
@@ -285,9 +306,13 @@ export function AdminErrors() {
 
   return (
     <AdminPage
-      title="Errori ricevuti"
-      icon={<AlertTriangle className="h-6 w-6 text-amber-500" />}
-      subtitle="Errori e problemi segnalati dagli utenti o catturati dall'app."
+      title={ui.title}
+      icon={
+        group === "manual"
+          ? <MessageSquarePlus className="h-6 w-6 text-primary" />
+          : <AlertTriangle className="h-6 w-6 text-amber-500" />
+      }
+      subtitle={ui.subtitle}
     >
       <div className="shrink-0 space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -426,10 +451,10 @@ export function AdminErrors() {
           <div className="p-12 text-center">
             <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
             <p className="text-sm font-medium text-foreground">
-              Nessuna segnalazione
+              {ui.empty}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Tutto sembra funzionare bene 🎉
+              {group === "manual" ? "Nessuna segnalazione dagli utenti al momento." : "Tutto sembra funzionare bene 🎉"}
             </p>
           </div>
         )}

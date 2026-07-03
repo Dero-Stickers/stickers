@@ -53,6 +53,16 @@ const TYPES = [
   "feature_request",
 ] as const;
 
+// Due gruppi per le due sezioni admin:
+//  - auto   → errori tecnici generati dal sistema (crash, errori silenti): la
+//             sezione "Errori ricevuti".
+//  - manual → segnalazioni SCRITTE dall'utente (bug a mano, errori contenuti,
+//             proposte): la sezione "Segnalazioni & proposte".
+const TYPE_GROUPS = {
+  auto: ["client_crash", "api_error", "other"],
+  manual: ["user_report", "content_error", "feature_request"],
+} as const;
+
 // `meta` opzionale per i dettagli strutturati dei nuovi tipi (album/figurina
 // per content_error; categoria proposta per feature_request). Campi liberi ma
 // limitati, salvati nella colonna jsonb `meta` di error_reports.
@@ -210,6 +220,7 @@ const listErrors: RequestHandler = async (req, res) => {
 
     const status = (req.query.status as string) || "all";
     const priority = (req.query.priority as string) || "all";
+    const group = (req.query.group as string) || "all"; // auto | manual | all
     const limit = Math.min(parseInt((req.query.limit as string) || "100", 10) || 100, 200);
 
     const { db } = await import("@workspace/db");
@@ -221,6 +232,11 @@ const listErrors: RequestHandler = async (req, res) => {
     }
     if (priority !== "all" && (PRIORITIES as readonly string[]).includes(priority)) {
       conditions.push(eq(errorReportsTable.priority, priority));
+    }
+    // Filtro per gruppo (sezioni admin separate): auto = errori di sistema,
+    // manual = segnalazioni scritte dagli utenti.
+    if (group === "auto" || group === "manual") {
+      conditions.push(inArray(errorReportsTable.errorType, [...TYPE_GROUPS[group]]));
     }
 
     const rows = await db

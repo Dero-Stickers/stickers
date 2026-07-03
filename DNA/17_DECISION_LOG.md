@@ -14,8 +14,11 @@
   (`feature_request`). ZERO migrazioni: il tipo va in `error_reports.errorType` (enum esteso lato
   backend), i dettagli in `meta` jsonb (albumId/albumTitle/stickerRef/requestKind). L'hash di
   dedup include il riferimento meta → segnalazioni su album/figurine diverse non si accorpano.
-  Admin: badge tipo (rosso/ambra/blu) in lista e dettaglio, box "Riferimento nell'album", meta
-  incluso nell'export "Copia per AI". Punto d'ingresso: voce "Segnala o proponi" in Profilo.
+  Admin: DUE sezioni separate dalla stessa pagina (`AdminErrors` con prop `group`, filtro backend
+  `?group=auto|manual`): **"Errori ricevuti"** (`/admin/segnalazioni`, tipi automatici
+  crash/api_error/other) e **"Segnalazioni & proposte"** (`/admin/proposte`, tipi utente
+  user_report/content_error/feature_request). Badge tipo (rosso/ambra/blu), box "Riferimento
+  nell'album", meta nell'export "Copia per AI". Punto d'ingresso utente: "Segnala o proponi" in Profilo.
   `reportError`/ErrorBoundary invariati e retrocompatibili. Firma **deroarts** minimale in fondo
   al Profilo: solo il logo `deroarts_logo.svg` cliccabile (mailto per acquisto/collaborazioni).
 - **12 album Mondiali+Europei caricati e pubblicati** — 6 World Cup (2006/2010/2014/2018/2022/2026)

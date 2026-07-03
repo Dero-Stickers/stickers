@@ -206,7 +206,10 @@ function Router() {
         <Route path="/admin/album" component={() => <ProtectedAdminRoute component={AdminAlbums} />} />
         <Route path="/admin/utenti" component={() => <ProtectedAdminRoute component={AdminUsers} />} />
         <Route path="/admin/messaggi" component={() => <ProtectedAdminRoute component={AdminMessages} />} />
-        <Route path="/admin/segnalazioni" component={() => <ProtectedAdminRoute component={AdminErrors} />} />
+        {/* Due sezioni sulla stessa pagina: "Errori ricevuti" (automatici) e
+            "Segnalazioni & proposte" (scritte dagli utenti), distinte da `group`. */}
+        <Route path="/admin/segnalazioni" component={() => <ProtectedAdminRoute component={() => <AdminErrors group="auto" />} />} />
+        <Route path="/admin/proposte" component={() => <ProtectedAdminRoute component={() => <AdminErrors group="manual" />} />} />
         <Route path="/admin/premium" component={() => <ProtectedAdminRoute component={AdminPremium} />} />
         <Route path="/admin/impostazioni" component={() => <ProtectedAdminRoute component={AdminSettings} />} />
 

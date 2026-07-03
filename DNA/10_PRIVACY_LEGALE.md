@@ -26,14 +26,15 @@ La Cookie Policy è inglobata nella Privacy (solo storage tecnico, nessun cookie
 
 **Conformità GDPR allineata (giu 2026):**
 - **Titolare del trattamento: Davide De Rose** — contatto dati/supporto unificato su **stickersmatchbox@hotmail.com** (DB `support_email` + Profilo + MatchDetail).
-- Fornitori/responsabili: Supabase (DB, **UK** — AWS Londra) + Render (hosting, **UE** — Francoforte). Il Regno Unito è coperto da **decisione di adeguatezza UE** (tutele equivalenti); nessun trasferimento USA.
+- Fornitori/responsabili (art. 28 GDPR): Supabase (DB, **UK** — AWS Londra) + Render (hosting, **UE** — Francoforte) + Google (OAuth) + Brevo (email servizio, UE). Il Regno Unito è coperto da **decisione di adeguatezza UE ex art. 45** (rinnovata 19/12/2025, valida fino al 27/12/2031); nessun trasferimento USA.
 - Font **Inter self-hosted** (niente Google Fonts → nessun trasferimento IP a terzi).
 - Età **14 anni** + lettura Privacy/Termini: conferma esplicita obbligatoria alla registrazione (checkbox in `Login.tsx`, validata lato schema).
 - Diritti: cancellazione self-service (elimina account); accesso/portabilità **su richiesta al supporto** (export JSON self-service rimosso).
 - **Conservazione**: alla cancellazione account i dati personali sono eliminati; i **messaggi chat possono essere conservati in forma anonimizzata** per sicurezza/moderazione.
 - **Sicurezza incontri**: avviso "incontrarsi in luoghi pubblici, per i più giovani con un adulto" in Privacy (Minori), Termini (Scambi) e **in chat** all'apertura.
 - Base giuridica: contratto (6.1.b) + legittimo interesse sicurezza (6.1.f).
-- I testi Privacy/Termini vivono in `app_settings` (DB), modificabili da admin → **unica fonte**, nessun hardcode nel frontend.
+- I testi Privacy/Termini vivono in `app_settings` (DB), modificabili da admin → **unica fonte**. Eccezione: il **disclaimer non-affiliazione** (Panini/FIFA/UEFA + "nome giocatore") è hardcoded in `LegalPage.tsx` (mostrato una volta in fondo, NON nel DB per evitare doppioni). `LegalPage` rende il testo DB con `<pre>`: niente markdown `**` nei testi (apparirebbe letterale).
+- **Consolidamento legale (lug 2026)**: Privacy con art. 13 (intestazione), suggerimento scambi/matching non-decisione ex art. 22, diritti completi (15-18, 20-21, 77), Minori art. 8 GDPR + art. 2-quinquies d.lgs. 196/2003, sicurezza art. 32. Termini con ruolo hosting/DSA (Reg. UE 2022/2065 + d.lgs. 70/2003), proprietà intellettuale + no scraping, salvaguardia diritti consumatore e foro consumatore (d.lgs. 206/2005), preavviso modifiche. **Clausola paywall futuro** nei Termini: accettazione oggi = solo informativa, non autorizza addebiti; accettazione specifica al giorno-X (art. 33-34 Cod. Consumo).
 
 ⚠️ Resta consigliata una **revisione legale professionale** prima della pubblicazione commerciale.
 

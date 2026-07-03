@@ -1,6 +1,6 @@
 import { ReactNode, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BarChart2, BookOpen, Users, MessageCircle, Crown, Settings, LogOut, Menu, X, AlertTriangle } from "lucide-react";
+import { BarChart2, BookOpen, Users, MessageCircle, Crown, Settings, LogOut, Menu, X, AlertTriangle, MessageSquarePlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { useScrollResetOnNavigate } from "@/hooks/useScrollResetOnNavigate";
@@ -18,6 +18,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     { icon: Users, label: "Utenti", path: "/admin/utenti" },
     { icon: MessageCircle, label: "Messaggi", path: "/admin/messaggi" },
     { icon: AlertTriangle, label: "Errori ricevuti", path: "/admin/segnalazioni" },
+    { icon: MessageSquarePlus, label: "Segnalazioni & proposte", path: "/admin/proposte" },
     { icon: Crown, label: "Monetizzazione", path: "/admin/premium" },
     { icon: Settings, label: "Impostazioni", path: "/admin/impostazioni" },
   ];
