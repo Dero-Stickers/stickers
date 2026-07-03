@@ -13,6 +13,15 @@ export const stateColors: Record<StickerState, string> = {
 // genitore (useCallback), al cambio di stato di UNA figurina si ri-renderizza
 // solo quella cella e non tutte le ~700-900. `content-visibility` (cv-cell)
 // salta il paint fuori schermo; il memo evita il costo JS del re-render.
+// Codici alfanumerici lunghi (es. "MEX10", "FWC19") su DUE righe: sigla sopra,
+// numero sotto — leggibili nella cella quadrata senza strabordare. I codici
+// corti (Calciatori "001".."624") restano su una riga come sempre.
+function splitLongCode(code: string): { prefix: string; digits: string } | null {
+  if (code.length <= 3) return null;
+  const m = code.match(/^([A-Za-z]+)(\d+)$/);
+  return m ? { prefix: m[1], digits: m[2] } : null;
+}
+
 export const StickerCell = memo(function StickerCell({ sticker, onTap, onPressStart, onPressEnd }: {
   sticker: UserSticker;
   onTap: (s: UserSticker) => void;
@@ -20,15 +29,23 @@ export const StickerCell = memo(function StickerCell({ sticker, onTap, onPressSt
   onPressEnd: () => void;
 }) {
   const st = (sticker.state ?? "mancante") as StickerState;
+  const split = sticker.code ? splitLongCode(sticker.code) : null;
   return (
     <button
-      className={`cv-cell aspect-square rounded-md flex items-center justify-center text-xs font-bold select-none transition-transform active:scale-95 ${stateColors[st]}`}
+      className={`cv-cell aspect-square rounded-md flex flex-col items-center justify-center text-xs font-bold select-none transition-transform active:scale-95 ${stateColors[st]}`}
       onClick={() => onTap(sticker)}
       onPointerDown={() => onPressStart(sticker)}
       onPointerUp={onPressEnd}
       onPointerLeave={onPressEnd}
     >
-      {sticker.code || sticker.number}
+      {split ? (
+        <>
+          <span className="text-[10px] leading-none opacity-70">{split.prefix}</span>
+          <span className="leading-tight">{split.digits}</span>
+        </>
+      ) : (
+        sticker.code || sticker.number
+      )}
     </button>
   );
 });

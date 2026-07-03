@@ -1,18 +1,20 @@
 /**
- * restore-albums — ripristina gli album "default" dal file versionato
- * `src/data/calciatori.json`. È il comando da usare quando si vuole riportare
- * l'app allo stato con tutti gli album presenti (es. dopo test/pulizie).
+ * restore-albums — ripristina gli album "default" dai file versionati in
+ * `src/data/` (calciatori + world cup). È il comando da usare quando si vuole
+ * riportare l'app allo stato con tutti gli album presenti (es. dopo test/pulizie).
  *
  * SICURO E ADDITIVO:
- *  - crea gli album mancanti (con copertina + figurine);
+ *  - crea gli album mancanti (con figurine), rispettando l'isPublished del file
+ *    (i Mondiali nascono NON pubblicati: li pubblica l'owner dall'admin);
  *  - sugli album esistenti riempie SOLO le figurine mancanti (ON CONFLICT DO
  *    NOTHING su album_id+number): non cancella nulla, quindi NON tocca i
  *    progressi degli utenti (user_stickers/user_albums restano intatti);
- *  - imposta is_published=true e ripristina la copertina solo se mancante.
+ *  - NON tocca is_published degli album esistenti: pubblicare/spubblicare è
+ *    una decisione dell'admin, il restore non deve ribaltarla.
  *
  *   pnpm --filter @workspace/db run restore:albums
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -25,7 +27,8 @@ const connectionString = (process.env.SUPABASE_DATABASE_URL || process.env.DATAB
 if (!connectionString) throw new Error("SUPABASE_DATABASE_URL o DATABASE_URL non impostato");
 const ssl = { rejectUnauthorized: false };
 
-const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "data", "calciatori.json.gz");
+const DATA_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "data");
+const SOURCES = ["calciatori.json.gz", "world-cup-2026.json.gz"];
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -54,12 +57,19 @@ async function insertStickers(client: pg.PoolClient | pg.Client, albumId: number
 }
 
 async function main() {
-  const data: { albums: SeedAlbum[] } = JSON.parse(gunzipSync(readFileSync(SRC)).toString("utf8"));
+  // Unisce gli album di tutti i file dati presenti (i mancanti vengono saltati).
+  const albums: SeedAlbum[] = [];
+  for (const src of SOURCES) {
+    const path = resolve(DATA_DIR, src);
+    if (!existsSync(path)) { console.log(`[restore] sorgente assente, salto: ${src}`); continue; }
+    const data: { albums: SeedAlbum[] } = JSON.parse(gunzipSync(readFileSync(path)).toString("utf8"));
+    albums.push(...data.albums);
+  }
   const client = new pg.Client({ connectionString, ssl });
   await client.connect();
 
   let created = 0, filled = 0, ok = 0;
-  for (const a of data.albums) {
+  for (const a of albums) {
     const found = await client.query(`select id from albums where title = $1`, [a.title]);
     if (found.rows.length === 0) {
       await client.query("begin");
@@ -81,9 +91,9 @@ async function main() {
     } else {
       const albumId = found.rows[0].id;
       const added = await insertStickers(client, albumId, a.stickers);
-      // pubblicazione e conteggio riallineati
+      // Conteggio riallineato; is_published NON si tocca (decisione admin).
       await client.query(
-        `update albums set is_published = true, total_stickers = $2 where id = $1`,
+        `update albums set total_stickers = $2 where id = $1`,
         [albumId, a.stickers.length],
       );
       if (added > 0) { filled++; console.log(`[restore] "${a.title}": aggiunte ${added} figurine mancanti`); }
@@ -91,7 +101,7 @@ async function main() {
     }
   }
 
-  console.log(`[restore] fatto — creati:${created} integrati:${filled} già a posto:${ok} (totale album:${data.albums.length})`);
+  console.log(`[restore] fatto — creati:${created} integrati:${filled} già a posto:${ok} (totale album:${albums.length})`);
   await client.end();
 }
 

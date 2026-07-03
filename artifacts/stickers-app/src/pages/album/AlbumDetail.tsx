@@ -175,6 +175,14 @@ export function AlbumDetail() {
     // né si riordina quando una figurina cambia stato.
     .sort((a, b) => a.number - b.number), [stickers, filter]);
 
+  // Album con codici ALFANUMERICI lunghi (es. Mondiali: MEX10, FWC19): celle
+  // più larghe (5 colonne su mobile) per restare leggibili e touch-friendly.
+  // I Calciatori (codici a 3 cifre) mantengono la griglia fitta di sempre.
+  const hasLongCodes = useMemo(
+    () => (stickers ?? []).some(s => (s.code?.length ?? 0) > 3),
+    [stickers],
+  );
+
   // bulkState = stato applicato col long-press. "Tutte" non ha azione (solo filtro).
   const filterOptions: { key: FilterType; label: string; bulkState?: BulkState }[] = [
     { key: "tutte", label: "Tutte" },
@@ -258,7 +266,9 @@ export function AlbumDetail() {
             <p className="font-medium">Nessuna figurina in questa categoria</p>
           </div>
         )}
-        <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12">
+        <div className={`grid gap-1.5 ${hasLongCodes
+          ? "grid-cols-5 sm:grid-cols-7 md:grid-cols-8 lg:grid-cols-10"
+          : "grid-cols-7 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12"}`}>
           {filteredStickers.map(s => (
             <StickerCell
               key={s.stickerId}

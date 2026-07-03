@@ -26,8 +26,10 @@ async function main() {
   const client = new pg.Client({ connectionString, ssl });
   await client.connect();
 
+  // I Mondiali hanno il loro file versionato (world-cup-2026.json.gz, generato
+  // da build:worldcup-data): qui esportiamo solo il resto, niente duplicati.
   const albums = (await client.query(
-    `select id, title, is_published from albums order by title desc`,
+    `select id, title, is_published from albums where title not ilike '%world cup%' order by title desc`,
   )).rows;
 
   const out: {

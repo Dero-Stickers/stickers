@@ -7,6 +7,15 @@
 
 ## 2026-07
 
+- **Album FIFA World Cup 2026 (primo album a codici alfanumerici)** — 992 figurine, 48 squadre,
+  codici stampati tipo MEX10/FWC19/CC1: NESSUNA migrazione necessaria (lo schema aveva già
+  `code` testuale separato da `number` posizionale). Pipeline: checklist testuale in
+  `album-source/link/panini_world_cup_2026.md` → `build:worldcup-data` → dataset versionato
+  `world-cup-2026.json.gz` → `restore:albums` (ora multi-sorgente; non tocca più
+  `is_published` degli esistenti — pubblicare è dell'admin). Creato NON pubblicato (id 34).
+  UI: griglia adattiva (5 colonne + codice su 2 righe SOLO se l'album ha codici > 3 char),
+  icona coppa sulla card, Mondiali pinnati in cima alla lista. `export:albums` ora esclude
+  i Mondiali (fonte separata, niente duplicati).
 - **Blocco utente a prova di aggiramento (lista nera email + gate azioni)** — scoperto in audit che
   il blocco viveva solo su `users.is_blocked`: controllato SOLO al login, e un bloccato poteva
   eliminare l'account (hard delete) e re-iscriversi con la stessa email ripartendo pulito. Deciso:

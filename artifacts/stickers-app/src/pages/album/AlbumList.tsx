@@ -25,10 +25,18 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/AppHeader";
+import worldCupIcon from "/world-cup.png?url";
 
-// Ordine sempre dal più recente al più vecchio (titolo es. "Calciatori 2025-2026").
+// Gli album Mondiali si distinguono dai Calciatori con l'icona coppa sulla card.
+const isWorldCup = (title: string) => /world cup/i.test(title);
+
+// Ordine: Mondiali SEMPRE in cima (pin esplicito, non affidato all'alfabeto),
+// poi dal più recente al più vecchio (titolo es. "Calciatori 2025-2026").
 // A livello di modulo → funzione stabile, non ricreata a ogni render.
-const byTitleDesc = (a: { title: string }, b: { title: string }) => b.title.localeCompare(a.title);
+const byTitleDesc = (a: { title: string }, b: { title: string }) => {
+  const pin = Number(isWorldCup(b.title)) - Number(isWorldCup(a.title));
+  return pin !== 0 ? pin : b.title.localeCompare(a.title);
+};
 
 export function AlbumList() {
   const [activeTab, setActiveTab] = useState<"my" | "available">("my");
@@ -119,6 +127,7 @@ export function AlbumList() {
                 <CardContent className="p-0">
                   <div className="flex items-center">
                     <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 px-3 py-3.5 cursor-pointer">
+                      {isWorldCup(ua.title) && <img src={worldCupIcon} alt="" className="h-5 w-5 shrink-0" />}
                       <p className="font-semibold text-foreground truncate min-w-0 flex-1">{ua.title}</p>
                       <span className="text-primary font-bold text-sm shrink-0">{ua.completionPercent}%</span>
                     </Link>
@@ -151,6 +160,7 @@ export function AlbumList() {
               <Card key={album.id} className={`shadow-sm ${added ? "opacity-60" : ""}`}>
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
+                    {isWorldCup(album.title) && <img src={worldCupIcon} alt="" className="h-6 w-6 shrink-0" />}
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-foreground text-sm truncate">{album.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">

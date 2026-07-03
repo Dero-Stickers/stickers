@@ -189,15 +189,20 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 Gli album reali (23 raccolte Calciatori, 17.581 figurine) sono **versionati nel repo** e
 ripristinabili in qualsiasi momento, senza re-scraping.
 
-- **Dataset versionato**: `lib/db/src/data/calciatori.json.gz` — fonte di verità "default"
-  (titolo, pubblicazione, figurine con `number`/`code`/`name`). Committato in git,
-  **compresso gzip** (~188 KB invece di ~1.8 MB): è dato di restore, non serve al runtime.
-- **`run export:albums`** — rigenera quel file fotografando il DB attuale (sola lettura).
-  Da usare solo dopo aver modificato di proposito il set di album da admin.
-- **`run restore:albums`** — ripristina gli album mancanti dal file. **Additivo e non
-  distruttivo**: crea gli album assenti e riempie SOLO le figurine mancanti
+- **Dataset versionati**: `lib/db/src/data/calciatori.json.gz` (23 album Calciatori) e
+  `world-cup-2026.json.gz` (FIFA World Cup 2026: 992 figurine, codici ALFANUMERICI
+  MEX10/FWC19/CC1 nel campo `code`, FOIL in `description`, nasce NON pubblicato).
+  Committati in git, **compressi gzip**: dati di restore, non servono al runtime.
+- **`run build:worldcup-data`** — rigenera il file Mondiali dalla checklist
+  `album-source/link/panini_world_cup_2026.md` (parser: `CODICE Nome [- Squadra] [FOIL]`).
+- **`run export:albums`** — rigenera il file Calciatori fotografando il DB attuale (sola
+  lettura; esclude i Mondiali, che hanno la loro fonte). Da usare solo dopo aver
+  modificato di proposito il set di album da admin.
+- **`run restore:albums`** — ripristina gli album mancanti da TUTTI i file dati. **Additivo
+  e non distruttivo**: crea gli album assenti e riempie SOLO le figurine mancanti
   (`ON CONFLICT (album_id, number) DO NOTHING`); non cancella nulla, quindi **non tocca i
-  progressi degli utenti** (`user_stickers`/`user_albums`). Idempotente.
+  progressi degli utenti** (`user_stickers`/`user_albums`). Idempotente. NON tocca
+  `is_published` degli album esistenti (pubblicare è decisione admin).
 - **`run backup`** — snapshot logico JSON di tutte le tabelle in `BACKUP/` (git-ignored).
 - ⚠️ **`seed:mock-dev`** (ex `seed`) è **DISTRUTTIVO** (cancella tutto, inserisce dati finti):
   protetto da `ALLOW_DESTRUCTIVE_SEED=1`, non può partire per errore. Per riavere gli album

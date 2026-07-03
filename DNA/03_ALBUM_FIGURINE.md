@@ -39,7 +39,11 @@ Ciclo tapping: Mancante → Posseduta → Doppia → Mancante
 ## Griglia Figurine
 
 - Compatta, scrollabile, touch-friendly
-- Ogni card mostra: numero + colore stato
+- Ogni card mostra: codice stampato (o numero) + colore stato
+- **Griglia adattiva (lug 2026)**: se l'album ha codici alfanumerici lunghi (Mondiali:
+  MEX10, FWC19) → 5 colonne su mobile (celle più grandi) e codice su 2 righe
+  (sigla sopra, numero sotto) in `StickerCell`. I Calciatori restano a 7 colonne.
+- Mondiali: icona coppa (`world-cup.png`) sulla card album + pin in cima alla lista.
 - Pressione lunga → modal centrato con numero + nome/descrizione
 
 ## Filtri Album
