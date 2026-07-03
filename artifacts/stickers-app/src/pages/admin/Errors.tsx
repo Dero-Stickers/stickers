@@ -15,7 +15,6 @@ import {
   userLabel,
   type ErrorRow as ErrorRowType,
   type ListResponse,
-  type Priority,
   type Status,
 } from "./errors/types";
 
@@ -102,9 +101,33 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
     });
   };
 
+  // Apre il dettaglio e segna la segnalazione come LETTA: se era "new" la porta
+  // a "investigating" (presa in carico) → il badge verde "New" sparisce.
+  // Aggiornamento ottimistico locale + PATCH silenzioso, senza ricaricare la lista.
+  const openRow = (row: ErrorRowType) => {
+    setSelected(row);
+    if (row.status === "new") {
+      setData((prev) =>
+        prev
+          ? {
+              counts: { ...prev.counts, new: Math.max(0, prev.counts.new - 1) },
+              items: prev.items.map((it) =>
+                it.id === row.id ? { ...it, status: "investigating" as Status } : it,
+              ),
+            }
+          : prev,
+      );
+      void fetch(`/api/admin/errors/${row.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ status: "investigating" }),
+      }).catch(() => {});
+    }
+  };
+
   const updateRow = async (
     id: string,
-    body: { status?: Status; priority?: Priority; adminNote?: string },
+    body: { status?: Status; adminNote?: string },
   ) => {
     try {
       const res = await fetch(`/api/admin/errors/${id}`, {
@@ -315,7 +338,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
       subtitle={ui.subtitle}
     >
       <div className="shrink-0 space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Totali</p>
@@ -325,16 +348,8 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Nuove</p>
-            <p className="text-2xl font-bold mt-1 text-blue-600">
+            <p className="text-2xl font-bold mt-1 text-green-600">
               {data?.counts.new ?? "—"}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Critiche</p>
-            <p className="text-2xl font-bold mt-1 text-red-600">
-              {data?.counts.critical ?? "—"}
             </p>
           </CardContent>
         </Card>
@@ -466,7 +481,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
                 row={r}
                 selected={selectedIds.has(r.id)}
                 onToggleSelect={toggleSelect}
-                onOpen={setSelected}
+                onOpen={openRow}
               />
             ))}
           </div>

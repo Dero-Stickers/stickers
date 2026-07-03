@@ -8,8 +8,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  PRIORITY_COLOR,
-  PRIORITY_LABEL,
   STATUS_COLOR,
   STATUS_LABEL,
   friendlyTitle,
@@ -17,7 +15,6 @@ import {
   typeLabel,
   typeColor,
   type ErrorRow,
-  type Priority,
   type Status,
 } from "./types";
 
@@ -27,7 +24,7 @@ interface Props {
   onClose: () => void;
   onUpdate: (
     id: string,
-    body: { status?: Status; priority?: Priority; adminNote?: string },
+    body: { status?: Status; adminNote?: string },
   ) => void;
   onGenerateReport: (ids: string[]) => void;
   onDelete: (ids: string[]) => void;
@@ -55,9 +52,6 @@ export function ErrorDetailDialog({
             <div className="flex flex-wrap gap-1.5">
               <Badge className={`${typeColor(selected.errorType)} border`}>
                 {typeLabel(selected.errorType)}
-              </Badge>
-              <Badge className={`${PRIORITY_COLOR[selected.priority]} border`}>
-                {PRIORITY_LABEL[selected.priority]}
               </Badge>
               <Badge className={`${STATUS_COLOR[selected.status]} border-0`}>
                 {STATUS_LABEL[selected.status]}
@@ -158,25 +152,6 @@ export function ErrorDetailDialog({
 
             <div className="space-y-2 pt-2 border-t">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Cambia priorità
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {(Object.keys(PRIORITY_LABEL) as Priority[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => onUpdate(selected.id, { priority: p })}
-                    className={`px-2.5 py-1 rounded-full border text-xs ${
-                      selected.priority === p
-                        ? PRIORITY_COLOR[p] + " border"
-                        : "border-border hover:bg-muted"
-                    }`}
-                  >
-                    {PRIORITY_LABEL[p]}
-                  </button>
-                ))}
-              </div>
-
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2">
                 Cambia stato
               </p>
               <div className="flex flex-wrap gap-1.5">

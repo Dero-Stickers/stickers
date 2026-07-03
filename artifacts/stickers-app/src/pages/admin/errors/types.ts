@@ -1,11 +1,9 @@
-export type Priority = "critical" | "high" | "medium" | "low";
 export type Status = "new" | "investigating" | "resolved" | "ignored";
 
 export interface ErrorRow {
   id: string;
   errorHash: string;
   count: number;
-  priority: Priority;
   status: Status;
   page: string | null;
   errorType: string;
@@ -32,23 +30,9 @@ export interface ReportMeta {
 }
 
 export interface ListResponse {
-  counts: { total: number; new: number; critical: number; last7d: number };
+  counts: { total: number; new: number; last7d: number };
   items: ErrorRow[];
 }
-
-export const PRIORITY_LABEL: Record<Priority, string> = {
-  critical: "Critica",
-  high: "Alta",
-  medium: "Media",
-  low: "Bassa",
-};
-
-export const PRIORITY_COLOR: Record<Priority, string> = {
-  critical: "bg-red-100 text-red-700 border-red-200",
-  high: "bg-orange-100 text-orange-700 border-orange-200",
-  medium: "bg-amber-100 text-amber-700 border-amber-200",
-  low: "bg-slate-100 text-slate-600 border-slate-200",
-};
 
 export const STATUS_LABEL: Record<Status, string> = {
   new: "Nuova",

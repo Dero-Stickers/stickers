@@ -1,6 +1,6 @@
 import { ReactNode, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BarChart2, BookOpen, Users, MessageCircle, Crown, Settings, LogOut, Menu, X, AlertTriangle, MessageSquarePlus } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { useScrollResetOnNavigate } from "@/hooks/useScrollResetOnNavigate";
@@ -13,14 +13,14 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   useScrollResetOnNavigate(mainRef);
 
   const navItems = [
-    { icon: BarChart2, label: "Dashboard", path: "/admin" },
-    { icon: BookOpen, label: "Album", path: "/admin/album" },
-    { icon: Users, label: "Utenti", path: "/admin/utenti" },
-    { icon: MessageCircle, label: "Messaggi", path: "/admin/messaggi" },
-    { icon: AlertTriangle, label: "Errori ricevuti", path: "/admin/segnalazioni" },
-    { icon: MessageSquarePlus, label: "Segnalazioni & proposte", path: "/admin/proposte" },
-    { icon: Crown, label: "Monetizzazione", path: "/admin/premium" },
-    { icon: Settings, label: "Impostazioni", path: "/admin/impostazioni" },
+    { label: "Dashboard", path: "/admin" },
+    { label: "Album", path: "/admin/album" },
+    { label: "Utenti", path: "/admin/utenti" },
+    { label: "Messaggi", path: "/admin/messaggi" },
+    { label: "Errori ricevuti", path: "/admin/segnalazioni" },
+    { label: "Segnalazioni & proposte", path: "/admin/proposte" },
+    { label: "Monetizzazione", path: "/admin/premium" },
+    { label: "Impostazioni", path: "/admin/impostazioni" },
   ];
 
   return (
@@ -47,13 +47,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                   key={item.path}
                   href={item.path}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
                     isActive
                       ? "bg-sidebar-primary text-sidebar-primary-foreground"
                       : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
                   }`}
                 >
-                  <item.icon className="h-4 w-4" />
                   <span className="font-medium text-sm">{item.label}</span>
                 </Link>
               );
@@ -82,13 +81,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               <Link 
                 key={item.path} 
                 href={item.path} 
-                className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
-                  isActive 
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground" 
+                className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
+                  isActive
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
                     : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground/80"
                 }`}
               >
-                <item.icon className="h-5 w-5" />
                 <span className="font-medium">{item.label}</span>
               </Link>
             );

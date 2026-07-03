@@ -1,8 +1,6 @@
 import { ChevronRight, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
-  PRIORITY_COLOR,
-  PRIORITY_LABEL,
   STATUS_COLOR,
   STATUS_LABEL,
   friendlyTitle,
@@ -32,20 +30,23 @@ export function ErrorRow({ row, selected, onToggleSelect, onOpen }: Props) {
       />
       <button onClick={() => onOpen(row)} className="flex-1 text-left min-w-0">
         <div className="flex flex-wrap items-center gap-1.5 mb-1">
-          {/* Badge TIPO per primo: distingue a colpo d'occhio bug/contenuto/proposta. */}
+          {/* "New" verde in PRIMA posizione: appare solo finché non è stata letta
+              (status "new"). All'apertura passa a "In analisi" → il New sparisce. */}
+          {row.status === "new" && (
+            <Badge className="bg-green-100 text-green-700 border-0 text-[10px] px-1.5 py-0 font-bold uppercase tracking-wide">
+              New
+            </Badge>
+          )}
+          {/* Badge TIPO: distingue a colpo d'occhio bug/contenuto/proposta. */}
           <Badge className={`${typeColor(row.errorType)} border text-[10px] px-1.5 py-0`}>
             {typeLabel(row.errorType)}
           </Badge>
-          <Badge
-            className={`${PRIORITY_COLOR[row.priority]} border text-[10px] px-1.5 py-0`}
-          >
-            {PRIORITY_LABEL[row.priority]}
-          </Badge>
-          <Badge
-            className={`${STATUS_COLOR[row.status]} border-0 text-[10px] px-1.5 py-0`}
-          >
-            {STATUS_LABEL[row.status]}
-          </Badge>
+          {/* Stato mostrato solo quando NON è "new" (quello lo dice già il New verde). */}
+          {row.status !== "new" && (
+            <Badge className={`${STATUS_COLOR[row.status]} border-0 text-[10px] px-1.5 py-0`}>
+              {STATUS_LABEL[row.status]}
+            </Badge>
+          )}
           {row.count > 1 && (
             <Badge className="bg-foreground/10 text-foreground border-0 text-[10px] px-1.5 py-0">
               ×{row.count}
