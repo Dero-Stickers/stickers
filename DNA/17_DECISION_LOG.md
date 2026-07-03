@@ -7,6 +7,17 @@
 
 ## 2026-07
 
+- **Admin Errori/Segnalazioni — UI consolidata a colpo d'occhio** — pagina condivisa
+  `AdminErrors`/`ErrorRow` (una per `group=auto|manual`): (1) rimossa la logica "criticità"
+  dalla UI (card Critiche, badge/selettore priorità); colonna DB `priority` intatta ma non più
+  esposta. (2) Filtri su UNA riga senza box contenitore (coerente con Messaggi/Utenti): cerca +
+  Aggiorna (tondo, sola icona, che ricarica E azzera i filtri) + chip stato + "Copia tutto".
+  (3) Nelle card lo STATO è sempre primo, reso come SOLO testo colorato (verde New, violetto in
+  analisi, ecc.) — niente sfondo/contorno; il "New" verde sparisce all'apertura (new→investigating).
+  (4) Il badge categoria mostra la scelta utente dal form (`Qualcosa non funziona`/`Errore album`/
+  `Proposta`, colori rosso/ambra/blu) = provenienza a colpo d'occhio. (5) Sidebar admin senza icone
+  (solo testo). NB: nickname "Anonimo" NON è un bug — il report cattura `userId` se loggato (join
+  users→nickname); gli "Anonimo" sono dati di test seedati senza login.
 - **Recupero PIN legacy rimosso + eliminazione account senza PIN** — il vecchio recupero
   (codice `STICK-XXXX` + domanda di sicurezza) apparteneva al sistema PIN, ormai soppiantato da
   Google/email; con soli utenti di test da eliminare prima del lancio, non serviva più. **Rimossi**:
