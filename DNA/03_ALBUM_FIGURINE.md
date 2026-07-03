@@ -50,15 +50,21 @@ Ciclo tapping: Mancante → Posseduta → Doppia → Mancante
   `content-visibility`, prima cella a tutto schermo). Etichetta = squadra maggioritaria dal
   suffisso " - Team", altrimenti la sigla; blocchi di 1 figurina (logo "00") muti. Attivo solo
   per album con codici > 3 char; i Calciatori restano una griglia unica, identici.
-- **Categorie master (lug 2026)**: ogni album ha `category` (Mondiali/Europei/Campionato…),
-  fonte unica `ALBUM_CATEGORIES` (in `@workspace/db` per validazione server, replicata in
+- **Categorie master (lug 2026)**: ogni album ha `category`. Chiavi stabili `campionato`/
+  `europei`/`mondiali`, label mostrate **Campionati/Europei/Mondiali** (la key resta
+  `campionato`). L'ORDINE della lista `ALBUM_CATEGORIES` (Campionati → Europei → Mondiali)
+  guida chip-filtro, menu admin e ordinamento album. Fonte unica `ALBUM_CATEGORIES` (in
+  `@workspace/db` per validazione server, replicata IDENTICA — ordine incluso — in
   `@workspace/api-client-react` per la UI: il frontend non può importare il package DB).
-  Aggiungere una categoria = una riga in entrambe. **Admin**: menu categoria in crea/gestisci
-  album + colonna in tabella + chip-filtro categoria sulla STESSA riga di Cerca/stato (via prop
-  `extra` di `AdminFilterBar`), mostrati solo se >1 categoria. **User "Disponibili"**: chip-filtro
-  [Tutti + categorie presenti] (mostrati solo se >1 categoria); ordinamento per categoria poi
-  titolo. Icona per categoria (mappa `CATEGORY_ICON`, identica in `AlbumList.tsx` E in admin
-  `Albums.tsx`): `world-cup.png` (mondiali), `coppa-europei.png` (europei — ottimizzata 46×96/6KB),
+  Aggiungere/riordinare una categoria = modifica in ENTRAMBE le liste. **Admin**: menu categoria
+  in crea/gestisci album + colonna in tabella (con icona) + chip-filtro categoria sulla STESSA
+  riga di Cerca/stato (via prop `extra` di `AdminFilterBar`), mostrati solo se >1 categoria.
+  **User**: chip-filtro in ENTRAMBE le tab ("I miei album" e "Disponibili") — riga bloccata
+  (`w-full`, mai scrollabile): "Tutti" compatto + master `flex-1` uguali; visibili solo se >1
+  categoria presente; ordinamento per categoria poi titolo. Icona per categoria (mappa
+  `CATEGORY_ICON` in `AlbumList.tsx` — via componente `CategoryIcon` con colonna a larghezza
+  fissa per allineare i testi delle card — e in admin `Albums.tsx`): `world-cup.png` (mondiali,
+  +10%), `coppa-europei.png` (europei, ottimizzata 46×96/6KB, lieve compressione verticale),
   `scudetto.svg` (campionato). Rimossa la vecchia deduzione fragile dal titolo (`isWorldCup`).
 - **Album presenti (lug 2026)**: 3 master, tutti On Line. **Campionato**: 23 Calciatori
   (2003-04 → 2025-26). **Mondiali**: World Cup 2006/2010/2014/2018/2022/2026. **Europei**:

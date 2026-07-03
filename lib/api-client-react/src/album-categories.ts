@@ -5,10 +5,12 @@
 // VALIDAZIONE lato server. Sono duplicate qui perché il frontend non può
 // dipendere dal package DB (contiene `pg`, codice solo-server). Le chiavi sono
 // stabili: aggiungere una categoria = una riga QUI e una nel package DB.
+// L'ORDINE (Campionato → Europei → Mondiali) definisce chip-filtro, menu e
+// ordinamento album — deve combaciare con la lista nel package DB.
 export const ALBUM_CATEGORIES = [
-  { key: "mondiali", label: "Mondiali" },
+  { key: "campionato", label: "Campionati" },
   { key: "europei", label: "Europei" },
-  { key: "campionato", label: "Campionato" },
+  { key: "mondiali", label: "Mondiali" },
 ] as const;
 
 export type AlbumCategoryKey = (typeof ALBUM_CATEGORIES)[number]["key"];

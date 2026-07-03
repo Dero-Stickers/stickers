@@ -38,6 +38,32 @@ const CATEGORY_ICON: Record<string, string> = {
   campionato: scudettoIcon,
 };
 
+// Ritocco fino per singola icona (le immagini hanno proporzioni molto diverse):
+//  - europei: coppa molto slanciata (46×96) → leggera compressione verticale;
+//  - mondiali: +10% di grandezza rispetto alle altre.
+// Applicato all'ALTEZZA/scala della sola <img>, non tocca il file.
+const CATEGORY_ICON_TWEAK: Record<string, string> = {
+  europei: "scale-y-90 origin-center",
+  mondiali: "scale-110 origin-center",
+};
+
+/**
+ * Icona categoria dentro un contenitore a LARGHEZZA FISSA: qualunque sia la
+ * forma dell'icona (scudetto stretto, coppa slanciata, world-cup largo), occupa
+ * sempre la stessa "colonna" e si centra → il testo delle card parte sempre dallo
+ * stesso punto e tutte le righe risultano allineate, a prescindere dalla categoria.
+ * `h`/`w` = classi Tailwind per altezza icona e larghezza colonna.
+ */
+function CategoryIcon({ category, h, w }: { category: string; h: string; w: string }) {
+  const src = CATEGORY_ICON[category];
+  if (!src) return <span className={`${w} shrink-0`} aria-hidden />;
+  return (
+    <span className={`${w} shrink-0 flex items-center justify-center`}>
+      <img src={src} alt="" className={`${h} w-auto ${CATEGORY_ICON_TWEAK[category] ?? ""}`} />
+    </span>
+  );
+}
+
 // Ordine categorie in lista (Mondiali, Europei, Campionato…) = ordine di
 // ALBUM_CATEGORIES; a parità di categoria, titolo dal più recente al più vecchio.
 const CATEGORY_RANK: Record<string, number> = Object.fromEntries(
@@ -88,6 +114,18 @@ export function AlbumList() {
     [availableAlbums, catFilter],
   );
 
+  // Stesso filtro categoria anche in "I miei album": chip identici e riga bloccata,
+  // ma sulle categorie presenti tra gli album POSSEDUTI dall'utente.
+  const [myCatFilter, setMyCatFilter] = useState<string>("all");
+  const myPresentCategories = useMemo(() => {
+    const present = new Set(sortedMyAlbums.map(a => a.category));
+    return ALBUM_CATEGORIES.filter(c => present.has(c.key));
+  }, [sortedMyAlbums]);
+  const filteredMyAlbums = useMemo(
+    () => myCatFilter === "all" ? sortedMyAlbums : sortedMyAlbums.filter(a => a.category === myCatFilter),
+    [sortedMyAlbums, myCatFilter],
+  );
+
   const addAlbum = useAddAlbumToUser({
     mutation: {
       onSuccess: () => {
@@ -136,6 +174,28 @@ export function AlbumList() {
 
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 min-h-0">
         {activeTab === "my" && (
+          <>
+            {/* Stessa riga filtri di "Disponibili": bloccata, "Tutti" compatto +
+                master flex-1 uguali. Solo con più di una categoria posseduta. */}
+            {myPresentCategories.length > 1 && (
+              <div className="flex w-full gap-2 pb-3">
+                <button
+                  onClick={() => setMyCatFilter("all")}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${myCatFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                >
+                  Tutti
+                </button>
+                {myPresentCategories.map(c => (
+                  <button
+                    key={c.key}
+                    onClick={() => setMyCatFilter(c.key)}
+                    className={`flex-1 min-w-0 px-1 py-1.5 rounded-full text-xs font-semibold border transition-colors text-center truncate ${myCatFilter === c.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            )}
           <div className="grid gap-2 md:grid-cols-2 items-start">
             {loadingMy && [1, 2].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
             {!loadingMy && (myAlbums?.length ?? 0) === 0 && (
@@ -145,12 +205,14 @@ export function AlbumList() {
                 <p className="text-sm mt-1">Vai su "Disponibili" per aggiungere il tuo primo album</p>
               </div>
             )}
-            {sortedMyAlbums.map(ua => (
+            {filteredMyAlbums.map(ua => (
               <Card key={ua.id} className="shadow-sm">
                 <CardContent className="p-0">
                   <div className="flex items-center">
-                    <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 px-3 py-3.5 cursor-pointer">
-                      {CATEGORY_ICON[ua.category] && <img src={CATEGORY_ICON[ua.category]} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+                    {/* py più ampio: card alte e spaziose come "Disponibili" pur
+                        restando una riga sola (nessun contenuto aggiunto). */}
+                    <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 px-3 py-5 cursor-pointer">
+                      <CategoryIcon category={ua.category} h="h-7" w="w-8" />
                       <p className="font-semibold text-foreground truncate min-w-0 flex-1">{ua.title}</p>
                       <span className="text-primary font-bold text-sm shrink-0">{ua.completionPercent}%</span>
                     </Link>
@@ -166,6 +228,7 @@ export function AlbumList() {
               </Card>
             ))}
           </div>
+          </>
         )}
 
         {activeTab === "available" && (
@@ -173,20 +236,24 @@ export function AlbumList() {
             {/* Chip-filtro per categoria: [Tutti] + le categorie presenti. Solo
                 se c'è più di una categoria (con una sola sarebbe inutile). */}
             {presentCategories.length > 1 && (
-              <div className="flex flex-wrap gap-2 pb-3">
+              // Riga BLOCCATA su una sola linea, mai scrollabile: w-full vincola al
+              // contenitore, min-w-0 + truncate sui chip evitano che un'etichetta
+              // lunga spinga oltre. "Tutti" (reset) compatto; i master flex-1 uguali.
+              <div className="flex w-full gap-2 pb-3">
                 <button
                   onClick={() => setCatFilter("all")}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${catFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${catFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
                 >
                   Tutti
                 </button>
+                {/* Chip senza icona: le sigle categoria vanno tenute compatte per
+                    stare su una riga sola; le icone restano sulle card album. */}
                 {presentCategories.map(c => (
                   <button
                     key={c.key}
                     onClick={() => setCatFilter(c.key)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors flex items-center gap-1.5 ${catFilter === c.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                    className={`flex-1 min-w-0 px-1 py-1.5 rounded-full text-xs font-semibold border transition-colors text-center truncate ${catFilter === c.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
                   >
-                    {CATEGORY_ICON[c.key] && <img src={CATEGORY_ICON[c.key]} alt="" className="h-3.5 w-3.5 object-contain" />}
                     {c.label}
                   </button>
                 ))}
@@ -206,7 +273,7 @@ export function AlbumList() {
               <Card key={album.id} className={`shadow-sm ${added ? "opacity-60" : ""}`}>
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
-                    {CATEGORY_ICON[album.category] && <img src={CATEGORY_ICON[album.category]} alt="" className="h-6 w-6 shrink-0 object-contain" />}
+                    <CategoryIcon category={album.category} h="h-7" w="w-8" />
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-foreground text-sm truncate">{album.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">

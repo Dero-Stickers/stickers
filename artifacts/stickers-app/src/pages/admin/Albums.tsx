@@ -212,13 +212,12 @@ export function AdminAlbums() {
                 <button
                   key={c.key}
                   onClick={() => setCatFilter(c.key)}
-                  className={`px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-full border transition-colors ${
                     catFilter === c.key
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-border hover:bg-muted"
                   }`}
                 >
-                  {CATEGORY_ICON[c.key] && <img src={CATEGORY_ICON[c.key]} alt="" className="h-3.5 w-3.5 object-contain" />}
                   {c.label}
                 </button>
               ))}
@@ -261,7 +260,7 @@ export function AdminAlbums() {
             <td className="hidden md:table-cell text-center text-foreground">{album.totalStickers}</td>
             <td className="hidden sm:table-cell text-muted-foreground">
               <span className="flex items-center justify-center gap-1.5">
-                {CATEGORY_ICON[album.category] && <img src={CATEGORY_ICON[album.category]} alt="" className="h-4 w-4 object-contain" />}
+                {CATEGORY_ICON[album.category] && <img src={CATEGORY_ICON[album.category]} alt="" className="h-5 w-auto" />}
                 {albumCategoryLabel(album.category)}
               </span>
             </td>

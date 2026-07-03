@@ -5,10 +5,13 @@
 //
 // `key`   = valore salvato in `albums.category` (stabile, minuscolo, no accenti).
 // `label` = testo mostrato all'utente (chip e menu).
+// L'ORDINE di questa lista definisce l'ordine dei chip-filtro, dei menu admin e
+// dell'ordinamento album: Campionato → Europei → Mondiali (il campionato è il
+// cuore dell'app, le competizioni internazionali seguono).
 export const ALBUM_CATEGORIES = [
-  { key: "mondiali", label: "Mondiali" },
+  { key: "campionato", label: "Campionati" },
   { key: "europei", label: "Europei" },
-  { key: "campionato", label: "Campionato" },
+  { key: "mondiali", label: "Mondiali" },
 ] as const;
 
 export type AlbumCategoryKey = (typeof ALBUM_CATEGORIES)[number]["key"];
