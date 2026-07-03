@@ -20,12 +20,9 @@ import {
   type SocialResult,
 } from "@/lib/social-auth";
 import { EmailAuth } from "@/pages/auth/EmailAuth";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Mail, ShieldX } from "lucide-react";
+import { BlockedAccountDialog } from "@/components/auth/BlockedAccountDialog";
+import { Mail } from "lucide-react";
 import type { AuthResponse } from "@workspace/api-client-react";
-
-// Email di supporto per richiesta sblocco account (dominio deroarts.com).
-const SUPPORT_EMAIL = "stickers@deroarts.com";
 
 // Allineato alla regola del backend: 5-12 caratteri (lettere, numeri, - o _),
 // ALFANUMERICO MISTO obbligatorio (almeno una lettera E almeno un numero).
@@ -298,35 +295,9 @@ export function Login() {
       </Card>
     </div>
 
-    {/* Modale "Account bloccato": via d'uscita chiara (email supporto) invece
-        di una scritta rossa nel form. Non rivela il motivo del blocco. */}
-    <Dialog open={blockedOpen} onOpenChange={setBlockedOpen}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShieldX className="h-5 w-5 text-destructive" />
-            Account bloccato
-          </DialogTitle>
-          <DialogDescription className="pt-1 text-left">
-            Il tuo account è stato sospeso e al momento non puoi accedere.
-            Se pensi si tratti di un errore, scrivici per chiedere lo sblocco:
-            indica il tuo nickname nella richiesta.
-          </DialogDescription>
-        </DialogHeader>
-        <a
-          href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Richiesta sblocco account")}`}
-          className="flex items-center justify-center gap-2 w-full h-11 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
-        >
-          <Mail className="h-4 w-4" />
-          Scrivi a {SUPPORT_EMAIL}
-        </a>
-        <DialogFooter>
-          <Button variant="ghost" className="w-full" onClick={() => setBlockedOpen(false)}>
-            Chiudi
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    {/* Modale "Account bloccato": componente condiviso (stessa schermata del
+        gate globale a sessione aperta). Non rivela il motivo del blocco. */}
+    <BlockedAccountDialog open={blockedOpen} onOpenChange={setBlockedOpen} />
     </>
   );
 }

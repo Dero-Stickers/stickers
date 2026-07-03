@@ -175,7 +175,11 @@ const login: RequestHandler = async (req, res) => {
       return;
     }
 
-    if (user.isBlocked) {
+    // Blocco: sia il flag sulla riga sia la lista nera email (a prova di
+    // aggiramento). Stesso codice ACCOUNT_BLOCKED → il frontend mostra la
+    // schermata "Account bloccato" con il contatto di supporto.
+    const { isEmailBlocked } = await import("../lib/blocklist");
+    if (user.isBlocked || (await isEmailBlocked(user.email))) {
       res.status(403).json({ error: "ACCOUNT_BLOCKED", message: "Account bloccato. Contatta il supporto." });
       return;
     }
@@ -331,6 +335,14 @@ const exportMe: RequestHandler = async (req, res) => {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
     if (!user) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
 
+    // Route sotto /auth (fuori dal gate globale): blocca anche qui. Il diritto
+    // GDPR all'esportazione resta esercitabile via supporto (contatto in-app).
+    const { isEmailBlocked } = await import("../lib/blocklist");
+    if (user.isBlocked || (await isEmailBlocked(user.email))) {
+      res.status(403).json({ error: "ACCOUNT_BLOCKED", message: "Account bloccato. Contatta il supporto." });
+      return;
+    }
+
     const chats = await db.select().from(chatsTable).where(or(eq(chatsTable.user1Id, user.id), eq(chatsTable.user2Id, user.id)));
     const messages = await db.select().from(messagesTable).where(eq(messagesTable.senderId, user.id));
     const userAlbums = await db.select().from(userAlbumsTable).where(eq(userAlbumsTable.userId, user.id));
@@ -394,6 +406,16 @@ const deleteMe: RequestHandler = async (req, res) => {
 
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
     if (!user) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
+
+    // Un utente bloccato NON può auto-eliminarsi: chiuderebbe la scappatoia
+    // "mi cancello e mi re-iscrivo pulito". Deve restare bloccato e contattare
+    // il supporto. La lista nera email sopravvive comunque alla cancellazione,
+    // ma qui evitiamo del tutto la cancellazione di un account sotto blocco.
+    const { isEmailBlocked } = await import("../lib/blocklist");
+    if (user.isBlocked || (await isEmailBlocked(user.email))) {
+      res.status(403).json({ error: "ACCOUNT_BLOCKED", message: "Account bloccato. Contatta il supporto." });
+      return;
+    }
 
     if (user.isAdmin) {
       res.status(403).json({ error: "ADMIN_CANNOT_SELF_DELETE", message: "Un account admin non può essere eliminato in autonomia." });
@@ -540,6 +562,18 @@ const changeLocation: RequestHandler = async (req, res) => {
     const { usersTable } = await import("@workspace/db");
     const { eq } = await import("drizzle-orm");
 
+    // Route sotto /auth (non passa dal gate globale): controlla il blocco qui.
+    const [me] = await db
+      .select({ isBlocked: usersTable.isBlocked, email: usersTable.email })
+      .from(usersTable)
+      .where(eq(usersTable.id, session.userId))
+      .limit(1);
+    const { isEmailBlocked } = await import("../lib/blocklist");
+    if (me && (me.isBlocked || (await isEmailBlocked(me.email)))) {
+      res.status(403).json({ error: "ACCOUNT_BLOCKED", message: "Account bloccato. Contatta il supporto." });
+      return;
+    }
+
     const [updated] = await db
       .update(usersTable)
       .set({ cap: body.cap, area: deriveArea(body.cap) })
@@ -619,14 +653,18 @@ const social: RequestHandler = async (req, res) => {
       )
       .limit(1);
 
-    if (!existing) {
-      // Nessun account: serve scegliere nickname + CAP.
-      res.json({ needsProfile: true, email: identity.email });
+    // Lista nera email: blocca PRIMA di offrire la creazione profilo, così un
+    // utente bloccato che ha eliminato l'account non può re-iscriversi con la
+    // stessa email. Vale sia che l'account esista ancora sia che sia sparito.
+    const { isEmailBlocked } = await import("../lib/blocklist");
+    if ((existing?.isBlocked) || (await isEmailBlocked(identity.email))) {
+      res.status(403).json({ error: "ACCOUNT_BLOCKED", message: "Account bloccato" });
       return;
     }
 
-    if (existing.isBlocked) {
-      res.status(403).json({ error: "BLOCKED", message: "Account bloccato" });
+    if (!existing) {
+      // Nessun account: serve scegliere nickname + CAP.
+      res.json({ needsProfile: true, email: identity.email });
       return;
     }
 
@@ -673,6 +711,14 @@ const socialComplete: RequestHandler = async (req, res) => {
     const identity = await verifySupabaseToken(body.accessToken);
     if (!identity) {
       res.status(401).json({ error: "INVALID_TOKEN", message: "Accesso non valido" });
+      return;
+    }
+
+    // Lista nera email: impedisce la re-iscrizione con una email bandita
+    // (aggiramento del blocco tramite elimina-account + nuovo signup).
+    const { isEmailBlocked } = await import("../lib/blocklist");
+    if (await isEmailBlocked(identity.email)) {
+      res.status(403).json({ error: "ACCOUNT_BLOCKED", message: "Account bloccato" });
       return;
     }
 

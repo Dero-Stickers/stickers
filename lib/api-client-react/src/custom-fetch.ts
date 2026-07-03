@@ -37,6 +37,29 @@ export function setFetchFailureObserver(obs: FetchFailureObserver | null): void 
   _failureObserver = obs;
 }
 
+// Observer dedicato "account bloccato": scatta su una risposta 403 il cui body
+// ha `error === "ACCOUNT_BLOCKED"`. Serve al frontend per mostrare subito la
+// schermata di blocco e fare logout, anche a sessione aperta. Distinto dal
+// failure-observer generico (che ignora i 4xx attesi).
+type BlockedObserver = () => void;
+let _blockedObserver: BlockedObserver | null = null;
+
+export function setAccountBlockedObserver(obs: BlockedObserver | null): void {
+  _blockedObserver = obs;
+}
+
+function notifyBlocked(status: number, data: unknown): void {
+  if (!_blockedObserver) return;
+  if (status !== 403) return;
+  const code = (data as { error?: unknown } | null)?.error;
+  if (code !== "ACCOUNT_BLOCKED") return;
+  try {
+    _blockedObserver();
+  } catch {
+    // un observer non deve mai rompere il flusso della richiesta
+  }
+}
+
 function notifyFailure(info: {
   status: number | null;
   method: string;
@@ -416,6 +439,7 @@ export async function customFetch<T = unknown>(
       url: apiError.url,
       message: apiError.message,
     });
+    notifyBlocked(response.status, errorData);
     throw apiError;
   }
 

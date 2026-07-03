@@ -114,7 +114,14 @@ const toggleBlock: RequestHandler = async (req, res) => {
     const { usersTable } = await import("@workspace/db");
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!user) { res.status(404).json({ error: "NOT_FOUND" }); return; }
-    const [updated] = await db.update(usersTable).set({ isBlocked: isBlocked ?? !user.isBlocked }).where(eq(usersTable.id, userId)).returning();
+    const nextBlocked = isBlocked ?? !user.isBlocked;
+    const [updated] = await db.update(usersTable).set({ isBlocked: nextBlocked }).where(eq(usersTable.id, userId)).returning();
+    // Lista nera email: tienila allineata al blocco così l'utente non può
+    // aggirarlo eliminando l'account e re-iscrivendosi con la stessa email.
+    // (Gli utenti PIN senza email vengono ignorati: helper no-op su email vuota.)
+    const { blockEmail, unblockEmail } = await import("../lib/blocklist");
+    if (nextBlocked) await blockEmail(updated.email, "Bloccato da admin");
+    else await unblockEmail(updated.email);
     res.json({
       id: updated.id,
       nickname: updated.nickname,

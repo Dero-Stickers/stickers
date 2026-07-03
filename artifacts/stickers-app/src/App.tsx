@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,8 +11,9 @@ import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
 import { CookieBanner } from "@/components/CookieBanner";
 import { ConfirmProvider } from "@/components/admin/ConfirmDialog";
 import { dismissBootSplash } from "@/components/brand/SplashScreen";
-import { setFetchFailureObserver } from "@workspace/api-client-react";
+import { setFetchFailureObserver, setAccountBlockedObserver } from "@workspace/api-client-react";
 import { installGlobalErrorCapture, reportApiFailure } from "@/lib/error-capture";
+import { BlockedAccountDialog } from "@/components/auth/BlockedAccountDialog";
 
 // Cattura errori globali (JS non gestiti, promise, chunk falliti) il prima
 // possibile, prima ancora del render: così nessun errore silente sfugge.
@@ -235,6 +236,35 @@ function BootEffects() {
   return null;
 }
 
+// Gate globale "account bloccato": se una qualsiasi chiamata API risponde
+// 403 ACCOUNT_BLOCKED (blocco scattato a sessione aperta), fa logout e mostra
+// la schermata di blocco sopra tutto — così l'utente bloccato viene cacciato
+// subito, non solo al prossimo login. Registra l'observer una volta sola.
+function BlockedGate() {
+  const { logout } = useAuth();
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => {
+    setAccountBlockedObserver(() => {
+      logout();
+      setBlocked(true);
+    });
+    return () => setAccountBlockedObserver(null);
+  }, [logout]);
+  // Alla chiusura riporta al login (la sessione è già stata invalidata).
+  return (
+    <BlockedAccountDialog
+      open={blocked}
+      onOpenChange={(o) => {
+        if (!o) {
+          setBlocked(false);
+          window.location.assign(import.meta.env.BASE_URL || "/");
+        }
+      }}
+      closeLabel="Ho capito"
+    />
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -248,6 +278,7 @@ function App() {
                 <DevQuickSwitch />
                 <CookieBanner />
               </WouterRouter>
+              <BlockedGate />
               <Toaster />
             </ConfirmProvider>
           </AuthProvider>

@@ -28,6 +28,22 @@ Schermata di accesso (`Login.tsx`) con **"Continua con Google"** in evidenza + a
 - **Email + password** e reset via email: previsti, attivabili quando c'è l'SMTP (Brevo) — vedi piano.
 - Il dispositivo ricorda l'accesso finché l'utente non fa logout manuale.
 
+## Blocco utente (moderazione, lug 2026) — a prova di aggiramento
+
+Il blocco admin (`users.is_blocked`) è applicato su **4 livelli** (tutti rispondono
+`403 ACCOUNT_BLOCKED`; il frontend mostra il modale "Account bloccato" condiviso
+`components/auth/BlockedAccountDialog.tsx` con mailto al supporto — email in un'unica costante `SUPPORT_EMAIL`, provvisoria):
+1. **Login** (PIN + Google/Email): respinto. Flusso social: `social-auth.ts` → `finishSocial` → stesso modale.
+2. **Azioni a sessione aperta**: gate `requireAuth + requireNotBlocked` (`middlewares/auth.ts`) su
+   `/user`, `/matches`, `/chats`, `/billing`; check inline su `location`/`export`/`delete` (sotto `/auth`).
+   `GET /auth/me` resta accessibile (serve alla shell). Il frontend intercetta il 403 globalmente
+   (`setAccountBlockedObserver` in `custom-fetch.ts` → `BlockedGate` in `App.tsx`: logout + modale).
+3. **Lista nera email** (`blocked_emails`, mig. 0008): il blocco admin banna anche l'email
+   (case-insensitive); login/registrazione la rifiutano **anche se l'account non esiste più**
+   → eliminare l'account e re-iscriversi con la stessa email NON aggira il blocco.
+4. **No auto-eliminazione**: un bloccato non può cancellare l'account (chiuderebbe la scappatoia).
+Lo sblocco admin rimuove l'email dalla lista nera e ripristina tutto.
+
 ## Cambio Zona (CAP) — "modalità in vacanza"
 
 - Dal **Profilo → Cambia zona**: l'utente imposta un nuovo CAP per cercare match in un'altra città.

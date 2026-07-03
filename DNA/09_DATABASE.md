@@ -160,7 +160,7 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - **Produzione**: PostgreSQL su Supabase, connessione via `SUPABASE_DATABASE_URL`
   (SSL abilitato). Il client (`lib/db/src/index.ts`) imposta `search_path=public`.
 - **Push schema**: `cd lib/db && pnpm push-force` (Drizzle Kit).
-- Stato attuale: 14 tabelle con indici integri (+`payments`, +`chat_unlocks`, +`trade_confirmations`).
+- Stato attuale: 15 tabelle con indici integri (+`payments`, +`chat_unlocks`, +`trade_confirmations`, +`blocked_emails`).
 
 ### Monetizzazione — migrazioni e divergenza codice/DB (giu 2026)
 
@@ -178,6 +178,11 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - **`0005_trade_confirmations.sql`** — **APPLICATA**. Additiva: crea `trade_confirmations`
   (RLS attiva, unique `chat_id,user_id`) per la conferma scambio concluso. Non tocca dati
   esistenti. Modello in `04_MATCHING_SCAMBI.md` → "Conferma scambio concluso".
+- **`0008_blocked_emails.sql`** — **APPLICATA** (3 lug 2026). Additiva: crea `blocked_emails`
+  (email unique su `lower(email)`, reason, blocked_at; RLS attiva deny-all — la usa solo il
+  backend). Lista nera email per blocco a prova di aggiramento: sopravvive all'eliminazione
+  dell'account. Allineata da admin blocca/sblocca via `api-server/src/lib/blocklist.ts`.
+  Enforcement completo in `02_UTENTI_AUTENTICAZIONE.md` → "Blocco utente".
 
 ### Seed e ripristino album "default" (sicuro)
 

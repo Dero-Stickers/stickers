@@ -7,6 +7,19 @@
 
 ## 2026-07
 
+- **Blocco utente a prova di aggiramento (lista nera email + gate azioni)** — scoperto in audit che
+  il blocco viveva solo su `users.is_blocked`: controllato SOLO al login, e un bloccato poteva
+  eliminare l'account (hard delete) e re-iscriversi con la stessa email ripartendo pulito. Deciso:
+  (1) migrazione additiva **0008** → tabella `blocked_emails` (unique `lower(email)`, RLS deny-all)
+  allineata da admin blocca/sblocca — la traccia sopravvive all'eliminazione dell'account;
+  (2) gate `requireNotBlocked` sulle route di azione + check inline su location/export/delete →
+  bloccato fermato subito anche a sessione aperta (`/auth/me` escluso di proposito: serve alla shell);
+  (3) un bloccato NON può auto-eliminarsi; (4) comunicazione unica: modale "Account bloccato" con
+  mailto supporto (costante `SUPPORT_EMAIL` in `BlockedAccountDialog.tsx`, email provvisoria da
+  definire), mostrato al login (PIN/Google/Email) E a sessione aperta via observer globale
+  `setAccountBlockedObserver` → `BlockedGate`. Codice errore unificato a `ACCOUNT_BLOCKED`
+  (il frontend accetta anche il legacy `BLOCKED`). Verificato end-to-end: 5/5 azioni 403,
+  blocklist case-insensitive, sblocco ripristina tutto.
 - **Eliminazione chat — soft-delete per-utente (stile WhatsApp)** — ognuno elimina la chat DAL PROPRIO
   lato, l'altro la conserva (policy + moderazione salve: nessuno distrugge la copia altrui). Migrazione
   additiva **0007** → `chats.deleted_by_user1/2` (bool, default false). `DELETE /api/chats/:chatId`
