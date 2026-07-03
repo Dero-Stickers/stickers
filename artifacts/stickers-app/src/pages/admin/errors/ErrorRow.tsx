@@ -8,6 +8,8 @@ import {
   friendlyTitle,
   userLabel,
   timeAgo,
+  typeLabel,
+  typeColor,
   type ErrorRow as ErrorRowType,
 } from "./types";
 
@@ -30,6 +32,10 @@ export function ErrorRow({ row, selected, onToggleSelect, onOpen }: Props) {
       />
       <button onClick={() => onOpen(row)} className="flex-1 text-left min-w-0">
         <div className="flex flex-wrap items-center gap-1.5 mb-1">
+          {/* Badge TIPO per primo: distingue a colpo d'occhio bug/contenuto/proposta. */}
+          <Badge className={`${typeColor(row.errorType)} border text-[10px] px-1.5 py-0`}>
+            {typeLabel(row.errorType)}
+          </Badge>
           <Badge
             className={`${PRIORITY_COLOR[row.priority]} border text-[10px] px-1.5 py-0`}
           >

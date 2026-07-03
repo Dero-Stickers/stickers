@@ -7,6 +7,17 @@
 
 ## 2026-07
 
+- **Segnalazioni utente a 3 tipi (bug / errore contenuti / proposta)** — la modale unica "Segnala
+  un problema" (solo testo libero) obbligava l'admin a indovinare tipo e cercare a mano l'album.
+  Rifatta come `ReportDialog` a 2 passi (scelta tipo → form adattivo): **bug** (`user_report`),
+  **errore nei contenuti** (`content_error`, con menu album + n° figurina), **proposta**
+  (`feature_request`). ZERO migrazioni: il tipo va in `error_reports.errorType` (enum esteso lato
+  backend), i dettagli in `meta` jsonb (albumId/albumTitle/stickerRef/requestKind). L'hash di
+  dedup include il riferimento meta → segnalazioni su album/figurine diverse non si accorpano.
+  Admin: badge tipo (rosso/ambra/blu) in lista e dettaglio, box "Riferimento nell'album", meta
+  incluso nell'export "Copia per AI". Punto d'ingresso: voce "Segnala o proponi" in Profilo.
+  `reportError`/ErrorBoundary invariati e retrocompatibili. Firma **deroarts** minimale in fondo
+  al Profilo: solo il logo `deroarts_logo.svg` cliccabile (mailto per acquisto/collaborazioni).
 - **12 album Mondiali+Europei caricati e pubblicati** — 6 World Cup (2006/2010/2014/2018/2022/2026)
   + 6 Euro Cup (2004/2008/2012/2016/2020/2024), tutti On Line. Il builder specifico
   `build:worldcup-data` è stato sostituito da `build:albums-data` GENERICO: deduce

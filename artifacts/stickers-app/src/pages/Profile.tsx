@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { MapPin, Key, HelpCircle, LogOut, Shield, Trash2, Check, AlertTriangle, Send, ChevronRight } from "lucide-react";
-import { reportError } from "@/lib/report-error";
+import { MapPin, Key, HelpCircle, LogOut, Shield, Trash2, MessageSquarePlus, ChevronRight } from "lucide-react";
+import { ReportDialog } from "@/components/report/ReportDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,40 +90,8 @@ export function Profile() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // "Segnala o proponi": tutta la logica (2 passi, tipi, invio) vive in ReportDialog.
   const [showReportDialog, setShowReportDialog] = useState(false);
-  const [reportNote, setReportNote] = useState("");
-  const [reportPage, setReportPage] = useState("");
-  const [reportLoading, setReportLoading] = useState(false);
-  const [reportSent, setReportSent] = useState(false);
-
-  const handleSendReport = async () => {
-    setReportLoading(true);
-    const ok = await reportError({
-      errorType: "user_report",
-      page: reportPage || window.location.pathname,
-      userNote: reportNote.trim(),
-    });
-    setReportLoading(false);
-    if (ok) {
-      setReportSent(true);
-      toast({
-        title: "Segnalazione inviata",
-        description: "Grazie! Daremo un'occhiata appena possibile.",
-      });
-      setTimeout(() => {
-        setShowReportDialog(false);
-        setReportNote("");
-        setReportPage("");
-        setReportSent(false);
-      }, 1500);
-    } else {
-      toast({
-        title: "Errore",
-        description: "Non sono riuscito a inviare la segnalazione. Riprova tra poco.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleDeleteAccount = async () => {
     setDeleteError(null);
@@ -205,16 +173,11 @@ export function Profile() {
               </button>
 
               <button
-                onClick={() => {
-                  setShowReportDialog(true);
-                  setReportNote("");
-                  setReportPage(window.location.pathname);
-                  setReportSent(false);
-                }}
+                onClick={() => setShowReportDialog(true)}
                 className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
               >
-                <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                <p className="flex-1 font-medium text-sm text-foreground">Segnala un problema</p>
+                <MessageSquarePlus className="h-5 w-5 text-primary flex-shrink-0" />
+                <p className="flex-1 font-medium text-sm text-foreground">Segnala o proponi</p>
                 <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
               </button>
             </CardContent>
@@ -258,6 +221,19 @@ export function Profile() {
             </Button>
           )}
         </div>
+
+        {/* Firma progetto — minimale: solo il logo deroarts, cliccabile.
+            Un tap apre l'email (oggetto già impostato) per acquisto/collaborazioni. */}
+        <footer className="pt-6 pb-2 flex justify-center">
+          <a
+            href="mailto:info-stickers@deroarts.com?subject=Contatto%20da%20app%20Stickers"
+            aria-label="Scrivi a deroarts"
+            title="Scrivi a deroarts"
+            className="opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <img src="/deroarts_logo.svg" alt="deroarts" className="h-7 w-auto" />
+          </a>
+        </footer>
       </div>
 
       <Dialog open={showLocDialog} onOpenChange={setShowLocDialog}>
@@ -351,82 +327,7 @@ export function Profile() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              Segnala un problema
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Descrivi cosa è successo. Più sei chiaro, più in fretta possiamo sistemarlo.
-              <br />
-              <span className="text-xs">Non serve scrivere dati personali: non li raccogliamo.</span>
-            </p>
-
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-foreground">
-                In quale sezione eri? <span className="text-muted-foreground font-normal">(facoltativo)</span>
-              </label>
-              <select
-                value={reportPage}
-                onChange={(e) => setReportPage(e.target.value)}
-                className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">— Seleziona la sezione —</option>
-                <option value="Home">Home</option>
-                <option value="Album">Album</option>
-                <option value="Match">Match</option>
-                <option value="Profilo">Profilo</option>
-                <option value="Altro">Altro</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-foreground">
-                Cosa è andato storto?
-              </label>
-              <textarea
-                placeholder="es. Quando clicco 'Aggiungi figurina' non succede niente. Più dettagli ci dai, meglio è."
-                value={reportNote}
-                onChange={(e) => setReportNote(e.target.value)}
-                rows={8}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-32 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                autoFocus
-              />
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="outline"
-                className="flex-1 h-11"
-                onClick={() => setShowReportDialog(false)}
-                disabled={reportLoading}
-              >
-                Annulla
-              </Button>
-              <Button
-                className="flex-1 h-11 bg-primary text-primary-foreground gap-1.5"
-                onClick={handleSendReport}
-                disabled={reportLoading || reportSent || reportNote.trim().length < 5}
-              >
-                {reportSent ? (
-                  <>
-                    <Check className="h-4 w-4" /> Inviata
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4" />
-                    {reportLoading ? "Invio…" : "Invia"}
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ReportDialog open={showReportDialog} onOpenChange={setShowReportDialog} />
 
       <Dialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
         <DialogContent className="max-w-sm">

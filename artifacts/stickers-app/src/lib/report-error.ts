@@ -3,7 +3,22 @@
  * /api/errors/report. Always best-effort: never throws, never blocks UI.
  */
 
-type ErrorType = "user_report" | "client_crash" | "api_error" | "other";
+type ErrorType =
+  | "user_report"
+  | "client_crash"
+  | "api_error"
+  | "other"
+  | "content_error"
+  | "feature_request";
+
+// Dettagli strutturati opzionali (nuovi tipi): album/figurina per content_error,
+// categoria per feature_request. Finiscono nella colonna jsonb `meta`.
+export interface ReportMeta {
+  albumId?: number;
+  albumTitle?: string;
+  stickerRef?: string;
+  requestKind?: string;
+}
 
 interface ReportInput {
   errorType?: ErrorType;
@@ -11,6 +26,7 @@ interface ReportInput {
   messageClean?: string;
   stackTop?: string;
   userNote?: string;
+  meta?: ReportMeta;
 }
 
 const APP_VERSION = "1.0.0";
@@ -40,6 +56,7 @@ export async function reportError(input: ReportInput): Promise<boolean> {
       stackTop: (input.stackTop ?? "").slice(0, 1500),
       userNote: (input.userNote ?? "").slice(0, 5000),
       appVersion: APP_VERSION,
+      ...(input.meta ? { meta: input.meta } : {}),
     };
 
     const res = await fetch("/api/errors/report", {

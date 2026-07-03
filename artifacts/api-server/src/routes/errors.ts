@@ -40,7 +40,30 @@ async function requireAdmin(
 
 const PRIORITIES = ["critical", "high", "medium", "low"] as const;
 const STATUSES = ["new", "investigating", "resolved", "ignored"] as const;
-const TYPES = ["user_report", "client_crash", "api_error", "other"] as const;
+// Tipi di segnalazione. Oltre ai tecnici (crash/api), i 3 tipi lato utente:
+//  - user_report    → bug generico ("qualcosa non funziona")
+//  - content_error  → errore nei contenuti (figurina/album sbagliati dall'admin)
+//  - feature_request→ proposta/richiesta (nuovo album, sezione master, ecc.)
+const TYPES = [
+  "user_report",
+  "client_crash",
+  "api_error",
+  "other",
+  "content_error",
+  "feature_request",
+] as const;
+
+// `meta` opzionale per i dettagli strutturati dei nuovi tipi (album/figurina
+// per content_error; categoria proposta per feature_request). Campi liberi ma
+// limitati, salvati nella colonna jsonb `meta` di error_reports.
+const reportMeta = z
+  .object({
+    albumId: z.number().int().positive().optional(),
+    albumTitle: z.string().max(200).optional(),
+    stickerRef: z.string().max(60).optional(),
+    requestKind: z.string().max(60).optional(),
+  })
+  .optional();
 
 const reportInput = z.object({
   page: z.string().max(500).optional(),
@@ -49,6 +72,7 @@ const reportInput = z.object({
   stackTop: z.string().max(2000).optional(),
   userNote: z.string().max(5000).optional(),
   appVersion: z.string().max(40).optional(),
+  meta: reportMeta,
 });
 
 // ---------------------------------------------------------------------------
@@ -101,7 +125,17 @@ const submitReport: RequestHandler = async (req, res) => {
       return;
     }
 
-    const hashSeed = messageClean || userNote || "no-msg";
+    // L'hash deduplica le occorrenze. Per errori-contenuto e proposte includo
+    // il riferimento (album/figurina/tipo) nel seed: segnalazioni su album o
+    // figurine DIVERSE non devono accorparsi tra loro né sovrascrivere il meta.
+    const metaSeed = body.meta
+      ? [body.meta.albumId, body.meta.stickerRef, body.meta.requestKind]
+          .filter(Boolean)
+          .join("|")
+      : "";
+    const hashSeed = [messageClean || userNote || "no-msg", metaSeed]
+      .filter(Boolean)
+      .join("::");
     const hash = computeErrorHash(body.errorType, page, hashSeed);
     const ua = uaClass(req.headers["user-agent"] as string | undefined);
     const ipP = ipPrefix(ip);
@@ -127,6 +161,7 @@ const submitReport: RequestHandler = async (req, res) => {
         userId: session?.userId ?? null,
         appVersion,
         userNote,
+        meta: body.meta ?? null,
       })
       .onConflictDoUpdate({
         target: errorReportsTable.errorHash,
@@ -142,6 +177,7 @@ const submitReport: RequestHandler = async (req, res) => {
           uaClass: ua,
           appVersion,
           userNote,
+          ...(body.meta ? { meta: body.meta } : {}),
           ipPrefix: ipP,
           ...(session?.userId ? { userId: session.userId } : {}),
           // Promote ignored/resolved back to "new" if it happens again.
@@ -246,6 +282,7 @@ const listErrors: RequestHandler = async (req, res) => {
         appVersion: r.appVersion,
         userNote: r.userNote,
         adminNote: r.adminNote,
+        meta: r.meta ?? null,
         createdAt: r.createdAt.toISOString(),
         lastSeenAt: r.lastSeenAt.toISOString(),
       })),
@@ -402,6 +439,9 @@ const consolidatedReport: RequestHandler = async (req, res) => {
       lines.push(`- **Stato**: ${r.status}`);
       lines.push(`- **Dispositivo**: ${r.uaClass ?? "?"}`);
       if (r.appVersion) lines.push(`- **App version**: ${r.appVersion}`);
+      // Riferimenti strutturati dei tipi utente (album/figurina, proposta).
+      const m = r.meta as { albumTitle?: string; stickerRef?: string; requestKind?: string } | null;
+      if (m?.albumTitle) lines.push(`- **Album**: ${m.albumTitle}${m.stickerRef ? ` · figurina ${m.stickerRef}` : ""}`);
       lines.push("");
       if (r.messageClean) {
         lines.push("**Errore tecnico:**");

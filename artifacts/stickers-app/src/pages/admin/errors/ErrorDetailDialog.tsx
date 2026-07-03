@@ -14,6 +14,8 @@ import {
   STATUS_LABEL,
   friendlyTitle,
   userLabel,
+  typeLabel,
+  typeColor,
   type ErrorRow,
   type Priority,
   type Status,
@@ -51,6 +53,9 @@ export function ErrorDetailDialog({
         {selected && (
           <div className="space-y-4">
             <div className="flex flex-wrap gap-1.5">
+              <Badge className={`${typeColor(selected.errorType)} border`}>
+                {typeLabel(selected.errorType)}
+              </Badge>
               <Badge className={`${PRIORITY_COLOR[selected.priority]} border`}>
                 {PRIORITY_LABEL[selected.priority]}
               </Badge>
@@ -66,6 +71,22 @@ export function ErrorDetailDialog({
             <p className="text-base font-semibold text-foreground">
               {friendlyTitle(selected)}
             </p>
+
+            {/* Riferimento contenuti (solo se presente): album + figurina segnalati,
+                in evidenza perché è ciò che serve per correggere l'album. */}
+            {(selected.meta?.albumTitle || selected.meta?.stickerRef) && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-sm">
+                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-0.5">
+                  Riferimento nell'album
+                </p>
+                <p className="text-foreground">
+                  {selected.meta?.albumTitle ?? "Album non indicato"}
+                  {selected.meta?.stickerRef && (
+                    <span className="font-mono"> · figurina {selected.meta.stickerRef}</span>
+                  )}
+                </p>
+              </div>
+            )}
 
             {selected.userNote && (
               <div>
