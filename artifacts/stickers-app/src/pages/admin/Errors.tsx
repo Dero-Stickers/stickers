@@ -332,7 +332,7 @@ export function AdminErrors() {
                 placeholder="Cerca per pagina, messaggio, nota…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 pl-8 pr-3 rounded-xl border border-input bg-white text-sm"
+                className="w-full h-9 pl-8 pr-3 rounded-xl border bg-white text-sm shadow-sm"
               />
             </div>
             <Button

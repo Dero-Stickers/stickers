@@ -99,8 +99,9 @@ export function AdminUsers() {
           ["blocked", "Bloccati"],
         ]}
       />
-      {/* -mt riduce il gap del contenitore AdminPage: tabella più vicina alla barra. */}
-      <div className="-mt-4 md:-mt-6 flex-1 min-h-0 flex flex-col">
+      {/* Spaziatura coerente con Album/Messaggi: gap naturale di AdminPage tra
+          barra filtri e tabella (niente margine negativo). */}
+      <div className="flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}
         head={
