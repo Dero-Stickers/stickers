@@ -371,8 +371,9 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
         </Card>
       </div>
 
-      <Card className="shadow-sm">
-        <CardContent className="p-3 space-y-3">
+      {/* Filtri SENZA box contenitore (coerente con Messaggi/Utenti): resi
+          direttamente, non dentro una Card. */}
+      <div className="space-y-3">
           {/* Tutti i filtri su UNA riga: cerca + aggiorna(reset) + chip stato + copia.
               flex-nowrap + overflow-x-auto: se lo spazio manca scorre in orizzontale
               invece di andare a capo, così resta sempre una riga unica. */}
@@ -423,7 +424,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
               className="ml-auto shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Copy className="h-4 w-4" />
-              <span className="hidden md:inline">Copia</span>
+              <span>Copia tutto</span>
             </button>
           </div>
 
@@ -462,8 +463,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
       </div>
 
       <Card className="shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">

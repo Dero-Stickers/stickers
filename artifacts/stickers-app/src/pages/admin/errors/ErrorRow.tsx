@@ -34,11 +34,11 @@ export function ErrorRow({ row, selected, onToggleSelect, onOpen }: Props) {
               (status "new"); all'apertura passa a "In analisi" e il New lascia il
               posto al badge di stato colorato. */}
           {row.status === "new" ? (
-            <Badge className="bg-green-100 text-green-700 border-0 text-[10px] px-1.5 py-0 font-bold uppercase tracking-wide">
+            <Badge className="bg-green-100 text-green-700 border-transparent text-[10px] px-1.5 py-0 font-bold uppercase tracking-wide">
               New
             </Badge>
           ) : (
-            <Badge className={`${STATUS_COLOR[row.status]} border-0 text-[10px] px-1.5 py-0`}>
+            <Badge className={`${STATUS_COLOR[row.status]} border-transparent text-[10px] px-1.5 py-0`}>
               {STATUS_LABEL[row.status]}
             </Badge>
           )}
