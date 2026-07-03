@@ -33,14 +33,16 @@ export function ErrorRow({ row, selected, onToggleSelect, onOpen }: Props) {
           {/* STATO sempre in PRIMA posizione: "New" verde finché non è letta
               (status "new"); all'apertura passa a "In analisi" e il New lascia il
               posto al badge di stato colorato. */}
+          {/* <span> puro (non il componente Badge, che trascina outline+shadow):
+              così lo stato ha SOLO lo sfondo colorato, senza alcun contorno. */}
           {row.status === "new" ? (
-            <Badge className="bg-green-100 text-green-700 border-transparent text-[10px] px-1.5 py-0 font-bold uppercase tracking-wide">
+            <span className="inline-flex items-center rounded-md bg-green-100 text-green-700 text-[10px] px-1.5 py-0.5 font-bold uppercase tracking-wide">
               New
-            </Badge>
+            </span>
           ) : (
-            <Badge className={`${STATUS_COLOR[row.status]} border-transparent text-[10px] px-1.5 py-0`}>
+            <span className={`inline-flex items-center rounded-md ${STATUS_COLOR[row.status]} text-[10px] px-1.5 py-0.5 font-semibold`}>
               {STATUS_LABEL[row.status]}
-            </Badge>
+            </span>
           )}
           {/* Poi il TIPO: distingue a colpo d'occhio bug/contenuto/proposta. */}
           <Badge className={`${typeColor(row.errorType)} border text-[10px] px-1.5 py-0`}>
