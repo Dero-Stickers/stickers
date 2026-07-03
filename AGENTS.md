@@ -14,6 +14,10 @@
 1. `CLAUDE.md` (regole complete) — se presente.
 2. `DNA/00_INDICE.md` → poi i soli file DNA pertinenti al task (non tutto il DNA).
 3. `DNA/11_STATO_SVILUPPO.md` (stato corrente) e, a fine sessione, `DNA/15_PROSSIMO_PROMPT.md`.
+   ⚠️ In cima a `DNA/11` c'è lo **STATO: SVILUPPO vs PRODUZIONE** e se i **dati sono di
+   test o reali**: quello **vince su ogni assunzione** (anche sul linguaggio "da produzione"
+   di CLAUDE.md). Se dice SVILUPPO/dati di test, NON trattare deploy/bug come incidenti
+   critici di produzione. Lo cambia solo l'owner, esplicitamente.
 4. `DNA/17_DECISION_LOG.md` per le decisioni tecniche già prese.
 
 ## ENFORCEMENT — le regole sono vincoli, non suggerimenti

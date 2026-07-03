@@ -5,9 +5,26 @@ Aggiornato: 3 luglio 2026
 > Fotografia dello **stato attuale** (non un changelog). Tenere aggiornato questo
 > file a fine sessione.
 
+## 🟡 STATO: SVILUPPO — non pubblicata, dati di TEST (leggere PRIMA di tutto)
+
+**L'app NON è mai stata pubblicata. Non esistono utenti reali. TUTTI i record nel
+DB (utenti, possessi, chat, messaggi, scambi, segnalazioni) sono dati di TEST**
+creati per provare l'app.
+
+Conseguenze operative — NON trattare deploy/bug come incidenti critici di produzione:
+un push su `main` fa partire l'autodeploy su Render ma **non impatta nessun utente
+reale**; i bug lato client (es. cache Service Worker della PWA dopo un deploy) **non
+sono urgenze**. Restano valide sempre: **push solo su richiesta esplicita** dell'owner,
+**DB mai distruttivo** (migrazioni additive), regole segreti/`.env`.
+
+**Questo stato lo cambia SOLO l'owner, esplicitamente** ("l'app è online, i dati sono
+reali"). Solo allora: aggiornare questa intestazione a `🟢 PRODUZIONE` e trattare dati
+e deploy come reali/ad alto rischio.
+
 ## In sintesi
 
-Sticker Matchbox è **funzionante in locale e live in produzione** su Render.
+Sticker Matchbox è **funzionante in locale** e **deployato su Render** (deploy tecnico
+attivo, ma in **sviluppo** — vedi stato sopra: nessun utente reale, dati di test).
 Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 > **⚡ AGGIORNAMENTO 1 lug 2026 — leggere prima:** accesso modernizzato (Google +

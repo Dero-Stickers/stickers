@@ -68,25 +68,32 @@ export class ErrorBoundary extends Component<Props, State> {
             <span className="text-3xl">⚠️</span>
           </div>
           <h2 className="text-xl font-bold text-foreground">Qualcosa è andato storto</h2>
+          {/* Testo COERENTE con lo stato reale dell'invio: niente "reinvia" quando
+              è già partito. Il pulsante manuale compare solo se serve davvero
+              (invio non ancora confermato o fallito), mai come duplicato inutile. */}
           <p className="text-sm text-muted-foreground max-w-xs">
-            Si è verificato un errore inatteso. La segnalazione viene inviata
-            automaticamente per aiutarci a risolverlo; puoi anche reinviarla qui sotto.
+            {(r === "idle" || r === "sending") &&
+              "Si è verificato un errore inatteso. La segnalazione è stata inviata automaticamente per aiutarci a risolverlo."}
+            {r === "ok" &&
+              "Si è verificato un errore inatteso. La segnalazione è stata inviata: grazie, ci aiuta a risolverlo."}
+            {r === "fail" &&
+              "Si è verificato un errore inatteso. Non siamo riusciti a inviare la segnalazione: puoi provare tu qui sotto."}
           </p>
           <p className="text-xs font-mono text-muted-foreground bg-muted px-3 py-2 rounded max-w-sm break-all">
             {this.state.error?.message ?? "Errore sconosciuto"}
           </p>
           <div className="flex flex-col gap-2 w-full max-w-xs">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={this.handleSendReport}
-              disabled={r === "sending" || r === "ok"}
-            >
-              {r === "idle" && "📨 Invia segnalazione anonima"}
-              {r === "sending" && "Invio…"}
-              {r === "ok" && "✓ Segnalazione inviata, grazie!"}
-              {r === "fail" && "Riprova invio segnalazione"}
-            </Button>
+            {/* Mostrato solo se l'invio automatico NON è (ancora) andato a buon fine. */}
+            {r === "fail" && (
+              <Button variant="outline" className="w-full" onClick={this.handleSendReport}>
+                📨 Invia segnalazione
+              </Button>
+            )}
+            {r === "sending" && (
+              <Button variant="outline" className="w-full" disabled>
+                Invio…
+              </Button>
+            )}
             <Button
               className="bg-primary text-primary-foreground"
               onClick={() => window.location.reload()}
