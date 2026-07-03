@@ -49,10 +49,12 @@ export const STATUS_COLOR: Record<Status, string> = {
 };
 
 // Etichetta + colore del TIPO di segnalazione (badge in lista/dettaglio).
-// I 3 tipi utente + i tecnici; fallback per tipi sconosciuti.
+// I 3 tipi UTENTE usano ESATTAMENTE le categorie scelte nel form (ReportDialog),
+// così l'admin capisce a colpo d'occhio da dove arriva la segnalazione.
+// I tipi tecnici (crash/server/altro) restano invariati; fallback per sconosciuti.
 export const TYPE_LABEL: Record<string, string> = {
-  user_report: "Bug",
-  content_error: "Errore contenuti",
+  user_report: "Qualcosa non funziona",
+  content_error: "Errore album",
   feature_request: "Proposta",
   client_crash: "Crash",
   api_error: "Errore server",
