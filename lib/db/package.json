@@ -15,7 +15,7 @@
     "backup": "tsx src/backup-db.ts",
     "seed:mock-dev": "tsx src/seed.ts",
     "seed:testusers": "tsx src/seed-testusers.ts",
-    "build:worldcup-data": "tsx src/build-worldcup-data.ts"
+    "build:albums-data": "tsx src/build-albums-data.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

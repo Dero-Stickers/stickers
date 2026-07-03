@@ -54,10 +54,24 @@ Ciclo tapping: Mancante → Posseduta → Doppia → Mancante
   fonte unica `ALBUM_CATEGORIES` (in `@workspace/db` per validazione server, replicata in
   `@workspace/api-client-react` per la UI: il frontend non può importare il package DB).
   Aggiungere una categoria = una riga in entrambe. **Admin**: menu categoria in crea/gestisci
-  album + colonna in tabella. **User "Disponibili"**: chip-filtro [Tutti + categorie presenti]
-  (mostrati solo se >1 categoria); ordinamento per categoria poi titolo. Icona per categoria
-  (mappa unica in `AlbumList.tsx`): `world-cup.png` (mondiali), `coppa-europei.png` (europei),
+  album + colonna in tabella + chip-filtro categoria sulla STESSA riga di Cerca/stato (via prop
+  `extra` di `AdminFilterBar`), mostrati solo se >1 categoria. **User "Disponibili"**: chip-filtro
+  [Tutti + categorie presenti] (mostrati solo se >1 categoria); ordinamento per categoria poi
+  titolo. Icona per categoria (mappa `CATEGORY_ICON`, identica in `AlbumList.tsx` E in admin
+  `Albums.tsx`): `world-cup.png` (mondiali), `coppa-europei.png` (europei — ottimizzata 46×96/6KB),
   `scudetto.svg` (campionato). Rimossa la vecchia deduzione fragile dal titolo (`isWorldCup`).
+- **Album presenti (lug 2026)**: 3 master, tutti On Line. **Campionato**: 23 Calciatori
+  (2003-04 → 2025-26). **Mondiali**: World Cup 2006/2010/2014/2018/2022/2026. **Europei**:
+  Euro Cup 2004/2008/2012/2016/2020/2024. Formato titolo vincolante: `World Cup <anno>` /
+  `Euro Cup <anno>` (l'album 2026 in DB è stato rinominato da "FIFA World Cup 2026", id 34
+  invariato → possessi intatti). Numerazione mista: album vecchi = numeri puri (griglia liscia),
+  2022/2026 + Euro 2024 = codici a sigle (blocchi-nazione automatici).
+- **Pipeline dati album** (`lib/db`): sorgenti testuali in `album-source/link/*.md`
+  (`CODICE Nome[ - Squadra][ FOIL]`). `build:albums-data` (generico) deduce titolo+categoria
+  dal NOME FILE (World Cup→mondiali, Euro Cup→europei) e genera un `<slug>.json.gz` per album
+  in `src/data/`. `restore:albums` fa AUTO-DISCOVERY di tutti i `.gz` (additivo, non tocca
+  is_published né i possessi). Codici duplicati nel sorgente = errore bloccante: le collisioni
+  note (World Cup 2006, 2 giocatori per numero) sono risolte a monte con suffisso a/b nel .md.
 - Scambi/match: le chip mostrano il **codice stampato** (`code || number`) — `lib/trade.ts`
   include `code` (era già required nello schema OpenAPI `Sticker`).
 - Pressione lunga → modal centrato con numero + nome/descrizione

@@ -13,6 +13,18 @@ import {
 } from "@workspace/api-client-react";
 import type { Album } from "@workspace/api-client-react";
 import { ALBUM_CATEGORIES, DEFAULT_ALBUM_CATEGORY, albumCategoryLabel } from "@workspace/api-client-react";
+import type { AlbumCategoryKey } from "@workspace/api-client-react";
+import worldCupIcon from "/world-cup.png?url";
+import euroCupIcon from "/coppa-europei.png?url";
+import scudettoIcon from "/scudetto.svg?url";
+
+// Icona per categoria — stesse immagini della vista utente (AlbumList), per
+// coerenza admin/user. La coppa Europei è già ottimizzata (coppa-europei.png).
+const CATEGORY_ICON: Record<string, string> = {
+  mondiali: worldCupIcon,
+  europei: euroCupIcon,
+  campionato: scudettoIcon,
+};
 import { useQueryClient } from "@tanstack/react-query";
 
 // Stile select nativo (coerente con SearchSticker): niente componente shadcn Select.
@@ -110,18 +122,30 @@ export function AdminAlbums() {
     return sortDir === "asc" ? list : list.reverse();
   }, [albums, sortKey, sortDir]);
 
-  // Ricerca per titolo + filtro stato (On Line / Off Line). Si combinano tra loro.
+  // Ricerca per titolo + filtro stato (On Line / Off Line) + filtro categoria.
+  // Si combinano tra loro.
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "online" | "offline">("all");
+  const [catFilter, setCatFilter] = useState<AlbumCategoryKey | "all">("all");
+
+  // Categorie effettivamente presenti tra gli album: i chip categoria compaiono
+  // solo se ce n'è più di una (coerente col lato utente). Con una sola categoria
+  // il filtro è inutile e la riga resta pulita.
+  const presentCategories = useMemo(() => {
+    const present = new Set((albums ?? []).map(a => a.category ?? DEFAULT_ALBUM_CATEGORY));
+    return ALBUM_CATEGORIES.filter(c => present.has(c.key));
+  }, [albums]);
+
   const filteredAlbums = useMemo(() => {
     const q = search.trim().toLowerCase();
     return sortedAlbums.filter(a => {
       if (statusFilter === "online" && !a.isPublished) return false;
       if (statusFilter === "offline" && a.isPublished) return false;
+      if (catFilter !== "all" && (a.category ?? DEFAULT_ALBUM_CATEGORY) !== catFilter) return false;
       if (!q) return true;
       return a.title.toLowerCase().includes(q);
     });
-  }, [sortedAlbums, search, statusFilter]);
+  }, [sortedAlbums, search, statusFilter, catFilter]);
 
   const createAlbum = useCreateAlbum({
     mutation: {
@@ -169,6 +193,38 @@ export function AdminAlbums() {
           ["online", "On Line"],
           ["offline", "Off Line"],
         ]}
+        extra={
+          // Chip categoria sulla stessa riga: compaiono solo con più di una
+          // categoria presente (con una sola il filtro non serve).
+          presentCategories.length > 1 && (
+            <div className="flex flex-wrap gap-1.5 text-xs sm:border-l sm:border-border sm:pl-2">
+              <button
+                onClick={() => setCatFilter("all")}
+                className={`px-2.5 py-1 rounded-full border transition-colors ${
+                  catFilter === "all"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border hover:bg-muted"
+                }`}
+              >
+                Tutte
+              </button>
+              {presentCategories.map(c => (
+                <button
+                  key={c.key}
+                  onClick={() => setCatFilter(c.key)}
+                  className={`px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1.5 ${
+                    catFilter === c.key
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:bg-muted"
+                  }`}
+                >
+                  {CATEGORY_ICON[c.key] && <img src={CATEGORY_ICON[c.key]} alt="" className="h-3.5 w-3.5 object-contain" />}
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )
+        }
       />
       {/* Spaziatura coerente con Gestione Messaggi: il gap naturale di AdminPage
           tra barra filtri e tabella resta (niente margine negativo). */}
@@ -203,7 +259,12 @@ export function AdminAlbums() {
               <span className="font-medium text-foreground">{album.title}</span>
             </td>
             <td className="hidden md:table-cell text-center text-foreground">{album.totalStickers}</td>
-            <td className="hidden sm:table-cell text-center text-muted-foreground">{albumCategoryLabel(album.category)}</td>
+            <td className="hidden sm:table-cell text-muted-foreground">
+              <span className="flex items-center justify-center gap-1.5">
+                {CATEGORY_ICON[album.category] && <img src={CATEGORY_ICON[album.category]} alt="" className="h-4 w-4 object-contain" />}
+                {albumCategoryLabel(album.category)}
+              </span>
+            </td>
             <td className="text-center">
               <Badge className={album.isPublished ? "bg-green-100 text-green-700 border-0" : "bg-orange-100 text-orange-700 border-0"}>
                 {album.isPublished ? "On Line" : "Off Line"}

@@ -7,6 +7,17 @@
 
 ## 2026-07
 
+- **12 album Mondiali+Europei caricati e pubblicati** — 6 World Cup (2006/2010/2014/2018/2022/2026)
+  + 6 Euro Cup (2004/2008/2012/2016/2020/2024), tutti On Line. Il builder specifico
+  `build:worldcup-data` è stato sostituito da `build:albums-data` GENERICO: deduce
+  titolo+categoria dal nome file (`World Cup <anno>`→mondiali, `Euro Cup <anno>`→europei), un
+  `.gz` per album; `restore:albums` fa auto-discovery di tutti i `.gz` (aggiungere un album =
+  solo un `.md` + build, zero modifiche al codice). L'album 2026 esistente è stato rinominato
+  in DB da "FIFA World Cup 2026" a "World Cup 2026" (id 34 invariato → 992 possessi intatti) per
+  uniformare il formato. Refusi sorgente sistemati a monte: World Cup 2006 aveva 24 numeri
+  condivisi da 2 giocatori (com'è nell'album Panini reale) → suffisso a/b nel .md, nessuna
+  figurina persa; rimosso il .md doppione `panini_world_cup_2026.md`. La regola vincolante:
+  gli album vergini non si eliminano mai senza autorizzazione esplicita dell'owner.
 - **Categorie master degli album (Mondiali/Europei/Campionato, scalabile)** — con l'arrivo di
   più competizioni la lista piatta di album non regge. Scelto: colonna `albums.category`
   (mig. 0009 additiva) assegnata dall'admin da un menu, NON dedotta dal titolo (fragile: la

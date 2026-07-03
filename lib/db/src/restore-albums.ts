@@ -14,7 +14,7 @@
  *
  *   pnpm --filter @workspace/db run restore:albums
  */
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -28,7 +28,12 @@ if (!connectionString) throw new Error("SUPABASE_DATABASE_URL o DATABASE_URL non
 const ssl = { rejectUnauthorized: false };
 
 const DATA_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "data");
-const SOURCES = ["calciatori.json.gz", "world-cup-2026.json.gz"];
+// Auto-discovery: TUTTI i .gz presenti in data/ (calciatori + mondiali + europei).
+// Aggiungere un album = solo build:albums-data, qui non serve toccare nulla.
+// Ordine stabile alfabetico, con "calciatori" per primo.
+const SOURCES = readdirSync(DATA_DIR)
+  .filter(f => f.endsWith(".json.gz"))
+  .sort((a, b) => (a.startsWith("calciatori") ? -1 : b.startsWith("calciatori") ? 1 : a.localeCompare(b)));
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];

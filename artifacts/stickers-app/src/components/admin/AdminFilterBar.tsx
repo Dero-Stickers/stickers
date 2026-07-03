@@ -1,4 +1,5 @@
 import { Search } from "lucide-react";
+import type { ReactNode } from "react";
 
 /**
  * Barra filtri minimale condivisa per le tabelle admin: campo ricerca (sfondo
@@ -6,6 +7,8 @@ import { Search } from "lucide-react";
  * Messaggi / Utenti / Album per un aspetto e comportamento coerenti.
  *
  * I chip sono generici: ogni pagina passa le proprie opzioni [valore, etichetta].
+ * `extra` = contenuto opzionale reso sulla STESSA riga dopo i chip di stato
+ * (es. i chip categoria in Album), così tutti i filtri stanno in una riga sola.
  */
 export function AdminFilterBar<T extends string>({
   search,
@@ -14,6 +17,7 @@ export function AdminFilterBar<T extends string>({
   filter,
   onFilter,
   options,
+  extra,
 }: {
   search: string;
   onSearch: (v: string) => void;
@@ -21,6 +25,7 @@ export function AdminFilterBar<T extends string>({
   filter: T;
   onFilter: (v: T) => void;
   options: readonly (readonly [T, string])[];
+  extra?: ReactNode;
 }) {
   return (
     <div className="shrink-0 flex flex-wrap items-center gap-2">
@@ -51,6 +56,7 @@ export function AdminFilterBar<T extends string>({
           </button>
         ))}
       </div>
+      {extra}
     </div>
   );
 }
