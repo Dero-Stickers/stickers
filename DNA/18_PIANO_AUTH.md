@@ -151,7 +151,13 @@ Conclusione: **costo zero** fino ai numeri previsti e oltre.
     NUOVI utenti: i nuovi account si creano solo con Google/Email. Frontend `Login.tsx` (rimossi form
     register PIN, campi domanda/risposta, schermata codice STICK; il form nickname+PIN resta SOLO come
     accesso storico/admin). Backend `routes/auth.ts` (rimossi handler `register`, rotta
-    `POST /api/auth/register`, `generateRecoveryCode`). Login + `/recover` legacy intatti.
+    `POST /api/auth/register`, `generateRecoveryCode`).
+  - (2bis) ✅ **FATTO (lug 2026)** — **rimosso anche il recupero legacy**: pagina `/recover`
+    (file `pages/auth/Recover.tsx` eliminato + route), endpoint `POST /recover`, `/recover/lookup`,
+    `/recover/answer`, `/recovery-code`, voce Profilo "Il mio codice di recupero". Login nickname+PIN
+    resta (usato dal pulsante dev U/A). Colonne `recovery_code`/`security_*` restano nullable, non usate.
+    Eliminazione account non richiede più il PIN (solo conferma "ELIMINA", doppio step). Spec `openapi.yaml`
+    e client orval rigenerati.
   - (3) ✅ **FATTO** — privacy/policy aggiornate (DB `app_settings`): raccolta email, fornitori Google
     (OAuth) + Brevo, cifratura password/PIN; termini con creazione account Google/Email. Vedi `17`.
   - (1) ⏳ **DA FARE (prima del lancio pubblico)** — **dominio email proprio** + DKIM/DMARC su Brevo

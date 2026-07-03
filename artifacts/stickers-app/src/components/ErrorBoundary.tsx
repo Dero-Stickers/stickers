@@ -72,10 +72,8 @@ export class ErrorBoundary extends Component<Props, State> {
               è già partito. Il pulsante manuale compare solo se serve davvero
               (invio non ancora confermato o fallito), mai come duplicato inutile. */}
           <p className="text-sm text-muted-foreground max-w-xs">
-            {(r === "idle" || r === "sending") &&
-              "Si è verificato un errore inatteso. La segnalazione è stata inviata automaticamente per aiutarci a risolverlo."}
-            {r === "ok" &&
-              "Si è verificato un errore inatteso. La segnalazione è stata inviata: grazie, ci aiuta a risolverlo."}
+            {(r === "idle" || r === "sending" || r === "ok") &&
+              "Si è verificato un errore inatteso. La segnalazione è stata inviata: grazie."}
             {r === "fail" &&
               "Si è verificato un errore inatteso. Non siamo riusciti a inviare la segnalazione: puoi provare tu qui sotto."}
           </p>

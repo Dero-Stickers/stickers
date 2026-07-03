@@ -7,6 +7,21 @@
 
 ## 2026-07
 
+- **Recupero PIN legacy rimosso + eliminazione account senza PIN** — il vecchio recupero
+  (codice `STICK-XXXX` + domanda di sicurezza) apparteneva al sistema PIN, ormai soppiantato da
+  Google/email; con soli utenti di test da eliminare prima del lancio, non serviva più. **Rimossi**:
+  pagina `pages/auth/Recover.tsx` + route `/recover`, endpoint `POST /recover`, `/recover/lookup`,
+  `/recover/answer`, `/recovery-code` (+ schemi Zod/handler), voce Profilo "Il mio codice di recupero",
+  link "Password dimenticata" nel Login, riga `/recover` in `PAGE_LABEL`. Spec `openapi.yaml` ripulita
+  (RecoverBody/RecoveryCodeResponse/PinConfirmBody + campo `recoveryCode` in AuthResponse) e client
+  orval rigenerati. **NON toccati** (regola U/A): login nickname+PIN e `DevQuickSwitch`, che lo usa.
+  Colonne DB `recovery_code`/`security_question`/`security_answer_hash` restano nullable (nessuna
+  migrazione distruttiva), inutilizzate. **Eliminazione account**: non chiede più il PIN (gli utenti
+  social non ne hanno, e `deleteMe` falliva per loro) → solo conferma `ELIMINA` + token; UI rifatta a
+  **due conferme** (scrivi ELIMINA → "sei sicuro?") con **commiato** finale. Blocco "utente bloccato non
+  può auto-eliminarsi" (403) invariato. Profilo ridisegnato: rimossi i titoli-sezione, **card unica
+  compatta** (4 voci) che sta a schermo senza scroll, firma deroarts inclusa. Messaggio ErrorBoundary
+  reso più sintetico ("segnalazione inviata: grazie").
 - **Segnalazioni utente a 3 tipi (bug / errore contenuti / proposta)** — la modale unica "Segnala
   un problema" (solo testo libero) obbligava l'admin a indovinare tipo e cercare a mano l'album.
   Rifatta come `ReportDialog` a 2 passi (scelta tipo → form adattivo): **bug** (`user_report`),

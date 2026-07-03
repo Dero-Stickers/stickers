@@ -42,7 +42,6 @@ if (typeof window !== "undefined") {
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Login } from "@/pages/auth/Login";
-import { Recover } from "@/pages/auth/Recover";
 import { Home } from "@/pages/Home";
 import { AlbumList } from "@/pages/album/AlbumList";
 import { LegalPage } from "@/pages/LegalPage";
@@ -188,7 +187,6 @@ function Router() {
       <Suspense fallback={<PageSkeleton />}>
       <Switch>
         <Route path="/login" component={Login} />
-        <Route path="/recover" component={Recover} />
         <Route path="/legal/:doc" component={LegalPage} />
 
         {/* User routes */}

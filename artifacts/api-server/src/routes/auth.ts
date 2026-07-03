@@ -1,15 +1,9 @@
 import { Router } from "express";
-import {
-  LoginBody,
-  RecoverAccountBody,
-  GetRecoveryCodeBody,
-} from "@workspace/api-zod";
+import { LoginBody } from "@workspace/api-zod";
 import type { RequestHandler } from "express";
 import {
   signToken,
-  hashPin,
   verifyPin,
-  verifyAnswer,
   checkRateLimit,
   resetRateLimit,
 } from "../lib/auth";
@@ -18,8 +12,6 @@ import { requireAuth } from "../middlewares/auth";
 import { isChatPaywallEnabled } from "../lib/billing";
 import { invalidateUser } from "../lib/matchCache";
 import { verifySupabaseToken, isSupabaseAuthConfigured } from "../lib/supabase-auth";
-
-const PIN_REGEX = /^\d{4,6}$/;
 
 // Nickname: 5–12 caratteri (lettere, numeri, - o _), normalizzato a forma
 // canonica "iniziale maiuscola + resto minuscolo" (es. "marco-bo" -> "Marco-bo").
@@ -52,18 +44,6 @@ const LoginNicknameSchema = z
   .transform(s => s.toLowerCase())
   .pipe(z.string().min(1).max(64));
 
-// Recupero account: ora basato sul SOLO nickname (unico in tutta l'app).
-// Il CAP non serve più — non fa più parte dell'identità.
-const RecoverLookupBody = z.object({
-  nickname: LoginNicknameSchema,
-});
-
-const RecoverAnswerBody = z.object({
-  nickname: LoginNicknameSchema,
-  securityAnswer: z.string().min(1),
-  newPin: z.string().regex(PIN_REGEX, "Il PIN deve essere di 4-6 cifre numeriche"),
-});
-
 // Cambio zona di ricerca: il CAP è ora solo geografia, modificabile a piacere
 // (es. quando l'utente è in un'altra città). 5 cifre numeriche.
 const CAP_REGEX = /^\d{5}$/;
@@ -93,8 +73,6 @@ function deriveArea(cap: string): string {
 
 const LOGIN_MAX_ATTEMPTS = 8;
 const LOGIN_WINDOW_MS = 5 * 60 * 1000;
-const RECOVERY_MAX_ATTEMPTS = 5;
-const RECOVERY_WINDOW_MS = 15 * 60 * 1000;
 const DELETE_MAX_ATTEMPTS = 5;
 const DELETE_WINDOW_MS = 15 * 60 * 1000;
 
@@ -204,59 +182,6 @@ const logout: RequestHandler = async (_req, res) => {
   res.json({ success: true, message: "Disconnesso" });
 };
 
-// POST /api/auth/recover
-const recover: RequestHandler = async (req, res) => {
-  try {
-    const body = RecoverAccountBody.parse(req.body);
-
-    const ip = clientIp(req);
-    const rateKey = `recover:${ip}`;
-    const limit = checkRateLimit(rateKey, RECOVERY_MAX_ATTEMPTS, RECOVERY_WINDOW_MS);
-    if (!limit.allowed) {
-      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
-      res.setHeader("Retry-After", String(retryAfter));
-      res.status(429).json({
-        error: "RATE_LIMITED",
-        message: `Troppi tentativi di recupero. Riprova fra ${retryAfter}s.`,
-      });
-      return;
-    }
-
-    const { db } = await import("@workspace/db");
-    const { usersTable } = await import("@workspace/db");
-    const { eq } = await import("drizzle-orm");
-
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.recoveryCode, body.recoveryCode))
-      .limit(1);
-
-    if (!user) {
-      res.status(400).json({ error: "INVALID_CODE", message: "Codice di recupero non valido" });
-      return;
-    }
-
-    await db
-      .update(usersTable)
-      .set({ pinHash: await hashPin(body.newPin) })
-      .where(eq(usersTable.id, user.id));
-
-    resetRateLimit(rateKey);
-
-    res.json({
-      user: await userPayload(user),
-      token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
-    });
-  } catch (err) {
-    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
-      res.status(400).json({ error: "VALIDATION_ERROR", message: (err as any)?.message });
-      return;
-    }
-    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
-  }
-};
-
 // GET /api/auth/me
 const getMe: RequestHandler = async (req, res) => {
   try {
@@ -289,32 +214,6 @@ const getMe: RequestHandler = async (req, res) => {
   } catch (err) {
     req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
-  }
-};
-
-// POST /api/auth/recovery-code
-const getRecoveryCode: RequestHandler = async (req, res) => {
-  try {
-    const body = GetRecoveryCodeBody.parse(req.body);
-    const session = req.session!;
-
-    const { db } = await import("@workspace/db");
-    const { usersTable } = await import("@workspace/db");
-    const { eq } = await import("drizzle-orm");
-
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-    if (!user || !user.pinHash || !(await verifyPin(body.pin, user.pinHash))) {
-      res.status(401).json({ error: "WRONG_PIN", message: "PIN non corretto" });
-      return;
-    }
-
-    res.json({ recoveryCode: user.recoveryCode });
-  } catch (err) {
-    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
-      res.status(400).json({ error: "VALIDATION_ERROR" });
-      return;
-    }
-    res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
 
@@ -377,7 +276,7 @@ const exportMe: RequestHandler = async (req, res) => {
 const deleteMe: RequestHandler = async (req, res) => {
   try {
     const session = req.session!;
-    const { confirm, pin } = req.body ?? {};
+    const { confirm } = req.body ?? {};
     if (confirm !== "ELIMINA") {
       res.status(400).json({ error: "CONFIRM_REQUIRED", message: "Conferma cancellazione mancante" });
       return;
@@ -422,11 +321,9 @@ const deleteMe: RequestHandler = async (req, res) => {
       return;
     }
 
-    if (!pin || !user.pinHash || !(await verifyPin(String(pin), user.pinHash))) {
-      res.status(401).json({ error: "WRONG_PIN", message: "PIN non corretto" });
-      return;
-    }
-
+    // Identità già garantita dal token di sessione (requireAuth) + conferma
+    // "ELIMINA" digitata. Nessun secondo fattore PIN: gli account social non ne
+    // hanno, e per gli storici la conferma esplicita è sufficiente.
     resetRateLimit(rateKey);
 
     // Pulizia tabelle senza cascade
@@ -438,108 +335,6 @@ const deleteMe: RequestHandler = async (req, res) => {
 
     res.json({ success: true, message: "Account eliminato definitivamente." });
   } catch (err) {
-    req.log?.error(err);
-    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
-  }
-};
-
-// POST /api/auth/recover/lookup — returns the security question for a given nickname+cap
-const recoverLookup: RequestHandler = async (req, res) => {
-  try {
-    const body = RecoverLookupBody.parse(req.body);
-
-    const ip = clientIp(req);
-    const rateKey = `recover-lookup:${ip}`;
-    const limit = checkRateLimit(rateKey, RECOVERY_MAX_ATTEMPTS, RECOVERY_WINDOW_MS);
-    if (!limit.allowed) {
-      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
-      res.setHeader("Retry-After", String(retryAfter));
-      res.status(429).json({
-        error: "RATE_LIMITED",
-        message: `Troppi tentativi. Riprova fra ${retryAfter}s.`,
-      });
-      return;
-    }
-
-    const { db } = await import("@workspace/db");
-    const { usersTable } = await import("@workspace/db");
-    const { sql } = await import("drizzle-orm");
-
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(sql`lower(${usersTable.nickname}) = ${body.nickname}`)
-      .limit(1);
-
-    // Anti-enumeration: same shape & status code whether the user exists or not.
-    // The security-question feature inherently requires showing the question to a
-    // legitimate user; abuse is mitigated by rate limiting (5 / 15min per IP) and
-    // by the answer-verification step that follows.
-    if (!user) {
-      res.status(200).json({ securityQuestion: null });
-      return;
-    }
-
-    res.json({ securityQuestion: user.securityQuestion });
-  } catch (err) {
-    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
-      res.status(400).json({ error: "VALIDATION_ERROR", message: "Dati non validi" });
-      return;
-    }
-    req.log?.error(err);
-    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
-  }
-};
-
-// POST /api/auth/recover/answer — reset PIN by answering the security question
-const recoverAnswer: RequestHandler = async (req, res) => {
-  try {
-    const body = RecoverAnswerBody.parse(req.body);
-
-    const ip = clientIp(req);
-    const rateKey = `recover-answer:${ip}:${body.nickname}`;
-    const limit = checkRateLimit(rateKey, RECOVERY_MAX_ATTEMPTS, RECOVERY_WINDOW_MS);
-    if (!limit.allowed) {
-      const retryAfter = Math.ceil(limit.retryAfterMs / 1000);
-      res.setHeader("Retry-After", String(retryAfter));
-      res.status(429).json({
-        error: "RATE_LIMITED",
-        message: `Troppi tentativi. Riprova fra ${retryAfter}s.`,
-      });
-      return;
-    }
-
-    const { db } = await import("@workspace/db");
-    const { usersTable } = await import("@workspace/db");
-    const { eq, sql } = await import("drizzle-orm");
-
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(sql`lower(${usersTable.nickname}) = ${body.nickname}`)
-      .limit(1);
-
-    if (!user || !user.securityAnswerHash || !(await verifyAnswer(body.securityAnswer, user.securityAnswerHash))) {
-      res.status(401).json({ error: "WRONG_ANSWER", message: "Risposta non corretta" });
-      return;
-    }
-
-    await db
-      .update(usersTable)
-      .set({ pinHash: await hashPin(body.newPin) })
-      .where(eq(usersTable.id, user.id));
-
-    resetRateLimit(rateKey);
-
-    res.json({
-      user: await userPayload(user),
-      token: signToken({ userId: user.id, isAdmin: user.isAdmin }),
-    });
-  } catch (err) {
-    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
-      res.status(400).json({ error: "VALIDATION_ERROR", message: "Dati non validi" });
-      return;
-    }
     req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
   }
@@ -791,13 +586,9 @@ router.post("/login", login);
 router.post("/social", social);
 router.post("/social/complete", socialComplete);
 router.post("/logout", logout);
-router.post("/recover", recover);
-router.post("/recover/lookup", recoverLookup);
-router.post("/recover/answer", recoverAnswer);
 router.get("/me", requireAuth, getMe);
 router.get("/me/export", requireAuth, exportMe);
 router.delete("/me", requireAuth, deleteMe);
 router.patch("/me/location", requireAuth, changeLocation);
-router.post("/recovery-code", requireAuth, getRecoveryCode);
 
 export default router;

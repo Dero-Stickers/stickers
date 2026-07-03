@@ -10,5 +10,4 @@ import type { UserProfile } from "./userProfile";
 export interface AuthResponse {
   user: UserProfile;
   token: string;
-  recoveryCode?: string;
 }

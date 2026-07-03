@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { MapPin, Key, HelpCircle, LogOut, Shield, Trash2, MessageSquarePlus, ChevronRight } from "lucide-react";
+import { MapPin, HelpCircle, LogOut, Shield, Trash2, MessageSquarePlus, ChevronRight } from "lucide-react";
 import { ReportDialog } from "@/components/report/ReportDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,38 +19,6 @@ export function Profile() {
   const { currentUser, logout, login } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
-  const [pin, setPin] = useState("");
-  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
-  const [pinError, setPinError] = useState(false);
-  const [pinLoading, setPinLoading] = useState(false);
-
-  const handleRecoveryCode = async () => {
-    setPinLoading(true);
-    setPinError(false);
-    try {
-      const token = localStorage.getItem("sticker_token");
-      const res = await fetch("/api/auth/recovery-code", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ pin }),
-      });
-      if (!res.ok) {
-        setPinError(true);
-        return;
-      }
-      const data = await res.json();
-      setRecoveryCode(data.recoveryCode);
-    } catch {
-      setPinError(true);
-    } finally {
-      setPinLoading(false);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -85,10 +53,13 @@ export function Profile() {
   };
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deletePin, setDeletePin] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  // Cancellazione in tre stati: "form" (scrivi ELIMINA) → "confirm" (sei sicuro?)
+  // → "done" (commiato). Azione irreversibile: il passo "confirm" evita
+  // eliminazioni per tap accidentale; "done" saluta prima di chiudere la sessione.
+  const [deleteStep, setDeleteStep] = useState<"form" | "confirm" | "done">("form");
 
   // "Segnala o proponi": tutta la logica (2 passi, tipi, invio) vive in ReportDialog.
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -104,20 +75,28 @@ export function Profile() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ pin: deletePin, confirm: deleteConfirm }),
+        body: JSON.stringify({ confirm: deleteConfirm }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setDeleteError((j as any)?.message ?? "Errore durante la cancellazione.");
+        setDeleteStep("form"); // torna al form per mostrare l'errore (es. account bloccato)
         return;
       }
-      logout();
-      setLocation("/login");
+      // Successo: mostra il commiato prima di chiudere la sessione.
+      setDeleteStep("done");
     } catch {
       setDeleteError("Errore di connessione. Riprova.");
+      setDeleteStep("form");
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  // Chiude il commiato: esegue logout e torna al login.
+  const finishAfterDelete = () => {
+    logout();
+    setLocation("/login");
   };
 
   return (
@@ -131,77 +110,51 @@ export function Profile() {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-6 min-h-0">
-        {/* Sezione: Account */}
-        <section className="space-y-1.5">
-          <h2 className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account</h2>
-          <Card className="shadow-sm">
-            <CardContent className="p-0 divide-y divide-border">
-              <button
-                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
-                onClick={() => { setShowRecoveryDialog(true); setRecoveryCode(null); setPin(""); setPinError(false); }}
-              >
-                <Key className="h-5 w-5 text-primary flex-shrink-0" />
-                <p className="flex-1 font-medium text-sm text-foreground">Il mio codice di recupero</p>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
-              </button>
+      {/* Profilo compatto: nessun titolo di sezione, un'unica lista di voci,
+          spaziature ridotte così tutto (firma deroarts inclusa) sta a schermo
+          senza scroll. pb minimo: la firma deroarts resta a ridosso della nav bar. */}
+      <div className="flex-1 flex flex-col min-h-0 px-4 pt-4 pb-1">
+        <Card className="shadow-sm">
+          <CardContent className="p-0 divide-y divide-border">
+            <button
+              className="group w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+              onClick={() => { setShowLocDialog(true); setNewCap(currentUser?.cap ?? ""); setLocError(null); }}
+            >
+              <MapPin className="h-5 w-5 text-primary shrink-0" />
+              <p className="flex-1 font-medium text-sm text-foreground">Cambia zona</p>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+            </button>
 
-              <button
-                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
-                onClick={() => { setShowLocDialog(true); setNewCap(currentUser?.cap ?? ""); setLocError(null); }}
-              >
-                <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
-                <p className="flex-1 font-medium text-sm text-foreground">Cambia zona</p>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
-              </button>
-            </CardContent>
-          </Card>
-        </section>
+            <button
+              className="group w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+              onClick={() => toast({ title: "Guida", description: "La guida sarà disponibile a breve." })}
+            >
+              <HelpCircle className="h-5 w-5 text-primary shrink-0" />
+              <p className="flex-1 font-medium text-sm text-foreground">Guida Stickers</p>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+            </button>
 
-        {/* Sezione: Aiuto e supporto */}
-        <section className="space-y-1.5">
-          <h2 className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Aiuto e supporto</h2>
-          <Card className="shadow-sm">
-            <CardContent className="p-0 divide-y divide-border">
-              <button
-                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
-                onClick={() => toast({ title: "Guida", description: "La guida sarà disponibile a breve." })}
-              >
-                <HelpCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                <p className="flex-1 font-medium text-sm text-foreground">Guida Stickers</p>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
-              </button>
+            <button
+              onClick={() => setShowReportDialog(true)}
+              className="group w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+            >
+              <MessageSquarePlus className="h-5 w-5 text-primary shrink-0" />
+              <p className="flex-1 font-medium text-sm text-foreground">Segnala o proponi</p>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+            </button>
 
-              <button
-                onClick={() => setShowReportDialog(true)}
-                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
-              >
-                <MessageSquarePlus className="h-5 w-5 text-primary flex-shrink-0" />
-                <p className="flex-1 font-medium text-sm text-foreground">Segnala o proponi</p>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
-              </button>
-            </CardContent>
-          </Card>
-        </section>
+            <button
+              onClick={() => setLocation("/legal/note")}
+              className="group w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+            >
+              <Shield className="h-5 w-5 text-primary shrink-0" />
+              <p className="flex-1 font-medium text-sm text-foreground">Privacy e Termini d'uso</p>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+            </button>
+          </CardContent>
+        </Card>
 
-        {/* Sezione: Informazioni */}
-        <section className="space-y-1.5">
-          <h2 className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Informazioni</h2>
-          <Card className="shadow-sm">
-            <CardContent className="p-0 divide-y divide-border">
-              <button
-                onClick={() => setLocation("/legal/note")}
-                className="group w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
-              >
-                <Shield className="h-5 w-5 text-primary flex-shrink-0" />
-                <p className="flex-1 font-medium text-sm text-foreground">Privacy e Termini d'uso</p>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
-              </button>
-            </CardContent>
-          </Card>
-        </section>
-
-        <div className="space-y-2">
+        <div className="mt-4 space-y-2">
           <Button
             variant="outline"
             className="w-full h-11 rounded-xl bg-white text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive font-semibold gap-2"
@@ -213,7 +166,7 @@ export function Profile() {
 
           {!currentUser?.isAdmin && (
             <Button
-              onClick={() => { setShowDeleteDialog(true); setDeletePin(""); setDeleteConfirm(""); setDeleteError(null); }}
+              onClick={() => { setShowDeleteDialog(true); setDeleteStep("form"); setDeleteConfirm(""); setDeleteError(null); }}
               className="w-full h-11 rounded-xl bg-destructive text-white border border-destructive hover:bg-destructive/90 font-semibold gap-2"
             >
               <Trash2 className="h-4 w-4" />
@@ -223,15 +176,15 @@ export function Profile() {
         </div>
 
         {/* Firma progetto — minimale: solo il logo deroarts, cliccabile.
-            Un tap apre l'email (oggetto già impostato) per acquisto/collaborazioni. */}
-        <footer className="pt-6 pb-2 flex justify-center">
+            mt-auto la spinge in fondo allo spazio disponibile senza scroll. */}
+        <footer className="mt-auto pt-3 flex justify-center">
           <a
             href="mailto:info-stickers@deroarts.com?subject=Contatto%20da%20app%20Stickers"
             aria-label="Scrivi a deroarts"
             title="Scrivi a deroarts"
             className="opacity-70 hover:opacity-100 transition-opacity"
           >
-            <img src="/deroarts_logo.svg" alt="deroarts" className="h-7 w-auto" />
+            <img src="/deroarts_logo.svg" alt="deroarts" className="h-6 w-auto" />
           </a>
         </footer>
       </div>
@@ -285,92 +238,95 @@ export function Profile() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <Dialog
+        open={showDeleteDialog}
+        onOpenChange={(open) => {
+          // Durante il commiato ("done") l'account è già cancellato: qualsiasi
+          // chiusura deve fare logout e portare al login, non solo nascondere.
+          if (!open && deleteStep === "done") { finishAfterDelete(); return; }
+          setShowDeleteDialog(open);
+        }}
+      >
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-destructive">Elimina account</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Questa azione cancella in modo definitivo il tuo profilo, le chat e le figurine selezionate.
-              <br /><br />
-              Per confermare, inserisci il tuo PIN e scrivi <span className="font-mono font-bold text-foreground">ELIMINA</span> nel campo sotto.
-            </p>
-            <Input
-              type="password"
-              placeholder="PIN"
-              maxLength={6}
-              value={deletePin}
-              onChange={e => setDeletePin(e.target.value)}
-              autoComplete="current-password"
-            />
-            <Input
-              placeholder='Scrivi "ELIMINA"'
-              value={deleteConfirm}
-              onChange={e => setDeleteConfirm(e.target.value)}
-            />
-            {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowDeleteDialog(false)} disabled={deleteLoading}>
-                Annulla
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleDeleteAccount}
-                disabled={deleteLoading || deleteConfirm !== "ELIMINA" || deletePin.length < 4}
-              >
-                {deleteLoading ? "Elimino..." : "Elimina"}
+          {deleteStep === "done" ? (
+            /* Commiato dopo l'eliminazione riuscita. */
+            <div className="text-center space-y-4 py-2">
+              <DialogHeader>
+                <DialogTitle className="text-center">Account eliminato</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Grazie per aver usato <span className="font-semibold text-foreground">Stickers</span>.
+                <br />A presto!
+              </p>
+              <Button className="w-full h-11 bg-primary text-primary-foreground font-semibold" onClick={finishAfterDelete}>
+                Chiudi
               </Button>
             </div>
-          </div>
+          ) : deleteStep === "form" ? (
+            /* Passo 1: scrivi ELIMINA. */
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-destructive">Elimina account</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Questa azione cancella in modo definitivo il tuo profilo, le chat e le figurine selezionate.
+                  <br /><br />
+                  Per confermare, scrivi <span className="font-mono font-bold text-foreground">ELIMINA</span> nel campo sotto.
+                </p>
+                <Input
+                  placeholder='Scrivi "ELIMINA"'
+                  value={deleteConfirm}
+                  onChange={e => setDeleteConfirm(e.target.value)}
+                />
+                {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowDeleteDialog(false)}>
+                    Annulla
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => { setDeleteError(null); setDeleteStep("confirm"); }}
+                    disabled={deleteConfirm !== "ELIMINA"}
+                  >
+                    Continua
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Passo 2: conferma finale (sei sicuro?). */
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-destructive">Sei davvero sicuro?</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  L'eliminazione è <span className="font-semibold text-foreground">irreversibile</span>:
+                  non potrai più recuperare il profilo, le chat e le figurine.
+                </p>
+                {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setDeleteStep("form")} disabled={deleteLoading}>
+                    Indietro
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={handleDeleteAccount}
+                    disabled={deleteLoading}
+                  >
+                    {deleteLoading ? "Elimino..." : "Elimina definitivamente"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
       <ReportDialog open={showReportDialog} onOpenChange={setShowReportDialog} />
-
-      <Dialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Codice di recupero</DialogTitle>
-          </DialogHeader>
-          {!recoveryCode ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Inserisci il tuo PIN per visualizzare il codice di recupero.
-              </p>
-              <Input
-                type="password"
-                placeholder="PIN"
-                maxLength={6}
-                value={pin}
-                onChange={e => setPin(e.target.value)}
-                className={pinError ? "border-destructive" : ""}
-              />
-              {pinError && <p className="text-xs text-destructive">PIN non corretto</p>}
-              <Button
-                className="w-full bg-primary text-primary-foreground"
-                onClick={handleRecoveryCode}
-                disabled={pinLoading}
-              >
-                {pinLoading ? "Verifica..." : "Mostra codice"}
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="bg-muted rounded-xl p-4 text-center">
-                <p className="font-mono text-lg font-bold tracking-wider text-foreground">{recoveryCode}</p>
-              </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Salva questo codice in un posto sicuro. Serve per recuperare il profilo se perdi l'accesso.
-              </p>
-              <Button variant="outline" className="w-full" onClick={() => setShowRecoveryDialog(false)}>
-                Chiudi
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

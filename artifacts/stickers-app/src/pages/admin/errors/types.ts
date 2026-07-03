@@ -106,7 +106,6 @@ const PAGE_LABEL: Array<[RegExp, string]> = [
   [/^\/chat/, "Chat"],
   [/^\/profilo/, "Profilo"],
   [/^\/login/, "Accesso"],
-  [/^\/recover/, "Recupero account"],
   [/^\/legal/, "Note legali"],
   [/^\/admin/, "Area admin"],
 ];

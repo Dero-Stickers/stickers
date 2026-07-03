@@ -45,8 +45,8 @@ La Cookie Policy è inglobata nella Privacy (solo storage tecnico, nessun cookie
 | Nickname | Identificazione | No (non nome reale) |
 | PIN (hashed) | Autenticazione | Sì (hash) |
 | CAP | Match geografico | Moderato |
-| Domanda/risposta sicurezza | Recupero emergenza | Sì (hash) |
-| Codice recupero | Accesso profilo | Sì |
+| Email | Accesso/recupero (Google/email) | Sì |
+| Password (hashed) | Autenticazione email | Sì (hash) |
 | Messaggi chat | Funzione scambio | Sì |
 | Identificatore dispositivo anonimo | Anti-abuso demo | Moderato |
 

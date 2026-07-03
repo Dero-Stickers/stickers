@@ -33,15 +33,6 @@ export interface LoginBody {
   cap?: string;
 }
 
-export interface RecoverBody {
-  recoveryCode: string;
-  newPin: string;
-}
-
-export interface PinConfirmBody {
-  pin: string;
-}
-
 export interface UserProfile {
   id: number;
   nickname: string;
@@ -62,11 +53,6 @@ export interface UserProfile {
 export interface AuthResponse {
   user: UserProfile;
   token: string;
-  recoveryCode?: string;
-}
-
-export interface RecoveryCodeResponse {
-  recoveryCode: string;
 }
 
 export interface Album {

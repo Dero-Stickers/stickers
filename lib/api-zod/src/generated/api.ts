@@ -60,7 +60,6 @@ export const LoginResponse = zod.object({
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
-  recoveryCode: zod.string().optional(),
 });
 
 /**
@@ -69,43 +68,6 @@ export const LoginResponse = zod.object({
 export const LogoutResponse = zod.object({
   success: zod.boolean(),
   message: zod.string().optional(),
-});
-
-/**
- * @summary Recover account with recovery code
- */
-export const RecoverAccountBody = zod.object({
-  recoveryCode: zod.string(),
-  newPin: zod.string(),
-});
-
-export const RecoverAccountResponse = zod.object({
-  user: zod.object({
-    id: zod.number(),
-    nickname: zod.string(),
-    cap: zod.string(),
-    area: zod.string().optional(),
-    isPremium: zod.boolean(),
-    paywallEnabled: zod
-      .boolean()
-      .describe(
-        "Riflette il master switch chat_paywall_enabled. Se false, tutte le chat sono gratis.",
-      ),
-    hasAllChats: zod
-      .boolean()
-      .describe("L'utente ha sbloccato TUTTE le chat (= isPremium)."),
-    exchangesCompleted: zod.number(),
-    isAdmin: zod.boolean(),
-    underReview: zod
-      .boolean()
-      .optional()
-      .describe(
-        'Esiste almeno una segnalazione pendente a carico dell\'utente. Mostra un avviso generico \"conversazioni sotto revisione\" senza rivelare chi ha segnalato.',
-      ),
-    createdAt: zod.string().optional(),
-  }),
-  token: zod.string(),
-  recoveryCode: zod.string().optional(),
 });
 
 /**
@@ -134,17 +96,6 @@ export const GetMeResponse = zod.object({
       'Esiste almeno una segnalazione pendente a carico dell\'utente. Mostra un avviso generico \"conversazioni sotto revisione\" senza rivelare chi ha segnalato.',
     ),
   createdAt: zod.string().optional(),
-});
-
-/**
- * @summary Get recovery code after PIN confirmation
- */
-export const GetRecoveryCodeBody = zod.object({
-  pin: zod.string(),
-});
-
-export const GetRecoveryCodeResponse = zod.object({
-  recoveryCode: zod.string(),
 });
 
 /**

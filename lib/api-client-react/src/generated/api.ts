@@ -45,11 +45,8 @@ import type {
   Message,
   OpenChatBody,
   PaywallConfig,
-  PinConfirmBody,
   PremiumRequiredResponse,
   PublishBody,
-  RecoverBody,
-  RecoveryCodeResponse,
   RegisterBody,
   Report,
   ReportBody,
@@ -403,92 +400,6 @@ export const useLogout = <
 };
 
 /**
- * @summary Recover account with recovery code
- */
-export const getRecoverAccountUrl = () => {
-  return `/api/auth/recover`;
-};
-
-export const recoverAccount = async (
-  recoverBody: RecoverBody,
-  options?: RequestInit,
-): Promise<AuthResponse> => {
-  return customFetch<AuthResponse>(getRecoverAccountUrl(), {
-    ...options,
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(recoverBody),
-  });
-};
-
-export const getRecoverAccountMutationOptions = <
-  TError = ErrorType<ErrorResponse>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof recoverAccount>>,
-    TError,
-    { data: BodyType<RecoverBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof recoverAccount>>,
-  TError,
-  { data: BodyType<RecoverBody> },
-  TContext
-> => {
-  const mutationKey = ["recoverAccount"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof recoverAccount>>,
-    { data: BodyType<RecoverBody> }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return recoverAccount(data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type RecoverAccountMutationResult = NonNullable<
-  Awaited<ReturnType<typeof recoverAccount>>
->;
-export type RecoverAccountMutationBody = BodyType<RecoverBody>;
-export type RecoverAccountMutationError = ErrorType<ErrorResponse>;
-
-/**
- * @summary Recover account with recovery code
- */
-export const useRecoverAccount = <
-  TError = ErrorType<ErrorResponse>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof recoverAccount>>,
-    TError,
-    { data: BodyType<RecoverBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof recoverAccount>>,
-  TError,
-  { data: BodyType<RecoverBody> },
-  TContext
-> => {
-  return useMutation(getRecoverAccountMutationOptions(options));
-};
-
-/**
  * @summary Get current user
  */
 export const getGetMeUrl = () => {
@@ -550,92 +461,6 @@ export function useGetMe<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
-
-/**
- * @summary Get recovery code after PIN confirmation
- */
-export const getGetRecoveryCodeUrl = () => {
-  return `/api/auth/recovery-code`;
-};
-
-export const getRecoveryCode = async (
-  pinConfirmBody: PinConfirmBody,
-  options?: RequestInit,
-): Promise<RecoveryCodeResponse> => {
-  return customFetch<RecoveryCodeResponse>(getGetRecoveryCodeUrl(), {
-    ...options,
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(pinConfirmBody),
-  });
-};
-
-export const getGetRecoveryCodeMutationOptions = <
-  TError = ErrorType<ErrorResponse>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof getRecoveryCode>>,
-    TError,
-    { data: BodyType<PinConfirmBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof getRecoveryCode>>,
-  TError,
-  { data: BodyType<PinConfirmBody> },
-  TContext
-> => {
-  const mutationKey = ["getRecoveryCode"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof getRecoveryCode>>,
-    { data: BodyType<PinConfirmBody> }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return getRecoveryCode(data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type GetRecoveryCodeMutationResult = NonNullable<
-  Awaited<ReturnType<typeof getRecoveryCode>>
->;
-export type GetRecoveryCodeMutationBody = BodyType<PinConfirmBody>;
-export type GetRecoveryCodeMutationError = ErrorType<ErrorResponse>;
-
-/**
- * @summary Get recovery code after PIN confirmation
- */
-export const useGetRecoveryCode = <
-  TError = ErrorType<ErrorResponse>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof getRecoveryCode>>,
-    TError,
-    { data: BodyType<PinConfirmBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof getRecoveryCode>>,
-  TError,
-  { data: BodyType<PinConfirmBody> },
-  TContext
-> => {
-  return useMutation(getGetRecoveryCodeMutationOptions(options));
-};
 
 /**
  * @summary List all published albums

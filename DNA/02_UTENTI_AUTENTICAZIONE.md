@@ -5,10 +5,8 @@
 | Campo | Note |
 |-------|------|
 | Nickname | **5-12 caratteri**; ammessi lettere, numeri, `-`, `_`, **ALFANUMERICO MISTO obbligatorio** (almeno una lettera E almeno un numero — no solo lettere, no solo numeri). Normalizzato a forma **canonica** (iniziale maiuscola, resto minuscolo, es. `marco95` → `Marco95`). **Unico in tutta l'app** (case-insensitive) — indice DB `users_nickname_lower_unique` su `lower(nickname)`. Regola in `auth.ts` (`NICKNAME_REGEX` + refine lettera/numero + `canonicalNickname`), identica lato frontend. **NON modificabile** dopo la creazione (scelto una volta in registrazione con conferma "non modificabile"): identità pubblica permanente → endpoint `PATCH /me/nickname` e voce Profilo "Cambia nickname" **rimossi** (giu 2026). **Login/recupero case-insensitive** (confronto `lower()`). |
-| PIN personale | 4-6 cifre |
+| PIN personale | 4-6 cifre — **solo account storici**. I nuovi utenti entrano con Google/email (no PIN). |
 | CAP/Codice Postale | **Solo geografia**, non fa parte dell'identità: serve per i match per vicinanza ed è **liberamente modificabile** dal Profilo (vedi sotto). |
-| Domanda di sicurezza | Obbligatoria, per recupero emergenza |
-| Risposta alla domanda di sicurezza | |
 
 > **Identità slegata dal CAP** (giu 2026). Il nickname è l'unica chiave d'identità (unico globale); il CAP è puro dato geografico. Questo rende l'accesso più semplice (solo nickname + PIN), il recupero indipendente dal CAP e il cambio zona privo di rischi. Migrazione: `lib/db/migrations/0001_nickname_global_unique.sql`.
 
@@ -23,8 +21,8 @@ Schermata di accesso (`Login.tsx`) con **"Continua con Google"** in evidenza + a
 **Nickname + PIN** come opzione secondaria. Architettura in `DNA/18_PIANO_AUTH.md`.
 - **Google** (Supabase Auth): 1 tap → al primo accesso si sceglie nickname (permanente) + CAP
   (`/api/auth/social` + `/api/auth/social/complete`; ponte identità in `lib/supabase-auth.ts`).
-  Utente social: nessun PIN, nessuna domanda, nessun codice STICK (recupero via Google).
-- **Nickname + PIN** (storico): invariato, sempre disponibile (il CAP non serve all'accesso).
+  Utente social: nessun PIN (recupero via Google/email).
+- **Nickname + PIN** (storico): invariato, sempre disponibile (il CAP non serve all'accesso). Usato anche dal pulsante dev **U/A** (`DevQuickSwitch`).
 - **Email + password** e reset via email: previsti, attivabili quando c'è l'SMTP (Brevo) — vedi piano.
 - Il dispositivo ricorda l'accesso finché l'utente non fa logout manuale.
 
@@ -50,25 +48,19 @@ Lo sblocco admin rimuove l'email dalla lista nera e ripristina tutto.
 - Endpoint `PATCH /api/auth/me/location` (autenticato, **niente PIN**: il CAP è solo geografia). Valida 5 cifre e **ricalcola l'area** (`deriveArea` in `auth.ts`: match esatto → prefisso provincia → generico).
 - Non tocca login né recupero: l'identità (nickname) resta invariata.
 
-## Email di recupero (futuro)
+## Recupero accesso (lug 2026 — semplificato)
 
-- Prossimo passo consigliato: email **facoltativa** come àncora di recupero (link/codice), che potrà sostituire la domanda di sicurezza.
-- Richiede l'attivazione di un **servizio di invio email** (config/chiavi) → non ancora implementata.
+Il vecchio recupero PIN (codice `STICK-XXXX-XXXX-XXXX` + domanda di sicurezza) è stato
+**rimosso**: pagina `/recover`, endpoint `POST /recover`, `/recover/lookup`,
+`/recover/answer`, `/recovery-code` e la voce Profilo "Il mio codice di recupero"
+non esistono più. Le colonne DB `recovery_code`, `security_question`,
+`security_answer_hash` restano (nullable) per gli account storici, ma non sono più
+usate da alcun flusso.
 
-## Codice di Recupero
-
-- Generato dopo la registrazione (es. `STICK-XXXX-XXXX-XXXX`)
-- Mostrato immediatamente con testo: _"Salva questo codice: serve per recuperare il profilo e gli eventuali acquisti."_
-- Accessibile nella sezione Profilo solo dopo conferma PIN
-- Usato per: recupero profilo, recupero accesso, riconciliazione premium
-
-## Recupero PIN
-
-Due strade (nessuna richiede il CAP):
-- **Codice di recupero**: utente inserisce `STICK-XXXX-XXXX-XXXX` → crea nuovo PIN. Mostra anche il nickname.
-- **Domanda di sicurezza**: utente inserisce **solo il nickname** (unico) → l'app mostra la sua domanda → risponde → crea nuovo PIN.
-
-Profilo, album, stati, demo, premium rimangono invariati.
+- **Utenti nuovi (Google/email)**: il recupero è delegato al provider (Google) o al
+  reset password via email (previsto quando c'è l'SMTP Brevo — vedi `18_PIANO_AUTH`).
+- **Account storici (PIN)**: il login nickname+PIN resta attivo (lo usa anche il pulsante
+  dev U/A). Non c'è più auto-recupero del PIN dall'app.
 
 ## Profilo Pubblico (visibile ad altri utenti)
 
@@ -77,10 +69,13 @@ Profilo, album, stati, demo, premium rimangono invariati.
 - Statistiche scambi
 - Affidabilità (basata su scambi completati)
 
-## Procedura Recupero Emergenza Admin
+## Eliminazione account (self-service, GDPR art. 17)
 
-1. Utente contatta admin via email di supporto
-2. Admin cerca utente nell'archivio
-3. Admin verifica: nickname (unico) e domanda di sicurezza
-4. Se coerente → admin può aiutare al recupero o generare nuovo codice
-5. Azione admin tracciata nel log
+- Dal **Profilo → Elimina account**. Flusso in **due conferme** (azione irreversibile):
+  1. scrivi `ELIMINA` → *Continua*; 2. "Sei davvero sicuro?" → *Elimina definitivamente*.
+  Al termine un breve commiato ("Grazie per aver usato Stickers") poi logout.
+- **Nessun PIN richiesto**: l'identità è già garantita dal token di sessione. Endpoint
+  `DELETE /api/auth/me` con solo `{confirm:"ELIMINA"}`.
+- **Utente bloccato**: non può auto-eliminarsi (403 `ACCOUNT_BLOCKED`) finché l'admin non
+  lo sblocca — impedisce il trucco "mi cancello e mi re-iscrivo pulito". **Admin** non può
+  auto-eliminarsi (403 `ADMIN_CANNOT_SELF_DELETE`).

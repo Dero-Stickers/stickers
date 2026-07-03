@@ -107,31 +107,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
-  /auth/recover:
-    post:
-      operationId: recoverAccount
-      tags: [auth]
-      summary: Recover account with recovery code
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RecoverBody"
-      responses:
-        "200":
-          description: Recovery successful
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "400":
-          description: Invalid recovery code
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
   /auth/me:
     get:
       operationId: getMe
@@ -146,31 +121,6 @@ paths:
                 $ref: "#/components/schemas/UserProfile"
         "401":
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /auth/recovery-code:
-    post:
-      operationId: getRecoveryCode
-      tags: [auth]
-      summary: Get recovery code after PIN confirmation
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PinConfirmBody"
-      responses:
-        "200":
-          description: Recovery code
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RecoveryCodeResponse"
-        "401":
-          description: Wrong PIN
           content:
             application/json:
               schema:
@@ -1035,22 +985,6 @@ components:
           type: string
       required: [nickname, pin]
 
-    RecoverBody:
-      type: object
-      properties:
-        recoveryCode:
-          type: string
-        newPin:
-          type: string
-      required: [recoveryCode, newPin]
-
-    PinConfirmBody:
-      type: object
-      properties:
-        pin:
-          type: string
-      required: [pin]
-
     AuthResponse:
       type: object
       properties:
@@ -1058,16 +992,7 @@ components:
           $ref: "#/components/schemas/UserProfile"
         token:
           type: string
-        recoveryCode:
-          type: string
       required: [user, token]
-
-    RecoveryCodeResponse:
-      type: object
-      properties:
-        recoveryCode:
-          type: string
-      required: [recoveryCode]
 
     UserProfile:
       type: object
