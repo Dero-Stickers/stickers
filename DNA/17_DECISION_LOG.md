@@ -13,9 +13,12 @@
   `album-source/link/panini_world_cup_2026.md` → `build:worldcup-data` → dataset versionato
   `world-cup-2026.json.gz` → `restore:albums` (ora multi-sorgente; non tocca più
   `is_published` degli esistenti — pubblicare è dell'admin). Creato NON pubblicato (id 34).
-  UI: griglia adattiva (5 colonne + codice su 2 righe SOLO se l'album ha codici > 3 char),
-  icona coppa sulla card, Mondiali pinnati in cima alla lista. `export:albums` ora esclude
-  i Mondiali (fonte separata, niente duplicati).
+  UI: figurine con stesse colonne/proporzioni degli altri album (griglia identica), codice
+  lungo su 2 righe nella cella; **suddivisione in blocchi per nazione** con intestazione
+  (nome + linea sottile) SOPRA la griglia del blocco, fuori dalla grid (scartato l'header
+  `col-span-full` interno: rompeva su WebKit aspect-square+content-visibility). Icona coppa
+  sulla card, Mondiali pinnati in cima. `export:albums` esclude i Mondiali; gli scambi/match
+  mostrano il codice stampato (`code || number`, `lib/trade.ts` include `code`).
 - **Blocco utente a prova di aggiramento (lista nera email + gate azioni)** — scoperto in audit che
   il blocco viveva solo su `users.is_blocked`: controllato SOLO al login, e un bloccato poteva
   eliminare l'account (hard delete) e re-iscriversi con la stessa email ripartendo pulito. Deciso:

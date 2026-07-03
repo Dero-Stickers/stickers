@@ -175,26 +175,28 @@ export function AlbumDetail() {
     // né si riordina quando una figurina cambia stato.
     .sort((a, b) => a.number - b.number), [stickers, filter]);
 
-  // Album con codici ALFANUMERICI lunghi (es. Mondiali: MEX10, FWC19): celle
-  // più larghe (6 colonne su mobile) per restare leggibili e touch-friendly.
-  // I Calciatori (codici a 3 cifre) mantengono la griglia fitta di sempre.
+  // Album a codici ALFANUMERICI (es. Mondiali: MEX10, FWC19). La griglia resta
+  // IDENTICA agli altri album (stesse 7 colonne, stesse proporzioni di cella):
+  // il codice lungo entra nella cella quadrata standard andando su due righe
+  // (StickerCell). Il flag serve solo ad attivare i divisori di blocco.
   const hasLongCodes = useMemo(
     () => (stickers ?? []).some(s => (s.code?.length ?? 0) > 3),
     [stickers],
   );
 
-  // Divisori di blocco (SOLO album a codici alfanumerici): quando cambia la
-  // sigla (MEX → RSA) si inserisce una riga-divisore discreta con il nome del
-  // blocco, così scorrendo veloce si vede subito dove finisce una squadra.
-  // Etichetta = suffisso " - Squadra" condiviso dalla maggioranza del blocco
-  // (es. "Mexico", "FIFA Museum"); altrimenti la sigla stessa (FWC, CC).
-  type GridRow =
-    | { kind: "header"; key: string; label: string }
-    | { kind: "sticker"; s: (typeof filteredStickers)[number] };
-  const gridRows = useMemo<GridRow[]>(() => {
-    if (!hasLongCodes) return filteredStickers.map(s => ({ kind: "sticker" as const, s }));
-    const rows: GridRow[] = [];
-    let run: (typeof filteredStickers)[number][] = [];
+  // Suddivisione in BLOCCHI per nazione/gruppo (SOLO album a codici alfanumerici):
+  // al cambio di sigla (MEX → RSA) inizia un nuovo blocco con la sua intestazione
+  // (nome nazione + linea sottile) MESSA SOPRA la griglia, non dentro una cella.
+  // Ogni blocco ha la propria griglia → l'header sta in un contenitore separato,
+  // così non ruba il posto a una figurina né rompe il layout su WebKit (un header
+  // `col-span-full` dentro l'unica grid mandava in tilt aspect-square+content-visibility).
+  // Etichetta = suffisso " - Squadra" della maggioranza del blocco (es. "Mexico");
+  // altrimenti la sigla stessa (FWC, CC). Blocchi di 1 sola figurina (logo "00") muti.
+  type StickerBlock = { key: string; label: string | null; stickers: typeof filteredStickers };
+  const stickerBlocks = useMemo<StickerBlock[]>(() => {
+    if (!hasLongCodes) return [{ key: "all", label: null, stickers: filteredStickers }];
+    const blocks: StickerBlock[] = [];
+    let run: typeof filteredStickers = [];
     let prevPrefix: string | null = null;
     const prefixOf = (code: string) => code.match(/^[A-Za-z]+/)?.[0] ?? code;
     const flush = () => {
@@ -205,10 +207,10 @@ export function AlbumDetail() {
         if (m) counts.set(m[1], (counts.get(m[1]) ?? 0) + 1);
       }
       const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
-      const label = top && top[1] >= run.length / 2 ? top[0] : (prevPrefix ?? "");
-      // Niente divisore per blocchi singoli senza etichetta (es. il logo "00").
-      if (run.length > 1) rows.push({ kind: "header", key: `h-${rows.length}`, label });
-      for (const s of run) rows.push({ kind: "sticker", s });
+      const label = run.length > 1
+        ? (top && top[1] >= run.length / 2 ? top[0] : prevPrefix)
+        : null;
+      blocks.push({ key: `b-${blocks.length}`, label, stickers: run });
       run = [];
     };
     for (const s of filteredStickers) {
@@ -217,7 +219,7 @@ export function AlbumDetail() {
       run.push(s);
     }
     flush();
-    return rows;
+    return blocks;
   }, [filteredStickers, hasLongCodes]);
 
   // bulkState = stato applicato col long-press. "Tutte" non ha azione (solo filtro).
@@ -303,24 +305,31 @@ export function AlbumDetail() {
             <p className="font-medium">Nessuna figurina in questa categoria</p>
           </div>
         )}
-        <div className={`grid gap-1.5 ${hasLongCodes
-          ? "grid-cols-6 sm:grid-cols-8 md:grid-cols-9 lg:grid-cols-11"
-          : "grid-cols-7 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12"}`}>
-          {gridRows.map(row => row.kind === "header" ? (
-            <div key={row.key} className="col-span-full flex items-center gap-2 pt-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{row.label}</span>
-              <div className="flex-1 border-t border-border" />
+        {stickerBlocks.map(block => (
+          // Intestazione (nome nazione + linea sottile) SOPRA la griglia del
+          // blocco — fuori dalla grid, così è a tutta larghezza senza rubare il
+          // posto a una figurina. Ogni blocco ha la sua griglia (celle identiche
+          // agli altri album). Lo stacco lo danno header + spazio tra blocchi.
+          <div key={block.key} className="mb-1">
+            {block.label && (
+              <div className="flex items-center gap-2 pt-2 pb-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground shrink-0">{block.label}</span>
+                <div className="flex-1 border-t border-border" />
+              </div>
+            )}
+            <div className="grid gap-1.5 grid-cols-7 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12">
+              {block.stickers.map(s => (
+                <StickerCell
+                  key={s.stickerId}
+                  sticker={s}
+                  onTap={tapSticker}
+                  onPressStart={handlePointerDown}
+                  onPressEnd={handlePointerUp}
+                />
+              ))}
             </div>
-          ) : (
-            <StickerCell
-              key={row.s.stickerId}
-              sticker={row.s}
-              onTap={tapSticker}
-              onPressStart={handlePointerDown}
-              onPressEnd={handlePointerUp}
-            />
-          ))}
-        </div>
+          </div>
+        ))}
 
         <div className="pt-6 pb-2">
           <Button

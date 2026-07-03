@@ -40,11 +40,16 @@ Ciclo tapping: Mancante → Posseduta → Doppia → Mancante
 
 - Compatta, scrollabile, touch-friendly
 - Ogni card mostra: codice stampato (o numero) + colore stato
-- **Griglia adattiva (lug 2026)**: se l'album ha codici alfanumerici lunghi (Mondiali:
-  MEX10, FWC19) → 6 colonne su mobile e codice su 2 righe (sigla sopra, numero sotto,
-  stesso font/size delle celle standard) in `StickerCell`; **divisori di blocco** discreti
-  al cambio sigla (etichetta = squadra o sigla, riga sottile `col-span-full`) per vedere
-  dove finisce una nazionale scorrendo veloce. I Calciatori restano a 7 colonne, identici.
+- **Codici alfanumerici + blocchi per nazione (lug 2026)**: gli album Mondiali hanno le
+  figurine con **le stesse colonne e proporzioni** dei Calciatori (griglia identica); il
+  codice lungo (MEX10, FWC19) entra nella cella quadrata standard su **2 righe** (sigla
+  piccola/attenuata sopra, numero sotto) in `StickerCell`. **Suddivisione in blocchi**: al
+  cambio di sigla (MEX→RSA) inizia un nuovo blocco con **intestazione** (nome nazione +
+  linea sottile) messa SOPRA la sua griglia, in un contenitore separato — NON dentro la grid
+  (un header `col-span-full` dentro l'unica grid rompeva su WebKit `aspect-square` +
+  `content-visibility`, prima cella a tutto schermo). Etichetta = squadra maggioritaria dal
+  suffisso " - Team", altrimenti la sigla; blocchi di 1 figurina (logo "00") muti. Attivo solo
+  per album con codici > 3 char; i Calciatori restano una griglia unica, identici.
 - Mondiali: icona coppa (`world-cup.png`) sulla card album + pin in cima alla lista.
 - Scambi/match: le chip mostrano il **codice stampato** (`code || number`) — `lib/trade.ts`
   include `code` (era già required nello schema OpenAPI `Sticker`).

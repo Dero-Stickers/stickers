@@ -32,18 +32,20 @@ export const StickerCell = memo(function StickerCell({ sticker, onTap, onPressSt
   const split = sticker.code ? splitLongCode(sticker.code) : null;
   return (
     <button
-      className={`cv-cell aspect-square rounded-md flex flex-col items-center justify-center text-xs font-bold select-none transition-transform active:scale-95 ${stateColors[st]}`}
+      className={`cv-cell aspect-square rounded-md flex flex-col items-center justify-center text-xs font-bold leading-none select-none transition-transform active:scale-95 ${stateColors[st]}`}
       onClick={() => onTap(sticker)}
       onPointerDown={() => onPressStart(sticker)}
       onPointerUp={onPressEnd}
       onPointerLeave={onPressEnd}
     >
       {split ? (
-        // Stesso font/dimensione delle celle standard (text-xs bold ereditato);
-        // solo la sigla è attenuata per far emergere il numero.
+        // Codice lungo su 2 righe DENTRO la cella quadrata standard (stessa
+        // misura degli altri album): sigla più piccola/attenuata sopra, numero
+        // in evidenza sotto. Così "MEX10" entra senza strabordare né allargare
+        // la cella. `text-[9px]` sulla sigla, numero al text-xs della griglia.
         <>
-          <span className="leading-none opacity-70">{split.prefix}</span>
-          <span className="leading-tight">{split.digits}</span>
+          <span className="text-[9px] opacity-70">{split.prefix}</span>
+          <span>{split.digits}</span>
         </>
       ) : (
         sticker.code || sticker.number
