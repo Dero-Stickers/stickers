@@ -23,8 +23,10 @@ export function AdminFilterBar<T extends string>({
   options: readonly (readonly [T, string])[];
 }) {
   return (
-    <div className="shrink-0 flex flex-wrap items-center gap-2 mb-0">
-      <div className="relative flex-1 min-w-[180px]">
+    <div className="shrink-0 flex flex-wrap items-center gap-2">
+      {/* Box ricerca corto (come Gestione Messaggi, riferimento condiviso):
+          lascia spazio ai chip sulla stessa riga invece di occupare tutto. */}
+      <div className="relative w-48 md:w-56 shrink-0">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <input
           type="text"

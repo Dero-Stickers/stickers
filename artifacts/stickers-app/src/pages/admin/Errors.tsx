@@ -324,14 +324,15 @@ export function AdminErrors() {
       <Card className="shadow-sm">
         <CardContent className="p-3 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex-1 min-w-[180px] relative">
+            {/* Box ricerca corto e bianco, come Gestione Messaggi (riferimento). */}
+            <div className="relative w-48 md:w-56 shrink-0">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Cerca per pagina, messaggio, nota…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 pl-8 pr-3 rounded-md border border-input bg-background text-sm"
+                className="w-full h-9 pl-8 pr-3 rounded-md border border-input bg-white text-sm"
               />
             </div>
             <Button

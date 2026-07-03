@@ -170,8 +170,9 @@ export function AdminAlbums() {
           ["offline", "Off Line"],
         ]}
       />
-      {/* -mt riduce il gap del contenitore AdminPage: tabella più vicina alla barra. */}
-      <div className="-mt-4 md:-mt-6 flex-1 min-h-0 flex flex-col">
+      {/* Spaziatura coerente con Gestione Messaggi: il gap naturale di AdminPage
+          tra barra filtri e tabella resta (niente margine negativo). */}
+      <div className="flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}
         head={
