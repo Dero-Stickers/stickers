@@ -21,7 +21,7 @@ import { dirname, resolve } from "node:path";
 import pg from "pg";
 
 type SeedSticker = { number: number; code: string; name: string; description: string | null };
-type SeedAlbum = { title: string; isPublished: boolean; stickers: SeedSticker[] };
+type SeedAlbum = { title: string; isPublished: boolean; category?: string; stickers: SeedSticker[] };
 
 const connectionString = (process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL || "").trim();
 if (!connectionString) throw new Error("SUPABASE_DATABASE_URL o DATABASE_URL non impostato");
@@ -74,11 +74,19 @@ async function main() {
     if (found.rows.length === 0) {
       await client.query("begin");
       try {
-        const ins = await client.query(
-          `insert into albums (title, total_stickers, is_published)
-           values ($1,$2,$3) returning id`,
-          [a.title, a.stickers.length, a.isPublished],
-        );
+        // category dal file se presente, altrimenti il DEFAULT della colonna
+        // (campionato) — coerente con la maggioranza degli album.
+        const ins = a.category
+          ? await client.query(
+              `insert into albums (title, total_stickers, is_published, category)
+               values ($1,$2,$3,$4) returning id`,
+              [a.title, a.stickers.length, a.isPublished, a.category],
+            )
+          : await client.query(
+              `insert into albums (title, total_stickers, is_published)
+               values ($1,$2,$3) returning id`,
+              [a.title, a.stickers.length, a.isPublished],
+            );
         const albumId = ins.rows[0].id;
         await insertStickers(client, albumId, a.stickers);
         await client.query("commit");

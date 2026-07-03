@@ -50,7 +50,14 @@ Ciclo tapping: Mancante → Posseduta → Doppia → Mancante
   `content-visibility`, prima cella a tutto schermo). Etichetta = squadra maggioritaria dal
   suffisso " - Team", altrimenti la sigla; blocchi di 1 figurina (logo "00") muti. Attivo solo
   per album con codici > 3 char; i Calciatori restano una griglia unica, identici.
-- Mondiali: icona coppa (`world-cup.png`) sulla card album + pin in cima alla lista.
+- **Categorie master (lug 2026)**: ogni album ha `category` (Mondiali/Europei/Campionato…),
+  fonte unica `ALBUM_CATEGORIES` (in `@workspace/db` per validazione server, replicata in
+  `@workspace/api-client-react` per la UI: il frontend non può importare il package DB).
+  Aggiungere una categoria = una riga in entrambe. **Admin**: menu categoria in crea/gestisci
+  album + colonna in tabella. **User "Disponibili"**: chip-filtro [Tutti + categorie presenti]
+  (mostrati solo se >1 categoria); ordinamento per categoria poi titolo. Icona per categoria
+  (mappa unica in `AlbumList.tsx`): `world-cup.png` (mondiali), `coppa-europei.png` (europei),
+  `scudetto.svg` (campionato). Rimossa la vecchia deduzione fragile dal titolo (`isWorldCup`).
 - Scambi/match: le chip mostrano il **codice stampato** (`code || number`) — `lib/trade.ts`
   include `code` (era già required nello schema OpenAPI `Sticker`).
 - Pressione lunga → modal centrato con numero + nome/descrizione

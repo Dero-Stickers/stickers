@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="504" height="586">
+<path fill="#FFF"
+d="m6,6v240c0,200 80,250 240,324 160-74 240-124 240-324V6"/>
+<path fill="#009246" d="m6,6V310l56,148 110,70V6"/>
+<path fill="#CE2B37" d="m326,6V528l110-70 56-148V6"/>
+<path fill="none" stroke="#F2BE1A" stroke-width="20"
+d="m10,8v240c0,200 80,250 238,320 160-74 238-124 240-320V8z"/>
+</svg>

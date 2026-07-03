@@ -29,12 +29,13 @@ async function main() {
   // I Mondiali hanno il loro file versionato (world-cup-2026.json.gz, generato
   // da build:worldcup-data): qui esportiamo solo il resto, niente duplicati.
   const albums = (await client.query(
-    `select id, title, is_published from albums where title not ilike '%world cup%' order by title desc`,
+    `select id, title, is_published, category from albums where title not ilike '%world cup%' order by title desc`,
   )).rows;
 
   const out: {
     title: string;
     isPublished: boolean;
+    category: string;
     stickers: { number: number; code: string; name: string; description: string | null }[];
   }[] = [];
 
@@ -46,6 +47,7 @@ async function main() {
     out.push({
       title: a.title,
       isPublished: a.is_published,
+      category: a.category,
       stickers: stickers.map(s => ({
         number: s.number,
         code: s.code ?? "",

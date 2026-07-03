@@ -1110,12 +1110,15 @@ components:
           type: integer
         isPublished:
           type: boolean
+        category:
+          type: string
+          description: Categoria master (mondiali/europei/campionato…). Vedi ALBUM_CATEGORIES.
         userCount:
           type: integer
           description: Solo lato admin — utenti che hanno l'album tra "I miei album".
         createdAt:
           type: string
-      required: [id, title, totalStickers, isPublished]
+      required: [id, title, totalStickers, isPublished, category]
 
     AlbumWithStickers:
       allOf:
@@ -1153,6 +1156,9 @@ components:
           type: string
         isPublished:
           type: boolean
+        category:
+          type: string
+          description: Categoria master (mondiali/europei/campionato…). Default campionato.
       required: [title]
 
     PublishBody:

@@ -12,7 +12,13 @@ import {
   useToggleAlbumPublish,
 } from "@workspace/api-client-react";
 import type { Album } from "@workspace/api-client-react";
+import { ALBUM_CATEGORIES, DEFAULT_ALBUM_CATEGORY, albumCategoryLabel } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+
+// Stile select nativo (coerente con SearchSticker): niente componente shadcn Select.
+const CATEGORY_SELECT_CLASS =
+  "w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground " +
+  "focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50";
 import { AlbumStickersManager } from "@/components/admin/AlbumStickersManager";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
@@ -32,30 +38,39 @@ function AlbumManagePanel({ album }: { album: Album }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState(album.title);
+  const [category, setCategory] = useState<string>(album.category ?? DEFAULT_ALBUM_CATEGORY);
 
   const updateAlbum = useUpdateAlbum({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ADMIN_ALBUMS_KEY });
-        toast({ title: "Nome album aggiornato" });
+        toast({ title: "Album aggiornato" });
       },
     },
   });
 
-  const dirty = title.trim().length > 0 && title.trim() !== album.title;
+  const dirty =
+    title.trim().length > 0 &&
+    (title.trim() !== album.title || category !== (album.category ?? DEFAULT_ALBUM_CATEGORY));
 
   return (
     <div className="space-y-4">
       <div>
         <label className="text-sm font-medium text-foreground block mb-1">Nome album</label>
+        <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Es. Calciatori 2025-2026" />
+      </div>
+      <div>
+        <label className="text-sm font-medium text-foreground block mb-1">Categoria</label>
         <div className="flex gap-2">
-          <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Es. Calciatori 2025-2026" />
+          <select className={CATEGORY_SELECT_CLASS} value={category} onChange={e => setCategory(e.target.value)}>
+            {ALBUM_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+          </select>
           <Button
             className="bg-primary text-primary-foreground shrink-0"
             disabled={!dirty || updateAlbum.isPending}
-            onClick={() => updateAlbum.mutate({ albumId: album.id, data: { title: title.trim() } })}
+            onClick={() => updateAlbum.mutate({ albumId: album.id, data: { title: title.trim(), category } })}
           >
-            {updateAlbum.isPending ? "..." : "Rinomina"}
+            {updateAlbum.isPending ? "..." : "Salva"}
           </Button>
         </div>
       </div>
@@ -73,6 +88,7 @@ export function AdminAlbums() {
   const { data: albums, isLoading } = useListAlbums({ query: { queryKey: ADMIN_ALBUMS_KEY } });
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [newCategory, setNewCategory] = useState<string>(DEFAULT_ALBUM_CATEGORY);
   const [manageAlbum, setManageAlbum] = useState<Album | null>(null);
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ADMIN_ALBUMS_KEY });
 
@@ -113,6 +129,7 @@ export function AdminAlbums() {
         invalidate();
         setShowCreate(false);
         setNewTitle("");
+        setNewCategory(DEFAULT_ALBUM_CATEGORY);
         toast({ title: "Album creato" });
       },
     },
@@ -134,7 +151,7 @@ export function AdminAlbums() {
       actions={
         <Button
           className="gap-2 bg-primary text-primary-foreground"
-          onClick={() => { setNewTitle(""); setShowCreate(true); }}
+          onClick={() => { setNewTitle(""); setNewCategory(DEFAULT_ALBUM_CATEGORY); setShowCreate(true); }}
         >
           <Plus className="h-4 w-4" />
           Crea album
@@ -165,6 +182,7 @@ export function AdminAlbums() {
             <th className="hidden md:table-cell">
               <SortHeader label="Figurine" col="totalStickers" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} />
             </th>
+            <th className="hidden sm:table-cell">Categoria</th>
             <th>Stato</th>
             <th>Utenti</th>
             <th>Azioni</th>
@@ -184,6 +202,7 @@ export function AdminAlbums() {
               <span className="font-medium text-foreground">{album.title}</span>
             </td>
             <td className="hidden md:table-cell text-center text-foreground">{album.totalStickers}</td>
+            <td className="hidden sm:table-cell text-center text-muted-foreground">{albumCategoryLabel(album.category)}</td>
             <td className="text-center">
               <Badge className={album.isPublished ? "bg-green-100 text-green-700 border-0" : "bg-orange-100 text-orange-700 border-0"}>
                 {album.isPublished ? "On Line" : "Off Line"}
@@ -242,11 +261,17 @@ export function AdminAlbums() {
               <label className="text-sm font-medium text-foreground">Titolo</label>
               <Input className="mt-1" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Es. Calciatori 2025-2026" />
             </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Categoria</label>
+              <select className={`${CATEGORY_SELECT_CLASS} mt-1`} value={newCategory} onChange={e => setNewCategory(e.target.value)}>
+                {ALBUM_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+              </select>
+            </div>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowCreate(false)}>Annulla</Button>
               <Button
                 className="flex-1 bg-primary text-primary-foreground"
-                onClick={() => { if (newTitle.trim()) createAlbum.mutate({ data: { title: newTitle.trim() } }); }}
+                onClick={() => { if (newTitle.trim()) createAlbum.mutate({ data: { title: newTitle.trim(), category: newCategory } }); }}
                 disabled={createAlbum.isPending}
               >
                 {createAlbum.isPending ? "Salvataggio..." : "Salva"}

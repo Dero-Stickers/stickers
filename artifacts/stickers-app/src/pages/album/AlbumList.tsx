@@ -24,18 +24,29 @@ import {
   getListAlbumsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { ALBUM_CATEGORIES } from "@workspace/api-client-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import worldCupIcon from "/world-cup.png?url";
+import euroCupIcon from "/coppa-europei.png?url";
+import scudettoIcon from "/scudetto.svg?url";
 
-// Gli album Mondiali si distinguono dai Calciatori con l'icona coppa sulla card.
-const isWorldCup = (title: string) => /world cup/i.test(title);
+// Icona per categoria — FONTE UNICA. Aggiungere una categoria = una riga qui
+// (chiave = `albums.category`). Categoria senza icona → nessuna icona (ok).
+const CATEGORY_ICON: Record<string, string> = {
+  mondiali: worldCupIcon,
+  europei: euroCupIcon,
+  campionato: scudettoIcon,
+};
 
-// Ordine: Mondiali SEMPRE in cima (pin esplicito, non affidato all'alfabeto),
-// poi dal più recente al più vecchio (titolo es. "Calciatori 2025-2026").
-// A livello di modulo → funzione stabile, non ricreata a ogni render.
-const byTitleDesc = (a: { title: string }, b: { title: string }) => {
-  const pin = Number(isWorldCup(b.title)) - Number(isWorldCup(a.title));
-  return pin !== 0 ? pin : b.title.localeCompare(a.title);
+// Ordine categorie in lista (Mondiali, Europei, Campionato…) = ordine di
+// ALBUM_CATEGORIES; a parità di categoria, titolo dal più recente al più vecchio.
+const CATEGORY_RANK: Record<string, number> = Object.fromEntries(
+  ALBUM_CATEGORIES.map((c, i) => [c.key, i]),
+);
+const byCategoryThenTitle = (a: { title: string; category: string }, b: { title: string; category: string }) => {
+  const ra = CATEGORY_RANK[a.category] ?? 999;
+  const rb = CATEGORY_RANK[b.category] ?? 999;
+  return ra !== rb ? ra - rb : b.title.localeCompare(a.title);
 };
 
 export function AlbumList() {
@@ -61,9 +72,21 @@ export function AlbumList() {
   // Derivati memoizzati: Set + sort ricalcolati solo al cambio dati, non a ogni
   // render (es. cambio tab, apertura dialog di rimozione).
   const myAlbumIds = useMemo(() => new Set(myAlbums?.map(a => a.id) ?? []), [myAlbums]);
-  const sortedMyAlbums = useMemo(() => [...(myAlbums ?? [])].sort(byTitleDesc), [myAlbums]);
+  const sortedMyAlbums = useMemo(() => [...(myAlbums ?? [])].sort(byCategoryThenTitle), [myAlbums]);
   // Tutti gli album pubblicati: quelli già aggiunti restano visibili ma disabilitati.
-  const availableAlbums = useMemo(() => (allAlbums?.filter(a => a.isPublished) ?? []).sort(byTitleDesc), [allAlbums]);
+  const availableAlbums = useMemo(() => (allAlbums?.filter(a => a.isPublished) ?? []).sort(byCategoryThenTitle), [allAlbums]);
+
+  // Chip-filtro per categoria in "Disponibili": "all" = tutte. Mostro solo i
+  // chip delle categorie REALMENTE presenti tra gli album disponibili (scalabile).
+  const [catFilter, setCatFilter] = useState<string>("all");
+  const presentCategories = useMemo(() => {
+    const present = new Set(availableAlbums.map(a => a.category));
+    return ALBUM_CATEGORIES.filter(c => present.has(c.key));
+  }, [availableAlbums]);
+  const filteredAvailable = useMemo(
+    () => catFilter === "all" ? availableAlbums : availableAlbums.filter(a => a.category === catFilter),
+    [availableAlbums, catFilter],
+  );
 
   const addAlbum = useAddAlbumToUser({
     mutation: {
@@ -127,7 +150,7 @@ export function AlbumList() {
                 <CardContent className="p-0">
                   <div className="flex items-center">
                     <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 px-3 py-3.5 cursor-pointer">
-                      {isWorldCup(ua.title) && <img src={worldCupIcon} alt="" className="h-5 w-5 shrink-0" />}
+                      {CATEGORY_ICON[ua.category] && <img src={CATEGORY_ICON[ua.category]} alt="" className="h-5 w-5 shrink-0 object-contain" />}
                       <p className="font-semibold text-foreground truncate min-w-0 flex-1">{ua.title}</p>
                       <span className="text-primary font-bold text-sm shrink-0">{ua.completionPercent}%</span>
                     </Link>
@@ -146,21 +169,44 @@ export function AlbumList() {
         )}
 
         {activeTab === "available" && (
+          <>
+            {/* Chip-filtro per categoria: [Tutti] + le categorie presenti. Solo
+                se c'è più di una categoria (con una sola sarebbe inutile). */}
+            {presentCategories.length > 1 && (
+              <div className="flex flex-wrap gap-2 pb-3">
+                <button
+                  onClick={() => setCatFilter("all")}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${catFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                >
+                  Tutti
+                </button>
+                {presentCategories.map(c => (
+                  <button
+                    key={c.key}
+                    onClick={() => setCatFilter(c.key)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors flex items-center gap-1.5 ${catFilter === c.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                  >
+                    {CATEGORY_ICON[c.key] && <img src={CATEGORY_ICON[c.key]} alt="" className="h-3.5 w-3.5 object-contain" />}
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            )}
           <div className="grid gap-2 md:grid-cols-2 items-start">
             {loadingAll && [1, 2].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
-            {!loadingAll && availableAlbums.length === 0 && (
+            {!loadingAll && filteredAvailable.length === 0 && (
               <div className="text-center py-12 text-muted-foreground md:col-span-2">
                 <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">Nessun album disponibile al momento</p>
               </div>
             )}
-            {availableAlbums.map(album => {
+            {filteredAvailable.map(album => {
               const added = myAlbumIds.has(album.id);
               return (
               <Card key={album.id} className={`shadow-sm ${added ? "opacity-60" : ""}`}>
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
-                    {isWorldCup(album.title) && <img src={worldCupIcon} alt="" className="h-6 w-6 shrink-0" />}
+                    {CATEGORY_ICON[album.category] && <img src={CATEGORY_ICON[album.category]} alt="" className="h-6 w-6 shrink-0 object-contain" />}
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-foreground text-sm truncate">{album.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -191,6 +237,7 @@ export function AlbumList() {
               );
             })}
           </div>
+          </>
         )}
       </div>
 

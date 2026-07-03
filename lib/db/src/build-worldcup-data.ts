@@ -54,7 +54,7 @@ function main() {
     });
   }
 
-  const payload = { albums: [{ title: TITLE, isPublished: false, stickers }] };
+  const payload = { albums: [{ title: TITLE, isPublished: false, category: "mondiali", stickers }] };
   writeFileSync(OUT, gzipSync(Buffer.from(JSON.stringify(payload), "utf8")));
 
   const foil = stickers.filter(s => s.description === "FOIL").length;

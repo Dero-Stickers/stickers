@@ -9,4 +9,6 @@
 export interface CreateAlbumBody {
   title: string;
   isPublished?: boolean;
+  /** Categoria master (mondiali/europei/campionato…). Default campionato. */
+  category?: string;
 }

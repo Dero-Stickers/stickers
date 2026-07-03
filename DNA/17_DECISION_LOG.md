@@ -7,6 +7,16 @@
 
 ## 2026-07
 
+- **Categorie master degli album (Mondiali/Europei/Campionato, scalabile)** — con l'arrivo di
+  più competizioni la lista piatta di album non regge. Scelto: colonna `albums.category`
+  (mig. 0009 additiva) assegnata dall'admin da un menu, NON dedotta dal titolo (fragile: la
+  vecchia `isWorldCup` regex è stata rimossa). Fonte unica `ALBUM_CATEGORIES`: in `@workspace/db`
+  (validazione server) + replica in `@workspace/api-client-react` (UI) perché il frontend non
+  può dipendere dal package DB (ha `pg`). Aggiungere una categoria futura = una riga nelle due
+  liste + eventuale icona, zero migrazioni. User "Disponibili": chip-filtro per categoria
+  (solo categorie presenti, >1); ordine per categoria poi titolo. Icone per categoria ottimizzate
+  (mappa unica): world-cup.png / coppa-europei.png / scudetto.svg. Backend valida la category
+  (input non valido → default/invariata). restore/export/build dati versionati includono category.
 - **Album FIFA World Cup 2026 (primo album a codici alfanumerici)** — 992 figurine, 48 squadre,
   codici stampati tipo MEX10/FWC19/CC1: NESSUNA migrazione necessaria (lo schema aveva già
   `code` testuale separato da `number` posizionale). Pipeline: checklist testuale in

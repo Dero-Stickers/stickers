@@ -63,6 +63,7 @@ const getUserAlbums: RequestHandler = async (req, res) => {
         title: album.title,
         totalStickers: album.totalStickers,
         isPublished: album.isPublished,
+        category: album.category,
         createdAt: album.createdAt.toISOString(),
         owned,
         missing: Math.max(0, missing),

@@ -11,6 +11,8 @@ export interface Album {
   title: string;
   totalStickers: number;
   isPublished: boolean;
+  /** Categoria master (mondiali/europei/campionato…). Vedi ALBUM_CATEGORIES. */
+  category: string;
   /** Solo lato admin — utenti che hanno l'album tra "I miei album". */
   userCount?: number;
   createdAt?: string;

@@ -160,7 +160,7 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - **Produzione**: PostgreSQL su Supabase, connessione via `SUPABASE_DATABASE_URL`
   (SSL abilitato). Il client (`lib/db/src/index.ts`) imposta `search_path=public`.
 - **Push schema**: `cd lib/db && pnpm push-force` (Drizzle Kit).
-- Stato attuale: 15 tabelle con indici integri (+`payments`, +`chat_unlocks`, +`trade_confirmations`, +`blocked_emails`).
+- Stato attuale: 15 tabelle con indici integri (+`payments`, +`chat_unlocks`, +`trade_confirmations`, +`blocked_emails`). `albums` ha `category` (mig. 0009).
 
 ### Monetizzazione — migrazioni e divergenza codice/DB (giu 2026)
 
@@ -183,6 +183,10 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
   backend). Lista nera email per blocco a prova di aggiramento: sopravvive all'eliminazione
   dell'account. Allineata da admin blocca/sblocca via `api-server/src/lib/blocklist.ts`.
   Enforcement completo in `02_UTENTI_AUTENTICAZIONE.md` → "Blocco utente".
+- **`0009_album_category.sql`** — **APPLICATA** (3 lug 2026). Additiva: colonna
+  `albums.category` text NOT NULL DEFAULT 'campionato' + backfill Mondiali→'mondiali'.
+  Categoria master assegnata dall'admin (sostituisce la deduzione dal titolo). Valori
+  canonici in `ALBUM_CATEGORIES`. Dettagli in `03_ALBUM_FIGURINE.md` → "Categorie master".
 
 ### Seed e ripristino album "default" (sicuro)
 

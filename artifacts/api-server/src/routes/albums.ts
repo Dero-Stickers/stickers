@@ -41,7 +41,8 @@ const listAlbums: RequestHandler = async (req, res) => {
 
     res.json(albums.map(a => ({
       id: a.id, title: a.title,
-      totalStickers: a.totalStickers, isPublished: a.isPublished, createdAt: a.createdAt.toISOString(),
+      totalStickers: a.totalStickers, isPublished: a.isPublished, category: a.category,
+      createdAt: a.createdAt.toISOString(),
       ...(isAdmin ? { userCount: userCounts[a.id] ?? 0 } : {}),
     })));
   } catch (err) {
@@ -56,12 +57,15 @@ const createAlbum: RequestHandler = async (req, res) => {
     const session = await requireAuth(req, res);
     if (!session) return;
     const { db } = await import("@workspace/db");
-    const { albumsTable } = await import("@workspace/db");
+    const { albumsTable, isAlbumCategory, DEFAULT_ALBUM_CATEGORY } = await import("@workspace/db");
+    // Categoria validata contro la lista canonica; input non valido → default.
+    const category = isAlbumCategory(req.body.category) ? req.body.category : DEFAULT_ALBUM_CATEGORY;
     const [album] = await db.insert(albumsTable).values({
       title: req.body.title,
       isPublished: req.body.isPublished ?? false,
+      category,
     }).returning();
-    res.status(201).json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString() });
+    res.status(201).json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, category: album.category, createdAt: album.createdAt.toISOString() });
   } catch (err) {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
@@ -78,7 +82,8 @@ const getAlbum: RequestHandler = async (req, res) => {
     const stickers = await db.select().from(stickersTable).where(eq(stickersTable.albumId, albumId));
     res.json({
       id: album.id, title: album.title,
-      totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString(),
+      totalStickers: album.totalStickers, isPublished: album.isPublished, category: album.category,
+      createdAt: album.createdAt.toISOString(),
       stickers: stickers.map(s => ({ id: s.id, albumId: s.albumId, number: s.number, code: s.code, name: s.name, description: s.description })),
     });
   } catch (err) {
@@ -91,13 +96,16 @@ const updateAlbum: RequestHandler = async (req, res) => {
   try {
     const albumId = parseInt(req.params.albumId as string, 10);
     const { db } = await import("@workspace/db");
-    const { albumsTable } = await import("@workspace/db");
+    const { albumsTable, isAlbumCategory } = await import("@workspace/db");
+    // Aggiorna category solo se presente e valida (altrimenti lascia invariata).
+    const category = isAlbumCategory(req.body.category) ? req.body.category : undefined;
     const [album] = await db.update(albumsTable).set({
       title: req.body.title,
       isPublished: req.body.isPublished ?? undefined,
+      category,
     }).where(eq(albumsTable.id, albumId)).returning();
     if (!album) { res.status(404).json({ error: "NOT_FOUND" }); return; }
-    res.json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString() });
+    res.json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, category: album.category, createdAt: album.createdAt.toISOString() });
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
   }
@@ -111,7 +119,7 @@ const togglePublish: RequestHandler = async (req, res) => {
     const { albumsTable } = await import("@workspace/db");
     const [album] = await db.update(albumsTable).set({ isPublished: req.body.isPublished }).where(eq(albumsTable.id, albumId)).returning();
     if (!album) { res.status(404).json({ error: "NOT_FOUND" }); return; }
-    res.json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, createdAt: album.createdAt.toISOString() });
+    res.json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, category: album.category, createdAt: album.createdAt.toISOString() });
   } catch {
     res.status(500).json({ error: "SERVER_ERROR" });
   }

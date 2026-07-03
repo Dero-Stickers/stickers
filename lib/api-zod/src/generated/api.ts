@@ -155,6 +155,11 @@ export const ListAlbumsResponseItem = zod.object({
   title: zod.string(),
   totalStickers: zod.number(),
   isPublished: zod.boolean(),
+  category: zod
+    .string()
+    .describe(
+      "Categoria master (mondiali\/europei\/campionato…). Vedi ALBUM_CATEGORIES.",
+    ),
   userCount: zod
     .number()
     .optional()
@@ -171,6 +176,12 @@ export const ListAlbumsResponse = zod.array(ListAlbumsResponseItem);
 export const CreateAlbumBody = zod.object({
   title: zod.string(),
   isPublished: zod.boolean().optional(),
+  category: zod
+    .string()
+    .optional()
+    .describe(
+      "Categoria master (mondiali\/europei\/campionato…). Default campionato.",
+    ),
 });
 
 /**
@@ -186,6 +197,11 @@ export const GetAlbumResponse = zod
     title: zod.string(),
     totalStickers: zod.number(),
     isPublished: zod.boolean(),
+    category: zod
+      .string()
+      .describe(
+        "Categoria master (mondiali\/europei\/campionato…). Vedi ALBUM_CATEGORIES.",
+      ),
     userCount: zod
       .number()
       .optional()
@@ -219,6 +235,12 @@ export const UpdateAlbumParams = zod.object({
 export const UpdateAlbumBody = zod.object({
   title: zod.string(),
   isPublished: zod.boolean().optional(),
+  category: zod
+    .string()
+    .optional()
+    .describe(
+      "Categoria master (mondiali\/europei\/campionato…). Default campionato.",
+    ),
 });
 
 export const UpdateAlbumResponse = zod.object({
@@ -226,6 +248,11 @@ export const UpdateAlbumResponse = zod.object({
   title: zod.string(),
   totalStickers: zod.number(),
   isPublished: zod.boolean(),
+  category: zod
+    .string()
+    .describe(
+      "Categoria master (mondiali\/europei\/campionato…). Vedi ALBUM_CATEGORIES.",
+    ),
   userCount: zod
     .number()
     .optional()
@@ -251,6 +278,11 @@ export const ToggleAlbumPublishResponse = zod.object({
   title: zod.string(),
   totalStickers: zod.number(),
   isPublished: zod.boolean(),
+  category: zod
+    .string()
+    .describe(
+      "Categoria master (mondiali\/europei\/campionato…). Vedi ALBUM_CATEGORIES.",
+    ),
   userCount: zod
     .number()
     .optional()
@@ -334,6 +366,11 @@ export const GetUserAlbumsResponseItem = zod
     title: zod.string(),
     totalStickers: zod.number(),
     isPublished: zod.boolean(),
+    category: zod
+      .string()
+      .describe(
+        "Categoria master (mondiali\/europei\/campionato…). Vedi ALBUM_CATEGORIES.",
+      ),
     userCount: zod
       .number()
       .optional()

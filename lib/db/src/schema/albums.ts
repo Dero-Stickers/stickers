@@ -7,6 +7,9 @@ export const albumsTable = pgTable("albums", {
   title: text("title").notNull(),
   totalStickers: integer("total_stickers").default(0).notNull(),
   isPublished: boolean("is_published").default(false).notNull(),
+  // Categoria master (Mondiali/Europei/Campionato…). Sostituisce la vecchia
+  // deduzione dal titolo. Valori canonici in `ALBUM_CATEGORIES` (./album-categories).
+  category: text("category").default("campionato").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
