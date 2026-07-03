@@ -1,7 +1,7 @@
 import { ChevronRight, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
-  STATUS_COLOR,
+  STATUS_TEXT,
   STATUS_LABEL,
   friendlyTitle,
   userLabel,
@@ -33,14 +33,13 @@ export function ErrorRow({ row, selected, onToggleSelect, onOpen }: Props) {
           {/* STATO sempre in PRIMA posizione: "New" verde finché non è letta
               (status "new"); all'apertura passa a "In analisi" e il New lascia il
               posto al badge di stato colorato. */}
-          {/* <span> puro (non il componente Badge, che trascina outline+shadow):
-              così lo stato ha SOLO lo sfondo colorato, senza alcun contorno. */}
+          {/* Stato = SOLO testo colorato: niente sfondo, niente contorno. */}
           {row.status === "new" ? (
-            <span className="inline-flex items-center rounded-md bg-green-100 text-green-700 text-[10px] px-1.5 py-0.5 font-bold uppercase tracking-wide">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-green-700">
               New
             </span>
           ) : (
-            <span className={`inline-flex items-center rounded-md ${STATUS_COLOR[row.status]} text-[10px] px-1.5 py-0.5 font-semibold`}>
+            <span className={`text-[10px] font-semibold ${STATUS_TEXT[row.status]}`}>
               {STATUS_LABEL[row.status]}
             </span>
           )}

@@ -48,6 +48,16 @@ export const STATUS_COLOR: Record<Status, string> = {
   ignored: "bg-gray-100 text-gray-600",
 };
 
+// Variante SOLO testo (nessuno sfondo): usata per lo stato nelle card lista.
+// Colori pieni e coerenti col significato: blu=nuova, violetto=in analisi,
+// verde=risolta, grigio=ignorata.
+export const STATUS_TEXT: Record<Status, string> = {
+  new: "text-blue-700",
+  investigating: "text-violet-700",
+  resolved: "text-green-700",
+  ignored: "text-gray-500",
+};
+
 // Etichetta + colore del TIPO di segnalazione (badge in lista/dettaglio).
 // I 3 tipi UTENTE usano ESATTAMENTE le categorie scelte nel form (ReportDialog),
 // così l'admin capisce a colpo d'occhio da dove arriva la segnalazione.
