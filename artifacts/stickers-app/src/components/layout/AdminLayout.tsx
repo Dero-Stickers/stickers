@@ -71,7 +71,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       <aside className="w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border hidden md:flex flex-col">
         <div className="p-6 flex flex-col items-center text-center">
           <AppLogo className="h-12 w-auto" />
-          <p className="text-xs text-sidebar-foreground/85 uppercase tracking-widest mt-2">Pannello Admin</p>
+          <p className="text-xs text-sidebar-foreground/85 uppercase tracking-wide mt-2">Pannello Admin</p>
         </div>
         
         <nav className="flex-1 px-4 space-y-1">
