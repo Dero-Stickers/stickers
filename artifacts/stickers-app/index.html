@@ -51,6 +51,7 @@
         inset: 0;
         z-index: 99999;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         background: #ebf7ff;
@@ -67,6 +68,16 @@
         user-select: none;
         -webkit-user-drag: none;
       }
+      /* Firma del progetto: logo deroarts piccolo e discreto sotto il logo app.
+         animation:none — l'animazione condivisa termina a opacity:1 (fill both)
+         e sovrascriverebbe l'opacità ridotta della firma. */
+      #boot-splash img.splash-sig {
+        width: 96px;
+        max-width: 96px;
+        margin-top: 26px;
+        opacity: 0.45;
+        animation: none;
+      }
       @keyframes bootSplashIn {
         from { opacity: 0; transform: scale(0.96); }
         to { opacity: 1; transform: scale(1); }
@@ -79,6 +90,7 @@
   <body>
     <div id="boot-splash" role="presentation" aria-hidden="true">
       <img src="/logo.webp" alt="" decoding="async" fetchpriority="high" />
+      <img class="splash-sig" src="/deroarts_logo.svg" alt="" decoding="async" />
     </div>
     <div id="root"></div>
     <script src="/splash-gate.js"></script>

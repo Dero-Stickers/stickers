@@ -161,11 +161,9 @@ function toast({ ...props }: Toast) {
     },
   })
 
-  // Auto-dismiss quando viene indicata una durata finita (es. toast informativi
-  // come "Album aggiunto" con duration: 3000). Senza `duration` resta invariato.
-  if (typeof props.duration === "number" && Number.isFinite(props.duration)) {
-    setTimeout(() => dismiss(), props.duration)
-  }
+  // Durata: gestita in un punto solo — ToastProvider duration={3000} in
+  // toaster.tsx (una eventuale `duration` per-toast passa comunque a Radix
+  // via props). Niente timer custom qui: Radix pausa su hover/focus.
 
   return {
     id: id,

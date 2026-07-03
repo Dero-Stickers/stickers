@@ -62,7 +62,7 @@ export function AlbumList() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetUserAlbumsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListAlbumsQueryKey() });
-        toast({ title: "Album aggiunto", description: "Ora puoi gestire le tue figurine!", duration: 3000 });
+        toast({ title: "Album aggiunto", description: "Ora puoi gestire le tue figurine!" });
       },
     },
   });

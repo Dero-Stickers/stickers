@@ -100,29 +100,26 @@ export function Home() {
           </Card>
         )}
 
-        {/* 2 · Azioni richieste */}
+        {/* 2 · Nuovi messaggi — segnale compatto su una riga, senza anteprime
+            (niente contenuti in Home: la lettura avviene in /messaggi).
+            Visibile SOLO quando c'è almeno una chat non letta. */}
         {unreadChats.length > 0 && (
-          <div className="space-y-2">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Ti aspettano</h2>
-            {unreadChats.slice(0, 3).map(chat => (
-              <Link key={chat.id} href={`/chat/${chat.id}`}>
-                <Card className="shadow-sm cursor-pointer hover:border-primary transition-colors">
-                  <CardContent className="p-3 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
-                        <MessageCircle className="h-4 w-4 text-accent" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-sm text-foreground truncate">{chat.otherUserNickname}</p>
-                        <p className="text-xs text-muted-foreground truncate">{chat.lastMessage ?? "Nuovo messaggio"}</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-accent text-accent-foreground border-0 text-xs font-bold shrink-0">{chat.unreadCount}</Badge>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          <Link href="/messaggi">
+            <Card className="shadow-sm cursor-pointer hover:border-primary transition-colors">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                  <MessageCircle className="h-4 w-4 text-accent" />
+                </div>
+                <p className="flex-1 font-semibold text-sm text-foreground truncate">
+                  Hai nuovi messaggi
+                </p>
+                <Badge className="bg-accent text-accent-foreground border-0 text-xs font-bold shrink-0">
+                  {unreadChats.length}
+                </Badge>
+                <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </CardContent>
+            </Card>
+          </Link>
         )}
 
         {/* 3 · Match — hero */}
