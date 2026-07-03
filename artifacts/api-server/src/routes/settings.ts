@@ -29,8 +29,8 @@ const getSettings: RequestHandler = async (req, res) => {
     rows.forEach(r => { map[r.key] = r.value; });
 
     res.json({
-      supportEmail: map["support_email"] ?? "stickersmatchbox@hotmail.com",
-      appName: map["app_name"] ?? "STICKERs matchbox",
+      supportEmail: map["support_email"] ?? "info-stickers@deroarts.com",
+      appName: map["app_name"] ?? "Stickers Matchbox",
       privacyPolicyText: map["privacy_policy"] ?? "",
       termsText: map["terms"] ?? "",
       cookiePolicyText: map["cookie_policy"] ?? "",

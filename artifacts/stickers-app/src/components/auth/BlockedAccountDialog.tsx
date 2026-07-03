@@ -8,9 +8,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useGetAppSettings } from "@workspace/api-client-react";
 
-// Email di supporto per la richiesta di sblocco (dominio deroarts.com).
-// Fonte unica: usata sia al login sia dal gate globale a sessione aperta.
+// Email di supporto di FALLBACK (dominio deroarts.com), usata se il campo
+// "Email supporto" in admin non è configurato o le impostazioni non sono
+// ancora caricate. Fonte reale: app_settings.support_email (pannello admin).
 export const SUPPORT_EMAIL = "info-stickers@deroarts.com";
 
 interface BlockedAccountDialogProps {
@@ -26,6 +28,9 @@ interface BlockedAccountDialogProps {
  * del blocco; offre una via d'uscita chiara — scrivere al supporto per lo sblocco.
  */
 export function BlockedAccountDialog({ open, onOpenChange, closeLabel = "Chiudi" }: BlockedAccountDialogProps) {
+  // Email di supporto dal pannello admin (app_settings), con fallback alla costante.
+  const { data: settings } = useGetAppSettings();
+  const supportEmail = settings?.supportEmail?.trim() || SUPPORT_EMAIL;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
@@ -41,7 +46,7 @@ export function BlockedAccountDialog({ open, onOpenChange, closeLabel = "Chiudi"
           </DialogDescription>
         </DialogHeader>
         <a
-          href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Richiesta sblocco account")}`}
+          href={`mailto:${supportEmail}?subject=${encodeURIComponent("Richiesta sblocco account")}`}
           className="flex items-center justify-center gap-2 w-full h-11 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
         >
           <Mail className="h-4 w-4" />
