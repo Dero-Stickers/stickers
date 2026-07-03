@@ -33,7 +33,7 @@ export function AdminFilterBar<T extends string>({
           placeholder={placeholder}
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          className="w-full h-9 pl-8 pr-3 rounded-lg border border-input bg-white text-sm"
+          className="w-full h-9 pl-8 pr-3 rounded-xl border border-input bg-white text-sm"
         />
       </div>
       <div className="flex flex-wrap gap-1.5 text-xs">
