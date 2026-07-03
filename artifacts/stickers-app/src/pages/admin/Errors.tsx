@@ -77,6 +77,16 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, group]);
 
+  // "Aggiorna": ricarica i dati e AZZERA i filtri attivi (ricerca + stato).
+  // Se lo stato non era "all", riportarlo ad "all" fa già ripartire il fetch via
+  // useEffect; se era già "all", ricarico esplicitamente. La ricerca è client-side
+  // → basta svuotarla. Così un solo tap riporta la lista pulita e aggiornata.
+  const resetAndRefresh = () => {
+    setSearch("");
+    if (statusFilter !== "all") setStatusFilter("all");
+    else void fetchData();
+  };
+
   const filtered = useMemo(() => {
     if (!data) return [];
     if (!search.trim()) return data.items;
@@ -363,38 +373,38 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
 
       <Card className="shadow-sm">
         <CardContent className="p-3 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Tutti i filtri su UNA riga: cerca + aggiorna(reset) + chip stato + copia.
+              flex-nowrap + overflow-x-auto: se lo spazio manca scorre in orizzontale
+              invece di andare a capo, così resta sempre una riga unica. */}
+          <div className="flex flex-nowrap items-center gap-2 overflow-x-auto text-xs">
             {/* Box ricerca corto e bianco, come Gestione Messaggi (riferimento). */}
-            <div className="relative w-48 md:w-56 shrink-0">
+            <div className="relative w-44 md:w-52 shrink-0">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Cerca per pagina, messaggio, nota…"
+                placeholder="Cerca…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full h-9 pl-8 pr-3 rounded-xl border bg-white text-sm shadow-sm"
               />
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 gap-1.5"
-              onClick={fetchData}
+            {/* Aggiorna: pulsante TONDO, sola icona. Ricarica + azzera i filtri. */}
+            <button
+              onClick={resetAndRefresh}
               disabled={loading}
+              aria-label="Aggiorna e azzera i filtri"
+              title="Aggiorna e azzera i filtri"
+              className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">Aggiorna</span>
-            </Button>
-          </div>
-
-          <div className="flex flex-wrap gap-1.5 items-center text-xs">
-            <span className="text-muted-foreground mr-1">Stato:</span>
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
+            {/* Chip stato. */}
             {(["all", "new", "investigating", "resolved", "ignored"] as const).map(
               (s) => (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`px-2.5 py-1 rounded-full border transition-colors ${
+                  className={`shrink-0 px-2.5 py-1 rounded-full border transition-colors ${
                     statusFilter === s
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-border hover:bg-muted"
@@ -404,14 +414,16 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
                 </button>
               ),
             )}
+            {/* Copia: compatto (icona + testo breve), spinto a destra. */}
             <button
               onClick={copyAll}
               disabled={loading || !filtered.length}
               aria-label="Copia tutte le segnalazioni"
-              className="ml-auto shrink-0 flex items-center gap-1.5 px-2 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Copia tutte le segnalazioni"
+              className="ml-auto shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Copy className="h-4 w-4" />
-              Copia tutte le segnalazioni
+              <span className="hidden md:inline">Copia</span>
             </button>
           </div>
 

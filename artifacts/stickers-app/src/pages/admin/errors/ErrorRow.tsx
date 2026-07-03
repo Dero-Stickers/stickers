@@ -30,23 +30,22 @@ export function ErrorRow({ row, selected, onToggleSelect, onOpen }: Props) {
       />
       <button onClick={() => onOpen(row)} className="flex-1 text-left min-w-0">
         <div className="flex flex-wrap items-center gap-1.5 mb-1">
-          {/* "New" verde in PRIMA posizione: appare solo finché non è stata letta
-              (status "new"). All'apertura passa a "In analisi" → il New sparisce. */}
-          {row.status === "new" && (
+          {/* STATO sempre in PRIMA posizione: "New" verde finché non è letta
+              (status "new"); all'apertura passa a "In analisi" e il New lascia il
+              posto al badge di stato colorato. */}
+          {row.status === "new" ? (
             <Badge className="bg-green-100 text-green-700 border-0 text-[10px] px-1.5 py-0 font-bold uppercase tracking-wide">
               New
             </Badge>
-          )}
-          {/* Badge TIPO: distingue a colpo d'occhio bug/contenuto/proposta. */}
-          <Badge className={`${typeColor(row.errorType)} border text-[10px] px-1.5 py-0`}>
-            {typeLabel(row.errorType)}
-          </Badge>
-          {/* Stato mostrato solo quando NON è "new" (quello lo dice già il New verde). */}
-          {row.status !== "new" && (
+          ) : (
             <Badge className={`${STATUS_COLOR[row.status]} border-0 text-[10px] px-1.5 py-0`}>
               {STATUS_LABEL[row.status]}
             </Badge>
           )}
+          {/* Poi il TIPO: distingue a colpo d'occhio bug/contenuto/proposta. */}
+          <Badge className={`${typeColor(row.errorType)} border text-[10px] px-1.5 py-0`}>
+            {typeLabel(row.errorType)}
+          </Badge>
           {row.count > 1 && (
             <Badge className="bg-foreground/10 text-foreground border-0 text-[10px] px-1.5 py-0">
               ×{row.count}
