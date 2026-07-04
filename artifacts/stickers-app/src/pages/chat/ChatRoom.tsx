@@ -32,7 +32,14 @@ const REPORT_REASONS = [
 
 export function ChatRoom() {
   const { chatId } = useParams<{ chatId: string }>();
-  const chatIdNum = parseInt(chatId, 10);
+  // Chat PROVA: la rotta è /chat/demo{userId}. Riusa QUESTA stessa schermata,
+  // ma senza toccare il backend (nessun chatId reale esiste per un demo). Le due
+  // sole differenze rispetto al reale — invio messaggio e conferma scambio —
+  // sono bloccate con un avviso "non attivo con i profili di prova".
+  const isDemo = typeof chatId === "string" && chatId.startsWith("demo");
+  const chatIdNum = isDemo ? NaN : parseInt(chatId, 10);
+  // Rotta demo: /chat/demo{userId} → l'userId del profilo prova è negativo.
+  const demoUserId = isDemo ? -parseInt(chatId.slice(4), 10) : 0;
   const [, setLocation] = useLocation();
   const { currentUser } = useAuth();
   const { toast } = useToast();
@@ -45,12 +52,15 @@ export function ChatRoom() {
   const [reportReason, setReportReason] = useState("");
   const [reportNotes, setReportNotes] = useState("");
 
-  const { data: chats } = useListChats();
+  const { data: chats } = useListChats({ query: { enabled: !isDemo, queryKey: getListChatsQueryKey() } });
   const chat = chats?.find(c => c.id === chatIdNum);
-  const otherNickname = chat?.otherUserNickname ?? "Utente";
+  // Profili-prova: nickname fisso "Utente" (come nelle card/dettaglio).
+  const otherNickname = isDemo ? "Utente" : (chat?.otherUserNickname ?? "Utente");
 
-  const { data: messages, isLoading } = useGetChatMessages(chatIdNum, {
+  const { data: realMessages, isLoading: realLoading } = useGetChatMessages(chatIdNum, {
     query: {
+      // Demo: nessuna chiamata backend (chatIdNum è NaN, id inesistente).
+      enabled: !isDemo,
       queryKey: getGetChatMessagesQueryKey(chatIdNum),
       // Fallback: col realtime attivo è raro (30s, solo rete di sicurezza);
       // senza realtime fa da meccanismo primario, quindi più frequente (8s).
@@ -58,6 +68,9 @@ export function ChatRoom() {
       refetchOnWindowFocus: true,
     },
   });
+  // Demo: chat sempre "vuota" (estetica), nessun caricamento.
+  const messages = isDemo ? [] : realMessages;
+  const isLoading = isDemo ? false : realLoading;
 
   // Realtime: a ogni nuovo messaggio nella chat, ricarica subito dall'API.
   useRealtimeSignal(
@@ -102,6 +115,14 @@ export function ChatRoom() {
 
   const handleSend = () => {
     if (!text.trim()) return;
+    // Profili-prova: l'invio NON è reale → avviso, il messaggio non parte.
+    if (isDemo) {
+      toast({
+        title: "Chat non attiva",
+        description: "La chat non è attiva con i profili di prova: il messaggio non viene inviato. Con un collezionista reale, invece, potrai scrivergli davvero per accordarti sullo scambio.",
+      });
+      return;
+    }
     sendMessage.mutate({ chatId: chatIdNum, data: { text: text.trim() } });
   };
 
@@ -231,8 +252,9 @@ export function ChatRoom() {
         </div>
       </div>
 
-      {/* Conferma scambio concluso: aggiorna solo il proprio album */}
-      <TradeConfirmDialog chatId={chatIdNum} open={showTrade} onOpenChange={setShowTrade} />
+      {/* Conferma scambio concluso: aggiorna solo il proprio album.
+          Per i profili-prova (isDemo) NON tocca l'album: mostra l'avviso. */}
+      <TradeConfirmDialog chatId={chatIdNum} isDemo={isDemo} demoUserId={demoUserId} open={showTrade} onOpenChange={setShowTrade} />
 
       {/* Modale segnalazione: motivo + note + conferma esplicita */}
       <Dialog open={showReport} onOpenChange={setShowReport}>

@@ -7,20 +7,24 @@
 
 ## 2026-07
 
-- **Utenti-prova: unificati sul dettaglio match REALE [4 lug]** — eliminata la pagina finta dedicata
-  `DemoMatchDetail.tsx` (layout diverso, fuorviante): ora i profili-prova usano lo **STESSO componente e
-  layout del dettaglio match reale** (`MatchDetail.tsx`, un unico `MatchDetailInner` per reali e demo), così
-  fanno vedere davvero come funziona l'app. **Isolamento totale (nessun impatto DB/logiche reali)**: per i
-  demo (userId<0) l'hook `useGetMatchDetail` è **disabilitato** (`enabled:!isDemo`) → nessuna chiamata
-  backend; il `detail` è costruito lato client da `buildDemoDetail` (in `demo-matches.ts`) con **figurine di
-  esempio deterministiche** su **album REALI del catalogo** (via `useListAlbums`, `enabled:isDemo`) — id
-  sintetici che non collidono col DB. **Le 2 sole differenze** per i demo, dentro il flusso reale: (1) il
-  bottone chat mostra un toast *"Chat non attiva … con i profili di prova"* invece di aprire la ChatRoom;
-  (2) un pulsante *"Scambio fatto"* (solo nel dettaglio demo) mostra *"Scambio non attivo … con i profili di
-  prova"* senza toccare l'album. Entrambi i messaggi **specificano sempre** che è perché è un profilo di
-  prova. **NON toccati** (verificato via API + UI): dettaglio/chat/scambio/paywall reali, ChatRoom,
-  TradeConfirmDialog, backend, rotte. Typecheck+build OK, runtime verificato (demo con layout reale + chat/
-  scambio disattivati; utente reale 3109 intatto: 156 scambi, nessun elemento demo).
+- **Utenti-prova: percorso IDENTICO al reale, stop solo nei 2 punti finali [4 lug]** — corretto l'approccio
+  precedente (che metteva un pulsante *"Scambio fatto"* fittizio nel dettaglio, inesistente per gli utenti
+  veri). Ora il profilo-prova segue **esattamente lo stesso percorso del reale**: dal dettaglio si apre la
+  chat (bottone tondo) → dentro la chat c'è il bottone verde → modale *"Conferma scambio"* → *"Avanti"* →
+  selezione figurine → *"Conferma (N)"*. Stesse schermate (`ChatRoom`, `TradeConfirmDialog`), stessi bottoni.
+  **Le 2 SOLE differenze**, ai due stop finali: (1) in chat, cliccando **invia** → toast *"Chat non attiva …
+  con i profili di prova: il messaggio non viene inviato"* (il messaggio non parte); (2) nel modale, cliccando
+  **"Conferma (N)"** → toast *"Scambio non attivo … con i profili di prova: il tuo album non viene aggiornato"*
+  e chiusura (NIENTE doppia conferma rossa, che parlerebbe di aggiornare album reali). Entrambi i messaggi
+  **specificano sempre** che è perché è un profilo di prova. **Isolamento totale**: la chat prova usa la rotta
+  `/chat/demo{userId}` (riconosciuta da `ChatRoom` col prefisso `demo`) → **nessuna chiamata backend** (hook
+  `useListChats`/`useGetChatMessages` disabilitati, `useRealtimeSignal` già `null` su chatId non finito); il
+  modale prova (`isDemo`) disabilita `useGetChatTrade` e genera i gruppi con `buildDemoTradeGroups` (figurine
+  di esempio da album REALI via `useListAlbums`, id sintetici non collidenti). Rimossi dal dettaglio: pulsante
+  "Scambio fatto", nota "profilo di prova", `handleDemoTrade`. **NON toccati** (verificato via API+UI): flusso
+  reale di dettaglio/chat/scambio (utente 3109: chat reale `/chat/433`, invio funzionante, scambio con doppia
+  conferma). Typecheck+build OK; runtime verificato end-to-end su demo (chat estetica, invio bloccato con
+  toast, modale fino a Conferma bloccata) e su reale (intatto).
 - **Utenti-prova: hardening post-review multi-agente [4 lug]** — review adversariale (5 lenti + verifica)
   sulla feature onboarding: applicati i fix confermati. (1) **[ALTA]** flag di rimozione demo ora **per-utente**
   (chiave localStorage `demo_matches_dismissed_ids_v2:<userId>`, prima globale per browser): un nuovo account

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, MessageCircle, X, Lock, Unlock, ChevronDown, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, MessageCircle, X, Lock, Unlock, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -128,11 +128,14 @@ export function MatchDetail() {
   return <MatchDetailInner matchUserId={matchUserId} />;
 }
 
-// Dettaglio match: STESSO componente/layout per utenti reali e profili-PROVA.
-// I demo (userId<0) NON toccano il backend: l'hook dati è disabilitato e il
-// `detail` è costruito lato client da album reali del catalogo (figurine di
-// esempio). Le sole differenze per i demo: chat e "Scambio fatto" mostrano un
-// avviso "non attivo con i profili di prova" e non fanno nulla di reale.
+// Dettaglio match: STESSO componente/layout/PERCORSO per utenti reali e profili
+// PROVA. I demo (userId<0) NON toccano il backend: l'hook dati è disabilitato e
+// il `detail` è costruito lato client da album reali del catalogo (figurine di
+// esempio). Il percorso è IDENTICO al reale: si apre la chat (bottone tondo),
+// dentro la chat c'è il bottone verde "Scambio fatto". Le uniche due differenze
+// (invio messaggio e conferma scambio bloccati con avviso) vivono DENTRO la
+// chat prova, non qui. Per i demo la chat si apre su una rotta /chat/demo{id}
+// che riusa lo stesso ChatRoom senza chiamare il backend.
 function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -188,12 +191,11 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
   });
 
   const handleOpenChat = () => {
-    // Profili-prova: la chat NON è reale → nessuna apertura, solo avviso.
+    // Profili-prova: apre la STESSA schermata chat, ma su una rotta demo che non
+    // tocca il backend (ChatRoom la riconosce dal prefisso "demo"). Il percorso
+    // è identico al reale; l'invio messaggio e lo scambio sono bloccati là.
     if (isDemo) {
-      toast({
-        title: "Chat non attiva",
-        description: "La chat non è attiva con i profili di prova. Con un collezionista reale, invece, potrai scrivergli per accordarti sullo scambio.",
-      });
+      setLocation(`/chat/demo${Math.abs(matchUserId)}`);
       return;
     }
     // chatUnlocked = true se l'utente può già aprire la chat (premium/all,
@@ -206,14 +208,6 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
     } else {
       openChat.mutate({ data: { otherUserId: matchUserId } });
     }
-  };
-
-  // Profili-prova: "Scambio fatto" NON aggiorna l'album → solo avviso.
-  const handleDemoTrade = () => {
-    toast({
-      title: "Scambio non attivo",
-      description: "Lo scambio non è attivo con i profili di prova: il tuo album non viene aggiornato. Con un collezionista reale, invece, le figurine si aggiornerebbero da sole.",
-    });
   };
 
   if (isLoading) {
@@ -274,15 +268,6 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
       {/* SOLO questo blocco scorre. Scambi CROSS-ALBUM: prima tutto ciò che DAI
           (per album), poi tutto ciò che RICEVI (per album). */}
       <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-4">
-        {isDemo && (
-          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2.5">
-            <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              Questo è un <span className="font-semibold text-accent">profilo di prova</span>: ti mostra come
-              appare un match reale. Chat e scambio non sono attivi con i profili di prova.
-            </p>
-          </div>
-        )}
         {detail.totalGive === 0 && detail.totalReceive === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-8">Nessuno scambio possibile al momento.</p>
         ) : (
@@ -290,17 +275,6 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
             <DirectionSection variant="give" total={detail.totalGive} groups={detail.give} />
             <DirectionSection variant="receive" total={detail.totalReceive} groups={detail.receive} />
           </>
-        )}
-        {/* "Scambio fatto" solo per i profili-prova: nel flusso reale lo scambio
-            si conferma dentro la chat; qui serve a far provare il gesto (avviso). */}
-        {isDemo && (
-          <Button
-            onClick={handleDemoTrade}
-            className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            Scambio fatto
-          </Button>
         )}
       </div>
 

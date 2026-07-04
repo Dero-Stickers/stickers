@@ -11,15 +11,18 @@ import { useToast } from "@/hooks/use-toast";
 import {
   useGetChatTrade,
   useConfirmChatTrade,
+  useListAlbums,
   getGetChatTradeQueryKey,
   getGetUserAlbumsQueryKey,
   getGetBestMatchesQueryKey,
   getGetNearbyMatchesQueryKey,
   getGetMatchDetailQueryKey,
+  getListAlbumsQueryKey,
 } from "@workspace/api-client-react";
 import type { MatchAlbumGroup } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { TRADE_DIRECTION } from "@/lib/trade-labels";
+import { buildDemoTradeGroups } from "@/lib/demo-matches";
 
 // Oltre questa soglia un album aperto mostra prima un'anteprima, poi "Mostra tutte".
 const PREVIEW_LIMIT = 50;
@@ -180,17 +183,43 @@ export function TradeConfirmDialog({
   chatId,
   open,
   onOpenChange,
+  isDemo = false,
+  demoUserId = 0,
 }: {
   chatId: number;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  // Profili-prova: stesso modale/percorso, ma la conferma NON scrive nell'album
+  // (avviso "non attivo con i profili di prova"). I dati sono di esempio.
+  isDemo?: boolean;
+  demoUserId?: number;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useGetChatTrade(chatId, {
-    query: { queryKey: getGetChatTradeQueryKey(chatId), enabled: open },
+  // Dati REALI dello scambio: solo per chat vere (per i demo l'hook è disabilitato).
+  const { data: realData, isLoading: realLoading } = useGetChatTrade(chatId, {
+    query: { queryKey: getGetChatTradeQueryKey(chatId), enabled: open && !isDemo },
   });
+  // Album del catalogo: per i demo servono a generare le figurine di esempio.
+  const { data: demoAlbums } = useListAlbums({
+    query: { queryKey: getListAlbumsQueryKey(), enabled: open && isDemo },
+  });
+  // `data` unificato: reale dal backend oppure di esempio (stessa forma) per i demo.
+  const data = isDemo
+    ? (() => {
+        const g = buildDemoTradeGroups(demoUserId, demoAlbums);
+        return {
+          give: g.give,
+          receive: g.receive,
+          totalGive: g.totalGive,
+          totalReceive: g.totalReceive,
+          otherUserId: demoUserId,
+          myConfirmedAt: null as string | null,
+        };
+      })()
+    : realData;
+  const isLoading = isDemo ? false : realLoading;
 
   const [step, setStep] = useState<"intro" | "select">("intro");
   const [confirmStage, setConfirmStage] = useState(0); // 0 chiuso · 1 prima conferma · 2 seconda
@@ -198,16 +227,25 @@ export function TradeConfirmDialog({
   const [selReceive, setSelReceive] = useState<Set<number>>(new Set());
   const initialized = useRef(false);
 
+  // Firma STABILE dei dati (conteggio give/receive): per i demo l'oggetto `data`
+  // è ricreato a ogni render, quindi non è affidabile come dipendenza; il
+  // conteggio invece cambia solo quando gli sticker (di esempio o reali) arrivano.
+  const giveCount = (data?.give ?? []).reduce((s: number, g) => s + g.stickers.length, 0);
+  const receiveCount = (data?.receive ?? []).reduce((s: number, g) => s + g.stickers.length, 0);
+
   // All'apertura riparti sempre dalla spiegazione; precompila tutto spuntato
-  // alla prima apertura con dati; reset alla chiusura.
+  // appena i dati (con figurine) sono disponibili; reset alla chiusura.
   useEffect(() => {
     if (!open) { initialized.current = false; setStep("intro"); setConfirmStage(0); return; }
-    if (data && !initialized.current) {
+    // Pre-seleziona quando ci sono figurine e non è ancora stato fatto. Per i
+    // demo gli album arrivano async, quindi la prima volta i conteggi sono 0:
+    // qui ri-scatta appena diventano >0.
+    if (!initialized.current && giveCount + receiveCount > 0 && data) {
       setSelGive(new Set(data.give.flatMap(g => g.stickers.map(s => s.id))));
       setSelReceive(new Set(data.receive.flatMap(g => g.stickers.map(s => s.id))));
       initialized.current = true;
     }
-  }, [open, data]);
+  }, [open, giveCount, receiveCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const confirm = useConfirmChatTrade({
     mutation: {
@@ -229,6 +267,20 @@ export function TradeConfirmDialog({
   const total = (data?.totalGive ?? 0) + (data?.totalReceive ?? 0);
   const selCount = selGive.size + selReceive.size;
   const doConfirm = () => confirm.mutate({ chatId, data: { giveStickerIds: [...selGive], receiveStickerIds: [...selReceive] } });
+
+  // Click su "Conferma (N)": nei profili-prova NON si aggiorna nulla → avviso e
+  // chiusura. Negli utenti reali si apre la doppia conferma rossa (come sempre).
+  const handleConfirmClick = () => {
+    if (isDemo) {
+      toast({
+        title: "Scambio non attivo",
+        description: "Lo scambio non è attivo con i profili di prova: il tuo album non viene aggiornato. Con un collezionista reale, invece, le figurine si aggiornerebbero da sole.",
+      });
+      onOpenChange(false);
+      return;
+    }
+    setConfirmStage(1);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -304,7 +356,7 @@ export function TradeConfirmDialog({
               <Button
                 className="flex-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
                 disabled={selCount === 0 || confirm.isPending}
-                onClick={() => setConfirmStage(1)}
+                onClick={handleConfirmClick}
               >
                 {confirm.isPending ? "Aggiorno…" : `Conferma (${selCount})`}
               </Button>

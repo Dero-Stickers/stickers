@@ -201,6 +201,24 @@ export function buildDemoDetail(
   };
 }
 
+// Gruppi Dai/Ricevi di ESEMPIO per il modale "Conferma scambio" di un profilo
+// prova. Riusa la stessa forma del dettaglio (buildDemoDetail): così il modale
+// prova ha figurine da mostrare nello step di selezione ed è IDENTICO al reale,
+// pur non toccando il backend. La conferma finale è comunque bloccata (avviso).
+export function buildDemoTradeGroups(
+  demoUserId: number,
+  albums: { id: number; title: string; totalStickers?: number }[] | undefined,
+): { give: DemoAlbumGroup[]; receive: DemoAlbumGroup[]; totalGive: number; totalReceive: number } {
+  const detail = buildDemoDetail(demoUserId, null, albums);
+  if (!detail) return { give: [], receive: [], totalGive: 0, totalReceive: 0 };
+  return {
+    give: detail.give,
+    receive: detail.receive,
+    totalGive: detail.totalGive,
+    totalReceive: detail.totalReceive,
+  };
+}
+
 function toSummary(user: { cap?: string; area?: string }, p: DemoProfile): MatchSummary {
   const cap = user.cap ?? "";
   // Lontani: distanza fissa (sempre al limite/fuori raggio). Vicini: dal CAP.
