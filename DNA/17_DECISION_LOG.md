@@ -7,6 +7,13 @@
 
 ## 2026-07
 
+- **Profili-prova · ripristinata eliminazione dal dettaglio [4 lug]** — la rimozione del singolo profilo-prova
+  era sparita quando si è tolto il vecchio bottone "Scambio fatto" (unificazione col flusso reale). Ripristinata
+  con un pulsante **"Elimina profilo di prova"** (rosso pieno, testo bianco, icona `Trash2`) **fisso in fondo
+  sopra la nav bar** (fuori dallo scroll) — SOLO per i demo (`isDemo`). Conferma via `AlertDialog`; usa la
+  `dismissDemoMatch(currentUser.id, matchUserId)` già esistente (localStorage per-utente, NON tocca il DB) →
+  torna a `/match` con toast. Allineato il testo del `DemoBanner` ("Rimuovi questo profilo di prova" → "Elimina
+  profilo di prova"). Verificato: pulsante assente sugli utenti reali.
 - **Home · box "Migliori match" consolidato [4 lug]** — (1) **Altezza SEMPRE fissa**: gli slot mancanti hanno
   ora `h-12` (48px) uguale alle card piene → il box blu resta identico con 4, 2 o 1 match (prima si accorciava:
   336px vs 280px). NB: usato `h-12` standard, NON `min-h-[48px]` arbitrario (che Tailwind non generava → 0px).

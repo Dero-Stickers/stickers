@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, MessageCircle, X, Lock, Unlock, ChevronDown } from "lucide-react";
+import { ArrowLeft, MessageCircle, X, Lock, Unlock, ChevronDown, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useToast } from "@/hooks/use-toast";
 import { useSupportEmail } from "@/hooks/useSupportEmail";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   useGetMatchDetail,
   useOpenChat,
@@ -17,7 +22,7 @@ import {
   getListAlbumsQueryKey,
 } from "@workspace/api-client-react";
 import { TRADE_DIRECTION } from "@/lib/trade-labels";
-import { isDemoUserId, buildDemoDetail } from "@/lib/demo-matches";
+import { isDemoUserId, buildDemoDetail, dismissDemoMatch } from "@/lib/demo-matches";
 
 type MatchGroup = { albumId: number; albumTitle: string; stickers: { id: number; number: number; code?: string }[] };
 
@@ -140,9 +145,19 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const supportEmail = useSupportEmail();
+  const { currentUser } = useAuth();
   const isDemo = isDemoUserId(matchUserId);
 
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showRemoveDemo, setShowRemoveDemo] = useState(false);
+
+  // Elimina QUESTO profilo-prova per l'utente corrente (solo frontend, in
+  // localStorage) e torna alla lista match. Non tocca il DB: i demo non esistono.
+  const handleRemoveDemo = () => {
+    dismissDemoMatch(currentUser?.id, matchUserId);
+    toast({ title: "Profilo di prova eliminato", description: "Questo profilo di prova non comparirà più tra i tuoi match." });
+    setLocation("/match");
+  };
 
   // Dati reali: solo per utenti veri (per i demo l'hook è disabilitato → nessuna
   // chiamata GET /api/matches/:id, che con id negativo fallirebbe).
@@ -277,6 +292,48 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
           </>
         )}
       </div>
+
+      {/* Solo per i profili-PROVA: pulsante FISSO in fondo (sopra la nav bar),
+          fuori dallo scroll → sempre raggiungibile. Elimina questo profilo
+          dimostrativo dai propri match (frontend, con conferma). Non tocca il DB. */}
+      {isDemo && (
+        <div
+          className="shrink-0 bg-background px-4 pt-3"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        >
+          <Button
+            className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold gap-2"
+            onClick={() => setShowRemoveDemo(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Elimina profilo di prova
+          </Button>
+        </div>
+      )}
+
+      {/* Conferma eliminazione profilo-prova */}
+      <AlertDialog open={showRemoveDemo} onOpenChange={setShowRemoveDemo}>
+        <AlertDialogContent className="max-w-sm w-[calc(100%-2rem)] rounded-3xl border-0">
+          <AlertDialogHeader className="sm:text-center items-center">
+            <div className="mb-1 inline-flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <Trash2 className="h-6 w-6" />
+            </div>
+            <AlertDialogTitle>Eliminare il profilo di prova?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Questo profilo dimostrativo non comparirà più tra i tuoi match. Serve solo a mostrarti come funziona l'app.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="w-full rounded-xl mt-0">Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              className="w-full rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleRemoveDemo}
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
         <DialogContent className="max-w-sm">
