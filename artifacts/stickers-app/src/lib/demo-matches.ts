@@ -116,6 +116,91 @@ export function getDemoProfile(userId: number): DemoProfile | undefined {
   return DEMO_PROFILES.find((p) => p.userId === userId);
 }
 
+// --- DETTAGLIO demo (formato reale, SOLO frontend) --------------------------
+// I profili-prova usano lo STESSO componente/layout del dettaglio match reale.
+// Per riempire le liste "Dai/Ricevi" senza toccare il DB, generiamo figurine di
+// ESEMPIO deterministiche a partire dagli album REALI del catalogo (titoli veri,
+// numeri plausibili). Nessuna chiamata backend, nessun dato scritto: puro test.
+
+// Tipi minimi allineati a MatchDetail/MatchAlbumGroup/Sticker (evitiamo di
+// importare i tipi generati per non accoppiare il modulo agli endpoint).
+interface DemoSticker { id: number; albumId: number; number: number; code: string; name: string }
+interface DemoAlbumGroup { albumId: number; albumTitle: string; stickers: DemoSticker[] }
+export interface DemoDetail {
+  userId: number; nickname: string; area?: string;
+  totalExchanges: number; totalGive: number; totalReceive: number;
+  distanceKm?: number | null; exchangesCompleted: number; chatUnlocked: boolean;
+  give: DemoAlbumGroup[]; receive: DemoAlbumGroup[];
+}
+
+// Sequenza deterministica di `count` numeri figurina "sparsi" (1..maxNum),
+// partendo da un seed → stessa vista a ogni render, nessun Math.random.
+function demoStickerNumbers(seed: number, count: number, maxNum: number): number[] {
+  const out: number[] = [];
+  let x = (seed * 97 + 13) % maxNum;
+  const step = 7 + (seed % 11);
+  for (let i = 0; i < count; i++) {
+    x = (x + step) % maxNum;
+    out.push(x + 1);
+  }
+  return out.sort((a, b) => a - b);
+}
+
+function demoGroup(album: { id: number; title: string }, seed: number, count: number, maxNum: number): DemoAlbumGroup {
+  const nums = demoStickerNumbers(seed, count, maxNum);
+  return {
+    albumId: album.id,
+    albumTitle: album.title,
+    stickers: nums.map((n) => ({
+      id: album.id * 100000 + n,          // id sintetico stabile (non collide col DB)
+      albumId: album.id,
+      number: n,
+      code: String(n).padStart(3, "0"),
+      name: `Figurina ${n}`,
+    })),
+  };
+}
+
+// Costruisce il dettaglio demo (formato reale) per il componente MatchDetail.
+// `albums`: album REALI del catalogo (da useListAlbums); se assenti, liste vuote.
+export function buildDemoDetail(
+  userId: number,
+  user: { cap?: string; area?: string } | null,
+  albums: { id: number; title: string; totalStickers?: number }[] | undefined,
+): DemoDetail | null {
+  const p = getDemoProfile(userId);
+  if (!p) return null;
+  const summary = toSummary(user ?? {}, p);
+  const pool = (albums ?? []).slice(0, 2); // 1-2 album di esempio, come un match reale plausibile
+  // Distribuisco totalExchanges su Dai/Ricevi (scambio simmetrico dimostrativo).
+  const give: DemoAlbumGroup[] = [];
+  const receive: DemoAlbumGroup[] = [];
+  if (pool[0]) {
+    const max = pool[0].totalStickers ?? 600;
+    give.push(demoGroup(pool[0], Math.abs(userId), Math.min(p.totalExchanges, 40), max));
+  }
+  if (pool[1] ?? pool[0]) {
+    const a = pool[1] ?? pool[0];
+    const max = a.totalStickers ?? 600;
+    receive.push(demoGroup(a, Math.abs(userId) + 3, Math.min(p.totalExchanges, 40), max));
+  }
+  const totalGive = give.reduce((s, g) => s + g.stickers.length, 0);
+  const totalReceive = receive.reduce((s, g) => s + g.stickers.length, 0);
+  return {
+    userId,
+    nickname: summary.nickname,
+    area: summary.area,
+    totalExchanges: p.totalExchanges,
+    totalGive,
+    totalReceive,
+    distanceKm: summary.distanceKm,
+    exchangesCompleted: p.exchangesCompleted,
+    chatUnlocked: true, // niente paywall sui demo
+    give,
+    receive,
+  };
+}
+
 function toSummary(user: { cap?: string; area?: string }, p: DemoProfile): MatchSummary {
   const cap = user.cap ?? "";
   // Lontani: distanza fissa (sempre al limite/fuori raggio). Vicini: dal CAP.

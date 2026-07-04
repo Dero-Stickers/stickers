@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, MessageSquare, X, Lock, Unlock, ChevronDown } from "lucide-react";
+import { ArrowLeft, MessageSquare, X, Lock, Unlock, ChevronDown, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,10 +12,12 @@ import {
   useGetMatchDetail,
   useOpenChat,
   useBillingCheckout,
+  useListAlbums,
+  getGetMatchDetailQueryKey,
+  getListAlbumsQueryKey,
 } from "@workspace/api-client-react";
 import { TRADE_DIRECTION } from "@/lib/trade-labels";
-import { isDemoUserId } from "@/lib/demo-matches";
-import { DemoMatchDetail } from "./DemoMatchDetail";
+import { isDemoUserId, buildDemoDetail } from "@/lib/demo-matches";
 
 type MatchGroup = { albumId: number; albumTitle: string; stickers: { id: number; number: number; code?: string }[] };
 
@@ -120,27 +122,36 @@ function DirectionSection({
   );
 }
 
-// Router del dettaglio: i profili-PROVA (userId negativo) hanno una vista
-// dimostrativa dedicata e NON toccano il backend; gli utenti reali usano
-// RealMatchDetail. Lo split tiene gli hook del ramo reale isolati (nessun hook
-// condizionale) e garantisce zero interferenza tra demo e dati veri.
 export function MatchDetail() {
   const { userId } = useParams<{ userId: string }>();
   const matchUserId = parseInt(userId, 10);
-  if (isDemoUserId(matchUserId)) {
-    return <DemoMatchDetail userId={matchUserId} />;
-  }
-  return <RealMatchDetail matchUserId={matchUserId} />;
+  return <MatchDetailInner matchUserId={matchUserId} />;
 }
 
-function RealMatchDetail({ matchUserId }: { matchUserId: number }) {
+// Dettaglio match: STESSO componente/layout per utenti reali e profili-PROVA.
+// I demo (userId<0) NON toccano il backend: l'hook dati è disabilitato e il
+// `detail` è costruito lato client da album reali del catalogo (figurine di
+// esempio). Le sole differenze per i demo: chat e "Scambio fatto" mostrano un
+// avviso "non attivo con i profili di prova" e non fanno nulla di reale.
+function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const supportEmail = useSupportEmail();
+  const isDemo = isDemoUserId(matchUserId);
 
   const [showPaywall, setShowPaywall] = useState(false);
 
-  const { data: detail, isLoading } = useGetMatchDetail(matchUserId);
+  // Dati reali: solo per utenti veri (per i demo l'hook è disabilitato → nessuna
+  // chiamata GET /api/matches/:id, che con id negativo fallirebbe).
+  const { data: realDetail, isLoading: realLoading } = useGetMatchDetail(matchUserId, {
+    query: { enabled: !isDemo, queryKey: getGetMatchDetailQueryKey(matchUserId) },
+  });
+  // Album del catalogo: servono ai demo per le figurine di esempio (per gli
+  // utenti reali il dettaglio arriva già dal backend, quindi non serve).
+  const { data: albums } = useListAlbums({ query: { enabled: isDemo, queryKey: getListAlbumsQueryKey() } });
+
+  const detail = isDemo ? buildDemoDetail(matchUserId, null, albums) : realDetail;
+  const isLoading = isDemo ? false : realLoading;
 
   const openChat = useOpenChat({
     mutation: {
@@ -177,6 +188,14 @@ function RealMatchDetail({ matchUserId }: { matchUserId: number }) {
   });
 
   const handleOpenChat = () => {
+    // Profili-prova: la chat NON è reale → nessuna apertura, solo avviso.
+    if (isDemo) {
+      toast({
+        title: "Chat non attiva",
+        description: "La chat non è attiva con i profili di prova. Con un collezionista reale, invece, potrai scrivergli per accordarti sullo scambio.",
+      });
+      return;
+    }
     // chatUnlocked = true se l'utente può già aprire la chat (premium/all,
     // sblocco coppia, oppure paywall spento). Se non sbloccata, tentiamo
     // comunque l'apertura: il gate vero è lato server (403 → paywall).
@@ -187,6 +206,14 @@ function RealMatchDetail({ matchUserId }: { matchUserId: number }) {
     } else {
       openChat.mutate({ data: { otherUserId: matchUserId } });
     }
+  };
+
+  // Profili-prova: "Scambio fatto" NON aggiorna l'album → solo avviso.
+  const handleDemoTrade = () => {
+    toast({
+      title: "Scambio non attivo",
+      description: "Lo scambio non è attivo con i profili di prova: il tuo album non viene aggiornato. Con un collezionista reale, invece, le figurine si aggiornerebbero da sole.",
+    });
   };
 
   if (isLoading) {
@@ -247,6 +274,15 @@ function RealMatchDetail({ matchUserId }: { matchUserId: number }) {
       {/* SOLO questo blocco scorre. Scambi CROSS-ALBUM: prima tutto ciò che DAI
           (per album), poi tutto ciò che RICEVI (per album). */}
       <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-4">
+        {isDemo && (
+          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2.5">
+            <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Questo è un <span className="font-semibold text-accent">profilo di prova</span>: ti mostra come
+              appare un match reale. Chat e scambio non sono attivi con i profili di prova.
+            </p>
+          </div>
+        )}
         {detail.totalGive === 0 && detail.totalReceive === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-8">Nessuno scambio possibile al momento.</p>
         ) : (
@@ -254,6 +290,17 @@ function RealMatchDetail({ matchUserId }: { matchUserId: number }) {
             <DirectionSection variant="give" total={detail.totalGive} groups={detail.give} />
             <DirectionSection variant="receive" total={detail.totalReceive} groups={detail.receive} />
           </>
+        )}
+        {/* "Scambio fatto" solo per i profili-prova: nel flusso reale lo scambio
+            si conferma dentro la chat; qui serve a far provare il gesto (avviso). */}
+        {isDemo && (
+          <Button
+            onClick={handleDemoTrade}
+            className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Scambio fatto
+          </Button>
         )}
       </div>
 

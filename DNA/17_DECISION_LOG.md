@@ -7,6 +7,20 @@
 
 ## 2026-07
 
+- **Utenti-prova: unificati sul dettaglio match REALE [4 lug]** — eliminata la pagina finta dedicata
+  `DemoMatchDetail.tsx` (layout diverso, fuorviante): ora i profili-prova usano lo **STESSO componente e
+  layout del dettaglio match reale** (`MatchDetail.tsx`, un unico `MatchDetailInner` per reali e demo), così
+  fanno vedere davvero come funziona l'app. **Isolamento totale (nessun impatto DB/logiche reali)**: per i
+  demo (userId<0) l'hook `useGetMatchDetail` è **disabilitato** (`enabled:!isDemo`) → nessuna chiamata
+  backend; il `detail` è costruito lato client da `buildDemoDetail` (in `demo-matches.ts`) con **figurine di
+  esempio deterministiche** su **album REALI del catalogo** (via `useListAlbums`, `enabled:isDemo`) — id
+  sintetici che non collidono col DB. **Le 2 sole differenze** per i demo, dentro il flusso reale: (1) il
+  bottone chat mostra un toast *"Chat non attiva … con i profili di prova"* invece di aprire la ChatRoom;
+  (2) un pulsante *"Scambio fatto"* (solo nel dettaglio demo) mostra *"Scambio non attivo … con i profili di
+  prova"* senza toccare l'album. Entrambi i messaggi **specificano sempre** che è perché è un profilo di
+  prova. **NON toccati** (verificato via API + UI): dettaglio/chat/scambio/paywall reali, ChatRoom,
+  TradeConfirmDialog, backend, rotte. Typecheck+build OK, runtime verificato (demo con layout reale + chat/
+  scambio disattivati; utente reale 3109 intatto: 156 scambi, nessun elemento demo).
 - **Utenti-prova: hardening post-review multi-agente [4 lug]** — review adversariale (5 lenti + verifica)
   sulla feature onboarding: applicati i fix confermati. (1) **[ALTA]** flag di rimozione demo ora **per-utente**
   (chiave localStorage `demo_matches_dismissed_ids_v2:<userId>`, prima globale per browser): un nuovo account
