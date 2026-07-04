@@ -88,9 +88,13 @@ export function MobileLayout({ children }: { children: ReactNode }) {
               className={`flex flex-col items-center justify-center min-w-0 flex-1 h-full gap-1 relative ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
             >
               <div className="relative">
-                {/* Match: da attivo il fulmine diventa arancione PIENO (accent del
-                    logo) — fill+stroke; le altre icone seguono il colore del testo. */}
-                <item.icon className={`h-5 w-5 ${isActive && item.path === "/match" ? "text-accent fill-accent" : ""}`} />
+                {/* Match: da attivo il fulmine è arancione PIENO (fill accent del
+                    logo) con un sottile CONTORNO BLU (stroke primary); le altre
+                    icone seguono il colore del testo. */}
+                <item.icon
+                  className={`h-5 w-5 ${isActive && item.path === "/match" ? "fill-accent text-primary" : ""}`}
+                  strokeWidth={isActive && item.path === "/match" ? 0.75 : undefined}
+                />
                 {item.badge > 0 && (
                   <span className="absolute -top-1 -right-1.5 bg-destructive text-destructive-foreground text-[9px] font-bold h-4 min-w-4 px-1 rounded-full flex items-center justify-center leading-none">
                     {item.badge > 99 ? "99+" : item.badge}
