@@ -69,10 +69,13 @@ export function Home() {
       )
       .slice(0, 4),
     [currentPool, heroMode]);
-  const totalExchanges = useMemo(() => currentPool.reduce((s, m) => s + m.totalExchanges, 0), [currentPool]);
+  // Contatore riferito ESATTAMENTE ai match mostrati (topMatches, max 4): il box
+  // ne mostra al più 4, quindi "N scambi · N utenti" deve combaciare con le card
+  // visibili (prima usava l'intero pool → "5 utenti" con 4 righe = incoerente).
+  const totalExchanges = useMemo(() => topMatches.reduce((s, m) => s + m.totalExchanges, 0), [topMatches]);
   // Se ciò che si vede è composto SOLO da profili-prova, il contatore lo dichiara
   // ("scambi di prova") per non far credere che siano scambi reali già disponibili.
-  const onlyDemos = currentPool.length > 0 && currentPool.every((m) => isDemoUserId(m.userId));
+  const onlyDemos = topMatches.length > 0 && topMatches.every((m) => isDemoUserId(m.userId));
 
   return (
     <div className="flex flex-col h-full">
@@ -171,14 +174,14 @@ export function Home() {
 
               <div className="text-center">
                 <p className="text-sm leading-tight text-white/90">
-                  <span className="font-bold text-white">{totalExchanges}</span> scambi{onlyDemos ? " di prova" : ""} · <span className="font-bold text-white">{currentPool.length}</span> {onlyDemos ? "profili prova" : `utenti${heroMode === "best" ? "" : " vicini"}`}
+                  <span className="font-bold text-white">{totalExchanges}</span> scambi{onlyDemos ? " di prova" : ""} · <span className="font-bold text-white">{topMatches.length}</span> {onlyDemos ? "profili prova" : `utenti${heroMode === "best" ? "" : " vicini"}`}
                 </p>
               </div>
 
               <div className="space-y-1">
                 {topMatches.map(m => (
                   <Link key={m.userId} href={`/match/${m.userId}`} className="block">
-                    <div className="flex items-center justify-between gap-2 bg-white/15 rounded-lg px-3 py-1.5 cursor-pointer transition-transform active:scale-[0.99] hover:bg-white/25">
+                    <div className="flex h-12 items-center justify-between gap-2 bg-white/15 rounded-lg px-3 py-1.5 cursor-pointer transition-transform active:scale-[0.99] hover:bg-white/25">
                       <div className="min-w-0">
                         <p className="font-semibold text-sm truncate flex items-center gap-1.5">
                           <span className="truncate">{m.nickname}</span>
@@ -198,15 +201,18 @@ export function Home() {
                     </div>
                   </Link>
                 ))}
-                {/* Slot vuoti per mantenere l'altezza fissa della card (sempre 4 righe):
-                    il testo compare solo nel primo slot, gli altri restano spazi neutri. */}
+                {/* Slot mancanti: STESSA altezza fissa (h-12) delle card
+                    piene → il box blu resta SEMPRE identico, non si accorcia con
+                    meno match. Card piene neutre (NON tratteggiate). Il testo
+                    "Nessun altro match disponibile" compare solo nel primo slot. */}
                 {Array.from({ length: Math.max(0, 4 - topMatches.length) }).map((_, i) => (
                   <div
                     key={`placeholder-${i}`}
-                    className="flex items-center justify-center bg-white/5 rounded-lg px-3 py-1.5 border border-dashed border-white/15"
+                    className="flex h-12 items-center justify-center bg-white/10 rounded-lg px-3 py-1.5"
+                    aria-hidden="true"
                   >
                     {i === 0 && (
-                      <span className="text-xs text-white/50">Nessun altro match disponibile</span>
+                      <span className="text-xs text-white/60">Nessun altro match disponibile</span>
                     )}
                   </div>
                 ))}

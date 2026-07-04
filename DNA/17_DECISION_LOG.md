@@ -7,6 +7,13 @@
 
 ## 2026-07
 
+- **Home · box "Migliori match" consolidato [4 lug]** — (1) **Altezza SEMPRE fissa**: gli slot mancanti hanno
+  ora `h-12` (48px) uguale alle card piene → il box blu resta identico con 4, 2 o 1 match (prima si accorciava:
+  336px vs 280px). NB: usato `h-12` standard, NON `min-h-[48px]` arbitrario (che Tailwind non generava → 0px).
+  (2) **Niente card tratteggiate**: gli slot vuoti sono righe piene neutre (`bg-white/10`), non più `border-
+  dashed`; testo "Nessun altro match disponibile" solo nel primo slot. (3) **Contatore coerente con le card
+  mostrate**: "N scambi · N utenti" ora si basa su `topMatches` (max 4 mostrati), non sull'intero `currentPool`
+  (prima "5 utenti" con 4 righe visibili, e scambi che includevano il 5° non mostrato).
 - **Dettaglio album: contatori e filtri UNIFICATI [4 lug]** — i 4 box informativi (Totale/Possedute/Doppie/
   Mancanti, solo numeri) e i 4 pulsanti-filtro sotto (Tutte/Mie/Doppie/Mancanti) erano ridondanti: fusi in
   **4 card-pulsante** uniche (`AlbumDetail.tsx`), ognuna insieme **contatore + filtro**. Etichette Tutte/Mie/
