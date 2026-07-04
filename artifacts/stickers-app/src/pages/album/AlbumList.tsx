@@ -175,7 +175,7 @@ export function AlbumList() {
       {/* Fascia filtri FISSA (fuori dallo scroller): i chip categoria restano
           sempre visibili, scorrono solo le card. Mostro i chip del tab attivo. */}
       {activeTab === "my" && myPresentCategories.length > 1 && (
-        <div className="px-4 pt-3 shrink-0">
+        <div className="px-4 pt-3 pb-3 shrink-0">
           <div className="flex w-full gap-2">
             <button
               onClick={() => setMyCatFilter("all")}
@@ -199,7 +199,7 @@ export function AlbumList() {
         // Riga BLOCCATA su una sola linea, mai scrollabile: w-full vincola al
         // contenitore, min-w-0 + truncate sui chip evitano che un'etichetta
         // lunga spinga oltre. "Tutti" (reset) compatto; i master flex-1 uguali.
-        <div className="px-4 pt-3 shrink-0">
+        <div className="px-4 pt-3 pb-3 shrink-0">
           <div className="flex w-full gap-2">
             <button
               onClick={() => setCatFilter("all")}
