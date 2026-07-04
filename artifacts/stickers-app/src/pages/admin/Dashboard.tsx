@@ -1,4 +1,4 @@
-import { Users, BookOpen, MessageSquare, Crown, Unlock, Flag } from "lucide-react";
+import { Users, BookOpen, MessageCircle, Crown, Unlock, Flag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetAdminStats } from "@workspace/api-client-react";
@@ -10,7 +10,7 @@ export function AdminDashboard() {
   const statCards = [
     { label: "Utenti totali", value: stats?.totalUsers, icon: Users, color: "text-primary" },
     { label: "Album totali", value: stats?.totalAlbums, icon: BookOpen, color: "text-primary" },
-    { label: "Chat attive", value: stats?.activeChats, icon: MessageSquare, color: "text-primary" },
+    { label: "Chat attive", value: stats?.activeChats, icon: MessageCircle, color: "text-primary" },
     { label: "Sblocchi chat", value: stats?.unlocks, icon: Unlock, color: "text-amber-500" },
     { label: "Tutte le chat", value: stats?.premiumUsers, icon: Crown, color: "text-amber-500" },
     { label: "Segnalazioni", value: stats?.pendingReports, icon: Flag, color: "text-destructive" },

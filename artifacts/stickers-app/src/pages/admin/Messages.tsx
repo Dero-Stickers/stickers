@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MessageSquare, Eye, X, Flag, AlertTriangle, Ban, RotateCcw, CheckCircle2, Copy, Search } from "lucide-react";
+import { MessageCircle, Eye, X, Flag, AlertTriangle, Ban, RotateCcw, CheckCircle2, Copy, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -330,7 +330,7 @@ export function AdminMessages() {
           <tr key={chat.id}>
             <td>
               <div className="flex items-center gap-1.5">
-                <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
+                <MessageCircle className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-foreground font-medium">
                   {chat.user1Nickname} — {chat.user2Nickname}
                 </span>

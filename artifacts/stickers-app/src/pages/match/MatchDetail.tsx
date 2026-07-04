@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, MessageSquare, X, Lock, Unlock, ChevronDown, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, MessageCircle, X, Lock, Unlock, ChevronDown, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -263,7 +263,7 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
             title={`Apri chat con ${detail.nickname}`}
             className="h-10 w-10 shrink-0 rounded-full p-0 bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm"
           >
-            <MessageSquare className="h-5 w-5" />
+            <MessageCircle className="h-5 w-5" />
           </Button>
         </div>
         <p className="text-center text-sm text-foreground">
@@ -276,7 +276,7 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
       <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-4">
         {isDemo && (
           <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2.5">
-            <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+            <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
             <p className="text-[11px] leading-snug text-muted-foreground">
               Questo è un <span className="font-semibold text-accent">profilo di prova</span>: ti mostra come
               appare un match reale. Chat e scambio non sono attivi con i profili di prova.
@@ -324,7 +324,7 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
                 disabled={checkout.isPending}
                 onClick={() => checkout.mutate({ data: { kind: "single", otherUserId: matchUserId } })}
               >
-                <MessageSquare className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4" />
                 Sblocca questa chat
               </Button>
               {/* Sblocca TUTTE le chat (acquisto 'all') */}
