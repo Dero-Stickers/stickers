@@ -12,7 +12,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { MatchCard } from "@/components/match/MatchCard";
 import { SearchSticker } from "./SearchSticker";
 import { useAuth } from "@/contexts/AuthContext";
-import { buildDemoMatches, shouldShowDemos, dismissDemoMatches, countRealMatches } from "@/lib/demo-matches";
+import { buildDemoMatches, shouldShowDemos, countRealMatches } from "@/lib/demo-matches";
 import { DemoBanner } from "@/components/match/DemoBanner";
 
 const RADIUS_MIN = 1;
@@ -55,16 +55,16 @@ export function MatchList() {
 
   // Profili-prova (onboarding): completano la vetrina fino a 2 vicini + 2
   // lontani SOLO finché l'utente non ha già abbastanza match reali per lato.
-  // `demoOn` permette la rimozione immediata senza ricaricare.
+  // La rimozione è SINGOLA (dal dettaglio del profilo) e persiste in localStorage;
+  // buildDemoMatches esclude da sé quelli già rimossi.
   const { currentUser } = useAuth();
-  const [demoOn, setDemoOn] = useState(() => shouldShowDemos(currentUser));
   const demoMatches = useMemo(() => {
-    if (!demoOn) return [];
+    if (!shouldShowDemos(currentUser)) return [];
     // Conta i match reali (validi) vicini/lontani sulla lista globale, così la
     // soglia non dipende dalla tab attiva. Raggio di riferimento = quello scelto.
     const real = countRealMatches(bestMatches, radiusQuery);
     return buildDemoMatches(currentUser, real);
-  }, [demoOn, currentUser, bestMatches, radiusQuery]);
+  }, [currentUser, bestMatches, radiusQuery]);
 
   const isLoading = activeTab === "best" ? loadingBest : loadingNearby;
   // Memoizzato: lo spread+sort dei vicini viene rifatto solo al cambio di
@@ -151,9 +151,7 @@ export function MatchList() {
               </div>
             )}
 
-            {!isLoading && demoMatches.length > 0 && (
-              <DemoBanner onRemove={() => { dismissDemoMatches(); setDemoOn(false); }} />
-            )}
+            {!isLoading && demoMatches.length > 0 && <DemoBanner />}
 
             {!isLoading && matches.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">

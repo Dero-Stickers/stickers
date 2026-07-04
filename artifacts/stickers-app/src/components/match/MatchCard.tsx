@@ -17,17 +17,19 @@ export function MatchCard({ match }: { match: MatchSummary }) {
         <CardContent className="p-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <p className="font-semibold text-foreground truncate">{match.nickname}</p>
+              {/* Nome + badge: hanno priorità (shrink-0) così il nome non viene
+                  mai troncato; è l'area/distanza (sotto) a cedere spazio. */}
+              <p className="font-semibold text-foreground shrink-0">{match.nickname}</p>
               {isDemo && (
                 <span className="shrink-0 rounded-full bg-accent/15 text-accent text-[10px] font-bold px-1.5 py-0.5 leading-none">
                   PROVA
                 </span>
               )}
-              <p className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
-                <MapPin className="h-3 w-3" />
-                {match.area}
+              <p className="text-xs text-muted-foreground flex items-center gap-1 min-w-0">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">{match.area}</span>
                 {match.distanceKm != null && (
-                  <span className="text-primary font-medium">{match.distanceKm.toFixed(1)} km</span>
+                  <span className="text-primary font-medium shrink-0">{match.distanceKm.toFixed(1)} km</span>
                 )}
               </p>
             </div>

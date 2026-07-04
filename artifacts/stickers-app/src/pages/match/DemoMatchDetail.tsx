@@ -1,11 +1,21 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, MessageSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, MessageSquare, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useToast } from "@/hooks/use-toast";
-import { getDemoProfile } from "@/lib/demo-matches";
+import { getDemoProfile, dismissDemoMatch } from "@/lib/demo-matches";
 
 // Dettaglio di un profilo-PROVA (demo). Tutto è VETRINA: nessuna chiamata al
 // backend (l'id è negativo e non esiste nel DB), la chat mostra un messaggio
@@ -15,9 +25,19 @@ export function DemoMatchDetail({ userId }: { userId: number }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showChat, setShowChat] = useState(false);
+  const [showRemove, setShowRemove] = useState(false);
 
   const profile = getDemoProfile(userId);
-  const name = profile?.nickname ?? "Utente prova";
+  const name = profile?.nickname ?? "Utente";
+
+  // Rimozione SINGOLA di questo profilo-prova (persistente, non torna più),
+  // poi torna alla lista match.
+  const removeThis = () => {
+    dismissDemoMatch(userId);
+    setShowRemove(false);
+    toast({ title: "Profilo di prova rimosso", description: "Non comparirà più tra i tuoi match." });
+    setLocation("/match");
+  };
   // Numeri dimostrativi fissi per far vedere le due direzioni dello scambio.
   const give = profile?.totalExchanges ?? 8;
   const receive = Math.max(1, Math.round(give * 0.8));
@@ -103,7 +123,39 @@ export function DemoMatchDetail({ userId }: { userId: number }) {
         >
           Scambio fatto (prova)
         </Button>
+
+        {/* Rimozione SINGOLA di questo profilo-prova */}
+        <Button
+          variant="outline"
+          onClick={() => setShowRemove(true)}
+          className="w-full h-11 rounded-xl bg-white text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive font-semibold gap-2"
+        >
+          <Trash2 className="h-4 w-4" />
+          Rimuovi questo profilo di prova
+        </Button>
       </div>
+
+      {/* Conferma rimozione singola */}
+      <AlertDialog open={showRemove} onOpenChange={setShowRemove}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rimuovere questo profilo di prova?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sparirà dai tuoi match e non tornerà più. Gli altri profili di prova restano finché non li
+              rimuovi anche loro.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={removeThis}
+            >
+              Sì, rimuovi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Chat guidata (nessuna conversazione reale) */}
       <Dialog open={showChat} onOpenChange={setShowChat}>
