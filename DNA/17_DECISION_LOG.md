@@ -7,6 +7,15 @@
 
 ## 2026-07
 
+- **Email di supporto UNICA + testi legali in box unico** — l'email di supporto è ora una sola,
+  gestita da `app_settings.support_email` (admin → Impostazioni) via hook condiviso
+  `useSupportEmail()` (fallback `info-stickers@deroarts.com`): usata da Account bloccato, firma
+  Profilo, info Pagamenti; nei testi legali il segnaposto `{EMAIL_SUPPORTO}` è sostituito al render
+  in `LegalPage`. Prima l'email era hardcoded in 3 punti e il campo admin era inerte; ora cambiarla
+  in admin la propaga ovunque (verificato e2e). In Impostazioni i 3 testi legali (privacy/termini/
+  cookie) si gestiscono come UN unico testo (marcatori `===== … =====`, split ai campi DB al salvataggio,
+  round-trip verificato) + "Copia tutto". Corretto il nome app "STICKERs matchbox" → "Stickers Matchbox"
+  (fallback backend + testi DB). Sidebar admin: "Pannello Admin" meno spaziato.
 - **Admin Errori/Segnalazioni — UI consolidata a colpo d'occhio** — pagina condivisa
   `AdminErrors`/`ErrorRow` (una per `group=auto|manual`): (1) rimossa la logica "criticità"
   dalla UI (card Critiche, badge/selettore priorità); colonna DB `priority` intatta ma non più

@@ -25,7 +25,7 @@ Privacy Policy e Termini d'uso sono **live**, unica fonte = DB `app_settings`
 La Cookie Policy è inglobata nella Privacy (solo storage tecnico, nessun cookie di profilazione).
 
 **Conformità GDPR allineata (giu 2026):**
-- **Titolare del trattamento: Davide De Rose** — contatto dati/supporto unificato su **stickersmatchbox@hotmail.com** (DB `support_email` + Profilo + MatchDetail).
+- **Titolare del trattamento: Davide De Rose** — contatto dati/supporto **UNICO** su `info-stickers@deroarts.com` (provvisoria; dominio+Zoho più avanti). Fonte unica: `app_settings.support_email` (pannello admin → Impostazioni). Hook condiviso `useSupportEmail()` (fallback `info-stickers@deroarts.com`) usato da Account bloccato, firma Profilo, info Pagamenti (MatchDetail). Nei testi legali il segnaposto **`{EMAIL_SUPPORTO}`** è sostituito al render in `LegalPage`: cambiare l'email in admin la aggiorna ovunque, testi legali inclusi.
 - Fornitori/responsabili (art. 28 GDPR): Supabase (DB, **UK** — AWS Londra) + Render (hosting, **UE** — Francoforte) + Google (OAuth) + Brevo (email servizio, UE). Il Regno Unito è coperto da **decisione di adeguatezza UE ex art. 45** (rinnovata 19/12/2025, valida fino al 27/12/2031); nessun trasferimento USA.
 - Font **Inter self-hosted** (niente Google Fonts → nessun trasferimento IP a terzi).
 - Età **14 anni** + lettura Privacy/Termini: conferma esplicita obbligatoria alla registrazione (checkbox in `Login.tsx`, validata lato schema).
@@ -76,7 +76,7 @@ NO: cookie marketing, cookie pubblicitari, tracking invasivo.
 
 ### Checklist Pre-Pubblicazione
 - [ ] Revisione legale Privacy Policy, Termini, Cookie Policy
-- [ ] Aggiunta vera email di supporto
+- [ ] Email di supporto definitiva su dominio+Zoho (il sistema è pronto: basta cambiarla in admin → si propaga ovunque via `useSupportEmail`/`{EMAIL_SUPPORTO}`)
 - [ ] Test su iOS Safari (PWA)
 - [ ] Test su Android Chrome (PWA)
 - [ ] Configurazione dominio
