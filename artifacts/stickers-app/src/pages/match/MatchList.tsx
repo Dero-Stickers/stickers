@@ -16,7 +16,7 @@ import { buildDemoMatches, shouldShowDemos, countRealMatches } from "@/lib/demo-
 import { DemoBanner } from "@/components/match/DemoBanner";
 
 const RADIUS_MIN = 1;
-const RADIUS_MAX = 100;
+const RADIUS_MAX = 150;
 
 type Tab = "nearby" | "best" | "search";
 

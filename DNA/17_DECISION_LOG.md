@@ -7,6 +7,23 @@
 
 ## 2026-07
 
+- **Onboarding: 4 profili-prova per il nuovo utente [4 lug]** — per evitare l'impatto di una lista match
+  vuota, il nuovo utente vede fino a **2 profili-prova nel raggio + 2 fuori** ("Utente" + badge PROVA
+  arancione). **Solo FRONTEND** (`lib/demo-matches.ts`, userId negativi -101..-104): non esistono nel DB,
+  quindi invisibili agli altri utenti e senza alcun conflitto con utenti reali (id positivi) — verificato
+  con test incrociati. **Unica variabile = la distanza**, calcolata dal CAP dell'utente con la STESSA
+  formula del backend (`estimateDistance`); capOffset tarati (+3/+8 = ~4.6/10.6 km vicini; +1500/+3000 =
+  ~50/65 km lontani) per una separazione netta e robusta su qualunque CAP italiano. **Vetrina**: dettaglio
+  con dai/ricevi dimostrativi, **chat guidata** (messaggio fisso) e **scambio simulato** (toast, non tocca
+  l'album). **Si SPEGNE da sola** quando l'utente ha già ≥2 match reali vicini E ≥2 lontani (validi, con
+  scambio); altrimenti riempie solo i posti mancanti fino a 2+2; non mostrata se `exchangesCompleted>0`.
+  **Rimozione SINGOLA** dal dettaglio di ogni profilo ("Rimuovi questo profilo di prova" + conferma);
+  dismissione per-id in localStorage → i rimossi non tornano (per dispositivo). Integrata in Home (box
+  "Migliori match", invariato), MatchList (banner informativo) e MatchDetail (router: userId<0 →
+  `DemoMatchDetail`, isolato dagli hook del ramo reale). Contestualmente il **raggio max dello slider è
+  passato da 100 a 150 km** (`RADIUS_MAX`; il backend non ha cap fisso, già compatibile). Verificato:
+  typecheck + build OK, test logici (rimozione singola, persistenza, soglia 2+2, no conflitti id, taratura
+  distanze su 5 CAP) e visivi (Home, slider 150, tab Vicini/Migliori).
 - **Audit privacy & sicurezza + hardening CORS [4 lug]** — audit enterprise sola-lettura (repo + chiave
   anon + connessione DB `postgres` per il catalogo RLS + header live del deploy). Esito: **rischio globale
   BASSO**. Verificato con prove: (1) **RLS ON su tutte le 15 tabelle con 0 policy = deny-all**; lettura

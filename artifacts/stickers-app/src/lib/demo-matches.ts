@@ -33,12 +33,19 @@ export interface DemoProfile {
 
 // Nome "Utente" per tutti (il badge PROVA accanto chiarisce che è dimostrativo).
 // Gli userId restano distinti (-101..-104) per l'isolamento tecnico; i 4 profili
-// si differenziano per distanza/album, non per nome. 2 vicini + 2 lontani.
+// si differenziano per distanza/album, non per nome.
+//
+// capOffset TARATO sulla formula estimateDistance perché la separazione
+// vicino/lontano sia netta e ROBUSTA su qualunque CAP italiano (verificato su
+// Milano/Roma/Bologna/Cagliari):
+//   +3    → ~4.6 km  (vicino)     +1500 → ~50 km (lontano)
+//   +8    → ~10.6 km (vicino)     +3000 → ~65 km (lontano)
+// I due lontani restano sotto il raggio massimo dell'app (150 km).
 export const DEMO_PROFILES: DemoProfile[] = [
-  { userId: -101, nickname: "Utente", near: true,  capOffset: 3,    totalExchanges: 14, albumsInCommon: 2, exchangesCompleted: 23 },
-  { userId: -102, nickname: "Utente", near: true,  capOffset: 7,    totalExchanges: 9,  albumsInCommon: 1, exchangesCompleted: 11 },
-  { userId: -103, nickname: "Utente", near: false, capOffset: 220,  totalExchanges: 18, albumsInCommon: 3, exchangesCompleted: 40 },
-  { userId: -104, nickname: "Utente", near: false, capOffset: 480,  totalExchanges: 12, albumsInCommon: 2, exchangesCompleted: 8 },
+  { userId: -101, nickname: "Utente", near: true,  capOffset: 3,     totalExchanges: 14, albumsInCommon: 2, exchangesCompleted: 23 },
+  { userId: -102, nickname: "Utente", near: true,  capOffset: 8,     totalExchanges: 9,  albumsInCommon: 1, exchangesCompleted: 11 },
+  { userId: -103, nickname: "Utente", near: false, capOffset: 1500,  totalExchanges: 18, albumsInCommon: 3, exchangesCompleted: 40 },
+  { userId: -104, nickname: "Utente", near: false, capOffset: 3000,  totalExchanges: 12, albumsInCommon: 2, exchangesCompleted: 8 },
 ];
 
 // Stessa formula del backend (routes/matches.ts) → distanze coerenti con i
