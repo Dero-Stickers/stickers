@@ -1,9 +1,4 @@
-import {
-  createHmac,
-  timingSafeEqual,
-  scrypt,
-  randomBytes,
-} from "crypto";
+import { createHmac, timingSafeEqual, scrypt } from "crypto";
 import { promisify } from "util";
 
 const scryptAsync = promisify(scrypt) as (
@@ -26,7 +21,6 @@ const SECRET =
 
 const TOKEN_VERSION = "v1";
 const SCRYPT_PREFIX = "scrypt$";
-const SCRYPT_KEYLEN = 32;
 const SCRYPT_COST = 16384;
 
 const DEFAULT_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -105,14 +99,6 @@ export function verifyToken(token: string): SessionPayload | null {
   }
 }
 
-export async function hashPin(pin: string): Promise<string> {
-  const salt = randomBytes(16);
-  const derived = await scryptAsync(pin, salt, SCRYPT_KEYLEN, {
-    N: SCRYPT_COST,
-  });
-  return `${SCRYPT_PREFIX}${salt.toString("base64")}$${derived.toString("base64")}`;
-}
-
 export async function verifyPin(pin: string, hash: string): Promise<boolean> {
   if (!hash) return false;
   if (!hash.startsWith(SCRYPT_PREFIX)) return false;
@@ -129,17 +115,6 @@ export async function verifyPin(pin: string, hash: string): Promise<boolean> {
   }
   if (derived.length !== expected.length) return false;
   return timingSafeEqual(derived, expected);
-}
-
-export async function hashAnswer(answer: string): Promise<string> {
-  return hashPin(answer.toLowerCase().trim());
-}
-
-export async function verifyAnswer(
-  answer: string,
-  hash: string,
-): Promise<boolean> {
-  return verifyPin(answer.toLowerCase().trim(), hash);
 }
 
 /**
