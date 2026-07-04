@@ -44,27 +44,15 @@ export function Home() {
   // (onboarding) solo finché servono a completare la vetrina (vedi demo-matches).
   const realMatches = bestMatches ?? [];
   const demoMatches = useMemo(
-    () => buildDemoMatches(currentUser, countRealMatches(realMatches, HOME_RADIUS_KM)),
-    [currentUser, realMatches],
+    // Aspetta il caricamento dei match reali: calcolarli mentre loadingMatches
+    // è true (conteggio a 0) farebbe apparire demo in eccesso che poi spariscono.
+    () => (loadingMatches ? [] : buildDemoMatches(currentUser, countRealMatches(realMatches, HOME_RADIUS_KM))),
+    [currentUser, realMatches, loadingMatches],
   );
   const matches = useMemo(() => [...demoMatches, ...realMatches], [demoMatches, realMatches]);
-  const topMatches = useMemo(() => {
-    // "Vicini a me": mostra SOLO chi è entro il raggio (demo e reali); i lontani
-    // (es. profili-prova a 151 km) restano nella modalità "Migliori".
-    const pool =
-      heroMode === "nearby"
-        ? matches.filter((m) => (m.distanceKm ?? Infinity) <= HOME_RADIUS_KM)
-        : matches;
-    return [...pool]
-      .sort((a, b) =>
-        heroMode === "best"
-          ? b.totalExchanges - a.totalExchanges
-          : (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity),
-      )
-      .slice(0, 4);
-  }, [matches, heroMode]);
-  // Insieme corrente (in "Vicini" solo entro raggio) per contatori coerenti con
-  // ciò che è effettivamente mostrato.
+  // Pool corrente in base al toggle: "Vicini a me" mostra SOLO chi è entro il
+  // raggio (demo e reali); i lontani (profili-prova a 151 km) restano in
+  // "Migliori". Un solo filtro condiviso da lista e contatori (niente divergenze).
   const currentPool = useMemo(
     () =>
       heroMode === "nearby"
@@ -72,7 +60,19 @@ export function Home() {
         : matches,
     [matches, heroMode],
   );
+  const topMatches = useMemo(() =>
+    [...currentPool]
+      .sort((a, b) =>
+        heroMode === "best"
+          ? b.totalExchanges - a.totalExchanges
+          : (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity),
+      )
+      .slice(0, 4),
+    [currentPool, heroMode]);
   const totalExchanges = useMemo(() => currentPool.reduce((s, m) => s + m.totalExchanges, 0), [currentPool]);
+  // Se ciò che si vede è composto SOLO da profili-prova, il contatore lo dichiara
+  // ("scambi di prova") per non far credere che siano scambi reali già disponibili.
+  const onlyDemos = currentPool.length > 0 && currentPool.every((m) => isDemoUserId(m.userId));
 
   return (
     <div className="flex flex-col h-full">
@@ -171,7 +171,7 @@ export function Home() {
 
               <div className="text-center">
                 <p className="text-sm leading-tight text-white/90">
-                  <span className="font-bold text-white">{totalExchanges}</span> scambi · <span className="font-bold text-white">{currentPool.length}</span> utenti{heroMode === "best" ? "" : " vicini"}
+                  <span className="font-bold text-white">{totalExchanges}</span> scambi{onlyDemos ? " di prova" : ""} · <span className="font-bold text-white">{currentPool.length}</span> {onlyDemos ? "profili prova" : `utenti${heroMode === "best" ? "" : " vicini"}`}
                 </p>
               </div>
 

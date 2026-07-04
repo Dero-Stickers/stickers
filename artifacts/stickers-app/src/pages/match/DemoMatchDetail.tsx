@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, MessageSquare, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useToast } from "@/hooks/use-toast";
-import { getDemoProfile, dismissDemoMatch } from "@/lib/demo-matches";
+import { useAuth } from "@/contexts/AuthContext";
+import { getDemoProfile, dismissDemoMatch, getDismissedDemoIds } from "@/lib/demo-matches";
 
 // Dettaglio di un profilo-PROVA (demo). Tutto è VETRINA: nessuna chiamata al
 // backend (l'id è negativo e non esiste nel DB), la chat mostra un messaggio
@@ -24,23 +25,34 @@ import { getDemoProfile, dismissDemoMatch } from "@/lib/demo-matches";
 export function DemoMatchDetail({ userId }: { userId: number }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
   const [showChat, setShowChat] = useState(false);
   const [showRemove, setShowRemove] = useState(false);
 
   const profile = getDemoProfile(userId);
-  const name = profile?.nickname ?? "Utente";
+  // Profilo demo inesistente (es. /match/-999) o già rimosso da questo utente
+  // (deep-link / back del browser): non c'è nulla da mostrare → torna ai match.
+  const invalid =
+    !profile || getDismissedDemoIds(currentUser?.id).includes(userId);
+  useEffect(() => {
+    if (invalid) setLocation("/match");
+  }, [invalid, setLocation]);
+  if (invalid) return null;
 
-  // Rimozione SINGOLA di questo profilo-prova (persistente, non torna più),
+  const name = profile.nickname;
+  // Numeri coerenti con la card: la card mostra totalExchanges come "N scambi";
+  // qui lo scambio è simmetrico (dai N, ricevi N) così "N scambi possibili"
+  // coincide con il numero della card, senza incoerenze.
+  const exchanges = profile.totalExchanges;
+
+  // Rimozione SINGOLA di questo profilo-prova (persistente per QUESTO utente),
   // poi torna alla lista match.
   const removeThis = () => {
-    dismissDemoMatch(userId);
+    dismissDemoMatch(currentUser?.id, userId);
     setShowRemove(false);
     toast({ title: "Profilo di prova rimosso", description: "Non comparirà più tra i tuoi match." });
     setLocation("/match");
   };
-  // Numeri dimostrativi fissi per far vedere le due direzioni dello scambio.
-  const give = profile?.totalExchanges ?? 8;
-  const receive = Math.max(1, Math.round(give * 0.8));
 
   const simulateTrade = () => {
     toast({
@@ -79,7 +91,7 @@ export function DemoMatchDetail({ userId }: { userId: number }) {
           </Button>
         </div>
         <p className="text-center text-sm text-foreground">
-          <span className="font-black text-accent">{Math.min(give, receive)}</span> scambi possibili
+          <span className="font-black text-accent">{exchanges}</span> scambi possibili
         </p>
       </div>
 
@@ -89,18 +101,18 @@ export function DemoMatchDetail({ userId }: { userId: number }) {
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
           <p className="text-[11px] leading-snug text-muted-foreground">
             Questo è un <span className="font-semibold text-accent">profilo di prova</span>, non una persona
-            reale. Serve a mostrarti come si vede uno scambio e come si apre la chat. Con i collezionisti veri
-            tutto funziona allo stesso modo.
+            reale. Ti mostra a colpo d'occhio come appare uno scambio e come si apre la chat: con i
+            collezionisti veri funziona tutto allo stesso modo.
           </p>
         </div>
 
-        {/* Cosa DAI */}
+        {/* Cosa DAI — con un collezionista reale (spiegato in termini generali,
+            così i numeri restano plausibili anche se il tuo album è ancora vuoto) */}
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Tu dai</p>
           <div className="rounded-xl border border-border bg-card px-3 py-3">
             <p className="text-sm text-foreground">
-              <span className="font-black text-accent">{give}</span> figurine tue doppie che a{" "}
-              {name.toLowerCase()} mancano.
+              Le tue figurine <span className="font-semibold">doppie</span> che a questo collezionista mancano.
             </p>
           </div>
         </div>
@@ -110,11 +122,14 @@ export function DemoMatchDetail({ userId }: { userId: number }) {
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Tu ricevi</p>
           <div className="rounded-xl border border-border bg-card px-3 py-3">
             <p className="text-sm text-foreground">
-              <span className="font-black text-accent">{receive}</span> figurine che ti mancano e{" "}
-              {name.toLowerCase()} ha doppie.
+              Le figurine che ti <span className="font-semibold">mancano</span> e che lui ha come doppie.
             </p>
           </div>
         </div>
+
+        <p className="text-center text-[11px] text-muted-foreground">
+          Con uno scambio così completeresti <span className="font-semibold text-accent">{exchanges}</span> figurine.
+        </p>
 
         {/* Pulsante scambio simulato */}
         <Button

@@ -60,13 +60,26 @@ export function MatchList() {
   const { currentUser } = useAuth();
   const demoMatches = useMemo(() => {
     if (!shouldShowDemos(currentUser)) return [];
+    // Aspetta che i match reali siano caricati: calcolarli con bestMatches ancora
+    // in loading (conteggio a 0) farebbe apparire demo in eccesso che poi spariscono.
+    if (loadingBest) return [];
     // Conta i match reali (validi) vicini/lontani con la SOGLIA FISSA (non lo
     // slider): così quanti demo servono non cambia trascinando il raggio.
     const real = countRealMatches(bestMatches);
     return buildDemoMatches(currentUser, real);
-  }, [currentUser, bestMatches]);
+  }, [currentUser, bestMatches, loadingBest]);
 
   const isLoading = activeTab === "best" ? loadingBest : loadingNearby;
+  // Demo effettivamente MOSTRATI nella tab corrente: in "Vicini" solo quelli
+  // entro il raggio; in "Migliori" tutti. Usato sia per la lista sia per decidere
+  // se mostrare il banner (che non deve comparire senza card demo a schermo).
+  const visibleDemos = useMemo(
+    () =>
+      activeTab === "nearby"
+        ? demoMatches.filter((d) => (d.distanceKm ?? Infinity) <= radiusQuery)
+        : demoMatches,
+    [activeTab, demoMatches, radiusQuery],
+  );
   // Memoizzato: lo spread+sort dei vicini viene rifatto solo al cambio di
   // tab/dati, non a ogni render (es. trascinamento slider raggio).
   const matches = useMemo(() => {
@@ -78,14 +91,9 @@ export function MatchList() {
               (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) ||
               a.nickname.localeCompare(b.nickname),
           );
-    // In "Vicini" mostro solo i demo che cadono nel raggio corrente; in
-    // "Migliori" li mostro tutti e 4. I demo restano sempre in cima.
-    const demos =
-      activeTab === "nearby"
-        ? demoMatches.filter((d) => (d.distanceKm ?? Infinity) <= radiusQuery)
-        : demoMatches;
-    return [...demos, ...real];
-  }, [activeTab, bestMatches, nearbyMatches, demoMatches, radiusQuery]);
+    // I demo (già filtrati per la tab) restano sempre in cima.
+    return [...visibleDemos, ...real];
+  }, [activeTab, bestMatches, nearbyMatches, visibleDemos]);
 
   const tabClass = (t: Tab) =>
     `flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`;
@@ -151,7 +159,7 @@ export function MatchList() {
               </div>
             )}
 
-            {!isLoading && demoMatches.length > 0 && <DemoBanner />}
+            {!isLoading && visibleDemos.length > 0 && <DemoBanner />}
 
             {!isLoading && matches.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">

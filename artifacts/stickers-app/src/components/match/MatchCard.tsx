@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { MapPin, Trophy, ChevronRight, Users } from "lucide-react";
+import { MapPin, Trophy, ChevronRight, Users, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { MatchSummary } from "@workspace/api-client-react";
@@ -40,14 +40,26 @@ export function MatchCard({ match }: { match: MatchSummary }) {
             </div>
           </div>
           <div className="flex items-center gap-4 mt-2 pt-2 border-t border-border/50">
-            <Badge variant="outline" className="text-[11px] leading-none gap-1 border-0 px-0 bg-transparent font-normal">
-              <Trophy className="h-2.5 w-2.5 shrink-0 text-yellow-600" />
-              {match.albumsInCommon} album in comune
-            </Badge>
-            <Badge variant="outline" className="text-[11px] leading-none gap-1 border-0 px-0 bg-transparent font-normal">
-              <Users className="h-2.5 w-2.5 shrink-0 text-chart-1" />
-              {match.exchangesCompleted} scambi fatti
-            </Badge>
+            {isDemo ? (
+              // I demo NON mostrano "album in comune / scambi fatti": sarebbero
+              // numeri impossibili per un utente ancora senza album. Riga neutra
+              // che ricorda la natura dimostrativa del profilo.
+              <span className="text-[11px] leading-none text-muted-foreground flex items-center gap-1">
+                <Sparkles className="h-2.5 w-2.5 shrink-0 text-accent" />
+                Profilo dimostrativo · tocca per vedere come funziona
+              </span>
+            ) : (
+              <>
+                <Badge variant="outline" className="text-[11px] leading-none gap-1 border-0 px-0 bg-transparent font-normal">
+                  <Trophy className="h-2.5 w-2.5 shrink-0 text-yellow-600" />
+                  {match.albumsInCommon} album in comune
+                </Badge>
+                <Badge variant="outline" className="text-[11px] leading-none gap-1 border-0 px-0 bg-transparent font-normal">
+                  <Users className="h-2.5 w-2.5 shrink-0 text-chart-1" />
+                  {match.exchangesCompleted} scambi fatti
+                </Badge>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

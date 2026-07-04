@@ -15,17 +15,21 @@
 import type { MatchSummary } from "@workspace/api-client-react";
 
 // Set degli ID demo che l'utente ha rimosso SINGOLARMENTE (dal dettaglio del
-// profilo). Persistito in localStorage: i rimossi non tornano più.
-const DISMISS_KEY = "demo_matches_dismissed_ids_v1";
+// profilo). Persistito in localStorage PER-UTENTE (la chiave include l'id del
+// proprietario): così ogni nuovo account sullo stesso browser rivede i profili
+// di prova, e lo switch U/A non condivide lo stato di rimozione.
+const DISMISS_KEY_PREFIX = "demo_matches_dismissed_ids_v2:";
+const dismissKey = (userId: number | undefined): string =>
+  `${DISMISS_KEY_PREFIX}${userId ?? "anon"}`;
 
 // I 4 profili base (identici per tutti). userId negativo = marcatore demo.
 // `near` decide se cade dentro o fuori il raggio.
 //  - VICINI: distanza calcolata dal CAP utente (`capOffset` → estimateDistance),
 //    così è plausibile e varia col CAP.
-//  - LONTANI: distanza FISSA `fixedKm` = raggio massimo dell'app (150 km), così
-//    restano SEMPRE fuori dal raggio qualunque valore scelga lo slider (la
-//    formula sul CAP non garantirebbe >150 km su tutti i CAP per via del suo
-//    stesso tetto ~199 km e del modulo interno).
+//  - LONTANI: distanza FISSA `fixedKm` = 151 km, cioè 1 km OLTRE il raggio
+//    massimo dell'app (slider max 150), così restano SEMPRE fuori dal raggio
+//    qualunque valore scelga lo slider (la formula sul CAP non garantirebbe
+//    >150 km su tutti i CAP per via del suo tetto ~199 km e del modulo interno).
 export interface DemoProfile {
   userId: number;
   nickname: string;
@@ -41,7 +45,7 @@ export interface DemoProfile {
 // Gli userId restano distinti (-101..-104) per l'isolamento tecnico; i 4 profili
 // si differenziano per distanza/album, non per nome.
 //   +3 → ~4.6 km · +8 → ~10.6 km  (vicini, dal CAP — robusto su ogni CAP)
-//   150 km fisso × 2               (lontani, sempre al limite/fuori raggio)
+//   151 km fisso × 2               (lontani, sempre fuori dal raggio max 150)
 export const DEMO_PROFILES: DemoProfile[] = [
   { userId: -101, nickname: "Utente", near: true,  capOffset: 3,   totalExchanges: 14, albumsInCommon: 2, exchangesCompleted: 23 },
   { userId: -102, nickname: "Utente", near: true,  capOffset: 8,   totalExchanges: 9,  albumsInCommon: 1, exchangesCompleted: 11 },
@@ -74,10 +78,10 @@ function demoCap(userCap: string, offset: number): string {
   return String(v).padStart(5, "0");
 }
 
-// ID demo rimossi singolarmente (letti da localStorage).
-export function getDismissedDemoIds(): number[] {
+// ID demo rimossi singolarmente da QUESTO utente (letti da localStorage).
+export function getDismissedDemoIds(ownerId: number | undefined): number[] {
   try {
-    const raw = localStorage.getItem(DISMISS_KEY);
+    const raw = localStorage.getItem(dismissKey(ownerId));
     if (!raw) return [];
     const arr = JSON.parse(raw);
     return Array.isArray(arr) ? arr.filter((n) => typeof n === "number") : [];
@@ -86,24 +90,21 @@ export function getDismissedDemoIds(): number[] {
   }
 }
 
-export function isDemoDismissed(userId: number): boolean {
-  return getDismissedDemoIds().includes(userId);
-}
-
-// Rimuove UN singolo profilo-prova (dal suo dettaglio). Persistente: non torna più.
-export function dismissDemoMatch(userId: number): void {
+// Rimuove UN singolo profilo-prova (dal suo dettaglio) per QUESTO utente.
+// Persistente: non torna più (per quell'utente su questo browser).
+export function dismissDemoMatch(ownerId: number | undefined, demoUserId: number): void {
   try {
-    const ids = new Set(getDismissedDemoIds());
-    ids.add(userId);
-    localStorage.setItem(DISMISS_KEY, JSON.stringify([...ids]));
+    const ids = new Set(getDismissedDemoIds(ownerId));
+    ids.add(demoUserId);
+    localStorage.setItem(dismissKey(ownerId), JSON.stringify([...ids]));
   } catch {
     /* no-op: senza localStorage la rimozione vale solo per la sessione */
   }
 }
 
-// Vero se TUTTI i demo sono stati rimossi (per decidere se calcolarli ancora).
-export function areAllDemoDismissed(): boolean {
-  const dismissed = new Set(getDismissedDemoIds());
+// Vero se QUESTO utente ha rimosso TUTTI i demo (per decidere se calcolarli).
+export function areAllDemoDismissed(ownerId: number | undefined): boolean {
+  const dismissed = new Set(getDismissedDemoIds(ownerId));
   return DEMO_PROFILES.every((p) => dismissed.has(p.userId));
 }
 
@@ -122,10 +123,14 @@ function toSummary(user: { cap?: string; area?: string }, p: DemoProfile): Match
     p.fixedKm != null
       ? p.fixedKm
       : parseFloat(estimateDistance(cap, demoCap(cap, p.capOffset ?? 0)).toFixed(1));
+  // I VICINI sono plausibilmente nella zona dell'utente → mostrano la sua area.
+  // I LONTANI (151 km) NON possono stare nella stessa zona → area generica,
+  // così non appare la contraddizione "Milano · 151 km".
+  const area = p.near ? user.area : "Altra zona";
   return {
     userId: p.userId,
     nickname: p.nickname,
-    area: user.area,
+    area,
     distanceKm,
     totalExchanges: p.totalExchanges,
     albumsInCommon: p.albumsInCommon,
@@ -170,7 +175,7 @@ const DEMO_FAR_TARGET = 2;
 // abbastanza da entrambi i lati, ritorna [] (la funzione si "spegne" da sola).
 // `real`: conteggio dei match reali (usa countRealMatches); null = ignora (mostra tutti).
 export function buildDemoMatches(
-  user: { cap?: string; area?: string; exchangesCompleted?: number } | null,
+  user: { id?: number; cap?: string; area?: string; exchangesCompleted?: number } | null,
   real?: RealMatchCounts,
 ): MatchSummary[] {
   if (!user) return [];
@@ -181,8 +186,8 @@ export function buildDemoMatches(
   const farNeeded = Math.max(0, DEMO_FAR_TARGET - (real?.far ?? 0));
   if (nearNeeded === 0 && farNeeded === 0) return []; // già ≥2 vicini e ≥2 lontani reali
 
-  // Esclude i profili-prova che l'utente ha già rimosso singolarmente.
-  const dismissed = new Set(getDismissedDemoIds());
+  // Esclude i profili-prova che QUESTO utente ha già rimosso singolarmente.
+  const dismissed = new Set(getDismissedDemoIds(user.id));
   const alive = DEMO_PROFILES.filter((p) => !dismissed.has(p.userId));
   const nearDemos = alive.filter((p) => p.near).slice(0, nearNeeded);
   const farDemos = alive.filter((p) => !p.near).slice(0, farNeeded);
@@ -192,9 +197,9 @@ export function buildDemoMatches(
 // Vero se i demo POTREBBERO essere mostrati (utente nuovo, non rimossi). Non
 // considera il conteggio reale — serve solo per decidere se calcolare i demo.
 export function shouldShowDemos(
-  user: { exchangesCompleted?: number } | null,
+  user: { id?: number; exchangesCompleted?: number } | null,
 ): boolean {
   if (!user) return false;
-  if (areAllDemoDismissed()) return false;
+  if (areAllDemoDismissed(user.id)) return false;
   return (user.exchangesCompleted ?? 0) === 0;
 }

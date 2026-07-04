@@ -7,6 +7,20 @@
 
 ## 2026-07
 
+- **Utenti-prova: hardening post-review multi-agente [4 lug]** — review adversariale (5 lenti + verifica)
+  sulla feature onboarding: applicati i fix confermati. (1) **[ALTA]** flag di rimozione demo ora **per-utente**
+  (chiave localStorage `demo_matches_dismissed_ids_v2:<userId>`, prima globale per browser): un nuovo account
+  o lo switch U/A sullo stesso device rivede i profili-prova. (2) **Numeri coerenti** card↔dettaglio: il
+  dettaglio mostra `totalExchanges` come la card (prima `min(tot, round(tot*0.8))` → 14 vs 11). (3) **Claim
+  impossibili rimossi** per l'utente vergine: la card demo non mostra più "N album in comune / scambi fatti"
+  (riga neutra "Profilo dimostrativo") e il dettaglio non dice "N figurine TUE doppie" (testo generico).
+  (4) **Deep-link demo invalidi** (`/match/-999` o profilo già rimosso): redirect a `/match` invece di
+  pagina fantasma. (5) **Area lontani** = "Altra zona" (non l'area dell'utente → basta "Milano · 151 km").
+  (6) **Banner** solo quando ci sono card demo effettivamente visibili nella tab (non a raggio 1-4 km).
+  (7) **Flash loading** eliminato: i demo non si calcolano finché `bestMatches` è in caricamento. (8)
+  **Contatore Home** onesto: "N scambi di prova · N profili prova" quando il pool è solo demo. (9) Testo
+  "a utente mancano" corretto; commenti 150→151 allineati. Verificato: typecheck+build, test logici
+  (per-utente, coerenza, area) e visivi runtime (backend attivo, login reale, Home/Match/dettaglio, H5/H6).
 - **Onboarding: 4 profili-prova per il nuovo utente [4 lug]** — per evitare l'impatto di una lista match
   vuota, il nuovo utente vede fino a **2 profili-prova nel raggio + 2 fuori** ("Utente" + badge PROVA
   arancione). **Solo FRONTEND** (`lib/demo-matches.ts`, userId negativi -101..-104): non esistono nel DB,
