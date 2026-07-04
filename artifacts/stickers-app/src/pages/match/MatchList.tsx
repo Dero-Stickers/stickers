@@ -60,11 +60,11 @@ export function MatchList() {
   const { currentUser } = useAuth();
   const demoMatches = useMemo(() => {
     if (!shouldShowDemos(currentUser)) return [];
-    // Conta i match reali (validi) vicini/lontani sulla lista globale, così la
-    // soglia non dipende dalla tab attiva. Raggio di riferimento = quello scelto.
-    const real = countRealMatches(bestMatches, radiusQuery);
+    // Conta i match reali (validi) vicini/lontani con la SOGLIA FISSA (non lo
+    // slider): così quanti demo servono non cambia trascinando il raggio.
+    const real = countRealMatches(bestMatches);
     return buildDemoMatches(currentUser, real);
-  }, [currentUser, bestMatches, radiusQuery]);
+  }, [currentUser, bestMatches]);
 
   const isLoading = activeTab === "best" ? loadingBest : loadingNearby;
   // Memoizzato: lo spread+sort dei vicini viene rifatto solo al cambio di

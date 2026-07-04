@@ -13,17 +13,23 @@
   quindi invisibili agli altri utenti e senza alcun conflitto con utenti reali (id positivi) — verificato
   con test incrociati. **Unica variabile = la distanza**, calcolata dal CAP dell'utente con la STESSA
   formula del backend (`estimateDistance`); capOffset tarati (+3/+8 = ~4.6/10.6 km vicini; +1500/+3000 =
-  ~50/65 km lontani) per una separazione netta e robusta su qualunque CAP italiano. **Vetrina**: dettaglio
-  con dai/ricevi dimostrativi, **chat guidata** (messaggio fisso) e **scambio simulato** (toast, non tocca
-  l'album). **Si SPEGNE da sola** quando l'utente ha già ≥2 match reali vicini E ≥2 lontani (validi, con
-  scambio); altrimenti riempie solo i posti mancanti fino a 2+2; non mostrata se `exchangesCompleted>0`.
-  **Rimozione SINGOLA** dal dettaglio di ogni profilo ("Rimuovi questo profilo di prova" + conferma);
-  dismissione per-id in localStorage → i rimossi non tornano (per dispositivo). Integrata in Home (box
-  "Migliori match", invariato), MatchList (banner informativo) e MatchDetail (router: userId<0 →
-  `DemoMatchDetail`, isolato dagli hook del ramo reale). Contestualmente il **raggio max dello slider è
-  passato da 100 a 150 km** (`RADIUS_MAX`; il backend non ha cap fisso, già compatibile). Verificato:
-  typecheck + build OK, test logici (rimozione singola, persistenza, soglia 2+2, no conflitti id, taratura
-  distanze su 5 CAP) e visivi (Home, slider 150, tab Vicini/Migliori).
+  distanze). **DISTANZE**: i 2 VICINI dal CAP (+3/+8 → ~4.6/10.6 km, robusto su ogni CAP); i 2 LONTANI a
+  **151 km FISSI** (`fixedKm`), oltre il raggio massimo dell'app → non entrano MAI in "Vicini" (la formula
+  sul CAP non garantiva >150 km su tutti i CAP per via del suo tetto ~199 e del modulo interno). **SOGLIA**
+  di vicinanza FISSA `NEAR_THRESHOLD_KM=30` (NON lo slider): decide near/far dei reali per capire quanti
+  demo servono — usare lo slider ruppe la logica (a raggio grande tutti i reali sembravano vicini).
+  **Vetrina**: dettaglio con dai/ricevi dimostrativi, **chat guidata** (messaggio fisso) e **scambio
+  simulato** (toast, non tocca l'album). **Si SPEGNE da sola** quando l'utente ha già ≥2 match reali vicini
+  (≤30 km) E ≥2 lontani (validi, con scambio); altrimenti riempie solo i posti mancanti fino a 2+2; non
+  mostrata se `exchangesCompleted>0`. **Rimozione SINGOLA** dal dettaglio di ogni profilo ("Rimuovi questo
+  profilo di prova" + conferma); dismissione per-id in localStorage → i rimossi non tornano (per
+  dispositivo). Integrata in Home (box "Migliori match" invariato; il toggle 📍 "Vicini a me" ora FILTRA a
+  ≤30 km — demo e reali — coi contatori coerenti, non più solo riordino), MatchList (banner informativo;
+  filtro per raggio slider) e MatchDetail (router: userId<0 → `DemoMatchDetail`, isolato dagli hook del ramo
+  reale). Contestualmente il **raggio max dello slider è passato da 100 a 150 km** (`RADIUS_MAX`; il backend
+  non ha cap fisso, già compatibile). Verificato: typecheck + build OK, test logici (rimozione singola,
+  persistenza, soglia 2+2 con 0/1/2/4 reali, no conflitti id, taratura su 5 CAP) e visivi con mock di utenti
+  reali finti (Home Migliori/Vicini, Match tab Vicini a vari raggi, interazione demo+reali).
 - **Audit privacy & sicurezza + hardening CORS [4 lug]** — audit enterprise sola-lettura (repo + chiave
   anon + connessione DB `postgres` per il catalogo RLS + header live del deploy). Esito: **rischio globale
   BASSO**. Verificato con prove: (1) **RLS ON su tutte le 15 tabelle con 0 policy = deny-all**; lettura

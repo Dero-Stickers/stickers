@@ -10,11 +10,12 @@ import {
   useGetBestMatches,
 } from "@workspace/api-client-react";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { buildDemoMatches, countRealMatches, isDemoUserId } from "@/lib/demo-matches";
+import { buildDemoMatches, countRealMatches, isDemoUserId, NEAR_THRESHOLD_KM } from "@/lib/demo-matches";
 
-// Raggio di riferimento per decidere vicini/lontani nella Home (allineato al
-// default dello slider in /match).
-const HOME_RADIUS_KM = 10;
+// "Vicini a me" nella Home usa la stessa soglia di vicinanza dei demo: chi è
+// entro questa distanza è "vicino" (demo e reali). I profili-prova lontani
+// (151 km) restano quindi solo nella modalità "Migliori".
+const HOME_RADIUS_KM = NEAR_THRESHOLD_KM;
 
 export function Home() {
   const { currentUser } = useAuth();
@@ -47,14 +48,31 @@ export function Home() {
     [currentUser, realMatches],
   );
   const matches = useMemo(() => [...demoMatches, ...realMatches], [demoMatches, realMatches]);
-  const topMatches = useMemo(() => [...matches]
-    .sort((a, b) =>
-      heroMode === "best"
-        ? b.totalExchanges - a.totalExchanges
-        : (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity),
-    )
-    .slice(0, 4), [matches, heroMode]);
-  const totalExchanges = useMemo(() => matches.reduce((s, m) => s + m.totalExchanges, 0), [matches]);
+  const topMatches = useMemo(() => {
+    // "Vicini a me": mostra SOLO chi è entro il raggio (demo e reali); i lontani
+    // (es. profili-prova a 151 km) restano nella modalità "Migliori".
+    const pool =
+      heroMode === "nearby"
+        ? matches.filter((m) => (m.distanceKm ?? Infinity) <= HOME_RADIUS_KM)
+        : matches;
+    return [...pool]
+      .sort((a, b) =>
+        heroMode === "best"
+          ? b.totalExchanges - a.totalExchanges
+          : (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity),
+      )
+      .slice(0, 4);
+  }, [matches, heroMode]);
+  // Insieme corrente (in "Vicini" solo entro raggio) per contatori coerenti con
+  // ciò che è effettivamente mostrato.
+  const currentPool = useMemo(
+    () =>
+      heroMode === "nearby"
+        ? matches.filter((m) => (m.distanceKm ?? Infinity) <= HOME_RADIUS_KM)
+        : matches,
+    [matches, heroMode],
+  );
+  const totalExchanges = useMemo(() => currentPool.reduce((s, m) => s + m.totalExchanges, 0), [currentPool]);
 
   return (
     <div className="flex flex-col h-full">
@@ -153,7 +171,7 @@ export function Home() {
 
               <div className="text-center">
                 <p className="text-sm leading-tight text-white/90">
-                  <span className="font-bold text-white">{totalExchanges}</span> scambi · <span className="font-bold text-white">{matches.length}</span> utenti{heroMode === "best" ? "" : " vicini"}
+                  <span className="font-bold text-white">{totalExchanges}</span> scambi · <span className="font-bold text-white">{currentPool.length}</span> utenti{heroMode === "best" ? "" : " vicini"}
                 </p>
               </div>
 

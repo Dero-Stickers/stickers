@@ -19,13 +19,19 @@ import type { MatchSummary } from "@workspace/api-client-react";
 const DISMISS_KEY = "demo_matches_dismissed_ids_v1";
 
 // I 4 profili base (identici per tutti). userId negativo = marcatore demo.
-// `near` decide se cade dentro o fuori il raggio; `capOffset` posiziona il CAP
-// fittizio rispetto a quello dell'utente per ottenere una distanza plausibile.
+// `near` decide se cade dentro o fuori il raggio.
+//  - VICINI: distanza calcolata dal CAP utente (`capOffset` → estimateDistance),
+//    così è plausibile e varia col CAP.
+//  - LONTANI: distanza FISSA `fixedKm` = raggio massimo dell'app (150 km), così
+//    restano SEMPRE fuori dal raggio qualunque valore scelga lo slider (la
+//    formula sul CAP non garantirebbe >150 km su tutti i CAP per via del suo
+//    stesso tetto ~199 km e del modulo interno).
 export interface DemoProfile {
   userId: number;
   nickname: string;
   near: boolean;
-  capOffset: number;      // aggiunto/sottratto al CAP utente → distanza via estimateDistance
+  capOffset?: number;     // vicini: offset sul CAP utente → distanza via estimateDistance
+  fixedKm?: number;       // lontani: distanza fissa (km), ignora il CAP
   totalExchanges: number;
   albumsInCommon: number;
   exchangesCompleted: number;
@@ -34,18 +40,13 @@ export interface DemoProfile {
 // Nome "Utente" per tutti (il badge PROVA accanto chiarisce che è dimostrativo).
 // Gli userId restano distinti (-101..-104) per l'isolamento tecnico; i 4 profili
 // si differenziano per distanza/album, non per nome.
-//
-// capOffset TARATO sulla formula estimateDistance perché la separazione
-// vicino/lontano sia netta e ROBUSTA su qualunque CAP italiano (verificato su
-// Milano/Roma/Bologna/Cagliari):
-//   +3    → ~4.6 km  (vicino)     +1500 → ~50 km (lontano)
-//   +8    → ~10.6 km (vicino)     +3000 → ~65 km (lontano)
-// I due lontani restano sotto il raggio massimo dell'app (150 km).
+//   +3 → ~4.6 km · +8 → ~10.6 km  (vicini, dal CAP — robusto su ogni CAP)
+//   150 km fisso × 2               (lontani, sempre al limite/fuori raggio)
 export const DEMO_PROFILES: DemoProfile[] = [
-  { userId: -101, nickname: "Utente", near: true,  capOffset: 3,     totalExchanges: 14, albumsInCommon: 2, exchangesCompleted: 23 },
-  { userId: -102, nickname: "Utente", near: true,  capOffset: 8,     totalExchanges: 9,  albumsInCommon: 1, exchangesCompleted: 11 },
-  { userId: -103, nickname: "Utente", near: false, capOffset: 1500,  totalExchanges: 18, albumsInCommon: 3, exchangesCompleted: 40 },
-  { userId: -104, nickname: "Utente", near: false, capOffset: 3000,  totalExchanges: 12, albumsInCommon: 2, exchangesCompleted: 8 },
+  { userId: -101, nickname: "Utente", near: true,  capOffset: 3,   totalExchanges: 14, albumsInCommon: 2, exchangesCompleted: 23 },
+  { userId: -102, nickname: "Utente", near: true,  capOffset: 8,   totalExchanges: 9,  albumsInCommon: 1, exchangesCompleted: 11 },
+  { userId: -103, nickname: "Utente", near: false, fixedKm: 151,   totalExchanges: 18, albumsInCommon: 3, exchangesCompleted: 40 },
+  { userId: -104, nickname: "Utente", near: false, fixedKm: 151,   totalExchanges: 12, albumsInCommon: 2, exchangesCompleted: 8 },
 ];
 
 // Stessa formula del backend (routes/matches.ts) → distanze coerenti con i
@@ -116,35 +117,45 @@ export function getDemoProfile(userId: number): DemoProfile | undefined {
 
 function toSummary(user: { cap?: string; area?: string }, p: DemoProfile): MatchSummary {
   const cap = user.cap ?? "";
+  // Lontani: distanza fissa (sempre al limite/fuori raggio). Vicini: dal CAP.
+  const distanceKm =
+    p.fixedKm != null
+      ? p.fixedKm
+      : parseFloat(estimateDistance(cap, demoCap(cap, p.capOffset ?? 0)).toFixed(1));
   return {
     userId: p.userId,
     nickname: p.nickname,
     area: user.area,
-    distanceKm: estimateDistance(cap, demoCap(cap, p.capOffset)),
+    distanceKm,
     totalExchanges: p.totalExchanges,
     albumsInCommon: p.albumsInCommon,
     exchangesCompleted: p.exchangesCompleted,
   };
 }
 
+// Soglia FISSA "vicino/lontano" per decidere quanti demo servono. Deve essere
+// una costante, NON il raggio dello slider (che varia): altrimenti a raggio
+// grande tutti i reali risulterebbero "vicini" e la logica 2+2 salterebbe.
+export const NEAR_THRESHOLD_KM = 30;
+
 // Quanti match reali "validi" (almeno 1 scambio possibile) l'utente ha già,
-// separati tra dentro/fuori il raggio. Serve a decidere quali demo servono.
+// separati tra dentro/fuori la soglia di vicinanza. Serve a decidere quali demo servono.
 export interface RealMatchCounts {
   near: number;
   far: number;
 }
 
-// Conta i match reali vicini/lontani rispetto al raggio dato. Un match è
+// Conta i match reali vicini/lontani rispetto alla soglia FISSA. Un match è
 // "valido" se offre almeno uno scambio (totalExchanges > 0).
 export function countRealMatches(
   matches: MatchSummary[] | undefined,
-  radiusKm: number,
+  thresholdKm: number = NEAR_THRESHOLD_KM,
 ): RealMatchCounts {
   let near = 0;
   let far = 0;
   for (const m of matches ?? []) {
     if ((m.totalExchanges ?? 0) <= 0) continue;
-    if ((m.distanceKm ?? Infinity) <= radiusKm) near++;
+    if ((m.distanceKm ?? Infinity) <= thresholdKm) near++;
     else far++;
   }
   return { near, far };
