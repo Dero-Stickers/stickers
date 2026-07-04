@@ -44,15 +44,21 @@ const DERO = 69;
 // Album usati per la simulazione (dal catalogo reale).
 const ALB = { a2526: 11, a2425: 12, a2324: 13 };
 
-// 6 utenti finti: 3 vicini + 3 lontani da Milano 20100 (distanze via CAP).
+// Utenti finti da Milano 20100 (distanze via CAP).
+//  - VICINI = dentro il raggio (<30 km).
+//  - LONTANI = FUORI dal raggio MASSIMO dell'app (>150 km): la formula sul CAP
+//    ha un tetto ~199 km, quindi servono CAP molto distanti (Napoli/Catania/
+//    Brescia → ~161/181/181 km). NON basta "una città distante": va verificato
+//    che la formula dia >150.
+// Filtra per `active` quali creare (qui: solo i 3 LONTANI fuori raggio).
 const FAKES = [
-  { nick: "marcomi",  cap: "20121", area: "Milano Centro",      pin: "1111", near: true  }, // ~6 km
-  { nick: "annasesto", cap: "20099", area: "Sesto San Giovanni", pin: "2222", near: true  }, // ~2 km
-  { nick: "lucamonza", cap: "20900", area: "Monza",              pin: "3333", near: true  }, // ~28 km
-  { nick: "sarabg",   cap: "24121", area: "Bergamo",            pin: "4444", near: false }, // ~41 km
-  { nick: "paolocomo", cap: "22100", area: "Como",               pin: "5555", near: false }, // ~55 km
-  { nick: "giuliarm", cap: "00184", area: "Roma",               pin: "6666", near: false }, // ~96 km
-];
+  { nick: "marcomi",   cap: "20121", area: "Milano Centro",      pin: "1111", near: true,  active: false }, // ~6 km
+  { nick: "annasesto", cap: "20099", area: "Sesto San Giovanni", pin: "2222", near: true,  active: false }, // ~2 km
+  { nick: "lucamonza", cap: "20900", area: "Monza",              pin: "3333", near: true,  active: false }, // ~28 km
+  { nick: "saranapoli", cap: "80121", area: "Napoli",            pin: "4444", near: false, active: true },  // ~161 km FUORI
+  { nick: "paolocat",  cap: "95121", area: "Catania",            pin: "5555", near: false, active: true },  // ~181 km FUORI
+  { nick: "giuliabs",  cap: "25121", area: "Brescia",            pin: "6666", near: false, active: true },  // ~181 km FUORI
+].filter((f) => f.active);
 
 // Range per `number` su un album: A=primo quarto, B, C, D.
 // Dero975 avrà: album 11 → doppia A, mancante C, posseduta B+D
