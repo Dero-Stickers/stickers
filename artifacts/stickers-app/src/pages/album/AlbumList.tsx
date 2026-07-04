@@ -172,30 +172,58 @@ export function AlbumList() {
         </div>
       </div>
 
+      {/* Fascia filtri FISSA (fuori dallo scroller): i chip categoria restano
+          sempre visibili, scorrono solo le card. Mostro i chip del tab attivo. */}
+      {activeTab === "my" && myPresentCategories.length > 1 && (
+        <div className="px-4 pt-3 shrink-0">
+          <div className="flex w-full gap-2">
+            <button
+              onClick={() => setMyCatFilter("all")}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${myCatFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+            >
+              Tutti
+            </button>
+            {myPresentCategories.map(c => (
+              <button
+                key={c.key}
+                onClick={() => setMyCatFilter(c.key)}
+                className={`flex-1 min-w-0 px-1 py-1.5 rounded-full text-xs font-semibold border transition-colors text-center truncate ${myCatFilter === c.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {activeTab === "available" && presentCategories.length > 1 && (
+        // Riga BLOCCATA su una sola linea, mai scrollabile: w-full vincola al
+        // contenitore, min-w-0 + truncate sui chip evitano che un'etichetta
+        // lunga spinga oltre. "Tutti" (reset) compatto; i master flex-1 uguali.
+        <div className="px-4 pt-3 shrink-0">
+          <div className="flex w-full gap-2">
+            <button
+              onClick={() => setCatFilter("all")}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${catFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+            >
+              Tutti
+            </button>
+            {/* Chip senza icona: le sigle categoria vanno tenute compatte per
+                stare su una riga sola; le icone restano sulle card album. */}
+            {presentCategories.map(c => (
+              <button
+                key={c.key}
+                onClick={() => setCatFilter(c.key)}
+                className={`flex-1 min-w-0 px-1 py-1.5 rounded-full text-xs font-semibold border transition-colors text-center truncate ${catFilter === c.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 min-h-0">
         {activeTab === "my" && (
-          <>
-            {/* Stessa riga filtri di "Disponibili": bloccata, "Tutti" compatto +
-                master flex-1 uguali. Solo con più di una categoria posseduta. */}
-            {myPresentCategories.length > 1 && (
-              <div className="flex w-full gap-2 pb-3">
-                <button
-                  onClick={() => setMyCatFilter("all")}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${myCatFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-                >
-                  Tutti
-                </button>
-                {myPresentCategories.map(c => (
-                  <button
-                    key={c.key}
-                    onClick={() => setMyCatFilter(c.key)}
-                    className={`flex-1 min-w-0 px-1 py-1.5 rounded-full text-xs font-semibold border transition-colors text-center truncate ${myCatFilter === c.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            )}
           <div className="grid gap-2 md:grid-cols-2 items-start">
             {loadingMy && [1, 2].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
             {!loadingMy && (myAlbums?.length ?? 0) === 0 && (
@@ -228,37 +256,9 @@ export function AlbumList() {
               </Card>
             ))}
           </div>
-          </>
         )}
 
         {activeTab === "available" && (
-          <>
-            {/* Chip-filtro per categoria: [Tutti] + le categorie presenti. Solo
-                se c'è più di una categoria (con una sola sarebbe inutile). */}
-            {presentCategories.length > 1 && (
-              // Riga BLOCCATA su una sola linea, mai scrollabile: w-full vincola al
-              // contenitore, min-w-0 + truncate sui chip evitano che un'etichetta
-              // lunga spinga oltre. "Tutti" (reset) compatto; i master flex-1 uguali.
-              <div className="flex w-full gap-2 pb-3">
-                <button
-                  onClick={() => setCatFilter("all")}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${catFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-                >
-                  Tutti
-                </button>
-                {/* Chip senza icona: le sigle categoria vanno tenute compatte per
-                    stare su una riga sola; le icone restano sulle card album. */}
-                {presentCategories.map(c => (
-                  <button
-                    key={c.key}
-                    onClick={() => setCatFilter(c.key)}
-                    className={`flex-1 min-w-0 px-1 py-1.5 rounded-full text-xs font-semibold border transition-colors text-center truncate ${catFilter === c.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            )}
           <div className="grid gap-2 md:grid-cols-2 items-start">
             {loadingAll && [1, 2].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
             {!loadingAll && filteredAvailable.length === 0 && (
@@ -304,7 +304,6 @@ export function AlbumList() {
               );
             })}
           </div>
-          </>
         )}
       </div>
 
