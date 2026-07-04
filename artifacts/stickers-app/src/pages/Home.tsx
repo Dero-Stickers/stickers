@@ -10,6 +10,11 @@ import {
   useGetBestMatches,
 } from "@workspace/api-client-react";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { buildDemoMatches, countRealMatches, isDemoUserId } from "@/lib/demo-matches";
+
+// Raggio di riferimento per decidere vicini/lontani nella Home (allineato al
+// default dello slider in /match).
+const HOME_RADIUS_KM = 10;
 
 export function Home() {
   const { currentUser } = useAuth();
@@ -34,8 +39,14 @@ export function Home() {
   ), [albums]);
   const overallPercent = agg.slots > 0 ? Math.round((agg.owned / agg.slots) * 100) : 0;
 
-  // 2 · Match — l'eroe della pagina
-  const matches = bestMatches ?? [];
+  // 2 · Match — l'eroe della pagina. Ai match reali si aggiungono i profili-PROVA
+  // (onboarding) solo finché servono a completare la vetrina (vedi demo-matches).
+  const realMatches = bestMatches ?? [];
+  const demoMatches = useMemo(
+    () => buildDemoMatches(currentUser, countRealMatches(realMatches, HOME_RADIUS_KM)),
+    [currentUser, realMatches],
+  );
+  const matches = useMemo(() => [...demoMatches, ...realMatches], [demoMatches, realMatches]);
   const topMatches = useMemo(() => [...matches]
     .sort((a, b) =>
       heroMode === "best"
@@ -151,7 +162,14 @@ export function Home() {
                   <Link key={m.userId} href={`/match/${m.userId}`} className="block">
                     <div className="flex items-center justify-between gap-2 bg-white/15 rounded-lg px-3 py-1.5 cursor-pointer transition-transform active:scale-[0.99] hover:bg-white/25">
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm truncate">{m.nickname}</p>
+                        <p className="font-semibold text-sm truncate flex items-center gap-1.5">
+                          <span className="truncate">{m.nickname}</span>
+                          {isDemoUserId(m.userId) && (
+                            <span className="shrink-0 rounded-full bg-white/25 text-white text-[9px] font-bold px-1.5 py-0.5 leading-none">
+                              PROVA
+                            </span>
+                          )}
+                        </p>
                         <p className="text-xs text-white/80 flex items-center gap-1">
                           <MapPin className="h-3 w-3 shrink-0" />
                           {m.distanceKm != null ? `${m.distanceKm.toFixed(1)} km` : m.area}

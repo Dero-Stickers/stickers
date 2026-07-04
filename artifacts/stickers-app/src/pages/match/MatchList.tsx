@@ -11,6 +11,9 @@ import {
 import { AppHeader } from "@/components/layout/AppHeader";
 import { MatchCard } from "@/components/match/MatchCard";
 import { SearchSticker } from "./SearchSticker";
+import { useAuth } from "@/contexts/AuthContext";
+import { buildDemoMatches, shouldShowDemos, dismissDemoMatches, countRealMatches } from "@/lib/demo-matches";
+import { DemoBanner } from "@/components/match/DemoBanner";
 
 const RADIUS_MIN = 1;
 const RADIUS_MAX = 100;
@@ -50,18 +53,39 @@ export function MatchList() {
     { query: { queryKey: getGetNearbyMatchesQueryKey(nearbyParams), enabled: activeTab === "nearby" } }
   );
 
+  // Profili-prova (onboarding): completano la vetrina fino a 2 vicini + 2
+  // lontani SOLO finché l'utente non ha già abbastanza match reali per lato.
+  // `demoOn` permette la rimozione immediata senza ricaricare.
+  const { currentUser } = useAuth();
+  const [demoOn, setDemoOn] = useState(() => shouldShowDemos(currentUser));
+  const demoMatches = useMemo(() => {
+    if (!demoOn) return [];
+    // Conta i match reali (validi) vicini/lontani sulla lista globale, così la
+    // soglia non dipende dalla tab attiva. Raggio di riferimento = quello scelto.
+    const real = countRealMatches(bestMatches, radiusQuery);
+    return buildDemoMatches(currentUser, real);
+  }, [demoOn, currentUser, bestMatches, radiusQuery]);
+
   const isLoading = activeTab === "best" ? loadingBest : loadingNearby;
   // Memoizzato: lo spread+sort dei vicini viene rifatto solo al cambio di
   // tab/dati, non a ogni render (es. trascinamento slider raggio).
-  const matches = useMemo(() =>
-    activeTab === "best"
-      ? (bestMatches ?? [])
-      : [...(nearbyMatches ?? [])].sort(
-          (a, b) =>
-            (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) ||
-            a.nickname.localeCompare(b.nickname),
-        ),
-    [activeTab, bestMatches, nearbyMatches]);
+  const matches = useMemo(() => {
+    const real =
+      activeTab === "best"
+        ? (bestMatches ?? [])
+        : [...(nearbyMatches ?? [])].sort(
+            (a, b) =>
+              (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) ||
+              a.nickname.localeCompare(b.nickname),
+          );
+    // In "Vicini" mostro solo i demo che cadono nel raggio corrente; in
+    // "Migliori" li mostro tutti e 4. I demo restano sempre in cima.
+    const demos =
+      activeTab === "nearby"
+        ? demoMatches.filter((d) => (d.distanceKm ?? Infinity) <= radiusQuery)
+        : demoMatches;
+    return [...demos, ...real];
+  }, [activeTab, bestMatches, nearbyMatches, demoMatches, radiusQuery]);
 
   const tabClass = (t: Tab) =>
     `flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`;
@@ -125,6 +149,10 @@ export function MatchList() {
               <div className="space-y-3">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
               </div>
+            )}
+
+            {!isLoading && demoMatches.length > 0 && (
+              <DemoBanner onRemove={() => { dismissDemoMatches(); setDemoOn(false); }} />
             )}
 
             {!isLoading && matches.length === 0 && (

@@ -3,18 +3,26 @@ import { MapPin, Trophy, ChevronRight, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { MatchSummary } from "@workspace/api-client-react";
+import { isDemoUserId } from "@/lib/demo-matches";
 
 // Card riutilizzabile di un utente-match. Condivisa tra la lista match
 // (Vicini/Migliori) e la ricerca per singola figurina, così l'aspetto resta
 // identico in tutti i contesti e non si duplica il markup.
+// I profili DEMO (userId negativo) mostrano un badge "PROVA" ben visibile.
 export function MatchCard({ match }: { match: MatchSummary }) {
+  const isDemo = isDemoUserId(match.userId);
   return (
     <Link href={`/match/${match.userId}`}>
-      <Card className="shadow-sm cursor-pointer hover:border-primary transition-colors">
+      <Card className={`shadow-sm cursor-pointer transition-colors ${isDemo ? "border-accent/60 hover:border-accent" : "hover:border-primary"}`}>
         <CardContent className="p-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <p className="font-semibold text-foreground truncate">{match.nickname}</p>
+              {isDemo && (
+                <span className="shrink-0 rounded-full bg-accent/15 text-accent text-[10px] font-bold px-1.5 py-0.5 leading-none">
+                  PROVA
+                </span>
+              )}
               <p className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
                 <MapPin className="h-3 w-3" />
                 {match.area}

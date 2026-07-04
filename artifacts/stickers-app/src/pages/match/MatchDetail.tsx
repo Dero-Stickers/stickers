@@ -14,6 +14,8 @@ import {
   useBillingCheckout,
 } from "@workspace/api-client-react";
 import { TRADE_DIRECTION } from "@/lib/trade-labels";
+import { isDemoUserId } from "@/lib/demo-matches";
+import { DemoMatchDetail } from "./DemoMatchDetail";
 
 type MatchGroup = { albumId: number; albumTitle: string; stickers: { id: number; number: number; code?: string }[] };
 
@@ -118,9 +120,20 @@ function DirectionSection({
   );
 }
 
+// Router del dettaglio: i profili-PROVA (userId negativo) hanno una vista
+// dimostrativa dedicata e NON toccano il backend; gli utenti reali usano
+// RealMatchDetail. Lo split tiene gli hook del ramo reale isolati (nessun hook
+// condizionale) e garantisce zero interferenza tra demo e dati veri.
 export function MatchDetail() {
   const { userId } = useParams<{ userId: string }>();
   const matchUserId = parseInt(userId, 10);
+  if (isDemoUserId(matchUserId)) {
+    return <DemoMatchDetail userId={matchUserId} />;
+  }
+  return <RealMatchDetail matchUserId={matchUserId} />;
+}
+
+function RealMatchDetail({ matchUserId }: { matchUserId: number }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const supportEmail = useSupportEmail();
