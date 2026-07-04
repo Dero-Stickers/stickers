@@ -1,6 +1,6 @@
 import { ReactNode, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, BookOpen, Users, MessageCircle, User, ShieldAlert, X } from "lucide-react";
+import { Home, BookOpen, Zap, MessageCircle, User, ShieldAlert, X } from "lucide-react";
 import { useListChats, getListChatsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +36,7 @@ export function MobileLayout({ children }: { children: ReactNode }) {
   const navItems = [
     { icon: Home, label: "Home", path: "/", badge: 0 },
     { icon: BookOpen, label: "Album", path: "/album", badge: 0 },
-    { icon: Users, label: "Match", path: "/match", badge: 0 },
+    { icon: Zap, label: "Match", path: "/match", badge: 0 },
     { icon: MessageCircle, label: "Messaggi", path: "/messaggi", badge: unreadCount },
     { icon: User, label: "Profilo", path: "/profilo", badge: 0 },
   ];
