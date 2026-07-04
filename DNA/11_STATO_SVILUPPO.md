@@ -204,6 +204,21 @@ pulsante U/A), nessun possesso, nessuna chat/match. `auth.users` Supabase = 0. C
 ⛔ Questi 2 account **non vanno eliminati** (senza di loro il pulsante U/A si rompe). Se si ri-azzera
 l'app, vanno **ricreati** (insert con `hashPin`, `auth_provider='pin'`, `cap`/`area`, `acceptedTermsAt`).
 
+### Simulazione "primi utenti veri" attiva (4 lug) — REVERSIBILE
+Per provare l'app con match REALI, Dero975 (id 69) è stato **popolato** (album 11+12, 1360 figurine:
+a11 doppia A / mancante C / poss B+D · a12 tutto mancante) e sono stati creati **6 utenti finti
+complementari** (marker `recovery_code LIKE 'STICK-TST-SIM-%'`): 3 VICINI — `marcomi` (Milano, 6km),
+`annasesto` (Sesto, 2km), `lucamonza` (Monza, 28km) — e 3 LONTANI — `sarabg` (Bergamo, 41km),
+`paolocomo` (Como, 55km), `giuliarm` (Roma, 96km). PIN 1111..6666. Generano ~156 scambi ciascuno → i
+profili-PROVA si spengono da soli (Dero ha ≥2 vicini + ≥2 lontani reali). Script:
+`SEED_SIMULAZIONE=1 pnpm --filter @workspace/db run seed:simulazione` (idempotente, additivo).
+**Cleanup (torna a vergine):**
+```sql
+DELETE FROM users WHERE recovery_code LIKE 'STICK-TST-SIM-%';   -- rimuove i 6 finti (cascade)
+DELETE FROM user_stickers WHERE user_id=69;                     -- Dero975 → vergine
+DELETE FROM user_albums   WHERE user_id=69;
+```
+
 <details><summary>Storico dati di test (cancellati il 30 giu 2026) — solo per riferimento</summary>
 
 **Dati di test PERSISTENTI** (giu 2026) — creati per provare l'app popolata da telefono.
