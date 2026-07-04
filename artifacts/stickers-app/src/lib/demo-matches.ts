@@ -30,6 +30,15 @@ const dismissKey = (userId: number | undefined): string =>
 //    massimo dell'app (slider max 150), così restano SEMPRE fuori dal raggio
 //    qualunque valore scelga lo slider (la formula sul CAP non garantirebbe
 //    >150 km su tutti i CAP per via del suo tetto ~199 km e del modulo interno).
+// "Ricetta" della vetrina di un profilo-prova: quali album mostrare e quante
+// figurine per direzione. `family` sceglie da quale FAMIGLIA del catalogo pescare
+// l'album (Calciatori / Euro / Mondiali), `idx` è la posizione nella famiglia
+// (0 = più recente). `give`/`receive` = quante figurine mostrare in quella
+// direzione per quell'album. Così i 4 profili hanno album E distribuzioni DIVERSE
+// tra loro, ma IDENTICHE per ogni nuovo utente (nessuna casualità runtime).
+type DemoFamily = "calciatori" | "euro" | "mondiali";
+interface DemoRecipeAlbum { family: DemoFamily; idx: number; give: number; receive: number }
+
 export interface DemoProfile {
   userId: number;
   nickname: string;
@@ -39,6 +48,7 @@ export interface DemoProfile {
   totalExchanges: number;
   albumsInCommon: number;
   exchangesCompleted: number;
+  recipe: DemoRecipeAlbum[]; // album + distribuzione della vetrina (per profilo)
 }
 
 // Nome "Utente" per tutti (il badge PROVA accanto chiarisce che è dimostrativo).
@@ -46,12 +56,46 @@ export interface DemoProfile {
 // si differenziano per distanza/album, non per nome.
 //   +3 → ~4.6 km · +8 → ~10.6 km  (vicini, dal CAP — robusto su ogni CAP)
 //   151 km fisso × 2               (lontani, sempre fuori dal raggio max 150)
-export const DEMO_PROFILES: DemoProfile[] = [
-  { userId: -101, nickname: "Utente", near: true,  capOffset: 3,   totalExchanges: 14, albumsInCommon: 2, exchangesCompleted: 23 },
-  { userId: -102, nickname: "Utente", near: true,  capOffset: 8,   totalExchanges: 9,  albumsInCommon: 1, exchangesCompleted: 11 },
-  { userId: -103, nickname: "Utente", near: false, fixedKm: 151,   totalExchanges: 18, albumsInCommon: 3, exchangesCompleted: 40 },
-  { userId: -104, nickname: "Utente", near: false, fixedKm: 151,   totalExchanges: 12, albumsInCommon: 2, exchangesCompleted: 8 },
-];
+// Deriva i totali dalla ricetta, così card e dettaglio non divergono mai:
+//  - totalExchanges = "scambi possibili" = totale figurine che DAI (direzione give)
+//  - albumsInCommon = numero di album nella vetrina
+function deriveTotals<T extends { recipe: DemoRecipeAlbum[] }>(p: T): T {
+  const totalGive = p.recipe.reduce((s, r) => s + r.give, 0);
+  return { ...p, totalExchanges: totalGive, albumsInCommon: p.recipe.length };
+}
+
+// Ogni profilo ha una vetrina DIVERSA: album da famiglie diverse (Calciatori,
+// Euro, Mondiali) e distribuzione dai/ricevi diversa → l'utente vede subito tanti
+// casi (album pieni, quasi completi, appena iniziati). `totalExchanges` e
+// `albumsInCommon` sono DERIVATI dalla ricetta (vedi in fondo al file), così card
+// e dettaglio restano sempre coerenti.
+export const DEMO_PROFILES: DemoProfile[] = ([
+  // Vicino · Calciatori recente + Euro 2024
+  { userId: -101, nickname: "Utente", near: true,  capOffset: 3, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 23,
+    recipe: [
+      { family: "calciatori", idx: 0, give: 9,  receive: 6 },
+      { family: "euro",       idx: 0, give: 5,  receive: 8 },
+    ] },
+  // Vicino · Calciatori 2024 + Mondiali 2026
+  { userId: -102, nickname: "Utente", near: true,  capOffset: 8, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 11,
+    recipe: [
+      { family: "calciatori", idx: 1, give: 4,  receive: 12 },
+      { family: "mondiali",   idx: 0, give: 7,  receive: 3 },
+    ] },
+  // Lontano · Calciatori + Euro + Mondiali (il più ricco: 3 album)
+  { userId: -103, nickname: "Utente", near: false, fixedKm: 151, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 40,
+    recipe: [
+      { family: "calciatori", idx: 2, give: 12, receive: 5 },
+      { family: "euro",       idx: 1, give: 6,  receive: 9 },
+      { family: "mondiali",   idx: 1, give: 3,  receive: 7 },
+    ] },
+  // Lontano · Calciatori + Mondiali
+  { userId: -104, nickname: "Utente", near: false, fixedKm: 151, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 8,
+    recipe: [
+      { family: "calciatori", idx: 3, give: 8,  receive: 4 },
+      { family: "mondiali",   idx: 2, give: 2,  receive: 10 },
+    ] },
+] as DemoProfile[]).map(deriveTotals);
 
 // Stessa formula del backend (routes/matches.ts) → distanze coerenti con i
 // match reali. Deterministica dal CAP, senza GPS.
@@ -161,36 +205,79 @@ function demoGroup(album: { id: number; title: string }, seed: number, count: nu
   };
 }
 
-// Costruisce il dettaglio demo (formato reale) per il componente MatchDetail.
-// `albums`: album REALI del catalogo (da useListAlbums); se assenti, liste vuote.
+type CatalogAlbum = { id: number; title: string; totalStickers?: number };
+
+// Riconosce la FAMIGLIA di un album dal titolo (catalogo reale: "Calciatori …",
+// "Euro Cup …", "World Cup …").
+function albumFamily(title: string): DemoFamily | null {
+  const t = title.toLowerCase();
+  if (t.includes("calciatori")) return "calciatori";
+  if (t.includes("euro")) return "euro";
+  if (t.includes("world") || t.includes("mondiali")) return "mondiali";
+  return null;
+}
+
+// Raggruppa il catalogo per famiglia, ordinato per titolo DECRESCENTE (più
+// recente prima) → idx 0 = l'edizione più nuova di quella famiglia.
+function catalogByFamily(albums: CatalogAlbum[]): Record<DemoFamily, CatalogAlbum[]> {
+  const out: Record<DemoFamily, CatalogAlbum[]> = { calciatori: [], euro: [], mondiali: [] };
+  for (const a of albums) {
+    const fam = albumFamily(a.title);
+    if (fam) out[fam].push(a);
+  }
+  (Object.keys(out) as DemoFamily[]).forEach((f) =>
+    out[f].sort((x, y) => y.title.localeCompare(x.title)),
+  );
+  return out;
+}
+
+// Risolve una voce di ricetta (famiglia+idx) su un album reale del catalogo.
+// Fallback robusto: se la famiglia è vuota (catalogo ridotto), usa i Calciatori;
+// se anche quelli mancano, il primo album disponibile.
+function resolveRecipeAlbum(
+  byFam: Record<DemoFamily, CatalogAlbum[]>,
+  all: CatalogAlbum[],
+  r: DemoRecipeAlbum,
+): CatalogAlbum | undefined {
+  const fam = byFam[r.family];
+  return fam[r.idx] ?? fam[0] ?? byFam.calciatori[0] ?? all[0];
+}
+
+// Costruisce il dettaglio demo (formato reale) per il componente MatchDetail,
+// seguendo la RICETTA del profilo: album da famiglie diverse (Calciatori/Euro/
+// Mondiali) con distribuzione dai/ricevi diversa. `albums`: catalogo REALE (da
+// useListAlbums); se assente, liste vuote.
 export function buildDemoDetail(
   userId: number,
   user: { cap?: string; area?: string } | null,
-  albums: { id: number; title: string; totalStickers?: number }[] | undefined,
+  albums: CatalogAlbum[] | undefined,
 ): DemoDetail | null {
   const p = getDemoProfile(userId);
   if (!p) return null;
   const summary = toSummary(user ?? {}, p);
-  const pool = (albums ?? []).slice(0, 2); // 1-2 album di esempio, come un match reale plausibile
-  // Distribuisco totalExchanges su Dai/Ricevi (scambio simmetrico dimostrativo).
+  const all = albums ?? [];
+  const byFam = catalogByFamily(all);
+
   const give: DemoAlbumGroup[] = [];
   const receive: DemoAlbumGroup[] = [];
-  if (pool[0]) {
-    const max = pool[0].totalStickers ?? 600;
-    give.push(demoGroup(pool[0], Math.abs(userId), Math.min(p.totalExchanges, 40), max));
-  }
-  if (pool[1] ?? pool[0]) {
-    const a = pool[1] ?? pool[0];
-    const max = a.totalStickers ?? 600;
-    receive.push(demoGroup(a, Math.abs(userId) + 3, Math.min(p.totalExchanges, 40), max));
-  }
+  const seed = Math.abs(userId);
+  p.recipe.forEach((r, i) => {
+    const album = resolveRecipeAlbum(byFam, all, r);
+    if (!album) return;
+    const max = album.totalStickers ?? 600;
+    // Seed distinti per direzione/album → numeri figurina diversi (nessuna
+    // sovrapposizione visiva tra "dai" e "ricevi" dello stesso album).
+    if (r.give > 0) give.push(demoGroup(album, seed * 10 + i, r.give, max));
+    if (r.receive > 0) receive.push(demoGroup(album, seed * 10 + i + 500, r.receive, max));
+  });
+
   const totalGive = give.reduce((s, g) => s + g.stickers.length, 0);
   const totalReceive = receive.reduce((s, g) => s + g.stickers.length, 0);
   return {
     userId,
     nickname: summary.nickname,
     area: summary.area,
-    totalExchanges: p.totalExchanges,
+    totalExchanges: totalGive, // "scambi possibili" = quante ne DAI (coerente col backend)
     totalGive,
     totalReceive,
     distanceKm: summary.distanceKm,

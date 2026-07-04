@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Send, AlertTriangle, ShieldAlert, ChevronDown, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Send, AlertTriangle, ShieldAlert, ChevronDown, Check } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { TradeConfirmDialog } from "@/components/chat/TradeConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -232,7 +232,7 @@ export function ChatRoom() {
             title="Scambio fatto"
             className="absolute right-4 -top-18 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 active:scale-95 transition-transform"
           >
-            <CheckCircle2 className="h-7 w-7" />
+            <Check className="h-8 w-8" strokeWidth={3} />
           </button>
           <Input
             value={text}

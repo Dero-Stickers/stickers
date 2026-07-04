@@ -7,6 +7,18 @@
 
 ## 2026-07
 
+- **Utenti-prova: rifiniture UI + vetrina varia [4 lug]** — (1) **Toast al CENTRO** dello schermo (prima in
+  alto a destra): la `ToastViewport` ora è `fixed inset-0 … items-center justify-center` con
+  `pointer-events-none` sul wrapper (i click passano) e animazione fade+zoom invece di slide d'angolo — gli
+  avvisi "chat/scambio non attivo" sono messaggi da leggere, non notifiche marginali. (2) **Bottone verde
+  "Scambio fatto"** (FAB in chat): icona `Check` semplice e grande (`strokeWidth 3`) al posto di `CheckCircle2`
+  (che aveva il cerchio interno bianco) — resta il cerchio verde del bottone. (3) **Vetrina dei 4 profili-prova
+  DIVERSA e mista**: ogni profilo ha una `recipe` (in `demo-matches.ts`) con album da famiglie diverse del
+  catalogo reale (Calciatori + Euro/Mondiali) e distribuzione dai/ricevi diversa → l'utente vede casi vari.
+  `totalExchanges` e `albumsInCommon` sono DERIVATI dalla ricetta (`deriveTotals`) → card e dettaglio sempre
+  coerenti. Standard IDENTICO per ogni nuovo utente (nessuna casualità). Verificato runtime: -101 Calciatori
+  2025-26+Euro 2024, -102 Calciatori 2024-25+WC 2026, -103 Calciatori 2023-24+Euro 2020+WC 2022 (3 album),
+  -104 Calciatori 2022-23+WC 2018; toast centro-Y=422/844; icona check senza cerchio.
 - **Utenti-prova: percorso IDENTICO al reale, stop solo nei 2 punti finali [4 lug]** — corretto l'approccio
   precedente (che metteva un pulsante *"Scambio fatto"* fittizio nel dettaglio, inesistente per gli utenti
   veri). Ora il profilo-prova segue **esattamente lo stesso percorso del reale**: dal dettaglio si apre la
