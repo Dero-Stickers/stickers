@@ -28,10 +28,14 @@ export function LegalPage() {
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (cancelled) return;
+        // Segnaposto {EMAIL_SUPPORTO} nei testi legali → sostituito con l'email
+        // unica del pannello admin, così cambiare l'email la aggiorna anche qui.
+        const email = data?.supportEmail?.trim() || "info-stickers@deroarts.com";
+        const fill = (s: string) => s.split("{EMAIL_SUPPORTO}").join(email);
         const p = data?.privacyPolicyText;
         const t = data?.termsText;
-        setPrivacy(p && p.trim().length > 0 ? p : UNAVAILABLE);
-        setTerms(t && t.trim().length > 0 ? t : UNAVAILABLE);
+        setPrivacy(p && p.trim().length > 0 ? fill(p) : UNAVAILABLE);
+        setTerms(t && t.trim().length > 0 ? fill(t) : UNAVAILABLE);
       })
       .catch(() => {
         if (!cancelled) { setPrivacy(UNAVAILABLE); setTerms(UNAVAILABLE); }

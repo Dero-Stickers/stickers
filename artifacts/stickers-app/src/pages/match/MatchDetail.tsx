@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useToast } from "@/hooks/use-toast";
+import { useSupportEmail } from "@/hooks/useSupportEmail";
 import {
   useGetMatchDetail,
   useOpenChat,
@@ -122,6 +123,7 @@ export function MatchDetail() {
   const matchUserId = parseInt(userId, 10);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const supportEmail = useSupportEmail();
 
   const [showPaywall, setShowPaywall] = useState(false);
 
@@ -277,7 +279,7 @@ export function MatchDetail() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Pagamenti in arrivo. Per info: <a href="mailto:stickersmatchbox@hotmail.com" className="text-primary underline">stickersmatchbox@hotmail.com</a>
+              Pagamenti in arrivo. Per info: <a href={`mailto:${supportEmail}`} className="text-primary underline">{supportEmail}</a>
             </p>
             <Button variant="ghost" className="w-full" onClick={() => setShowPaywall(false)}>
               <X className="h-4 w-4 mr-2" />

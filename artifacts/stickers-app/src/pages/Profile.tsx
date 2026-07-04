@@ -14,11 +14,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { useSupportEmail } from "@/hooks/useSupportEmail";
 
 export function Profile() {
   const { currentUser, logout, login } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const supportEmail = useSupportEmail();
 
   const handleLogout = () => {
     logout();
@@ -176,10 +178,11 @@ export function Profile() {
         </div>
 
         {/* Firma progetto — minimale: solo il logo deroarts, cliccabile.
-            mt-auto la spinge in fondo allo spazio disponibile senza scroll. */}
+            mt-auto la spinge in fondo allo spazio disponibile senza scroll.
+            Email di contatto = quella unica del pannello admin (useSupportEmail). */}
         <footer className="mt-auto pt-3 flex justify-center">
           <a
-            href="mailto:info-stickers@deroarts.com?subject=Contatto%20da%20app%20Stickers"
+            href={`mailto:${supportEmail}?subject=${encodeURIComponent("Contatto da app Stickers")}`}
             aria-label="Scrivi a deroarts"
             title="Scrivi a deroarts"
             className="opacity-70 hover:opacity-100 transition-opacity"

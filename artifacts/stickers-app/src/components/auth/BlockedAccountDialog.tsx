@@ -8,12 +8,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useGetAppSettings } from "@workspace/api-client-react";
-
-// Email di supporto di FALLBACK (dominio deroarts.com), usata se il campo
-// "Email supporto" in admin non è configurato o le impostazioni non sono
-// ancora caricate. Fonte reale: app_settings.support_email (pannello admin).
-export const SUPPORT_EMAIL = "info-stickers@deroarts.com";
+import { useSupportEmail } from "@/hooks/useSupportEmail";
 
 interface BlockedAccountDialogProps {
   open: boolean;
@@ -28,9 +23,7 @@ interface BlockedAccountDialogProps {
  * del blocco; offre una via d'uscita chiara — scrivere al supporto per lo sblocco.
  */
 export function BlockedAccountDialog({ open, onOpenChange, closeLabel = "Chiudi" }: BlockedAccountDialogProps) {
-  // Email di supporto dal pannello admin (app_settings), con fallback alla costante.
-  const { data: settings } = useGetAppSettings();
-  const supportEmail = settings?.supportEmail?.trim() || SUPPORT_EMAIL;
+  const supportEmail = useSupportEmail();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
