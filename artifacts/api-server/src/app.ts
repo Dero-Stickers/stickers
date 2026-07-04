@@ -55,7 +55,10 @@ function buildAllowedOrigins(): (string | RegExp)[] {
     origins.push(/^https?:\/\/localhost(:\d+)?$/);
     origins.push(/^https?:\/\/127\.0\.0\.1(:\d+)?$/);
   } else {
-    origins.push(/\.onrender\.com$/);
+    // Dominio pubblico ESATTO di questo deploy (non più la regex jolly
+    // *.onrender.com, che avrebbe ammesso qualsiasi altro sotto-dominio
+    // onrender). Per un dominio custom futuro: aggiungerlo via CORS_ORIGINS.
+    origins.push("https://stickers-matchbox.onrender.com");
   }
   return origins;
 }
