@@ -115,7 +115,7 @@ export function Profile() {
       {/* Profilo compatto: nessun titolo di sezione, un'unica lista di voci,
           spaziature ridotte così tutto (firma deroarts inclusa) sta a schermo
           senza scroll. pb minimo: la firma deroarts resta a ridosso della nav bar. */}
-      <div className="flex-1 flex flex-col min-h-0 px-4 pt-4 pb-1">
+      <div className="flex flex-col min-h-0 px-4 pt-4 pb-1">
         <Card className="shadow-sm">
           <CardContent className="p-0 divide-y divide-border">
             <button
@@ -176,21 +176,24 @@ export function Profile() {
             </Button>
           )}
         </div>
-
-        {/* Firma progetto — minimale: solo il logo deroarts, cliccabile.
-            mt-auto la spinge in fondo allo spazio disponibile senza scroll.
-            Email di contatto = quella unica del pannello admin (useSupportEmail). */}
-        <footer className="mt-auto pt-3 flex justify-center">
-          <a
-            href={`mailto:${supportEmail}?subject=${encodeURIComponent("Contatto da app Stickers")}`}
-            aria-label="Scrivi a deroarts"
-            title="Scrivi a deroarts"
-            className="opacity-70 hover:opacity-100 transition-opacity"
-          >
-            <img src="/deroarts_logo.svg" alt="deroarts" className="h-6 w-auto" />
-          </a>
-        </footer>
       </div>
+
+      {/* Spacer che cresce: mangia lo spazio libero e spinge la firma in fondo,
+          a ridosso della nav bar (flex-1 è affidabile; mt-auto non basta qui). */}
+      <div className="flex-1" />
+
+      {/* Firma progetto — minimale: solo il logo deroarts, cliccabile.
+          Email di contatto = quella unica del pannello admin (useSupportEmail). */}
+      <footer className="shrink-0 pt-3 pb-2 flex justify-center">
+        <a
+          href={`mailto:${supportEmail}?subject=${encodeURIComponent("Contatto da app Stickers")}`}
+          aria-label="Scrivi a deroarts"
+          title="Scrivi a deroarts"
+          className="opacity-70 hover:opacity-100 transition-opacity"
+        >
+          <img src="/deroarts_logo.svg" alt="deroarts" className="h-6 w-auto" />
+        </a>
+      </footer>
 
       <Dialog open={showLocDialog} onOpenChange={setShowLocDialog}>
         <DialogContent className="max-w-sm">
