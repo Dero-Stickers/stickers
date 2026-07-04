@@ -7,6 +7,21 @@
 
 ## 2026-07
 
+- **Pulizia e alleggerimento pre-pubblicazione (stato vergine)** — in vista degli ultimi test prima del
+  lancio, l'app è stata riportata a vergine e ripulita dai residui. (1) *DB*: eliminati ~3000 utenti di
+  test e tutti i dati derivati (possessi, chat, messaggi, report, sblocchi); tenuti SOLO `Dero975` (id 69)
+  e `admin` (id 70) resi vergini (0 album/figurine) per il pulsante U/A; catalogo `albums`/`stickers`
+  INTATTO (regola: gli album non si eliminano mai, al massimo si resettano i possessi). Backup completo
+  pre-pulizia in `BACKUP/`. (2) *Migrazione 0004_drop_demo APPLICATA*: rimosse le colonne `users.demo_started_at`/
+  `demo_expires_at` e le settings `demo_hours`/`premium_demo_enabled` (residui della "demo premium" già
+  ritirata) → DB ora 100% allineato allo schema Drizzle; isPremium/payments/paywall non toccati. (3) *Codice
+  morto*: rimosse da `api-server/lib/auth.ts` le funzioni `hashPin`/`hashAnswer`/`verifyAnswer` (orfane dopo
+  la rimozione della registrazione PIN; i seed hanno copie proprie) + import orfani; rimosso il hook
+  `useIsMobile` (mai importato). `verifyPin` resta (login PIN legacy U/A). Typecheck 0 errori. (4) *Locale/git*:
+  eliminati backup superati (snapshot 3 lug 25M, dump pre-reset, mini-backup legali), `.rollback-messaggi`,
+  `album-source/scraped.json`, `dist/` e `tsbuildinfo` (~39M); rimossi il branch `replit-agent` (residuo
+  Replit) e il remote `gitsafe-backup` (server locale morto). NB: `album-source/link/` NON si tocca (sorgente
+  della pipeline dati album).
 - **Rifiniture UI mobile (Profilo, Album, navbar Match)** — tre ritocchi estetici verificati sul
   DOM reale (Playwright, gap misurati, non a occhio): (1) *Profilo* — la firma DeroArts ora è
   ancorata in fondo, a ridosso della nav bar (gap 0px); `mt-auto` non veniva applicato → sostituito

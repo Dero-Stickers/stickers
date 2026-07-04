@@ -36,6 +36,13 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Sessioni giu-lug 2026 — novità principali (fatte)
 
+- **[4 lug] Pulizia e alleggerimento pre-pubblicazione** — (a) DB riportato a STATO VERGINE: eliminati
+  ~3000 utenti di test + tutti i dati derivati; restano SOLO `Dero975` (id 69) e `admin` (id 70), entrambi
+  con 0 album/0 figurine; catalogo (35 album, 25.391 figurine) INTATTO. Backup pre-pulizia in
+  `BACKUP/backup_2026-07-04T00-28-24.json`. (b) Migrazione `0004_drop_demo.sql` APPLICATA → DB 100%
+  allineato allo schema Drizzle (via i residui demo). (c) Codice morto rimosso (hash PIN/answer legacy in
+  `auth.ts`, hook `useIsMobile`). (d) Pulizia locale/git: backup superati, `.rollback-messaggi`,
+  `scraped.json`, `dist/`; branch `replit-agent` e remote `gitsafe-backup` rimossi. Vedi `17_DECISION_LOG.md`.
 - **[4 lug] Rifiniture UI mobile** — Profilo: firma DeroArts ancorata in fondo alla nav bar (spacer
   flex-1, non più a metà). Album: chip filtro categoria FISSI fuori dallo scroller (scorrono solo le
   card) + stacco ~12px dalle card. Navbar: icona Match = fulmine (Zap); da attivo arancione pieno con
@@ -166,7 +173,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - [ ] **Scaling oltre ~2.000 utenti (free)**: leva #1 = non salvare le righe "mancante" (mancante = album posseduto + nessuna riga) → 2-3× tetto storage; poi modello bitmap per album per i 50k. Intervento profondo, vedi `16_STRESS_TEST_AUDIT.md`
 - [ ] Notifiche push
 - [ ] **Collegare il pagamento reale** (ultimo step monetizzazione): provider **senza P.IVA** (PayPal o simili — Stripe richiede P.IVA), prima in **test**. Il checkout (`routes/billing.ts`, oggi stub inerte) deve creare la riga `payments` pending + URL pagamento; un **webhook** sul pagamento confermato chiama `grantChatUnlock`/`grantAllChats`. Schema e gate già pronti. Vedi `06_PREMIUM_DEMO.md`
-- [ ] Applicare la migrazione `0004_drop_demo.sql` (DROP colonne/impostazioni demo — distruttiva, a mano, da confermare)
+- [x] ~~Applicare la migrazione `0004_drop_demo.sql`~~ **FATTO [4 lug]** — colonne `users.demo_*` e settings demo rimosse; DB ora 100% allineato allo schema Drizzle.
 - [ ] Landing page pubblica con dominio
 
 ### Bassa priorità
@@ -180,13 +187,14 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Utenti nel DB (Supabase) — STATO VERGINE (1 lug 2026)
 
-App **azzerata per la pubblicazione**: nel DB restano **solo 2 account demo** (per il pulsante U/A),
-nessun possesso, nessuna chat/match. `auth.users` Supabase = 0. Catalogo intatto (23 album + 17.581 figurine).
+App **azzerata per la pubblicazione** (ri-pulita il **4 lug**): nel DB restano **solo 2 account** (per il
+pulsante U/A), nessun possesso, nessuna chat/match. `auth.users` Supabase = 0. Catalogo intatto
+(**35 album + 25.391 figurine**). ⚠️ Gli **id reali** sono **69/70** (non più 1/6 come in vecchi riferimenti).
 
-| Nickname | PIN | Ruolo | Note |
-|----------|-----|-------|------|
-| `admin`  | 0000 | admin | account admin + vista "A" del DevQuickSwitch |
-| `Dero975`| 1234 | utente | vista "U" del DevQuickSwitch |
+| id | Nickname | PIN | Ruolo | Note |
+|----|----------|-----|-------|------|
+| 70 | `admin`  | 0000 | admin | account admin + vista "A" del DevQuickSwitch |
+| 69 | `Dero975`| 1234 | utente | vista "U" del DevQuickSwitch |
 
 ⛔ Questi 2 account **non vanno eliminati** (senza di loro il pulsante U/A si rompe). Se si ri-azzera
 l'app, vanno **ricreati** (insert con `hashPin`, `auth_provider='pin'`, `cap`/`area`, `acceptedTermsAt`).
