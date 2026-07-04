@@ -1,6 +1,6 @@
 # DNA — Stato Sviluppo
 
-Aggiornato: 3 luglio 2026
+Aggiornato: 4 luglio 2026
 
 > Fotografia dello **stato attuale** (non un changelog). Tenere aggiornato questo
 > file a fine sessione.
@@ -36,6 +36,10 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Sessioni giu-lug 2026 — novità principali (fatte)
 
+- **[4 lug] Rifiniture UI mobile** — Profilo: firma DeroArts ancorata in fondo alla nav bar (spacer
+  flex-1, non più a metà). Album: chip filtro categoria FISSI fuori dallo scroller (scorrono solo le
+  card) + stacco ~12px dalle card. Navbar: icona Match = fulmine (Zap); da attivo arancione pieno con
+  contorno blu sottile. Solo estetica, verificata sul DOM reale. Vedi `17_DECISION_LOG.md`.
 - **[3 lug] Blocco utente consolidato (anti-aggiramento)** — lista nera email (`blocked_emails`, mig. 0008)
   + gate su tutte le azioni + no auto-eliminazione + modale "Account bloccato" con mailto supporto, mostrato
   in tutti i casi (login PIN/Google/Email e sessione aperta). Dettagli in `02_UTENTI_AUTENTICAZIONE.md`.

@@ -7,6 +7,15 @@
 
 ## 2026-07
 
+- **Rifiniture UI mobile (Profilo, Album, navbar Match)** — tre ritocchi estetici verificati sul
+  DOM reale (Playwright, gap misurati, non a occhio): (1) *Profilo* — la firma DeroArts ora è
+  ancorata in fondo, a ridosso della nav bar (gap 0px); `mt-auto` non veniva applicato → sostituito
+  con uno spacer `flex-1` che spinge il footer in basso. (2) *Album* — i chip filtro categoria
+  (Tutti/Campionati/Europei/Mondiali) spostati nella fascia fissa `shrink-0` FUORI dallo scroller:
+  scorrono solo le card; `pb-3` sulla fascia dà uno stacco permanente ~12px (prima le card sfilavano
+  a ridosso, 4px). (3) *Navbar* — icona Match = fulmine `Zap` (coerente col logo, non più le due
+  sagome `Users`); da ATTIVO il fulmine è arancione PIENO (`fill-accent`) con contorno blu sottile
+  (`text-primary` + `strokeWidth 0.75`). Nessun cambiamento funzionale/DB.
 - **Email di supporto UNICA + testi legali in box unico** — l'email di supporto è ora una sola,
   gestita da `app_settings.support_email` (admin → Impostazioni) via hook condiviso
   `useSupportEmail()` (fallback `info-stickers@deroarts.com`): usata da Account bloccato, firma
