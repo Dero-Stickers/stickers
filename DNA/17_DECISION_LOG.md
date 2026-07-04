@@ -15,9 +15,9 @@
   stato** (bulk, tranne "Tutte"). Robusto anche con numeri a 4 cifre (verificato: nessun overflow). Barra %
   resta sotto. Meno refusi, più minimale.
 - **Popup a scomparsa (toast): sfondo bianco + titolo arancione [4 lug]** — standardizzato lo stile di TUTTI i
-  toast (unico sistema, nessun sonner): sfondo `bg-background` (bianco) e **titolo `text-accent`** (arancione
-  della palette, `--accent: 37 90% 55%`); i toast `destructive` restano col titolo su rosso. Coerente con la
-  palette.
+  toast (unico sistema, nessun sonner): sfondo **`bg-popover`** (bianco PURO `0 0% 100%` — NON `bg-background`,
+  che è azzurrino `205 100% 98%`) e **titolo `text-accent`** (arancione della palette, `--accent: 37 90% 55%`);
+  i toast `destructive` restano col titolo su rosso. Coerente con la palette.
 - **Utenti-prova: rifiniture UI + vetrina varia [4 lug]** — (1) **Toast al CENTRO** dello schermo (prima in
   alto a destra): la `ToastViewport` ora è `fixed inset-0 … items-center justify-center` con
   `pointer-events-none` sul wrapper (i click passano) e animazione fade+zoom invece di slide d'angolo — gli
