@@ -7,6 +7,25 @@
 
 ## 2026-07
 
+- **Audit privacy & sicurezza + hardening CORS [4 lug]** — audit enterprise sola-lettura (repo + chiave
+  anon + connessione DB `postgres` per il catalogo RLS + header live del deploy). Esito: **rischio globale
+  BASSO**. Verificato con prove: (1) **RLS ON su tutte le 15 tabelle con 0 policy = deny-all**; lettura
+  anonima via PostgREST → **0 righe** da ogni tabella (anche `stickers`/`albums` che hanno dati). (2) Modello
+  **backend-guardiano**: il frontend NON fa query dati a Supabase (`.from()` assente), usa il client solo per
+  `auth`/realtime; tutti i dati passano da Express `/api/*`; `service_role` assente dal frontend/bundle,
+  solo backend. (3) Nessuna RPC/vista custom in `public`. (4) `.env` gitignored e mai in git history.
+  (5) GDPR: cancellazione (`DELETE /api/auth/me`) ed export (`GET /api/auth/me/export`) presenti; PII
+  minimale (nickname/email/CAP); sanitizer PII sui log; font self-hosted; cookie banner minimale. (6) CSP/
+  HSTS/CORS solidi (header live: `default-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`,
+  HSTS `max-age=31536000`). **UNICO fix applicato**: CORS in prod usa ora il **dominio esatto**
+  `https://stickers-matchbox.onrender.com` invece della regex jolly `*.onrender.com` (che ammetteva
+  qualsiasi sotto-dominio onrender); fallback env `CORS_ORIGINS`/`RENDER_EXTERNAL_URL` invariati, dev
+  localhost invariato; verificato comportamentalmente. **Rischi noti ACCETTATI**: pulsante U/A
+  (`DevQuickSwitch`) visibile in prod (scelta owner, da rivalutare solo con utenti reali); token in
+  localStorage (standard SPA, mitigato da CSP `script-src 'self'`); backup locale con PII (gitignored).
+  **Rimandabili (media/bassa)**: `pnpm update` per DoS transitivi (`path-to-regexp`/`qs` su Express 5.2.1),
+  `unsafe-inline` su style-src (splash). Nota: la migrazione 0004 era già stata applicata → nessuna colonna
+  demo residua (un finding degli agenti su questo era obsoleto, letto dal backup vecchio).
 - **Pulizia e alleggerimento pre-pubblicazione (stato vergine)** — in vista degli ultimi test prima del
   lancio, l'app è stata riportata a vergine e ripulita dai residui. (1) *DB*: eliminati ~3000 utenti di
   test e tutti i dati derivati (possessi, chat, messaggi, report, sblocchi); tenuti SOLO `Dero975` (id 69)

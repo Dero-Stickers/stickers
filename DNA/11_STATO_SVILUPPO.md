@@ -36,6 +36,11 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ## Sessioni giu-lug 2026 — novità principali (fatte)
 
+- **[4 lug] Audit privacy & sicurezza (rischio BASSO) + hardening CORS** — audit enterprise sola-lettura:
+  RLS deny-all verificata su tutte le 15 tabelle (0 righe leggibili da anon), modello backend-guardiano
+  (il client non tocca il DB), segreti fuori dal frontend/git, GDPR ok (cancellazione+export), CSP/HSTS
+  attivi in prod. Unico fix: CORS in prod ristretto al dominio esatto (non più `*.onrender.com`). Rischi
+  noti accettati: pulsante U/A, token localStorage, backup locale con PII. Vedi `17_DECISION_LOG.md`.
 - **[4 lug] Pulizia e alleggerimento pre-pubblicazione** — (a) DB riportato a STATO VERGINE: eliminati
   ~3000 utenti di test + tutti i dati derivati; restano SOLO `Dero975` (id 69) e `admin` (id 70), entrambi
   con 0 album/0 figurine; catalogo (35 album, 25.391 figurine) INTATTO. Backup pre-pulizia in
