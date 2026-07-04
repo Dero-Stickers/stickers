@@ -270,6 +270,7 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
             disabled={openChat.isPending}
             aria-label={`Apri chat con ${detail.nickname}`}
             title={`Apri chat con ${detail.nickname}`}
+            data-guide="guide-chat-button"
             className="h-10 w-10 shrink-0 rounded-full p-0 bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm"
           >
             <MessageCircle className="h-5 w-5" />

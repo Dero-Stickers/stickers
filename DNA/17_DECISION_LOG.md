@@ -7,6 +7,18 @@
 
 ## 2026-07
 
+- **Guida interattiva (onboarding tour) [4 lug]** — tour a fumetti fatto in casa (no librerie: framer-motion +
+  Tailwind già presenti, zero peso). Conduce il nuovo utente, in modo DIMOSTRATIVO, nella gestione del primo
+  album e del primo match: MOSTRA e SPIEGA su elementi reali, NON modifica dati. REGOLA D'ORO: ogni passo
+  evidenzia un elemento presente nella schermata (i passi "azione" navigano davvero dentro album/match, così i
+  passi "info" hanno gli elementi sotto). 3 file separati (config `lib/guide/steps.ts` · stato
+  `GuideContext.tsx` · motore `GuideOverlay.tsx`), modulare/scalabile. Aggancio via `data-guide` sugli elementi
+  cliccabili. Avvio: PER ORA a ogni refresh (una volta per caricamento; se chiudi non riparte) + riapribile da
+  Profilo → "Guida Stickers" (prima placeholder). Doc: `DNA/18_GUIDA_INTERATTIVA.md`. Fix chiave dai test:
+  velo/pointer-events INLINE (Tailwind v4 non genera `bg-slate-900/70`/`pointer-events-none`), misura rAF
+  continua (spotlight segue il target async), navigazione deterministica (`next()` prima di `setLocation`),
+  fumetto mai sopra il target, X a sinistra per non collidere col pulsante U/A. Verificato end-to-end (10 passi,
+  ogni testo coerente con la schermata).
 - **Profili-prova · ripristinata eliminazione dal dettaglio [4 lug]** — la rimozione del singolo profilo-prova
   era sparita quando si è tolto il vecchio bottone "Scambio fatto" (unificazione col flusso reale). Ripristinata
   con un pulsante **"Elimina profilo di prova"** (rosso pieno, testo bianco, icona `Trash2`) **fisso in fondo

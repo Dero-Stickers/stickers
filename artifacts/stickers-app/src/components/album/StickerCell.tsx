@@ -22,16 +22,19 @@ function splitLongCode(code: string): { prefix: string; digits: string } | null 
   return m ? { prefix: m[1], digits: m[2] } : null;
 }
 
-export const StickerCell = memo(function StickerCell({ sticker, onTap, onPressStart, onPressEnd }: {
+export const StickerCell = memo(function StickerCell({ sticker, onTap, onPressStart, onPressEnd, dataGuide }: {
   sticker: UserSticker;
   onTap: (s: UserSticker) => void;
   onPressStart: (s: UserSticker) => void;
   onPressEnd: () => void;
+  /** Anchor opzionale per la guida interattiva (solo la 1ª cella lo riceve). */
+  dataGuide?: string;
 }) {
   const st = (sticker.state ?? "mancante") as StickerState;
   const split = sticker.code ? splitLongCode(sticker.code) : null;
   return (
     <button
+      data-guide={dataGuide}
       className={`cv-cell aspect-square rounded-md flex flex-col items-center justify-center text-xs font-bold leading-none select-none transition-transform active:scale-95 ${stateColors[st]}`}
       onClick={() => onTap(sticker)}
       onPointerDown={() => onPressStart(sticker)}

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useGuide } from "@/lib/guide/GuideContext";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useSupportEmail } from "@/hooks/useSupportEmail";
@@ -20,6 +21,7 @@ export function Profile() {
   const { currentUser, logout, login } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { start: startGuide } = useGuide();
   const supportEmail = useSupportEmail();
 
   const handleLogout = () => {
@@ -129,7 +131,7 @@ export function Profile() {
 
             <button
               className="group w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-              onClick={() => toast({ title: "Guida", description: "La guida sarà disponibile a breve." })}
+              onClick={() => startGuide()}
             >
               <HelpCircle className="h-5 w-5 text-primary shrink-0" />
               <p className="flex-1 font-medium text-sm text-foreground">Guida Stickers</p>

@@ -171,8 +171,8 @@ export function MatchList() {
             )}
 
             <div className="grid gap-1.5 md:grid-cols-2 items-start">
-              {matches.map(match => (
-                <MatchCard key={match.userId} match={match} />
+              {matches.map((match, i) => (
+                <MatchCard key={match.userId} match={match} dataGuide={i === 0 ? "guide-first-match" : undefined} />
               ))}
             </div>
           </>

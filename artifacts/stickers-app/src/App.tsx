@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,6 +10,8 @@ import NotFound from "@/pages/not-found";
 import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
 import { CookieBanner } from "@/components/CookieBanner";
 import { ConfirmProvider } from "@/components/admin/ConfirmDialog";
+import { GuideProvider, useGuide } from "@/lib/guide/GuideContext";
+import { GuideOverlay } from "@/components/guide/GuideOverlay";
 import { dismissBootSplash } from "@/components/brand/SplashScreen";
 import { setFetchFailureObserver, setAccountBlockedObserver } from "@workspace/api-client-react";
 import { installGlobalErrorCapture, reportApiFailure } from "@/lib/error-capture";
@@ -218,6 +220,33 @@ function Router() {
   );
 }
 
+// Monta il GuideProvider passando l'id utente corrente (per il flag "già vista"
+// per-utente). Sta dentro AuthProvider così può leggere useAuth.
+function GuideGate({ children }: { children: React.ReactNode }) {
+  const { currentUser } = useAuth();
+  return <GuideProvider userId={currentUser?.id}>{children}</GuideProvider>;
+}
+
+// Avvio automatico della guida. PER ORA (fase di test) parte a OGNI refresh per
+// l'utente loggato NON-admin — ma UNA SOLA VOLTA per caricamento pagina: se
+// l'utente la chiude/salta NON si riapre da sola (si riparte solo al prossimo
+// refresh). Quando la guida sarà definitiva, sostituire la condizione con
+// `!hasSeenGuide(currentUser?.id)` così parte solo al PRIMO avvio in assoluto;
+// resta comunque riapribile da Profilo → Guida.
+function GuideAutoStart() {
+  const { isAuthenticated, currentUser } = useAuth();
+  const { start } = useGuide();
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (startedRef.current) return;               // già avviata in questa pagina
+    if (!isAuthenticated || currentUser?.isAdmin) return;
+    startedRef.current = true;
+    const t = setTimeout(start, 600); // lascia montare la UI prima di evidenziare
+    return () => clearTimeout(t);
+  }, [isAuthenticated, currentUser?.isAdmin, start]);
+  return null;
+}
+
 function BootEffects() {
   const { currentUser, isAuthenticated } = useAuth();
   useEffect(() => {
@@ -273,14 +302,18 @@ function App() {
         <TooltipProvider>
           <AuthProvider>
             <ConfirmProvider>
-              <BootEffects />
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <Router />
-                <DevQuickSwitch />
-                <CookieBanner />
-              </WouterRouter>
-              <BlockedGate />
-              <Toaster />
+              <GuideGate>
+                <BootEffects />
+                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                  <Router />
+                  <DevQuickSwitch />
+                  <CookieBanner />
+                  <GuideAutoStart />
+                  <GuideOverlay />
+                </WouterRouter>
+                <BlockedGate />
+                <Toaster />
+              </GuideGate>
             </ConfirmProvider>
           </AuthProvider>
         </TooltipProvider>

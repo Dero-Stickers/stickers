@@ -75,6 +75,7 @@ export function MobileLayout({ children }: { children: ReactNode }) {
           riga icone piena da 4rem SOPRA la safe-area; lo sfondo si estende sotto
           (home indicator) senza schiacciare le icone. */}
       <nav
+        data-guide="nav-bar"
         className="shrink-0 w-full bg-card border-t border-border z-50"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
@@ -85,6 +86,7 @@ export function MobileLayout({ children }: { children: ReactNode }) {
             <Link
               key={item.path}
               href={item.path}
+              data-guide={`nav-${item.label.toLowerCase()}`}
               className={`flex flex-col items-center justify-center min-w-0 flex-1 h-full gap-1 relative ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
             >
               <div className="relative">

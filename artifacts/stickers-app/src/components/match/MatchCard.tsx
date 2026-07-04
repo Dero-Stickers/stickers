@@ -9,10 +9,10 @@ import { isDemoUserId } from "@/lib/demo-matches";
 // (Vicini/Migliori) e la ricerca per singola figurina, così l'aspetto resta
 // identico in tutti i contesti e non si duplica il markup.
 // I profili DEMO (userId negativo) mostrano un badge "PROVA" ben visibile.
-export function MatchCard({ match }: { match: MatchSummary }) {
+export function MatchCard({ match, dataGuide }: { match: MatchSummary; dataGuide?: string }) {
   const isDemo = isDemoUserId(match.userId);
   return (
-    <Link href={`/match/${match.userId}`}>
+    <Link href={`/match/${match.userId}`} data-guide={dataGuide}>
       <Card className={`shadow-sm cursor-pointer transition-colors ${isDemo ? "border-accent/60 hover:border-accent" : "hover:border-primary"}`}>
         <CardContent className="p-3">
           <div className="flex items-center justify-between gap-2">

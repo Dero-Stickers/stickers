@@ -233,13 +233,13 @@ export function AlbumList() {
                 <p className="text-sm mt-1">Vai su "Disponibili" per aggiungere il tuo primo album</p>
               </div>
             )}
-            {filteredMyAlbums.map(ua => (
+            {filteredMyAlbums.map((ua, i) => (
               <Card key={ua.id} className="shadow-sm">
                 <CardContent className="p-0">
                   <div className="flex items-center">
                     {/* py più ampio: card alte e spaziose come "Disponibili" pur
                         restando una riga sola (nessun contenuto aggiunto). */}
-                    <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 px-3 py-5 cursor-pointer">
+                    <Link href={`/album/${ua.id}`} data-guide={i === 0 ? "guide-first-album" : undefined} className="flex flex-1 min-w-0 items-center gap-3 px-3 py-5 cursor-pointer">
                       <CategoryIcon category={ua.category} h="h-7" w="w-8" />
                       <p className="font-semibold text-foreground truncate min-w-0 flex-1">{ua.title}</p>
                       <span className="text-primary font-bold text-sm shrink-0">{ua.completionPercent}%</span>

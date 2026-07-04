@@ -266,7 +266,7 @@ export function AlbumDetail() {
         {/* 4 CARD-PULSANTE: ognuna è insieme contatore E filtro (tap = filtra,
             long-press = imposta tutte a quello stato). Sfondo bianco, angoli
             arrotondati, touch-friendly; quella attiva ha bordo/anello primario. */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-2" data-guide="guide-filters">
           {filterOptions.map(opt => {
             const active = filter === opt.key;
             return (
@@ -301,7 +301,7 @@ export function AlbumDetail() {
             <p className="font-medium">Nessuna figurina in questa categoria</p>
           </div>
         )}
-        {stickerBlocks.map(block => (
+        {stickerBlocks.map((block, blockIdx) => (
           // Intestazione (nome nazione + linea sottile) SOPRA la griglia del
           // blocco — fuori dalla grid, così è a tutta larghezza senza rubare il
           // posto a una figurina. Ogni blocco ha la sua griglia (celle identiche
@@ -314,13 +314,16 @@ export function AlbumDetail() {
               </div>
             )}
             <div className="grid gap-1.5 grid-cols-7 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12">
-              {block.stickers.map(s => (
+              {block.stickers.map((s, cellIdx) => (
+                // La PRIMA cella in assoluto porta l'anchor della guida, per
+                // evidenziare "una figurina" reale nel passo dedicato.
                 <StickerCell
                   key={s.stickerId}
                   sticker={s}
                   onTap={tapSticker}
                   onPressStart={handlePointerDown}
                   onPressEnd={handlePointerUp}
+                  dataGuide={blockIdx === 0 && cellIdx === 0 ? "guide-first-sticker" : undefined}
                 />
               ))}
             </div>
