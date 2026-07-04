@@ -222,12 +222,17 @@ export function AlbumDetail() {
     return blocks;
   }, [filteredStickers, hasLongCodes]);
 
+  // Ogni voce è insieme CONTATORE e FILTRO: mostra il numero + l'etichetta ed è
+  // cliccabile (tap = filtra; long-press = imposta tutte a quello stato, tranne
+  // "Tutte"). `count` = valore mostrato; `numberColor` = colore del numero.
   // bulkState = stato applicato col long-press. "Tutte" non ha azione (solo filtro).
-  const filterOptions: { key: FilterType; label: string; bulkState?: BulkState }[] = [
-    { key: "tutte", label: "Tutte" },
-    { key: "possedute", label: "Mie", bulkState: "posseduta" },
-    { key: "doppie", label: "Doppie", bulkState: "doppia" },
-    { key: "mancanti", label: "Mancanti", bulkState: "mancante" },
+  const filterOptions: {
+    key: FilterType; label: string; count: number; numberColor: string; bulkState?: BulkState;
+  }[] = [
+    { key: "tutte", label: "Tutte", count: total, numberColor: "text-foreground" },
+    { key: "possedute", label: "Mie", count: owned, numberColor: "text-green-600", bulkState: "posseduta" },
+    { key: "doppie", label: "Doppie", count: duplicates, numberColor: "text-red-500", bulkState: "doppia" },
+    { key: "mancanti", label: "Mancanti", count: missing, numberColor: "text-accent", bulkState: "mancante" },
   ];
 
   if (isLoading) {
@@ -258,45 +263,36 @@ export function AlbumDetail() {
           </button>
           <h1 className="flex-1 text-lg font-bold leading-tight text-foreground text-center pr-7">{albumTitle}</h1>
         </div>
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div>
-            <p className="text-xl font-bold text-foreground">{total}</p>
-            <p className="text-xs text-muted-foreground">Totale</p>
-          </div>
-          <div>
-            <p className="text-xl font-bold text-green-600">{owned}</p>
-            <p className="text-xs text-muted-foreground">Possedute</p>
-          </div>
-          <div>
-            <p className="text-xl font-bold text-red-500">{duplicates}</p>
-            <p className="text-xs text-muted-foreground">Doppie</p>
-          </div>
-          <div>
-            <p className="text-xl font-bold text-accent">{missing}</p>
-            <p className="text-xs text-muted-foreground">Mancanti</p>
-          </div>
+        {/* 4 CARD-PULSANTE: ognuna è insieme contatore E filtro (tap = filtra,
+            long-press = imposta tutte a quello stato). Sfondo bianco, angoli
+            arrotondati, touch-friendly; quella attiva ha bordo/anello primario. */}
+        <div className="grid grid-cols-4 gap-2">
+          {filterOptions.map(opt => {
+            const active = filter === opt.key;
+            return (
+              <button
+                key={opt.key}
+                onClick={() => handleChipClick(opt.key)}
+                onPointerDown={opt.bulkState ? () => handleChipDown(opt.bulkState!) : undefined}
+                onPointerUp={opt.bulkState ? handleChipUp : undefined}
+                onPointerLeave={opt.bulkState ? handleChipUp : undefined}
+                aria-pressed={active}
+                className={`flex flex-col items-center justify-center gap-0.5 rounded-2xl border bg-card px-1 py-2.5 text-center select-none transition-all active:scale-95 ${
+                  active ? "border-primary ring-2 ring-primary/30 shadow-sm" : "border-border"
+                }`}
+              >
+                <span className={`text-xl font-bold leading-none tabular-nums ${opt.numberColor}`}>{opt.count}</span>
+                <span className="text-[11px] font-medium text-muted-foreground leading-tight">{opt.label}</span>
+              </button>
+            );
+          })}
         </div>
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-2">
           <div className="flex-1 bg-muted rounded-full h-1.5">
             <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
           </div>
           <span className="text-xs font-bold text-primary">{pct}%</span>
         </div>
-      </div>
-
-      <div className="px-4 pb-3 grid grid-cols-4 gap-2 shrink-0">
-        {filterOptions.map(opt => (
-          <button
-            key={opt.key}
-            onClick={() => handleChipClick(opt.key)}
-            onPointerDown={opt.bulkState ? () => handleChipDown(opt.bulkState!) : undefined}
-            onPointerUp={opt.bulkState ? handleChipUp : undefined}
-            onPointerLeave={opt.bulkState ? handleChipUp : undefined}
-            className={`px-2 py-1.5 rounded-full text-xs font-semibold border text-center transition-colors select-none ${filter === opt.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-          >
-            {opt.label}
-          </button>
-        ))}
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pb-6 min-h-0">

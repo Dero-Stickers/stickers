@@ -98,7 +98,9 @@ const ToastTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
-    className={cn("text-sm font-semibold", className)}
+    // Titolo ARANCIONE della palette (accent) sui toast normali; sui destructive
+    // il colore lo dà il gruppo (group-[.destructive]) → resta leggibile su rosso.
+    className={cn("text-sm font-semibold text-accent group-[.destructive]:text-destructive-foreground", className)}
     {...props}
   />
 ))
