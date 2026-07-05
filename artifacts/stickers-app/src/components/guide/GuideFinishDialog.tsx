@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 // Logo PayPal (SVG inline, nessuna immagine esterna → rispetta i vincoli app).
 // "PayPal" nei due blu ufficiali; usato dentro il bottone donazione classico.
@@ -38,6 +39,15 @@ export function GuideFinishDialog({
   onClose: () => void;
 }) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  // "Inizia a giocare": chiude la guida E porta l'utente in home (l'app si apre
+  // sulla schermata principale, pronta all'uso — non resta sull'ultima pagina
+  // della guida, la chat).
+  const handleStart = () => {
+    onClose();
+    setLocation("/");
+  };
 
   // Donazione: PER ORA solo predisposta. Al tocco un ringraziamento gentile;
   // il pagamento reale verrà collegato più avanti (link esterno o checkout).
@@ -89,7 +99,7 @@ export function GuideFinishDialog({
             <span>Dona ora</span>
             <PayPalWordmark />
           </button>
-          <Button variant="ghost" onClick={onClose} className="w-full">
+          <Button variant="ghost" onClick={handleStart} className="w-full">
             Inizia a giocare
           </Button>
         </div>
