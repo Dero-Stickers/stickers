@@ -55,10 +55,12 @@ function buildAllowedOrigins(): (string | RegExp)[] {
     origins.push(/^https?:\/\/localhost(:\d+)?$/);
     origins.push(/^https?:\/\/127\.0\.0\.1(:\d+)?$/);
   } else {
-    // Dominio pubblico ESATTO di questo deploy (non più la regex jolly
-    // *.onrender.com, che avrebbe ammesso qualsiasi altro sotto-dominio
-    // onrender). Per un dominio custom futuro: aggiungerlo via CORS_ORIGINS.
+    // Domini pubblici ESATTI di questo deploy (non la regex jolly *.onrender.com,
+    // che avrebbe ammesso qualsiasi altro sotto-dominio onrender). Teniamo ENTRAMBI
+    // durante la transizione al dominio custom: onrender resta valido finché non
+    // si spegne, stickers.deroarts.com è il dominio definitivo (vedi DNA/19).
     origins.push("https://stickers-matchbox.onrender.com");
+    origins.push("https://stickers.deroarts.com");
   }
   return origins;
 }
