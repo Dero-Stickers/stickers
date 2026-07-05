@@ -80,12 +80,13 @@ export function KofiButton({ label = KOFI_LABEL, className = "" }: { label?: str
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm rounded-3xl">
-          <DialogHeader>
-            <DialogTitle>Facci sapere che sei tu ❤️</DialogTitle>
-            <DialogDescription>
-              Incolla il tuo nickname nel messaggio: così sappiamo che la
-              donazione arriva da te.
+        <DialogContent className="max-w-sm rounded-3xl text-center">
+          <DialogHeader className="items-center">
+            <DialogTitle className="text-center">Fai sapere che sei tu ❤️</DialogTitle>
+            <DialogDescription className="text-center">
+              Nel prossimo step incolla il tuo nickname nel messaggio:
+              <br />
+              così sappiamo che la donazione arriva da te.
             </DialogDescription>
           </DialogHeader>
 
