@@ -81,9 +81,10 @@ export function GuideFinishDialog({
         {/* Nota "app gratuita + contributo" — compatta, calda, user-friendly */}
         <div className="rounded-2xl bg-accent/10 border border-accent/20 px-4 py-3 text-left">
           <p className="text-sm text-foreground leading-relaxed">
-            <span className="font-semibold">Stickers nasce ora ed è gratis. 🎁</span><br />
-            Per restare libera ha bisogno del tuo supporto: un contributo aiuta
-            a coprire i costi dei database e a portare avanti il progetto. Grazie!
+            <span className="font-semibold">Stickers è appena nata! 🎁</span><br />
+            Per restare libera ha bisogno del tuo supporto:
+            un contributo aiuterebbe a coprire i costi dei
+            database e a portare avanti il progetto. Grazie!
           </p>
         </div>
 
