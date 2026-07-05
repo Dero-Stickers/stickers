@@ -95,8 +95,8 @@
 .driver-popover.sticker-guide.sg-magic .driver-popover-description {
   animation: sg-fade .55s ease-out both;
 }
-.driver-popover.sticker-guide.sg-magic .driver-popover-title { animation-delay: .18s; }
-.driver-popover.sticker-guide.sg-magic .driver-popover-description { animation-delay: .32s; }
+.driver-popover.sticker-guide.sg-magic .driver-popover-title { animation-delay: .7s; }
+.driver-popover.sticker-guide.sg-magic .driver-popover-description { animation-delay: .9s; }
 @keyframes sg-fade {
   0%   { opacity: 0; transform: translateY(4px); }
   100% { opacity: 1; transform: translateY(0); }
