@@ -344,7 +344,8 @@ export function AlbumDetail() {
       </div>
 
       <Dialog open={!!selectedSticker} onOpenChange={() => setSelectedSticker(null)}>
-        <DialogContent className="max-w-sm">
+        {/* Angoli arrotondati coerenti con gli altri modali (rounded-3xl). */}
+        <DialogContent className="max-w-sm rounded-3xl sm:rounded-3xl">
           <DialogHeader>
             <DialogTitle>Figurina {selectedSticker?.code || `#${selectedSticker?.number}`}</DialogTitle>
           </DialogHeader>
@@ -353,8 +354,8 @@ export function AlbumDetail() {
               <div className={`h-24 rounded-lg flex items-center justify-center text-3xl font-black ${stateColors[(selectedSticker.state ?? "mancante") as StickerState]}`}>
                 {selectedSticker.code || selectedSticker.number}
               </div>
-              <p className="font-semibold text-foreground text-lg">{selectedSticker.name}</p>
-              {selectedSticker.description && <p className="text-sm text-muted-foreground">{selectedSticker.description}</p>}
+              <p className="font-semibold text-foreground text-lg text-center">{selectedSticker.name}</p>
+              {selectedSticker.description && <p className="text-sm text-muted-foreground text-center">{selectedSticker.description}</p>}
               <div className="flex gap-2 pt-2">
                 {(["posseduta", "doppia", "mancante"] as StickerState[]).map(st => (
                   <Button
