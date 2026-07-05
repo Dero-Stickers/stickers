@@ -1,276 +1,280 @@
-// Guida interattiva — MOTORE VISIVO.
+// Guida interattiva — MOTORE su driver.js (libreria consolidata dei product
+// tour: spotlight + fumetto con FRECCIA classica che punta l'elemento).
 //
-// Disegna un velo scuro con un "buco" (spotlight) sull'elemento del passo
-// corrente e un fumetto con testo breve.
+// driver.js fa SOLO il rendering (velo con buco, fumetto, freccia, posizioni);
+// il flusso resta nostro: passi da steps.ts, stato in GuideContext, navigazione
+// tra le rotte, avanzamento.
 //
-// INTERATTIVITÀ (importante): il buco NON è coperto dal velo → l'elemento
-// evidenziato resta CLICCABILE. Nei passi "action" la guida ASPETTA che l'utente
-// tocchi quell'elemento e avanza da sola (niente bottone "Avanti"); nei passi
-// "info" si avanza col bottone.
-//
-// Il velo è fatto di 4 pannelli scuri attorno al target (sopra/sotto/sx/dx): così
-// il rettangolo centrale (il target) è un vero foro che lascia passare i click.
-//
-// Aggancio: cerca `[data-guide="<target>"]`. Se il target non esiste, il passo
-// "info" diventa a tutto schermo; un passo "action" senza target viene saltato
-// automaticamente (non deve mai bloccare la guida).
+// Regole (decise con l'owner) — guida SEMPLICE, DIRETTA, MINIMALE:
+//  - Fumetti SOLO informativi: NESSUN pulsante (né avanti/indietro, né salta,
+//    né pallini). Si va solo avanti; ESC (desktop) chiude.
+//  - "info"   → si avanza toccando OVUNQUE lo schermo.
+//  - "action" → si avanza toccando il PULSANTE REALE dell'app indicato dalla
+//    freccia (l'azione avviene davvero: la guida naviga con l'utente).
+//  - "try"    → prova pratica dell'utente, SIMULATA (colori finti / viste
+//    read-only): zero scritture.
+//  - "demo"   → dimostrazione automatica: la guida mostra e poi RIPRISTINA.
+//  - La guida non modifica MAI il database; a fine guida l'app è com'era.
 
-import { useEffect, useState, useCallback, useLayoutEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowLeft, ArrowRight, Hand } from "lucide-react";
+import { driver, type Driver } from "driver.js";
+import "driver.js/dist/driver.css";
+import "./guide-theme.css";
 import { useGuide } from "@/lib/guide/GuideContext";
 import { GUIDE_STEPS } from "@/lib/guide/steps";
 
-type Rect = { top: number; left: number; width: number; height: number };
+// ── Costanti condivise (un solo punto di verità, niente stringhe duplicate) ──
+// Dialog reale aperto (Radix): usato sia dal watcher long-press sia da ESC.
+const OPEN_DIALOG_SELECTOR =
+  '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]';
+// Classi-demo della SINGOLA cella (prova "3 tocchi") — ordine del ciclo visivo.
+const CELL_DEMO_CYCLE = ["sg-cell-posseduta", "sg-cell-doppia", "sg-cell-mancante"] as const;
+// Classi-demo dell'INTERA griglia (demo automatica filtri).
+const GRID_DEMO_CLASSES = ["sg-demo-posseduta", "sg-demo-doppia", "sg-demo-mancante"] as const;
+const GRID_SELECTOR = '[data-guide="guide-sticker-grid"]';
 
-const PAD = 6; // margine dello spotlight attorno all'elemento
+// Corpo del fumetto — MINIMALE: solo la frase + un hint dove serve. Niente
+// pulsanti, niente pallini, niente "salta": la guida si fa e basta.
+function stepDescription(body: string, kind: string): string {
+  const hint =
+    kind === "info"
+      ? `<p class="sg-hint">Tocca lo schermo per continuare</p>`
+      : kind === "try"
+        ? `<p class="sg-hint">Provaci ora 👇</p>`
+        : "";
+  return `<p class="sg-body">${body}</p>${hint}`;
+}
 
 export function GuideOverlay() {
-  const { active, stepIndex, totalSteps, next, prev, finish } = useGuide();
+  const { active, stepIndex, next, finish } = useGuide();
   const [location, setLocation] = useLocation();
-  const [rect, setRect] = useState<Rect | null>(null);
+  const drvRef = useRef<Driver | null>(null);
+
+  // Refs letti dall'hook di driver.js (l'istanza è unica, i passi cambiano).
+  const stepRef = useRef<(typeof GUIDE_STEPS)[number] | null>(null);
+  const nextRef = useRef(next);
+  nextRef.current = next;
+  stepRef.current = active ? GUIDE_STEPS[stepIndex] : null; // sempre aggiornato
+
+  // ANTI doppio-avanzamento: un solo tocco fisico genera più eventi (pointerdown
+  // dell'overlay di driver.js + click del documento). Qualunque strada porti ad
+  // avanzare, entro 350ms conta UNA volta sola.
+  const lastAdvanceRef = useRef(0);
+  const advance = () => {
+    const now = Date.now();
+    if (now - lastAdvanceRef.current < 350) return;
+    lastAdvanceRef.current = now;
+    nextRef.current();
+  };
+
+  const getDrv = (): Driver => {
+    if (!drvRef.current) {
+      drvRef.current = driver({
+        animate: true,
+        overlayOpacity: 0.72,
+        stagePadding: 6,
+        stageRadius: 12,
+        allowClose: false,
+        showButtons: [], // NIENTE pulsanti nel fumetto
+        popoverClass: "sticker-guide",
+        // Tocco sul VELO: nei passi info avanza (è il "tocca ovunque");
+        // nei passi azione non fa nulla (si avanza toccando il pulsante vero).
+        overlayClickBehavior: () => {
+          if (stepRef.current?.kind === "info") advance();
+        },
+      });
+    }
+    return drvRef.current;
+  };
 
   const step = active ? GUIDE_STEPS[stepIndex] : null;
 
-  // Porta l'utente sulla rotta del passo (se serve) prima di cercare il target.
-  // I passi su rotta DINAMICA (album/match aperti dal passo "action" precedente)
-  // NON forzano la navigazione: restano dove l'utente è stato portato.
+  // Porta l'utente sulla rotta del passo (i passi su rotta dinamica — album/
+  // match aperti dal passo precedente — non forzano la navigazione).
   useEffect(() => {
     if (!step || step.dynamicRoute) return;
     if (step.route && location !== step.route) setLocation(step.route);
   }, [step, location, setLocation]);
 
-  // Misura la posizione dell'elemento target (o null se assente / passo full).
-  // Aggiorna lo stato SOLO se la posizione è cambiata (>0.5px) → evita re-render
-  // ad ogni frame del loop rAF.
-  const measure = useCallback(() => {
-    const el = step?.target
-      ? document.querySelector<HTMLElement>(`[data-guide="${step.target}"]`)
-      : null;
-    if (!el) { setRect((prev) => (prev === null ? prev : null)); return; }
-    const r = el.getBoundingClientRect();
-    const nextRect = { top: r.top, left: r.left, width: r.width, height: r.height };
-    setRect((prev) => {
-      if (
-        prev &&
-        Math.abs(prev.top - nextRect.top) < 0.5 &&
-        Math.abs(prev.left - nextRect.left) < 0.5 &&
-        Math.abs(prev.width - nextRect.width) < 0.5 &&
-        Math.abs(prev.height - nextRect.height) < 0.5
-      ) return prev;
-      return nextRect;
-    });
-  }, [step]);
-
-  // Rimisura CONTINUA finché il passo è attivo (loop rAF leggero): così lo
-  // spotlight e il fumetto seguono SEMPRE la posizione reale del target, anche
-  // se la pagina è caricata async (griglia figurine, lista match), se il layout
-  // cambia (banner che appaiono) o l'utente scrolla. Niente misure "congelate"
-  // su posizioni intermedie sbagliate.
-  useLayoutEffect(() => {
-    if (!active) return;
-    let raf = 0;
-    const loop = () => { measure(); raf = requestAnimationFrame(loop); };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [active, stepIndex, measure]);
-
-  // Passo "action": al tocco del target la GUIDA gestisce la navigazione in modo
-  // DETERMINISTICO (niente race col <Link> di wouter). Se il target è un link
-  // (ha href) → naviga lì con setLocation; poi avanza. Se è un'azione sulla stessa
-  // pagina (navbar già lì) → avanza e basta. Intercettiamo in CAPTURE e
-  // preveniamo il default così controlliamo noi la transizione.
+  // Evidenzia il passo corrente. Le pagine caricano async → poll (~2s) finché
+  // l'elemento appare; un passo "action" senza target si salta da solo (mai
+  // bloccare la guida). Senza target → fumetto centrato.
   useEffect(() => {
-    if (!active || !step || step.kind !== "action" || !step.target) return;
+    if (!active || !step) {
+      drvRef.current?.destroy();
+      drvRef.current = null;
+      return;
+    }
+    let cancelled = false;
+    let tries = 0;
+    const show = () => {
+      if (cancelled) return;
+      const el = step.target
+        ? document.querySelector<HTMLElement>(`[data-guide="${step.target}"]`)
+        : null;
+      if (step.target && !el && tries++ < 40) { setTimeout(show, 50); return; }
+      if (step.target && !el) { if (step.kind === "action") next(); return; }
+      stepRef.current = step; // letto dall'hook overlayClickBehavior
+      getDrv().highlight({
+        element: el ?? undefined,
+        // Su info/demo l'elemento è SOLO mostrato (nessuna interazione):
+        // impossibile toccare l'app per sbaglio durante la guida.
+        disableActiveInteraction: step.kind === "info" || step.kind === "demo",
+        popover: {
+          title: step.title,
+          description: stepDescription(step.body, step.kind),
+        },
+      });
+    };
+    const t = setTimeout(show, 80); // lascia montare la rotta
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [active, step, stepIndex, next]);
+
+  // Avanzamento via tocchi NON gestiti dall'overlay di driver.js (che copre il
+  // resto): tocco sul FUMETTO nei passi info → avanza; tocco sul TARGET nei
+  // Contatore tocchi per i passi "try" (si azzera a ogni passo) + pulizia di
+  // eventuali colori-demo rimasti sulle celle (la guida ripristina SEMPRE).
+  const tapsRef = useRef(0);
+  useEffect(() => {
+    tapsRef.current = 0;
+    document
+      .querySelectorAll(CELL_DEMO_CYCLE.map((c) => `.${c}`).join(","))
+      .forEach((el) => el.classList.remove(...CELL_DEMO_CYCLE));
+  }, [stepIndex]);
+
+  useEffect(() => {
+    if (!active || !step) return;
     const onClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null;
-      const hit = t?.closest(`[data-guide="${step.target}"]`) as HTMLElement | null;
-      if (!hit) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const href = hit.getAttribute("href");
-      // Avanza PRIMA (il passo successivo è dynamicRoute → non rinaviga), POI
-      // naviga: così l'effetto di navigazione del passo corrente non riporta
-      // indietro l'utente sulla rotta di partenza.
-      next();
-      if (href) setLocation(href); // naviga a /album/:id o /match/:id
+      if (!t) return;
+      if (step.kind === "info") {
+        // QUALSIASI tocco avanza (velo, fumetto, area evidenziata): la guardia
+        // anti-doppio garantisce un solo avanzamento anche quando l'hook
+        // overlay di driver.js scatta sullo stesso tocco. preventDefault →
+        // il tocco non arriva mai all'app (nessun dato toccato per sbaglio).
+        e.preventDefault(); e.stopPropagation(); advance();
+        return;
+      }
+      if (step.kind === "try" && step.taps) {
+        // PROVA PRATICA SIMULATA: il tocco NON arriva all'app (preventDefault →
+        // ZERO scritture DB). La cella cambia colore solo VISIVAMENTE, un ciclo
+        // completo: posseduta → doppia → mancante; all'ultimo tocco si
+        // ripristina l'aspetto originale e si avanza.
+        const cell = t.closest(`[data-guide="${step.target}"]`) as HTMLElement | null;
+        if (cell) {
+          e.preventDefault(); e.stopPropagation();
+          tapsRef.current += 1;
+          const cls = CELL_DEMO_CYCLE[(tapsRef.current - 1) % CELL_DEMO_CYCLE.length];
+          cell.classList.remove(...CELL_DEMO_CYCLE);
+          cell.classList.add(cls);
+          if (tapsRef.current >= (step.taps ?? 1)) {
+            // ultimo tocco: mostra l'ultimo colore un attimo, poi ripristina
+            setTimeout(() => { cell.classList.remove(...CELL_DEMO_CYCLE); advance(); }, 700);
+          }
+        }
+        return;
+      }
+      if (step.kind === "demo") {
+        // Dimostrazione automatica in corso: i tocchi non fanno nulla.
+        e.preventDefault(); e.stopPropagation();
+        return;
+      }
+      if (step.kind !== "action") return;
+      const hit = t.closest(`[data-guide="${step.target}"]`) as HTMLElement | null;
+      if (hit) {
+        e.preventDefault(); e.stopPropagation();
+        const href = hit.getAttribute("href");
+        advance();
+        if (href) setLocation(href);
+      }
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [active, step, next, setLocation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, step, setLocation]);
 
-  // Passo "action" senza target montato: non deve bloccare → auto-skip dopo un
-  // attimo (l'elemento navbar è però sempre presente, quindi raro).
+  // Passi "try" con long-press: quando l'utente APRE il dettaglio (dialog reale)
+  // e poi lo CHIUDE, si avanza. Watcher leggero sul DOM (dialog Radix aperto).
   useEffect(() => {
-    if (!active || !step || step.kind !== "action") return;
-    if (rect) return;
-    const t = setTimeout(() => { if (!rect) next(); }, 1200);
-    return () => clearTimeout(t);
-  }, [active, step, rect, next]);
+    if (!active || !step || step.kind !== "try" || !step.waitDialogClose) return;
+    let seenOpen = false;
+    const iv = setInterval(() => {
+      const open = !!document.querySelector(OPEN_DIALOG_SELECTOR);
+      if (open) {
+        if (!seenOpen) {
+          // Il dialog reale (z-50) starebbe DIETRO al velo di driver.js:
+          // togliamo il velo e lasciamo la scena al dialog. Verrà ricreato
+          // dal passo successivo.
+          drvRef.current?.destroy();
+          drvRef.current = null;
+        }
+        seenOpen = true;
+        return;
+      }
+      if (seenOpen) { clearInterval(iv); setTimeout(() => advance(), 250); }
+    }, 200);
+    return () => clearInterval(iv);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, step]);
 
-  // ESC chiude.
+  // Passi "demo": DIMOSTRAZIONE AUTOMATICA dei 3 filtri (bulk). La guida mostra
+  // da sola, UN filtro alla volta, cosa succede tenendolo premuto: evidenzia il
+  // filtro e colora TUTTA la griglia di quello stato (solo CSS, zero dati),
+  // poi RIPRISTINA tutto e avanza. L'app torna esattamente com'era.
+  useEffect(() => {
+    if (!active || !step || step.kind !== "demo") return;
+    let cancelled = false;
+    const clearGrid = () =>
+      document.querySelector(GRID_SELECTOR)?.classList.remove(...GRID_DEMO_CLASSES);
+    const phases = [
+      { target: "guide-filter-possedute", cls: GRID_DEMO_CLASSES[0], title: "Tieni premuto “Mie” ✋", body: "…e le segni TUTTE come possedute." },
+      { target: "guide-filter-doppie", cls: GRID_DEMO_CLASSES[1], title: "Tieni premuto “Doppie” ✋", body: "…tutte doppie, in un colpo solo." },
+      { target: "guide-filter-mancanti", cls: GRID_DEMO_CLASSES[2], title: "Tieni premuto “Mancanti” ✋", body: "…o azzeri tutto. Ora rimetto com'era!" },
+    ];
+    const timers: number[] = [];
+    const at = (ms: number, fn: () => void) =>
+      timers.push(window.setTimeout(() => { if (!cancelled) fn(); }, ms));
+    // Il fumetto-intro del passo è già a schermo → poi le 3 fasi → ripristino.
+    phases.forEach((ph, i) =>
+      at(1600 + i * 1800, () => {
+        clearGrid();
+        document.querySelector(GRID_SELECTOR)?.classList.add(ph.cls);
+        const el = document.querySelector<HTMLElement>(`[data-guide="${ph.target}"]`);
+        getDrv().highlight({
+          element: el ?? undefined,
+          disableActiveInteraction: true,
+          popover: { title: ph.title, description: `<p class="sg-body">${ph.body}</p>` },
+        });
+      }),
+    );
+    at(1600 + phases.length * 1800 + 500, () => { clearGrid(); advance(); });
+    return () => { cancelled = true; timers.forEach(clearTimeout); clearGrid(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, step]);
+
+  // ESC chiude · resize/rotazione riallineano spotlight e fumetto.
   useEffect(() => {
     if (!active) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") finish(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // CAPTURE: così controlliamo PRIMA che Radix chiuda il dialog (altrimenti
+    // al momento del check il dialog risulterebbe già chiuso e ESC terminerebbe
+    // la guida invece di chiudere solo il dialog).
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (document.querySelector(OPEN_DIALOG_SELECTOR)) return; // ESC chiude il dialog reale, non la guida
+      finish();
+    };
+    const onResize = () => drvRef.current?.refresh();
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("resize", onResize);
+    };
   }, [active, finish]);
 
-  if (!active || !step) return null;
+  // Pulizia allo smontaggio.
+  useEffect(() => () => { drvRef.current?.destroy(); drvRef.current = null; }, []);
 
-  const isLast = stepIndex === totalSteps - 1;
-  const isFirst = stepIndex === 0;
-  const isAction = step.kind === "action";
-
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-  const vw = typeof window !== "undefined" ? window.innerWidth : 400;
-
-  // Fumetto SEMPRE fuori dallo spotlight (mai lo copre → l'utente vede e tocca
-  // il target). Scegliamo il lato — sopra o sotto — con più spazio libero e
-  // ancoriamo il fumetto a quel bordo. GAP separa fumetto e spotlight. Senza
-  // target → centrato.
-  const GAP = 16;
-  const spaceAbove = rect ? rect.top - PAD : 0;          // px liberi sopra lo spotlight
-  const spaceBelow = rect ? vh - (rect.top + rect.height + PAD) : 0; // px liberi sotto
-  const putBelow = rect ? spaceBelow >= spaceAbove : false; // lato con più spazio
-  const bubbleStyle: React.CSSProperties = rect
-    ? putBelow
-      ? { left: 12, right: 12, top: rect.top + rect.height + PAD + GAP }
-      : { left: 12, right: 12, bottom: vh - rect.top + PAD + GAP }
-    : { left: 12, right: 12, top: "50%", transform: "translateY(-50%)" };
-
-  // 4 pannelli scuri attorno al foro (se c'è target). Il foro resta cliccabile.
-  // Colore INLINE (non classe Tailwind): la palette slate non è generata in
-  // questo progetto Tailwind v4 → `bg-slate-900/70` renderebbe trasparente.
-  const VEIL = "rgba(15, 23, 42, 0.72)";
-  const holeTop = rect ? rect.top - PAD : 0;
-  const holeLeft = rect ? rect.left - PAD : 0;
-  const holeW = rect ? rect.width + PAD * 2 : 0;
-  const holeH = rect ? rect.height + PAD * 2 : 0;
-
-  return createPortal(
-    // Container ROOT trasparente ai click (pointerEvents:none): così il "buco"
-    // dello spotlight lascia passare i tocchi al target reale sotto. I singoli
-    // pezzi che DEVONO ricevere click (pannelli velo, X, fumetto) riattivano
-    // pointerEvents:auto inline. Il ring resta 'none' (non deve mai bloccare).
-    <div
-      className="fixed inset-0 z-[200]"
-      role="dialog" aria-modal="true" aria-label="Guida Stickers"
-      style={{ pointerEvents: "none" }}
-    >
-      {rect ? (
-        <>
-          {/* VELO a 4 pannelli: lascia libero (e cliccabile) il rettangolo del
-              target. I pannelli sono opachi ai click (pe:auto) → tutto ciò che
-              NON è il buco resta "coperto" e un tocco lì non fa nulla. */}
-          <div className="fixed" style={{ pointerEvents: "auto", background: VEIL, top: 0, left: 0, width: vw, height: Math.max(0, holeTop) }} />
-          <div className="fixed" style={{ pointerEvents: "auto", background: VEIL, top: holeTop + holeH, left: 0, width: vw, height: Math.max(0, vh - (holeTop + holeH)) }} />
-          <div className="fixed" style={{ pointerEvents: "auto", background: VEIL, top: holeTop, left: 0, width: Math.max(0, holeLeft), height: holeH }} />
-          <div className="fixed" style={{ pointerEvents: "auto", background: VEIL, top: holeTop, left: holeLeft + holeW, width: Math.max(0, vw - (holeLeft + holeW)), height: holeH }} />
-          {/* Cornice luminosa attorno al foro (pulsa sui passi action). MAI
-              cliccabile (pointerEvents:none INLINE — la classe Tailwind non basta). */}
-          <motion.div
-            key={`${stepIndex}-ring`}
-            initial={{ opacity: 0 }}
-            animate={isAction ? { opacity: [0.5, 1, 0.5] } : { opacity: 1 }}
-            transition={isAction ? { duration: 1.4, repeat: Infinity } : { duration: 0.2 }}
-            className="fixed rounded-xl"
-            style={{ pointerEvents: "none", top: holeTop, left: holeLeft, width: holeW, height: holeH, outline: "3px solid rgba(255,255,255,0.95)", boxShadow: "0 0 0 3px rgba(244,164,37,0.6)" }}
-          />
-        </>
-      ) : (
-        <div className="absolute inset-0" style={{ pointerEvents: "auto", background: VEIL }} />
-      )}
-
-      {/* Chiudi (X) — in alto a SINISTRA per non collidere con il pulsante U/A
-          (DevQuickSwitch, z-9999, in alto a destra). Touch-friendly; pe:auto
-          perché il root è pe:none. */}
-      <button
-        onClick={finish}
-        aria-label="Chiudi la guida"
-        style={{ pointerEvents: "auto" }}
-        className="absolute left-3 top-3 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-foreground shadow-md active:scale-95"
-      >
-        <X className="h-5 w-5" />
-      </button>
-
-      {/* Fumetto */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={stepIndex}
-          initial={{ opacity: 0, y: 8, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -8, scale: 0.98 }}
-          transition={{ duration: 0.18 }}
-          className="absolute z-10 mx-auto max-w-sm rounded-2xl bg-popover p-4 shadow-xl border border-border/60"
-          style={{ ...bubbleStyle, pointerEvents: "auto" }}
-        >
-          <div className="flex items-start gap-2.5">
-            {step.emoji && <span className="text-xl leading-none mt-0.5">{step.emoji}</span>}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-accent">{step.title}</p>
-              <p className="mt-1 text-sm leading-snug text-foreground/90">{step.body}</p>
-            </div>
-          </div>
-
-          <div className="mt-3.5 flex items-center justify-between gap-2">
-            {/* Contatore a puntini */}
-            <div className="flex items-center gap-1">
-              {GUIDE_STEPS.map((_, i) => (
-                <span
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === stepIndex ? "w-4 bg-accent" : "w-1.5 bg-muted-foreground/30"
-                  }`}
-                />
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {!isFirst && (
-                <button
-                  onClick={prev}
-                  className="inline-flex h-11 items-center gap-1 rounded-xl px-3.5 text-sm font-semibold text-muted-foreground active:scale-95"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Indietro
-                </button>
-              )}
-              {isAction ? (
-                // Passo interattivo: nessun "Avanti" — la guida aspetta il tocco.
-                // Mostriamo un promemoria animato "tocca qui".
-                <span className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-accent/15 px-4 text-sm font-bold text-accent">
-                  <motion.span animate={{ y: [0, -3, 0] }} transition={{ duration: 1, repeat: Infinity }}>
-                    <Hand className="h-4 w-4" />
-                  </motion.span>
-                  Tocca lì
-                </span>
-              ) : (
-                <button
-                  onClick={next}
-                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-accent px-5 text-sm font-bold text-accent-foreground shadow-sm active:scale-95"
-                >
-                  {isLast ? "Fine" : "Avanti"}
-                  {!isLast && <ArrowRight className="h-4 w-4" />}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Salta: sempre disponibile tranne all'ultimo passo */}
-          {!isLast && (
-            <button
-              onClick={finish}
-              className="mt-1 flex h-11 w-full items-center justify-center text-xs text-muted-foreground/70 active:opacity-70"
-            >
-              Salta la guida
-            </button>
-          )}
-        </motion.div>
-      </AnimatePresence>
-    </div>,
-    document.body,
-  );
+  return null;
 }

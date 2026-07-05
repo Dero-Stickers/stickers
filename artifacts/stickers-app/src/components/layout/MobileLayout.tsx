@@ -75,7 +75,6 @@ export function MobileLayout({ children }: { children: ReactNode }) {
           riga icone piena da 4rem SOPRA la safe-area; lo sfondo si estende sotto
           (home indicator) senza schiacciare le icone. */}
       <nav
-        data-guide="nav-bar"
         className="shrink-0 w-full bg-card border-t border-border z-50"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >

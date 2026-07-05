@@ -7,18 +7,19 @@
 
 ## 2026-07
 
-- **Guida interattiva (onboarding tour) [4 lug]** — tour a fumetti fatto in casa (no librerie: framer-motion +
-  Tailwind già presenti, zero peso). Conduce il nuovo utente, in modo DIMOSTRATIVO, nella gestione del primo
-  album e del primo match: MOSTRA e SPIEGA su elementi reali, NON modifica dati. REGOLA D'ORO: ogni passo
-  evidenzia un elemento presente nella schermata (i passi "azione" navigano davvero dentro album/match, così i
-  passi "info" hanno gli elementi sotto). 3 file separati (config `lib/guide/steps.ts` · stato
-  `GuideContext.tsx` · motore `GuideOverlay.tsx`), modulare/scalabile. Aggancio via `data-guide` sugli elementi
-  cliccabili. Avvio: PER ORA a ogni refresh (una volta per caricamento; se chiudi non riparte) + riapribile da
-  Profilo → "Guida Stickers" (prima placeholder). Doc: `DNA/18_GUIDA_INTERATTIVA.md`. Fix chiave dai test:
-  velo/pointer-events INLINE (Tailwind v4 non genera `bg-slate-900/70`/`pointer-events-none`), misura rAF
-  continua (spotlight segue il target async), navigazione deterministica (`next()` prima di `setLocation`),
-  fumetto mai sopra il target, X a sinistra per non collidere col pulsante U/A. Verificato end-to-end (10 passi,
-  ogni testo coerente con la schermata).
+- **Guida interattiva (onboarding tour) [4-5 lug]** — guida in stile classico: velo + spotlight + **fumetto con
+  freccia** sul tasto. Motore di rendering = **driver.js** (~5KB, libreria standard dei tour — scelta dopo aver
+  provato un motore fatto in casa: troppi edge-case su overlay/pointer-events con Tailwind v4); flusso, passi e
+  stato restano nostri (config `lib/guide/steps.ts` · stato `GuideContext.tsx` · wrapper `GuideOverlay.tsx` ·
+  stile `guide-theme.css`). Conduce nel primo album e nel primo match. REGOLA D'ORO: ogni passo evidenzia un
+  elemento presente nella schermata. Fumetti SOLO informativi (nessun pulsante/pallino/salta; si va solo
+  avanti). 4 tipi di passo: info (tocca ovunque) · action (tocchi il pulsante vero, naviga davvero) · **try**
+  (prova SIMULATA: 3 tocchi = ciclo colori solo CSS; long-press = dettaglio reale read-only, chiuso→avanza) ·
+  **demo** (automatica: i 3 filtri uno alla volta con griglia colorata, poi ripristino). **ZERO scritture DB
+  verificate in test** (0 POST/PATCH durante la guida, 0 classi residue: l'app torna com'era). Avvio: PER ORA a
+  ogni refresh, dopo il cookie banner (altrimenti copre la navbar); per il rilascio passare a
+  `!hasSeenGuide(userId)`. Riapribile da Profilo → "Guida Stickers". Dettagli anti-regressione (doppio
+  avanzamento, ESC in capture, overlayClickBehavior) in `DNA/18_GUIDA_INTERATTIVA.md`.
 - **Profili-prova · ripristinata eliminazione dal dettaglio [4 lug]** — la rimozione del singolo profilo-prova
   era sparita quando si è tolto il vecchio bottone "Scambio fatto" (unificazione col flusso reale). Ripristinata
   con un pulsante **"Elimina profilo di prova"** (rosso pieno, testo bianco, icona `Trash2`) **fisso in fondo

@@ -1,0 +1,50 @@
+/* Fumetto della guida (driver.js) — stile app: bianco puro, titolo arancione
+   della palette, COMPATTO e MINIMALE (solo titolo + frase + hint). La freccia
+   classica del fumetto la disegna driver.js (eredita il bianco del box). */
+
+.driver-popover.sticker-guide {
+  background: #ffffff;
+  color: #24344d;
+  border-radius: 14px;
+  max-width: 272px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.28);
+  font-family: inherit;
+}
+
+.driver-popover.sticker-guide .driver-popover-title {
+  color: hsl(37 90% 55%); /* accent arancione della palette */
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.driver-popover.sticker-guide .driver-popover-description {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #24344d;
+}
+
+.sticker-guide .sg-body { margin: 0; }
+
+.sticker-guide .sg-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #93a0b4;
+}
+
+/* ── Effetti DIMOSTRATIVI della guida (solo visivi, zero dati) ───────────────
+   Colori identici a stateColors (StickerCell): posseduta=verde, doppia=rossa,
+   mancante=grigia. Applicati/rimossi via classi: l'app torna com'era. */
+
+/* Singola cella (prova "3 tocchi") */
+.sg-cell-posseduta { background: #dcfce7 !important; color: #15803d !important; border-color: #bbf7d0 !important; }
+.sg-cell-doppia    { background: #fee2e2 !important; color: #dc2626 !important; border-color: #fecaca !important; }
+.sg-cell-mancante  { background: #f3f4f6 !important; color: #9ca3af !important; border-color: #e5e7eb !important; }
+
+/* Intera griglia (demo automatica dei filtri) — con piccola transizione */
+[data-guide="guide-sticker-grid"] .cv-cell { transition: background-color .35s, color .35s; }
+.sg-demo-posseduta .cv-cell { background: #dcfce7 !important; color: #15803d !important; border-color: #bbf7d0 !important; }
+.sg-demo-doppia    .cv-cell { background: #fee2e2 !important; color: #dc2626 !important; border-color: #fecaca !important; }
+.sg-demo-mancante  .cv-cell { background: #f3f4f6 !important; color: #9ca3af !important; border-color: #e5e7eb !important; }

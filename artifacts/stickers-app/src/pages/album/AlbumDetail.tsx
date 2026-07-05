@@ -272,6 +272,7 @@ export function AlbumDetail() {
             return (
               <button
                 key={opt.key}
+                data-guide={`guide-filter-${opt.key}`}
                 onClick={() => handleChipClick(opt.key)}
                 onPointerDown={opt.bulkState ? () => handleChipDown(opt.bulkState!) : undefined}
                 onPointerUp={opt.bulkState ? handleChipUp : undefined}
@@ -295,7 +296,7 @@ export function AlbumDetail() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 pb-6 min-h-0">
+      <div className="flex-1 overflow-y-auto px-3 pb-6 min-h-0" data-guide="guide-sticker-grid">
         {filteredStickers.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <p className="font-medium">Nessuna figurina in questa categoria</p>

@@ -8,7 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/not-found";
 import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
-import { CookieBanner } from "@/components/CookieBanner";
+import { CookieBanner, COOKIE_ACK_KEY } from "@/components/CookieBanner";
 import { ConfirmProvider } from "@/components/admin/ConfirmDialog";
 import { GuideProvider, useGuide } from "@/lib/guide/GuideContext";
 import { GuideOverlay } from "@/components/guide/GuideOverlay";
@@ -240,9 +240,20 @@ function GuideAutoStart() {
   useEffect(() => {
     if (startedRef.current) return;               // già avviata in questa pagina
     if (!isAuthenticated || currentUser?.isAdmin) return;
-    startedRef.current = true;
-    const t = setTimeout(start, 600); // lascia montare la UI prima di evidenziare
-    return () => clearTimeout(t);
+    // ASPETTA che il cookie banner sia stato chiuso ("Ho capito"): parte solo
+    // dopo, altrimenti il banner coprirebbe la navbar durante il tour.
+    const cookieAck = () => {
+      try { return localStorage.getItem(COOKIE_ACK_KEY) === "1"; } catch { return true; }
+    };
+    const tryStart = () => {
+      if (startedRef.current || !cookieAck()) return false;
+      startedRef.current = true;
+      setTimeout(start, 500); // lascia montare la UI prima di evidenziare
+      return true;
+    };
+    if (tryStart()) return;
+    const iv = setInterval(() => { if (tryStart()) clearInterval(iv); }, 400);
+    return () => clearInterval(iv);
   }, [isAuthenticated, currentUser?.isAdmin, start]);
   return null;
 }

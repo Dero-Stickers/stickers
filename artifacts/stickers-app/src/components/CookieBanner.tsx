@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
  * (token di sessione), nessun cookie di profilazione o di terze parti: basta
  * un avviso una tantum. La scelta è ricordata in localStorage.
  */
-const ACK_KEY = "cookie_notice_ack";
+// Esportata: la guida interattiva ASPETTA che l'avviso sia stato chiuso prima
+// di partire (altrimenti il banner coprirebbe la navbar durante il tour).
+export const COOKIE_ACK_KEY = "cookie_notice_ack";
+const ACK_KEY = COOKIE_ACK_KEY;
 
 export function CookieBanner() {
   const [ack, setAck] = useState<boolean>(() => {

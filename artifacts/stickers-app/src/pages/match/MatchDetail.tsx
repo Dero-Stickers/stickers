@@ -287,10 +287,11 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
         {detail.totalGive === 0 && detail.totalReceive === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-8">Nessuno scambio possibile al momento.</p>
         ) : (
-          <>
+          // Wrapper con anchor per la guida interattiva (passo "Dai e Ricevi").
+          <div data-guide="guide-trade-sections" className="space-y-4">
             <DirectionSection variant="give" total={detail.totalGive} groups={detail.give} />
             <DirectionSection variant="receive" total={detail.totalReceive} groups={detail.receive} />
-          </>
+          </div>
         )}
       </div>
 

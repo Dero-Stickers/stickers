@@ -31,17 +31,15 @@ function markGuideSeen(userId: number | undefined) {
   }
 }
 
+// Nella guida si va SOLO avanti: niente prev, niente contatori esposti.
 interface GuideContextValue {
   active: boolean;
   stepIndex: number;
-  totalSteps: number;
-  /** Avvia la guida dal primo passo (usato dal trigger auto e da "Guida Stickers"). */
+  /** Avvia la guida dal primo passo (trigger auto e Profilo → "Guida Stickers"). */
   start: () => void;
   /** Passo successivo; all'ultimo chiude e segna "vista". */
   next: () => void;
-  /** Passo precedente (non va sotto 0). */
-  prev: () => void;
-  /** Chiude la guida e la segna "vista" (Salta / X / fine). */
+  /** Chiude la guida e la segna "vista" (ESC / fine). */
   finish: () => void;
 }
 
@@ -81,12 +79,8 @@ export function GuideProvider({
     });
   }, [total, userId]);
 
-  const prev = useCallback(() => {
-    setStepIndex((i) => Math.max(0, i - 1));
-  }, []);
-
   return (
-    <GuideContext.Provider value={{ active, stepIndex, totalSteps: total, start, next, prev, finish }}>
+    <GuideContext.Provider value={{ active, stepIndex, start, next, finish }}>
       {children}
     </GuideContext.Provider>
   );
