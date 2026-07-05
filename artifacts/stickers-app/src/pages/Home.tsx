@@ -87,9 +87,11 @@ export function Home() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-4 space-y-3 pb-4 min-h-0">
-        {/* 1 · Sintesi collezione */}
+        {/* 1 · Sintesi collezione — box SEMPRE mostrato (anche a 0 album: gli
+            aggregati sono già 0 su collezione vuota). Senza album, sotto il
+            titolo, un invito interattivo ad aggiungere il primo album. */}
         {loadingAlbums && <Skeleton className="h-28 rounded-xl" />}
-        {!loadingAlbums && albums.length > 0 && (
+        {!loadingAlbums && (
           <Card className="shadow-sm">
             <CardContent className="p-4">
               {/* Titolo centrato (senza icona), percentuale ancorata a destra */}
@@ -97,6 +99,11 @@ export function Home() {
                 <span className="text-sm font-semibold text-foreground">La tua collezione</span>
                 <span className="absolute right-0 text-primary font-bold text-lg leading-none">{overallPercent}%</span>
               </div>
+              {albums.length === 0 && (
+                <p className="text-center text-xs text-muted-foreground mb-3">
+                  Nessun album presente — <Link href="/album" className="text-primary font-medium underline whitespace-nowrap">clicca qui</Link> per aggiungerne uno
+                </p>
+              )}
               <Progress value={overallPercent} className="h-2 mb-3" />
               <div className="grid grid-cols-4 gap-2">
                 <div className="text-center">
@@ -116,13 +123,6 @@ export function Home() {
                   <p className="text-[11px] text-muted-foreground mt-1">mancanti</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-        {!loadingAlbums && albums.length === 0 && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4 text-center text-muted-foreground text-sm">
-              Nessun album nella collezione — <Link href="/album" className="text-primary font-medium underline whitespace-nowrap">aggiungine uno</Link>
             </CardContent>
           </Card>
         )}
