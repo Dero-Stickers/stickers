@@ -9,13 +9,13 @@
 ## 0. In una riga (cosa serve sapere per Stickers)
 
 Quando integreremo Stickers nel dominio, useremo:
-- **Sottodomini** (da configurare su Cloudflare DNS con i valori dati da Render):
-  - `stickers.deroarts.com` → app pubblica/utente
-  - `admin.stickers.deroarts.com` → area admin (se separata)
-  - `api.stickers.deroarts.com` → backend/API (se separata)
-- **Email dedicata:** alias `info-stickers@deroarts.com` (punta a `info@deroarts.com`, su Zoho).
-  Utile anche per risolvere il nodo anti-spam delle email auth (oggi Brevo da dominio gratuito
-  finisce in SPAM — vedi `18_PIANO_AUTH.md`): con dominio proprio + DKIM/DMARC si esce dallo spam.
+- **Un solo sottodominio:** `stickers.deroarts.com` → app + admin + API insieme (deploy unico su
+  Render, vedi §2). Niente sottodomini separati per admin/api. Da configurare su Cloudflare DNS come
+  CNAME col valore dato da Render.
+- **Email dedicata definitiva:** `stickers@deroarts.com` (alias su Zoho → inoltra a `info@deroarts.com`).
+  Oggi l'app usa ancora `info-stickers@` (da allineare, vedi §3). Il dominio proprio con DKIM/DMARC
+  risolve anche il nodo anti-spam delle email auth (oggi Brevo da dominio gratuito finisce in SPAM —
+  vedi `18_PIANO_AUTH.md`).
 
 ## 1. Identità dominio
 
@@ -29,9 +29,8 @@ Quando integreremo Stickers nel dominio, useremo:
 - Dominio acquistato e attivo su Cloudflare; DNS gestito da Cloudflare; DNSSEC attivo; SSL/HTTPS ok.
 - Email professionale attiva via **Zoho Mail Free** (area EU). Casella: **info@deroarts.com** — invio,
   ricezione, webmail OK. SPF/DKIM/DMARC = **PASS**.
-- Sito/app: **non ancora collegati al dominio**. Record web A/CNAME: **non ancora configurati**. Record DNS totali: 7.
-- **Sito vetrina deroarts** (separato da Stickers): `https://deroarts.onrender.com` (Render) — non ancora
-  collegato al dominio `deroarts.com`.
+- Sito/app **non ancora collegati al dominio**. Record web A/CNAME non configurati. Record DNS totali: 7.
+- **Sito vetrina deroarts** (separato da Stickers): `https://deroarts.onrender.com` (Render).
 
 ### Dove gira OGGI Stickers (URL Render reali, in attesa del dominio)
 - App pubblica/utente: **`https://stickers-matchbox.onrender.com`** (`.env` → `LINK_DEPLOY`).
@@ -116,10 +115,10 @@ verificare prima se il piano Zoho Free lo consente (eventuale upgrade a Zoho Mai
 
 ## 8. Cosa servirà quando integreremo Stickers (checklist futura, NON ora)
 
-1. Su **Render**: aggiungere il custom domain `stickers.deroarts.com` (e admin/api se separati) → Render fornisce
-   un target CNAME.
-2. Su **Cloudflare DNS**: creare i CNAME con i valori dati da Render (modalità da definire: proxy on/off secondo
-   quanto richiede Render). Documentare ogni record come da §7.
+1. Su **Render**: aggiungere il custom domain `stickers.deroarts.com` (uno solo: deploy unico) → Render
+   fornisce un target CNAME.
+2. Su **Cloudflare DNS**: creare il CNAME col valore dato da Render (modalità proxy on/off secondo
+   quanto richiede Render). Documentare il record come da §7.
 3. Aggiornare in **Supabase Auth**: Site URL + Redirect URLs al nuovo dominio `stickers.deroarts.com` (oggi puntano
    a `stickers-matchbox.onrender.com` — vedi `18_PIANO_AUTH.md`).
 4. Aggiornare **CSP/CORS** e eventuali URL hardcoded nell'app al nuovo dominio.
