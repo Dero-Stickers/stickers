@@ -33,8 +33,9 @@ tratta né salva dati di pagamento: tutto avviene su Ko-fi/PayPal.
 - **Pagina Ko-fi:** `https://ko-fi.com/deroarts` (codice pagina `A6A522N3IW`).
 - **Pulsante** = componente riusabile `components/brand/KofiButton.tsx`: link
   esterno (`target=_blank`) che apre la pagina Ko-fi — NON lo script `kofiwidget2`
-  (rende male in React/PWA). Verde Ko-fi `#3dbd45`, icona cuore, "Dona ora".
-  `KOFI_URL` è l'unico punto di verità del link.
+  (rende male in React/PWA). **Replica FEDELE del widget ufficiale**: tazza bianca
+  con cuore rosso (SVG inline), testo "Support me on Ko-fi", verde `#3dbd45`.
+  `KOFI_URL`/`KOFI_LABEL` sono l'unico punto di verità.
 - **Dove appare:** box donazione nel **Profilo** (sopra la firma DeroArts) e nel
   **modale finale della guida** (`GuideFinishDialog`, ex bottone PayPal rimosso).
 - **Frase obbligatoria** dove il contributo è presentato: *"Non sblocca nulla:
