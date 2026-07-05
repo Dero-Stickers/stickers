@@ -69,7 +69,7 @@ export function GuideFinishDialog({
 
         <DialogHeader className="space-y-1">
           <DialogTitle className="text-center text-xl flex items-center justify-center gap-1.5">
-            Benvenuto tra noi!
+            Welcome in Stickers!
             <Sparkles className="h-5 w-5 text-accent" />
           </DialogTitle>
           <DialogDescription className="text-center text-sm">
@@ -81,9 +81,9 @@ export function GuideFinishDialog({
         {/* Nota "app gratuita + contributo" — compatta, calda, user-friendly */}
         <div className="rounded-2xl bg-accent/10 border border-accent/20 px-4 py-3 text-left">
           <p className="text-sm text-foreground leading-relaxed">
-            <span className="font-semibold">Stickers è gratis e te la regalo io. 🎁</span><br />
-            Un piccolo contributo, se ti va, aiuta a pagare i database
-            e a tenere l'app gratuita nel tempo.
+            <span className="font-semibold">Stickers nasce ora ed è gratis. 🎁</span><br />
+            Per restare libera ha bisogno del tuo supporto: un contributo aiuta
+            a coprire i costi dei database e a portare avanti il progetto. Grazie!
           </p>
         </div>
 
@@ -92,15 +92,15 @@ export function GuideFinishDialog({
               NON collegato: al tocco un ringraziamento (vedi handleDonate). */}
           <button
             onClick={handleDonate}
-            aria-label="Dona ora con PayPal"
+            aria-label="Supporta il progetto con PayPal"
             className="w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-bold text-[#003087] shadow-sm active:scale-[.98] transition-transform"
             style={{ background: "linear-gradient(#ffd45a, #f9b421)" }}
           >
-            <span>Dona ora</span>
+            <span>Supporta con</span>
             <PayPalWordmark />
           </button>
           <Button variant="ghost" onClick={handleStart} className="w-full">
-            Inizia a giocare
+            Inizia! Trova il tuo primo Match
           </Button>
         </div>
       </DialogContent>
