@@ -7,7 +7,7 @@
 
 import { Heart, Gift, TrendingUp, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AdminPage, AdminScrollArea } from "@/components/admin/AdminPage";
+import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { useGetAdminDonations, getGetAdminDonationsQueryKey } from "@workspace/api-client-react";
 
@@ -50,75 +50,76 @@ export function AdminDonations() {
 
   return (
     <AdminPage title="Donazioni" subtitle="Andamento dei contributi spontanei (Ko-fi)">
-      <AdminScrollArea className="space-y-6">
-        {/* Riepilogo */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {cards.map((card) => (
-            <Card key={card.label} className="shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <card.icon className={`h-4 w-4 ${card.color}`} />
-                  <span className="text-xs text-muted-foreground">{card.label}</span>
-                </div>
-                <p className="text-xl font-bold text-foreground">{card.value}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Avviso mostrato SOLO finché non è arrivata alcuna donazione: guida al
-            collegamento di Ko-fi. Appena arriva il primo contributo, sparisce. */}
-        {isEmpty && (
-          <Card className="shadow-sm border-accent/30 bg-accent/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Heart className="h-4 w-4 text-accent" />
-                In attesa della prima donazione
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                L'app è gratuita: l'unico introito sono le donazioni spontanee.
-                Ogni contributo ricevuto tramite Ko-fi comparirà qui in tempo
-                reale (importo, nome e messaggio) con l'andamento complessivo.
-                La pagina è di sola lettura: nessun pagamento passa dall'app.
-              </p>
+      {/* Riepilogo + avviso: FISSI in cima (shrink-0). Solo l'AdminTable sotto
+          scorre (ha già il proprio scroll interno) → coerente con le altre
+          pagine admin: testata e riepilogo restano sempre visibili. */}
+      <div className="shrink-0 grid grid-cols-2 md:grid-cols-4 gap-4">
+        {cards.map((card) => (
+          <Card key={card.label} className="shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <card.icon className={`h-4 w-4 ${card.color}`} />
+                <span className="text-xs text-muted-foreground">{card.label}</span>
+              </div>
+              <p className="text-xl font-bold text-foreground">{card.value}</p>
             </CardContent>
           </Card>
-        )}
+        ))}
+      </div>
 
-        {/* Elenco donazioni */}
-        <AdminTable
-          isLoading={isLoading}
-          head={
-            <>
-              <th>Data</th>
-              <th>Da</th>
-              <th className="hidden sm:table-cell">Messaggio</th>
-              <th>Importo</th>
-            </>
-          }
-        >
-          {donations.length === 0 ? (
-            <tr>
-              <td colSpan={4} className="text-center text-muted-foreground">
-                <div className="py-10">Nessuna donazione ancora.</div>
+      {/* Avviso mostrato SOLO finché non è arrivata alcuna donazione: guida al
+          collegamento di Ko-fi. Appena arriva il primo contributo, sparisce. */}
+      {isEmpty && (
+        <Card className="shrink-0 shadow-sm border-accent/30 bg-accent/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Heart className="h-4 w-4 text-accent" />
+              In attesa della prima donazione
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              L'app è gratuita: l'unico introito sono le donazioni spontanee.
+              Ogni contributo ricevuto tramite Ko-fi comparirà qui in tempo
+              reale (importo, nome e messaggio) con l'andamento complessivo.
+              La pagina è di sola lettura: nessun pagamento passa dall'app.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Elenco donazioni — contenuto celle CENTRATO (coerente con le
+          intestazioni già centrate). Solo questa tabella scorre. */}
+      <AdminTable
+        isLoading={isLoading}
+        head={
+          <>
+            <th>Data</th>
+            <th>Da</th>
+            <th className="hidden sm:table-cell">Messaggio</th>
+            <th>Importo</th>
+          </>
+        }
+      >
+        {donations.length === 0 ? (
+          <tr>
+            <td colSpan={4} className="text-center text-muted-foreground">
+              <div className="py-10">Nessuna donazione ancora.</div>
+            </td>
+          </tr>
+        ) : (
+          donations.map((d) => (
+            <tr key={d.id}>
+              <td className="whitespace-nowrap text-center text-foreground">{formatDate(d.createdAt)}</td>
+              <td className="text-center text-foreground">{d.fromName || "Anonimo"}</td>
+              <td className="hidden sm:table-cell max-w-xs truncate text-center text-muted-foreground">
+                {d.message || "—"}
               </td>
+              <td className="whitespace-nowrap text-center font-semibold">{money(d.amount, d.currency)}</td>
             </tr>
-          ) : (
-            donations.map((d) => (
-              <tr key={d.id}>
-                <td className="whitespace-nowrap">{formatDate(d.createdAt)}</td>
-                <td>{d.fromName || "Anonimo"}</td>
-                <td className="hidden sm:table-cell max-w-xs truncate text-muted-foreground">
-                  {d.message || "—"}
-                </td>
-                <td className="whitespace-nowrap font-semibold">{money(d.amount, d.currency)}</td>
-              </tr>
-            ))
-          )}
-        </AdminTable>
-      </AdminScrollArea>
+          ))
+        )}
+      </AdminTable>
     </AdminPage>
   );
 }
