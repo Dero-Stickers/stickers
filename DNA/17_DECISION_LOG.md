@@ -7,6 +7,15 @@
 
 ## 2026-07
 
+- **Credenziali admin gestibili da UI + PIN 6 cifre [5 lug]** — l'admin ora si chiama `dero` con PIN
+  a 6 cifre (era `admin`/`0000`). Aggiunto backend `hashPin()` + `PATCH /auth/me/credentials` (cambia
+  nickname/PIN confermando col PIN attuale; unicità nickname; ritorna user+token) e un blocco "Account
+  admin" in cima a Impostazioni → Configurazione generale (`AdminAccountFields`). `DevQuickSwitch` (pulsante
+  U/A) allineato alle nuove credenziali. Testato e2e (403 su PIN errato) e login in produzione.
+- **Email `stickers@deroarts.com` attiva e allineata ovunque [5 lug]** — alias Zoho creato (nome
+  "Stickers") + filtro/tag; allineati DB `support_email` e i 3 fallback codice. Vedi `19`.
+- **Icone PWA con safe zone [5 lug]** — rigenerate (mobile/desktop/maskable) su sfondo blu uniforme,
+  contenuto rientrato: non più tagliate dal ritaglio tondo/squircle degli store.
 - **Invito a donare una-tantum (admin → utente), 100% interno [5 lug]** — nuova funzione: l'admin
   dalla pagina Utenti (colonna "Invito") invia a un utente attivo un gentile invito a donare; l'utente
   lo vede UNA volta al prossimo accesso (modale `<NudgeGate>`), poi è consumato (`seen_at`). Tabella

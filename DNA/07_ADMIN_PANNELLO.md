@@ -80,12 +80,17 @@ TUTTE le sezioni admin per coerenza:
 - Modello e gate in `06_PREMIUM_DEMO.md`
 
 ### Impostazioni
-- Email di supporto (default: stickersmatchbox@hotmail.com)
-- Testi base app
-- Impostazioni privacy/supporto
+- **Account admin** (in cima a "Configurazione generale"): cambia **nickname e/o PIN**
+  dell'account loggato. Conferma col **PIN attuale**. Backend `PATCH /api/auth/me/credentials`
+  (verifica PIN via `verifyPin`, unicità nickname, ri-hash col nuovo PIN via `hashPin`);
+  UI in `pages/admin/AdminAccountCard.tsx` (`AdminAccountFields`).
+- Email di supporto (`app_settings.support_email` = `stickers@deroarts.com`)
+- Testi legali (privacy/termini/cookie) + modalità guida interattiva
 
 ## Autenticazione Admin
 
-- Login separato con credenziali admin
-- Nessuna limitazione di accesso (paywall chat non applicato all'admin)
-- Accesso a dati sensibili (chat, utenti, segnalazioni)
+- **Accesso admin:** login con nickname + PIN dell'account admin (attuale: `dero` / PIN 6 cifre).
+  Il login con account `isAdmin=true` reindirizza a `/admin` ([Login.tsx]). In sviluppo esiste anche
+  il pulsante U/A (DevQuickSwitch) che fa lo switch rapido Utente↔Admin.
+- App 100% gratuita: nessun paywall (né per utenti né per admin).
+- Accesso a dati sensibili (chat, utenti, segnalazioni, donazioni).
