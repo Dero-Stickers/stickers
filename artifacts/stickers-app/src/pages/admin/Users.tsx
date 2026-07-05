@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Shield, ShieldOff, BookOpen, Heart } from "lucide-react";
+import { Shield, ShieldOff, BookOpen, Heart, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -52,7 +52,7 @@ export function AdminUsers() {
   // Modale dettaglio donazioni dell'utente (può averne più di una).
   const [donationsOf, setDonationsOf] = useState<AdminUser | null>(null);
 
-  const { data: users, isLoading } = useAdminListUsers();
+  const { data: users, isLoading, isFetching, refetch } = useAdminListUsers();
 
   const regularUsers = useMemo(() => {
     const list = [...(users ?? [])];
@@ -89,6 +89,13 @@ export function AdminUsers() {
     },
   });
 
+  // Aggiorna + azzera: ricarica gli utenti dal server e pulisce ricerca/filtro.
+  const resetAndRefresh = () => {
+    setSearch("");
+    setStatusFilter("all");
+    refetch();
+  };
+
   // Clic su una colonna: se già attiva inverte la direzione, altrimenti passa a
   // quella colonna in ordine crescente.
   const handleSort = (col: SortKey) =>
@@ -111,9 +118,10 @@ export function AdminUsers() {
       <AdminFilterBar<"all" | "blocked">
         search={search}
         onSearch={setSearch}
-        placeholder="Cerca nickname, CAP o area…"
         filter={statusFilter}
         onFilter={setStatusFilter}
+        onRefresh={resetAndRefresh}
+        refreshing={isFetching}
         options={[
           ["all", "Tutti"],
           ["blocked", "Bloccati"],
@@ -138,13 +146,14 @@ export function AdminUsers() {
             <th className="hidden md:table-cell">Scambi</th>
             <th className="hidden md:table-cell">Album</th>
             <th>Donazioni</th>
+            <th>Dettagli</th>
             <th>Azioni</th>
           </>
         }
       >
         {!isLoading && filteredUsers.length === 0 && (
           <tr>
-            <td colSpan={7} className="text-center text-muted-foreground">
+            <td colSpan={8} className="text-center text-muted-foreground">
               <div className="py-8">
                 {regularUsers.length === 0
                   ? "Nessun utente da mostrare."
@@ -172,15 +181,24 @@ export function AdminUsers() {
               </td>
               <td className="text-center">
                 {user.donationCount > 0 ? (
+                  <span className="inline-flex items-center gap-1.5 font-medium text-accent">
+                    <Heart className="h-3.5 w-3.5 fill-accent text-accent" />
+                    {money(user.donationTotal, user.donationCurrency)}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground/50">—</span>
+                )}
+              </td>
+              <td className="text-center">
+                {user.donationCount > 0 ? (
                   <button
                     type="button"
                     onClick={() => setDonationsOf(user)}
-                    className="inline-flex items-center gap-1.5 text-accent font-medium hover:underline"
+                    className="inline-flex items-center gap-1.5 text-primary text-xs font-medium hover:underline"
                     title="Vedi le donazioni rilevate col suo nickname"
                   >
-                    <Heart className="h-3.5 w-3.5 fill-accent" />
-                    {money(user.donationTotal, user.donationCurrency)}
-                    <span className="text-xs text-primary underline">Vedi</span>
+                    <Eye className="h-3.5 w-3.5" />
+                    Vedi
                   </button>
                 ) : (
                   <span className="text-muted-foreground/50">—</span>
@@ -231,7 +249,7 @@ export function AdminUsers() {
             <DialogDescription>
               {donationsOf && (
                 <>
-                  {donationsOf.donationCount} donazione{donationsOf.donationCount === 1 ? "" : "i"} · totale{" "}
+                  {donationsOf.donationCount} donazion{donationsOf.donationCount === 1 ? "e" : "i"} · totale{" "}
                   {money(donationsOf.donationTotal, donationsOf.donationCurrency)}. Abbinamento dal nickname:
                   è un indizio, non una certezza.
                 </>

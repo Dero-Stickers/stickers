@@ -1,30 +1,40 @@
-import { Search } from "lucide-react";
+import { Search, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 
 /**
  * Barra filtri minimale condivisa per le tabelle admin: campo ricerca (sfondo
- * bianco) + chip di stato. Discreta, attaccata alla tabella. Riutilizzata da
- * Messaggi / Utenti / Album per un aspetto e comportamento coerenti.
+ * bianco, placeholder "Cerca...") + pulsante refresh/reset tondo + chip di
+ * stato. Discreta, attaccata alla tabella. Riutilizzata da Messaggi / Utenti /
+ * Album / Donazioni / Errori per un aspetto e un comportamento coerenti.
+ *
+ * Ordine FISSO su una riga (stesso in ogni pagina): ricerca → refresh/reset →
+ * chip → extra. Il pulsante refresh sta SEMPRE subito dopo la ricerca.
  *
  * I chip sono generici: ogni pagina passa le proprie opzioni [valore, etichetta].
+ * `onRefresh` opzionale: se passato, mostra il pulsante tondo (ricarica i dati e
+ * azzera i filtri, a cura della pagina). `refreshing` fa girare l'icona.
  * `extra` = contenuto opzionale reso sulla STESSA riga dopo i chip di stato
- * (es. i chip categoria in Album), così tutti i filtri stanno in una riga sola.
+ * (es. il pulsante "Copia" in Messaggi), così tutti i filtri stanno in una riga.
  */
 export function AdminFilterBar<T extends string>({
   search,
   onSearch,
-  placeholder,
+  placeholder = "Cerca...",
   filter,
   onFilter,
   options,
+  onRefresh,
+  refreshing = false,
   extra,
 }: {
   search: string;
   onSearch: (v: string) => void;
-  placeholder: string;
+  placeholder?: string;
   filter: T;
   onFilter: (v: T) => void;
   options: readonly (readonly [T, string])[];
+  onRefresh?: () => void;
+  refreshing?: boolean;
   extra?: ReactNode;
 }) {
   return (
@@ -41,6 +51,20 @@ export function AdminFilterBar<T extends string>({
           className="w-full h-9 pl-8 pr-3 rounded-xl border bg-white text-sm shadow-sm"
         />
       </div>
+      {/* Refresh/reset: pulsante TONDO, sola icona, SEMPRE subito dopo la
+          ricerca (posizione fissa in tutte le pagine). */}
+      {onRefresh && (
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          aria-label="Aggiorna e azzera i filtri"
+          title="Aggiorna e azzera i filtri"
+          className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+        </button>
+      )}
       <div className="flex flex-wrap gap-1.5 text-xs">
         {options.map(([val, lbl]) => (
           <button

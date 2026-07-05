@@ -97,7 +97,7 @@ export function AdminAlbums() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: albums, isLoading } = useListAlbums({ query: { queryKey: ADMIN_ALBUMS_KEY } });
+  const { data: albums, isLoading, isFetching } = useListAlbums({ query: { queryKey: ADMIN_ALBUMS_KEY } });
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState<string>(DEFAULT_ALBUM_CATEGORY);
@@ -127,6 +127,14 @@ export function AdminAlbums() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "online" | "offline">("all");
   const [catFilter, setCatFilter] = useState<AlbumCategoryKey | "all">("all");
+
+  // Aggiorna + azzera: ricarica gli album e pulisce ricerca e tutti i filtri.
+  const resetAndRefresh = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setCatFilter("all");
+    invalidate();
+  };
 
   // Categorie effettivamente presenti tra gli album: i chip categoria compaiono
   // solo se ce n'è più di una (coerente col lato utente). Con una sola categoria
@@ -185,9 +193,10 @@ export function AdminAlbums() {
       <AdminFilterBar<"all" | "online" | "offline">
         search={search}
         onSearch={setSearch}
-        placeholder="Cerca un album…"
         filter={statusFilter}
         onFilter={setStatusFilter}
+        onRefresh={resetAndRefresh}
+        refreshing={isFetching}
         options={[
           ["all", "Tutti"],
           ["online", "On Line"],

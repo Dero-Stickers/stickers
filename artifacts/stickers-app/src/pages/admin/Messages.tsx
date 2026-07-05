@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MessageCircle, Eye, X, Flag, AlertTriangle, Ban, RotateCcw, CheckCircle2, Copy, Search } from "lucide-react";
+import { MessageCircle, Eye, X, Flag, AlertTriangle, Ban, RotateCcw, CheckCircle2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +15,7 @@ import type { AdminChat } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
+import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
 import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
 import { useConfirm } from "@/components/admin/ConfirmDialog";
 import { authHeaders } from "@/pages/admin/errors/types";
@@ -47,7 +48,7 @@ export function AdminMessages() {
   const [busy, setBusy] = useState(false);
   const [copying, setCopying] = useState(false);
 
-  const { data: chats, isLoading } = useAdminListChats();
+  const { data: chats, isLoading, isFetching } = useAdminListChats();
 
   // Ordinamento colonne (Partecipanti / Messaggi) — default: ordine originale.
   const [sortKey, setSortKey] = useState<"participants" | "messageCount" | null>(null);
@@ -84,6 +85,13 @@ export function AdminMessages() {
 
   const refreshChats = () =>
     queryClient.invalidateQueries({ queryKey: getAdminListChatsQueryKey() });
+
+  // Aggiorna + azzera: ricarica le chat e pulisce ricerca e filtro di stato.
+  const resetAndRefresh = () => {
+    setSearch("");
+    setStatusFilter("all");
+    refreshChats();
+  };
 
   const closeChat = useCloseChat({
     mutation: {
@@ -267,49 +275,31 @@ export function AdminMessages() {
 
   return (
     <AdminPage title="Gestione Messaggi" subtitle="Monitora le chat tra utenti">
-      {/* Riga filtri custom (non AdminFilterBar condivisa): box ricerca più corto
-          per far spazio, chip di stato, e il pulsante "Copia" a destra. */}
-      <div className="shrink-0 flex flex-wrap items-center gap-2">
-        <div className="relative w-48 md:w-56 shrink-0">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Cerca partecipante…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-9 pl-8 pr-3 rounded-xl border bg-white text-sm shadow-sm"
-          />
-        </div>
-        <div className="flex flex-wrap gap-1.5 text-xs">
-          {([
-            ["all", "Tutte"],
-            ["active", "Attive"],
-            ["closed", "Chiuse"],
-            ["reported", "Segnalate"],
-          ] as const).map(([val, lbl]) => (
-            <button
-              key={val}
-              onClick={() => setStatusFilter(val)}
-              className={`px-2.5 py-1 rounded-full border transition-colors ${
-                statusFilter === val
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border hover:bg-muted"
-              }`}
-            >
-              {lbl}
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={copyAll}
-          disabled={copying || !filteredChats.length}
-          aria-label="Copia tutte le chat"
-          className="ml-auto shrink-0 flex items-center gap-1.5 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <Copy className="h-4 w-4" />
-          {copying ? "Copio…" : "Copia tutte le chat"}
-        </button>
-      </div>
+      <AdminFilterBar<"all" | "active" | "closed" | "reported">
+        search={search}
+        onSearch={setSearch}
+        filter={statusFilter}
+        onFilter={setStatusFilter}
+        onRefresh={resetAndRefresh}
+        refreshing={isFetching}
+        options={[
+          ["all", "Tutte"],
+          ["active", "Attive"],
+          ["closed", "Chiuse"],
+          ["reported", "Segnalate"],
+        ]}
+        extra={
+          <button
+            onClick={copyAll}
+            disabled={copying || !filteredChats.length}
+            aria-label="Copia tutte le chat"
+            className="ml-auto shrink-0 flex items-center gap-1.5 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Copy className="h-4 w-4" />
+            {copying ? "Copio…" : "Copia tutte le chat"}
+          </button>
+        }
+      />
       <div className="flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}

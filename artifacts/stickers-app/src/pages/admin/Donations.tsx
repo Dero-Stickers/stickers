@@ -6,7 +6,7 @@
 // arrivo" (Ko-fi si collega configurando il webhook nel pannello Ko-fi).
 
 import { useMemo, useState } from "react";
-import { Heart, Gift, TrendingUp, Clock, RefreshCw } from "lucide-react";
+import { Heart, Gift, TrendingUp, Clock, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
+import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
 import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
 import {
   useGetAdminDonations,
@@ -66,6 +67,14 @@ export function AdminDonations() {
   // Modale dettaglio: mostra TUTTE le info della donazione (messaggio intero).
   const [selected, setSelected] = useState<AdminDonation | null>(null);
 
+  // Ricerca su nome donatore + messaggio (coerente con le altre sezioni admin).
+  const [search, setSearch] = useState("");
+  // Aggiorna + azzera: ricarica dal server e pulisce la ricerca.
+  const resetAndRefresh = () => {
+    setSearch("");
+    refetch();
+  };
+
   // Ordinamento su Data / Importo (SortHeader consolidato, come Album/Utenti).
   // Default: ordine naturale (dal server: più recenti in alto).
   const [sortKey, setSortKey] = useState<"createdAt" | "amount" | null>(null);
@@ -77,7 +86,12 @@ export function AdminDonations() {
       return col;
     });
   const sortedDonations = useMemo(() => {
-    const list = [...donations];
+    const q = search.trim().toLowerCase();
+    const list = donations.filter((d) => {
+      if (!q) return true;
+      return (d.fromName ?? "").toLowerCase().includes(q)
+        || (d.message ?? "").toLowerCase().includes(q);
+    });
     if (!sortKey) return list; // ordine naturale del server
     list.sort((a, b) =>
       sortKey === "amount"
@@ -85,7 +99,7 @@ export function AdminDonations() {
         : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
     return sortDir === "asc" ? list : list.reverse();
-  }, [donations, sortKey, sortDir]);
+  }, [donations, search, sortKey, sortDir]);
 
   const cards = [
     { label: "Totale raccolto", value: money(summary?.total ?? "0", currency), icon: Heart, color: "text-accent" },
@@ -106,17 +120,6 @@ export function AdminDonations() {
         >
           Vedi le donazioni ricevute su Ko-fi ↗
         </a>
-      }
-      actions={
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          aria-label="Aggiorna donazioni"
-          title="Aggiorna donazioni"
-          className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-        </button>
       }
     >
       {/* Riepilogo + avviso: FISSI in cima (shrink-0). Solo l'AdminTable sotto
@@ -157,6 +160,19 @@ export function AdminDonations() {
         </Card>
       )}
 
+      {/* Riga filtri coerente con le altre sezioni admin: ricerca (nome o
+          messaggio) + pulsante refresh/reset. Le donazioni non hanno stati,
+          quindi niente chip (options vuote). */}
+      <AdminFilterBar<"all">
+        search={search}
+        onSearch={setSearch}
+        filter="all"
+        onFilter={() => {}}
+        onRefresh={resetAndRefresh}
+        refreshing={isFetching}
+        options={[]}
+      />
+
       {/* Elenco donazioni — contenuto celle CENTRATO. Data e Importo sono
           ordinabili (SortHeader). Ogni riga è cliccabile → apre il modale con
           tutte le info (messaggio intero). Solo questa tabella scorre. */}
@@ -193,7 +209,15 @@ export function AdminDonations() {
               </td>
               <td className="whitespace-nowrap text-center font-semibold">{money(d.amount, d.currency)}</td>
               <td className="text-center">
-                <span className="text-primary text-xs font-medium underline">Vedi</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setSelected(d); }}
+                  className="inline-flex items-center gap-1.5 text-primary text-xs font-medium hover:underline"
+                  title="Apri dettaglio donazione"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Vedi
+                </button>
               </td>
             </tr>
           ))
