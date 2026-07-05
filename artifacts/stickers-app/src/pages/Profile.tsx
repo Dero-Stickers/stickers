@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useSupportEmail } from "@/hooks/useSupportEmail";
+import { KofiButton } from "@/components/brand/KofiButton";
 
 export function Profile() {
   const { currentUser, logout, login } = useAuth();
@@ -169,9 +170,23 @@ export function Profile() {
         </div>
       </div>
 
-      {/* Spacer che cresce: mangia lo spazio libero e spinge la firma in fondo,
-          a ridosso della nav bar (flex-1 è affidabile; mt-auto non basta qui). */}
+      {/* Spacer che cresce: mangia lo spazio libero e spinge donazione + firma in
+          fondo, a ridosso della nav bar (flex-1 è affidabile; mt-auto non basta). */}
       <div className="flex-1" />
+
+      {/* Box donazione Ko-fi — contributo LIBERO, sopra la firma. Non sblocca
+          nulla (liberalità, non un corrispettivo): la frase "è solo un grazie"
+          va mantenuta. Il pulsante apre Ko-fi (link esterno). */}
+      <div className="shrink-0 px-4">
+        <div className="rounded-2xl border border-accent/20 bg-accent/5 px-4 py-3.5 text-center">
+          <p className="text-sm text-foreground leading-relaxed">
+            Stickers oggi è gratuita. Il tuo contributo, se ti va, aiuta a
+            tenerla così.<br />
+            <span className="text-muted-foreground">Non sblocca nulla: è solo un grazie.</span>
+          </p>
+          <KofiButton label="Dona ora" className="mt-3" />
+        </div>
+      </div>
 
       {/* Firma progetto — minimale: solo il logo deroarts, cliccabile.
           Email di contatto = quella unica del pannello admin (useSupportEmail). */}

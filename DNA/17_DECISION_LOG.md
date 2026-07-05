@@ -7,6 +7,13 @@
 
 ## 2026-07
 
+- **Donazione Ko-fi integrata [5 lug]** — pulsante donazione `KofiButton` (componente riusabile,
+  link esterno verde `#3dbd45` a `https://ko-fi.com/deroarts`, NON lo script kofiwidget2). Appare nel
+  **Profilo** (box sopra la firma DeroArts) e nel **modale finale della guida** (rimosso il vecchio
+  bottone PayPal). Testo con frase obbligatoria "Non sblocca nulla: è solo un grazie" (liberalità, non
+  corrispettivo). Nessun impatto su RLS/permessi/dati di pagamento (gestiti da Ko-fi/PayPal). NB legali:
+  i testi Privacy/ToS sono nel DB (app_settings), la clausola sul contributo va aggiunta a mano da
+  Admin → Impostazioni. Vedi `06_PREMIUM_DEMO.md`.
 - **Guida · modalità globale da admin [5 lug]** — la guida non parte più "sempre a ogni refresh"
   hardcoded: la MODALITÀ è ora un setting globale `guide_mode` in `app_settings`, gestito da
   **Admin → Impostazioni** con 3 opzioni indipendenti: `off` (default, disattivata) · `first` (solo

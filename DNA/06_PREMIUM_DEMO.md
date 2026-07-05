@@ -31,12 +31,20 @@ non sblocca nulla, non dà vantaggi, non tocca permessi/RLS/feature. L'app non
 tratta né salva dati di pagamento: tutto avviene su Ko-fi/PayPal.
 
 - **Pagina Ko-fi:** `https://ko-fi.com/deroarts` (codice pagina `A6A522N3IW`).
-- **Pulsante** = link esterno che apre la pagina Ko-fi (NON lo script
-  `kofiwidget2`, che rende male in React/PWA). Verde Ko-fi `#3dbd45`.
+- **Pulsante** = componente riusabile `components/brand/KofiButton.tsx`: link
+  esterno (`target=_blank`) che apre la pagina Ko-fi — NON lo script `kofiwidget2`
+  (rende male in React/PWA). Verde Ko-fi `#3dbd45`, icona cuore, "Dona ora".
+  `KOFI_URL` è l'unico punto di verità del link.
+- **Dove appare:** box donazione nel **Profilo** (sopra la firma DeroArts) e nel
+  **modale finale della guida** (`GuideFinishDialog`, ex bottone PayPal rimosso).
 - **Frase obbligatoria** dove il contributo è presentato: *"Non sblocca nulla:
   è solo un grazie."* — qualifica il pagamento come liberalità (niente P.IVA).
   MAI legare la gratuità dell'app alla donazione (es. "gratis solo se doni"):
   la trasformerebbe in corrispettivo.
+- **Legali (DB, non codice):** i testi Privacy/ToS vivono in `app_settings`
+  (editabili da Admin → Impostazioni). Va aggiunta a mano lì una riga sul
+  contributo volontario esterno Ko-fi: facoltativo, non dà accesso a funzioni a
+  pagamento, l'app non tratta dati di pagamento (gestiti da Ko-fi/PayPal).
 
 ## Pagina admin "Donazioni" (predisposta)
 
