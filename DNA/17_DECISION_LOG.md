@@ -7,6 +7,17 @@
 
 ## 2026-07
 
+- **Monetizzazione RIMOSSA — app 100% gratuita [5 lug]** — eliminato TUTTO il paywall "si paga per
+  sbloccare la chat", come se non fosse mai esistito. Backend: via `lib/billing.ts`, `routes/billing.ts`,
+  gli handler admin paywall/premium, il gate 403 in `chats.ts` (chat sempre apribile), i flag
+  chatUnlocked/isPremium/paywallEnabled/hasAllChats dai payload. Spec `openapi.yaml`: rimossi endpoint
+  billing/paywall/premium + schemi → tipi/hook rigenerati (api-client-react, api-zod). Frontend: via il
+  modale "Sblocca chat" in MatchDetail (apre sempre), pulizia AuthContext/Dashboard/Users; **pagina admin
+  "Monetizzazione" convertita in "Donazioni"** (`/admin/donazioni`, predisposta Ko-fi, sola lettura). DB:
+  rimossi schemi Drizzle `payments`/`chat_unlocks`; colonna `users.is_premium` lasciata INERTE (scelta
+  owner: no drop distruttivo); migrazione `0005_drop_monetization.sql` (drop tabelle vuote + delete chiavi
+  settings) DA APPLICARE A MANO con conferma. L'unico introito futuro = **donazione Ko-fi** (liberalità,
+  non sblocca nulla). typecheck+build OK, chat-gratis verificata nei test. Vedi `06_PREMIUM_DEMO.md`.
 - **Guida · rifiniture testi/effetti + Home [5 lug]** — comparsa del primo fumetto = **fade-in semplice
   ritardato** (~0,7s dopo il fumetto vuoto, prima titolo poi testo); rimossi gli effetti "polvere magica"/
   blur/glow perché tremolanti. Aggiunto step **"Raggio di ricerca"** (illumina la barra `guide-match-radius`)

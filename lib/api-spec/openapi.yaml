@@ -22,8 +22,6 @@ tags:
     description: Match and exchange operations
   - name: chats
     description: Chat operations
-  - name: billing
-    description: Billing / chat unlock operations
   - name: admin
     description: Admin operations
   - name: settings
@@ -546,12 +544,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Chat"
-        "403":
-          description: Premium required
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PremiumRequiredResponse"
 
   /chats/{chatId}:
     delete:
@@ -698,30 +690,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnreadCountResponse"
 
-  # BILLING
-  /billing/checkout:
-    post:
-      operationId: billingCheckout
-      tags: [billing]
-      summary: Avvia il checkout per sbloccare la chat (single o all)
-      description: >
-        Per ora è uno STUB: nessun pagamento reale. Risponde sempre con
-        status='not_configured'. Quando il provider sarà collegato, restituirà
-        un URL di checkout e lo sblocco verrà concesso lato server dal webhook.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CheckoutBody"
-      responses:
-        "200":
-          description: Checkout response (stub)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CheckoutResponse"
-
   # ADMIN
   /admin/stats:
     get:
@@ -846,61 +814,6 @@ paths:
                 items:
                   $ref: "#/components/schemas/Report"
 
-  /admin/paywall/config:
-    get:
-      operationId: getPaywallConfig
-      tags: [admin]
-      summary: Get chat-paywall configuration (master switch + prices)
-      responses:
-        "200":
-          description: Paywall config
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaywallConfig"
-    put:
-      operationId: updatePaywallConfig
-      tags: [admin]
-      summary: Update chat-paywall master switch and prices
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PaywallConfig"
-      responses:
-        "200":
-          description: Config updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaywallConfig"
-
-  /admin/users/{userId}/premium:
-    post:
-      operationId: adminSetUserPremium
-      tags: [admin]
-      summary: Concedi o revoca "tutte le chat" (isPremium) a un utente
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SetPremiumBody"
-      responses:
-        "200":
-          description: Premium status updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AdminUser"
-
   # SETTINGS
   /settings:
     get:
@@ -1005,14 +918,6 @@ components:
           type: string
         area:
           type: string
-        isPremium:
-          type: boolean
-        paywallEnabled:
-          type: boolean
-          description: Riflette il master switch chat_paywall_enabled. Se false, tutte le chat sono gratis.
-        hasAllChats:
-          type: boolean
-          description: L'utente ha sbloccato TUTTE le chat (= isPremium).
         exchangesCompleted:
           type: integer
         isAdmin:
@@ -1022,7 +927,7 @@ components:
           description: Esiste almeno una segnalazione pendente a carico dell'utente. Mostra un avviso generico "conversazioni sotto revisione" senza rivelare chi ha segnalato.
         createdAt:
           type: string
-      required: [id, nickname, cap, isPremium, paywallEnabled, hasAllChats, exchangesCompleted, isAdmin]
+      required: [id, nickname, cap, exchangesCompleted, isAdmin]
 
     Album:
       type: object
@@ -1244,9 +1149,6 @@ components:
           nullable: true
         exchangesCompleted:
           type: integer
-        chatUnlocked:
-          type: boolean
-          description: True se l'utente corrente può già aprire la chat (premium/all, sblocco coppia, oppure paywall spento).
         give:
           type: array
           items:
@@ -1255,7 +1157,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MatchAlbumGroup"
-      required: [userId, nickname, totalExchanges, totalGive, totalReceive, exchangesCompleted, chatUnlocked, give, receive]
+      required: [userId, nickname, totalExchanges, totalGive, totalReceive, exchangesCompleted, give, receive]
 
     ChatTrade:
       type: object
@@ -1390,45 +1292,6 @@ components:
           type: integer
       required: [count]
 
-    PremiumRequiredResponse:
-      type: object
-      properties:
-        error:
-          type: string
-        message:
-          type: string
-      required: [error]
-
-    CheckoutBody:
-      type: object
-      properties:
-        kind:
-          type: string
-          enum: [single, all]
-        otherUserId:
-          type: integer
-          description: Richiesto per kind='single' — il match con cui sbloccare la chat.
-      required: [kind]
-
-    CheckoutResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          description: "Per ora sempre 'not_configured' (pagamenti non ancora attivi)."
-        url:
-          type: string
-          description: URL di checkout del provider (assente finché i pagamenti non sono collegati).
-      required: [status]
-
-    SetPremiumBody:
-      type: object
-      properties:
-        grant:
-          type: boolean
-          description: true = sblocca tutte le chat (isPremium); false = revoca.
-      required: [grant]
-
     AdminStats:
       type: object
       properties:
@@ -1440,17 +1303,11 @@ components:
           type: integer
         activeChats:
           type: integer
-        premiumUsers:
-          type: integer
-          description: Utenti con "tutte le chat" sbloccate (isPremium).
-        unlocks:
-          type: integer
-          description: Numero totale di sblocchi di singola chat (righe chat_unlocks).
         blockedUsers:
           type: integer
         pendingReports:
           type: integer
-      required: [totalUsers, totalAlbums, totalMessages, activeChats, premiumUsers, unlocks, blockedUsers, pendingReports]
+      required: [totalUsers, totalAlbums, totalMessages, activeChats, blockedUsers, pendingReports]
 
     AdminUser:
       type: object
@@ -1464,14 +1321,6 @@ components:
         area:
           type: string
           nullable: true
-        isPremium:
-          type: boolean
-        hasAllChats:
-          type: boolean
-          description: L'utente ha sbloccato TUTTE le chat (= isPremium).
-        unlockedChats:
-          type: integer
-          description: Numero di chat singole sbloccate (acquisti 'single').
         albumCount:
           type: integer
         exchangesCompleted:
@@ -1480,7 +1329,7 @@ components:
           type: boolean
         createdAt:
           type: string
-      required: [id, nickname, cap, isPremium, hasAllChats, unlockedChats, albumCount, exchangesCompleted, isBlocked]
+      required: [id, nickname, cap, albumCount, exchangesCompleted, isBlocked]
 
     BlockUserBody:
       type: object
@@ -1535,23 +1384,6 @@ components:
         createdAt:
           type: string
       required: [id, reporterNickname, reportedUserNickname, reason, status, createdAt]
-
-    PaywallConfig:
-      type: object
-      properties:
-        chatPaywallEnabled:
-          type: boolean
-          description: Master switch. Se false, tutte le chat sono gratis.
-        priceSingleCents:
-          type: integer
-          description: Prezzo sblocco di UNA chat, in centesimi interi.
-        priceAllCents:
-          type: integer
-          description: Prezzo sblocco di TUTTE le chat, in centesimi interi.
-        currency:
-          type: string
-          description: Valuta usata per gli sblocchi (es. EUR).
-      required: [chatPaywallEnabled, priceSingleCents, priceAllCents, currency]
 
     AppSettings:
       type: object

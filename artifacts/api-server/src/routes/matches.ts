@@ -276,11 +276,6 @@ const getMatchDetail: RequestHandler = async (req, res) => {
 
     const distanceKm = parseFloat(estimateDistance(myUser?.cap ?? "00000", otherUser.cap).toFixed(1));
 
-    // L'utente corrente può già aprire la chat? (premium/all, sblocco coppia,
-    // oppure paywall spento → tutte le chat gratis). Calcolato lato server.
-    const { canOpenChat } = await import("../lib/billing");
-    const chatUnlocked = await canOpenChat(session.userId, otherUserId);
-
     // Cosa dai / cosa ricevi su tutti gli album in comune — logica condivisa
     // con la conferma scambio in chat (lib/trade). Scambio reale 1:1, quindi
     // "scambi possibili" = min(totale dai, totale ricevi).
@@ -296,7 +291,6 @@ const getMatchDetail: RequestHandler = async (req, res) => {
       totalReceive,
       distanceKm,
       exchangesCompleted: otherUser.exchangesCompleted,
-      chatUnlocked,
       give,
       receive,
     });

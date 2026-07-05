@@ -10,10 +10,6 @@ interface AuthContextType {
   isLoading: boolean;
   login: (user: UserProfile, token: string) => void;
   logout: () => void;
-  /** Riflette il master switch chat_paywall_enabled. Se false, tutte le chat sono gratis. */
-  paywallEnabled: boolean;
-  /** L'utente ha sbloccato TUTTE le chat (= isPremium). */
-  hasAllChats: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -111,8 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         logout,
-        paywallEnabled: currentUser?.paywallEnabled === true,
-        hasAllChats: currentUser?.hasAllChats === true,
       }}
     >
       {children}

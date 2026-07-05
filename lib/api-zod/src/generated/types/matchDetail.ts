@@ -16,8 +16,6 @@ export interface MatchDetail {
   totalReceive: number;
   distanceKm?: number | null;
   exchangesCompleted: number;
-  /** True se l'utente corrente può già aprire la chat (premium/all, sblocco coppia, oppure paywall spento). */
-  chatUnlocked: boolean;
   give: MatchAlbumGroup[];
   receive: MatchAlbumGroup[];
 }

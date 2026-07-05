@@ -11,11 +11,6 @@ export interface AdminUser {
   nickname: string;
   cap: string;
   area?: string | null;
-  isPremium: boolean;
-  /** L'utente ha sbloccato TUTTE le chat (= isPremium). */
-  hasAllChats: boolean;
-  /** Numero di chat singole sbloccate (acquisti 'single'). */
-  unlockedChats: number;
   albumCount: number;
   exchangesCompleted: number;
   isBlocked: boolean;

@@ -1,22 +1,19 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, MessageCircle, X, Lock, Unlock, ChevronDown, Trash2 } from "lucide-react";
+import { ArrowLeft, MessageCircle, ChevronDown, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useToast } from "@/hooks/use-toast";
-import { useSupportEmail } from "@/hooks/useSupportEmail";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useGetMatchDetail,
   useOpenChat,
-  useBillingCheckout,
   useListAlbums,
   getGetMatchDetailQueryKey,
   getListAlbumsQueryKey,
@@ -144,11 +141,9 @@ export function MatchDetail() {
 function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const supportEmail = useSupportEmail();
   const { currentUser } = useAuth();
   const isDemo = isDemoUserId(matchUserId);
 
-  const [showPaywall, setShowPaywall] = useState(false);
   const [showRemoveDemo, setShowRemoveDemo] = useState(false);
 
   // Elimina QUESTO profilo-prova per l'utente corrente (solo frontend, in
@@ -176,31 +171,8 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
       onSuccess: (chat) => {
         setLocation(`/chat/${chat.id}`);
       },
-      onError: (err: any) => {
-        // Il backend risponde 403 PREMIUM_REQUIRED se la chat è a pagamento e
-        // non ancora sbloccata → mostra il paywall (due opzioni di acquisto).
-        if (err?.status === 403 || err?.data?.error === "PREMIUM_REQUIRED") {
-          setShowPaywall(true);
-        } else {
-          toast({ title: "Errore", description: "Impossibile aprire la chat", variant: "destructive" });
-        }
-      },
-    },
-  });
-
-  // Checkout: per ora è uno STUB lato server ({ status: 'not_configured' }).
-  // NON sblocca nulla dal client: mostra solo un avviso "pagamenti in arrivo".
-  const checkout = useBillingCheckout({
-    mutation: {
-      onSuccess: () => {
-        toast({
-          title: "Pagamenti in arrivo",
-          description: "Lo sblocco delle chat non è ancora attivo. Torna presto!",
-        });
-        setShowPaywall(false);
-      },
       onError: () => {
-        toast({ title: "Errore", description: "Riprova tra poco", variant: "destructive" });
+        toast({ title: "Errore", description: "Impossibile aprire la chat", variant: "destructive" });
       },
     },
   });
@@ -213,16 +185,8 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
       setLocation(`/chat/demo${Math.abs(matchUserId)}`);
       return;
     }
-    // chatUnlocked = true se l'utente può già aprire la chat (premium/all,
-    // sblocco coppia, oppure paywall spento). Se non sbloccata, tentiamo
-    // comunque l'apertura: il gate vero è lato server (403 → paywall).
-    if (detail?.chatUnlocked) {
-      openChat.mutate({ data: { otherUserId: matchUserId } });
-    } else if (detail?.chatUnlocked === false) {
-      setShowPaywall(true);
-    } else {
-      openChat.mutate({ data: { otherUserId: matchUserId } });
-    }
+    // La chat è sempre gratuita: si apre e basta.
+    openChat.mutate({ data: { otherUserId: matchUserId } });
   };
 
   if (isLoading) {
@@ -339,51 +303,6 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Sblocca la chat</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
-              <Lock className="h-8 w-8 text-accent mx-auto mb-2" />
-              <p className="font-semibold text-foreground">Scrivi a {detail.nickname}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                L'app è gratis: paghi solo per aprire la chat di un match.
-              </p>
-            </div>
-            <div className="space-y-2">
-              {/* Sblocca SOLO questa chat (acquisto 'single', coppia con questo utente) */}
-              <Button
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold gap-2"
-                disabled={checkout.isPending}
-                onClick={() => checkout.mutate({ data: { kind: "single", otherUserId: matchUserId } })}
-              >
-                <MessageCircle className="h-4 w-4" />
-                Sblocca questa chat
-              </Button>
-              {/* Sblocca TUTTE le chat (acquisto 'all') */}
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                disabled={checkout.isPending}
-                onClick={() => checkout.mutate({ data: { kind: "all" } })}
-              >
-                <Unlock className="h-4 w-4" />
-                Sblocca tutte le chat
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Pagamenti in arrivo. Per info: <a href={`mailto:${supportEmail}`} className="text-primary underline">{supportEmail}</a>
-            </p>
-            <Button variant="ghost" className="w-full" onClick={() => setShowPaywall(false)}>
-              <X className="h-4 w-4 mr-2" />
-              Chiudi
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

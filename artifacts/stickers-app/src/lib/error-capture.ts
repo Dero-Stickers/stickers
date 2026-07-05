@@ -165,7 +165,7 @@ function dispatch(
 // ---------------------------------------------------------------------------
 // API failure hook — called from the shared customFetch via a registered cb.
 // We only care about server faults (5xx) and network failures, NOT the normal
-// 4xx (wrong PIN, paywall 403, validation 400) which are expected behaviour.
+// 4xx (wrong PIN, validation 400) which are expected behaviour.
 // ---------------------------------------------------------------------------
 
 export function reportApiFailure(info: {

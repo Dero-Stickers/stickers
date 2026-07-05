@@ -9,7 +9,6 @@ import {
 } from "../lib/auth";
 import { z } from "zod";
 import { requireAuth } from "../middlewares/auth";
-import { isChatPaywallEnabled } from "../lib/billing";
 import { invalidateUser } from "../lib/matchCache";
 import { verifySupabaseToken, isSupabaseAuthConfigured } from "../lib/supabase-auth";
 
@@ -83,19 +82,13 @@ function clientIp(req: { ip?: string }): string {
 const router = Router();
 
 async function userPayload(user: any, underReview = false) {
-  // Nuovo modello "paga per sbloccare la chat":
-  //  - paywallEnabled riflette il master switch app_settings chat_paywall_enabled;
-  //  - hasAllChats = isPremium (l'utente ha sbloccato TUTTE le chat).
-  // underReview è calcolato solo in getMe (non a ogni login) per il banner "sotto revisione".
-  const paywallEnabled = await isChatPaywallEnabled();
+  // App 100% gratuita: nessun campo a pagamento nel profilo. underReview è
+  // calcolato solo in getMe (non a ogni login) per il banner "sotto revisione".
   return {
     id: user.id,
     nickname: user.nickname,
     cap: user.cap,
     area: user.area,
-    isPremium: user.isPremium,
-    paywallEnabled,
-    hasAllChats: user.isPremium,
     exchangesCompleted: user.exchangesCompleted,
     isAdmin: user.isAdmin,
     underReview,
@@ -256,7 +249,6 @@ const exportMe: RequestHandler = async (req, res) => {
         cap: user.cap,
         area: user.area,
         securityQuestion: user.securityQuestion,
-        isPremium: user.isPremium,
         exchangesCompleted: user.exchangesCompleted,
         createdAt: user.createdAt,
       },
@@ -555,7 +547,6 @@ const socialComplete: RequestHandler = async (req, res) => {
           email: identity.email,
           authProvider: identity.provider === "google" ? "google" : "email",
           supabaseUserId: identity.supabaseUserId,
-          isPremium: false,
           acceptedTermsAt: new Date(),
           // pinHash / securityQuestion / recoveryCode restano NULL (utente social).
         })

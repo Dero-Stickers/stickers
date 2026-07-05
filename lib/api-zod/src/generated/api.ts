@@ -40,15 +40,6 @@ export const LoginResponse = zod.object({
     nickname: zod.string(),
     cap: zod.string(),
     area: zod.string().optional(),
-    isPremium: zod.boolean(),
-    paywallEnabled: zod
-      .boolean()
-      .describe(
-        "Riflette il master switch chat_paywall_enabled. Se false, tutte le chat sono gratis.",
-      ),
-    hasAllChats: zod
-      .boolean()
-      .describe("L'utente ha sbloccato TUTTE le chat (= isPremium)."),
     exchangesCompleted: zod.number(),
     isAdmin: zod.boolean(),
     underReview: zod
@@ -78,15 +69,6 @@ export const GetMeResponse = zod.object({
   nickname: zod.string(),
   cap: zod.string(),
   area: zod.string().optional(),
-  isPremium: zod.boolean(),
-  paywallEnabled: zod
-    .boolean()
-    .describe(
-      "Riflette il master switch chat_paywall_enabled. Se false, tutte le chat sono gratis.",
-    ),
-  hasAllChats: zod
-    .boolean()
-    .describe("L'utente ha sbloccato TUTTE le chat (= isPremium)."),
   exchangesCompleted: zod.number(),
   isAdmin: zod.boolean(),
   underReview: zod
@@ -500,11 +482,6 @@ export const GetMatchDetailResponse = zod.object({
   totalReceive: zod.number(),
   distanceKm: zod.number().nullish(),
   exchangesCompleted: zod.number(),
-  chatUnlocked: zod
-    .boolean()
-    .describe(
-      "True se l'utente corrente può già aprire la chat (premium\/all, sblocco coppia, oppure paywall spento).",
-    ),
   give: zod.array(
     zod.object({
       albumId: zod.number(),
@@ -718,33 +695,6 @@ export const GetUnreadChatsCountResponse = zod.object({
 });
 
 /**
- * Per ora è uno STUB: nessun pagamento reale. Risponde sempre con status='not_configured'. Quando il provider sarà collegato, restituirà un URL di checkout e lo sblocco verrà concesso lato server dal webhook.
-
- * @summary Avvia il checkout per sbloccare la chat (single o all)
- */
-export const BillingCheckoutBody = zod.object({
-  kind: zod.enum(["single", "all"]),
-  otherUserId: zod
-    .number()
-    .optional()
-    .describe(
-      "Richiesto per kind='single' — il match con cui sbloccare la chat.",
-    ),
-});
-
-export const BillingCheckoutResponse = zod.object({
-  status: zod
-    .string()
-    .describe("Per ora sempre 'not_configured' (pagamenti non ancora attivi)."),
-  url: zod
-    .string()
-    .optional()
-    .describe(
-      "URL di checkout del provider (assente finché i pagamenti non sono collegati).",
-    ),
-});
-
-/**
  * @summary Get dashboard stats
  */
 export const GetAdminStatsResponse = zod.object({
@@ -752,14 +702,6 @@ export const GetAdminStatsResponse = zod.object({
   totalAlbums: zod.number(),
   totalMessages: zod.number(),
   activeChats: zod.number(),
-  premiumUsers: zod
-    .number()
-    .describe('Utenti con \"tutte le chat\" sbloccate (isPremium).'),
-  unlocks: zod
-    .number()
-    .describe(
-      "Numero totale di sblocchi di singola chat (righe chat_unlocks).",
-    ),
   blockedUsers: zod.number(),
   pendingReports: zod.number(),
 });
@@ -772,13 +714,6 @@ export const AdminListUsersResponseItem = zod.object({
   nickname: zod.string(),
   cap: zod.string(),
   area: zod.string().nullish(),
-  isPremium: zod.boolean(),
-  hasAllChats: zod
-    .boolean()
-    .describe("L'utente ha sbloccato TUTTE le chat (= isPremium)."),
-  unlockedChats: zod
-    .number()
-    .describe("Numero di chat singole sbloccate (acquisti 'single')."),
   albumCount: zod.number(),
   exchangesCompleted: zod.number(),
   isBlocked: zod.boolean(),
@@ -803,13 +738,6 @@ export const ToggleBlockUserResponse = zod.object({
   nickname: zod.string(),
   cap: zod.string(),
   area: zod.string().nullish(),
-  isPremium: zod.boolean(),
-  hasAllChats: zod
-    .boolean()
-    .describe("L'utente ha sbloccato TUTTE le chat (= isPremium)."),
-  unlockedChats: zod
-    .number()
-    .describe("Numero di chat singole sbloccate (acquisti 'single')."),
   albumCount: zod.number(),
   exchangesCompleted: zod.number(),
   isBlocked: zod.boolean(),
@@ -879,82 +807,6 @@ export const AdminListReportsResponseItem = zod.object({
   createdAt: zod.string(),
 });
 export const AdminListReportsResponse = zod.array(AdminListReportsResponseItem);
-
-/**
- * @summary Get chat-paywall configuration (master switch + prices)
- */
-export const GetPaywallConfigResponse = zod.object({
-  chatPaywallEnabled: zod
-    .boolean()
-    .describe("Master switch. Se false, tutte le chat sono gratis."),
-  priceSingleCents: zod
-    .number()
-    .describe("Prezzo sblocco di UNA chat, in centesimi interi."),
-  priceAllCents: zod
-    .number()
-    .describe("Prezzo sblocco di TUTTE le chat, in centesimi interi."),
-  currency: zod.string().describe("Valuta usata per gli sblocchi (es. EUR)."),
-});
-
-/**
- * @summary Update chat-paywall master switch and prices
- */
-export const UpdatePaywallConfigBody = zod.object({
-  chatPaywallEnabled: zod
-    .boolean()
-    .describe("Master switch. Se false, tutte le chat sono gratis."),
-  priceSingleCents: zod
-    .number()
-    .describe("Prezzo sblocco di UNA chat, in centesimi interi."),
-  priceAllCents: zod
-    .number()
-    .describe("Prezzo sblocco di TUTTE le chat, in centesimi interi."),
-  currency: zod.string().describe("Valuta usata per gli sblocchi (es. EUR)."),
-});
-
-export const UpdatePaywallConfigResponse = zod.object({
-  chatPaywallEnabled: zod
-    .boolean()
-    .describe("Master switch. Se false, tutte le chat sono gratis."),
-  priceSingleCents: zod
-    .number()
-    .describe("Prezzo sblocco di UNA chat, in centesimi interi."),
-  priceAllCents: zod
-    .number()
-    .describe("Prezzo sblocco di TUTTE le chat, in centesimi interi."),
-  currency: zod.string().describe("Valuta usata per gli sblocchi (es. EUR)."),
-});
-
-/**
- * @summary Concedi o revoca "tutte le chat" (isPremium) a un utente
- */
-export const AdminSetUserPremiumParams = zod.object({
-  userId: zod.coerce.number(),
-});
-
-export const AdminSetUserPremiumBody = zod.object({
-  grant: zod
-    .boolean()
-    .describe("true = sblocca tutte le chat (isPremium); false = revoca."),
-});
-
-export const AdminSetUserPremiumResponse = zod.object({
-  id: zod.number(),
-  nickname: zod.string(),
-  cap: zod.string(),
-  area: zod.string().nullish(),
-  isPremium: zod.boolean(),
-  hasAllChats: zod
-    .boolean()
-    .describe("L'utente ha sbloccato TUTTE le chat (= isPremium)."),
-  unlockedChats: zod
-    .number()
-    .describe("Numero di chat singole sbloccate (acquisti 'single')."),
-  albumCount: zod.number(),
-  exchangesCompleted: zod.number(),
-  isBlocked: zod.boolean(),
-  createdAt: zod.string().optional(),
-});
 
 /**
  * @summary Get app settings

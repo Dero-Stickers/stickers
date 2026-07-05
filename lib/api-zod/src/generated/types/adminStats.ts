@@ -11,10 +11,6 @@ export interface AdminStats {
   totalAlbums: number;
   totalMessages: number;
   activeChats: number;
-  /** Utenti con "tutte le chat" sbloccate (isPremium). */
-  premiumUsers: number;
-  /** Numero totale di sblocchi di singola chat (righe chat_unlocks). */
-  unlocks: number;
   blockedUsers: number;
   pendingReports: number;
 }

@@ -93,22 +93,7 @@ const openChat: RequestHandler = async (req, res) => {
     const { db } = await import("@workspace/db");
     const { chatsTable, usersTable } = await import("@workspace/db");
 
-    // Gate paywall: serve il permesso solo per APRIRE una NUOVA chat. Se la
-    // conversazione esiste già (qualcuno ha pagato/aperto), l'altro risponde
-    // sempre gratis → controlla il permesso solo quando non c'è ancora chat.
-    const [already] = await db.select({ id: chatsTable.id }).from(chatsTable).where(
-      or(
-        and(eq(chatsTable.user1Id, session.userId), eq(chatsTable.user2Id, otherUserIdNum)),
-        and(eq(chatsTable.user1Id, otherUserIdNum), eq(chatsTable.user2Id, session.userId)),
-      ),
-    ).limit(1);
-    if (!already) {
-      const { canOpenChat } = await import("../lib/billing");
-      if (!(await canOpenChat(session.userId, otherUserIdNum))) {
-        res.status(403).json({ error: "PREMIUM_REQUIRED", message: "Sblocca la chat per scrivere a questo utente" });
-        return;
-      }
-    }
+    // La chat è SEMPRE gratuita e apribile: nessun gate a pagamento.
 
     // Race-proof open-or-create: serialize concurrent calls for the same
     // unordered pair via a transaction-scoped advisory lock keyed on the

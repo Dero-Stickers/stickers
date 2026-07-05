@@ -19,7 +19,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     { label: "Messaggi", path: "/admin/messaggi" },
     { label: "Errori ricevuti", path: "/admin/segnalazioni" },
     { label: "Segnalazioni & proposte", path: "/admin/proposte" },
-    { label: "Monetizzazione", path: "/admin/premium" },
+    { label: "Donazioni", path: "/admin/donazioni" },
     { label: "Impostazioni", path: "/admin/impostazioni" },
   ];
 

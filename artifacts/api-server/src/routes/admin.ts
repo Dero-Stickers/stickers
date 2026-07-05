@@ -30,12 +30,10 @@ const getStats: RequestHandler = async (req, res) => {
     const statRows = await db.execute<Record<string, number>>(sql`
       SELECT
         (SELECT COUNT(*)::int FROM users WHERE is_admin = false)              AS total_users,
-        (SELECT COUNT(*)::int FROM users WHERE is_admin = false AND is_premium) AS premium_users,
         (SELECT COUNT(*)::int FROM users WHERE is_admin = false AND is_blocked) AS blocked_users,
         (SELECT COUNT(*)::int FROM albums)                                    AS total_albums,
         (SELECT COUNT(*)::int FROM messages)                                  AS total_messages,
         (SELECT COUNT(*)::int FROM chats WHERE status = 'active')             AS active_chats,
-        (SELECT COUNT(*)::int FROM chat_unlocks)                              AS unlocks,
         (SELECT COUNT(*)::int FROM reports WHERE status = 'pending')          AS pending_reports
     `);
     const s = (((statRows as any).rows ?? statRows) as Record<string, number>[])[0] ?? {};
@@ -45,8 +43,6 @@ const getStats: RequestHandler = async (req, res) => {
       totalAlbums: s.total_albums ?? 0,
       totalMessages: s.total_messages ?? 0,
       activeChats: s.active_chats ?? 0,
-      premiumUsers: s.premium_users ?? 0,
-      unlocks: s.unlocks ?? 0,
       blockedUsers: s.blocked_users ?? 0,
       pendingReports: s.pending_reports ?? 0,
     });
@@ -66,14 +62,6 @@ const listUsers: RequestHandler = async (req, res) => {
 
     const users = await db.select().from(usersTable).where(eq(usersTable.isAdmin, false)).orderBy(desc(usersTable.createdAt));
 
-    // Conteggio sblocchi di singola chat per utente (una query sola, no N+1).
-    const unlockRows = await db.execute<{ user_id: number; n: number }>(
-      sql`SELECT user_id, COUNT(*)::int AS n FROM chat_unlocks GROUP BY user_id`,
-    );
-    const unlockMap = new Map<number, number>(
-      (((unlockRows as any).rows ?? unlockRows) as { user_id: number; n: number }[]).map(r => [r.user_id, r.n]),
-    );
-
     // Conteggio album per utente in UNA query (GROUP BY) — evita N+1 (prima una
     // query per ogni utente: con 3000 utenti saturava il pool e andava in timeout).
     const albumRows = await db.execute<{ user_id: number; n: number }>(
@@ -88,9 +76,6 @@ const listUsers: RequestHandler = async (req, res) => {
       nickname: u.nickname,
       cap: u.cap,
       area: u.area,
-      isPremium: u.isPremium,
-      hasAllChats: u.isPremium,
-      unlockedChats: unlockMap.get(u.id) ?? 0,
       albumCount: albumMap.get(u.id) ?? 0,
       exchangesCompleted: u.exchangesCompleted,
       isBlocked: u.isBlocked,
@@ -127,9 +112,6 @@ const toggleBlock: RequestHandler = async (req, res) => {
       nickname: updated.nickname,
       cap: updated.cap,
       area: updated.area,
-      isPremium: updated.isPremium,
-      hasAllChats: updated.isPremium,
-      unlockedChats: 0,
       albumCount: 0,
       exchangesCompleted: updated.exchangesCompleted,
       isBlocked: updated.isBlocked,
@@ -300,119 +282,14 @@ const listReports: RequestHandler = async (req, res) => {
   }
 };
 
-// Default prezzi (centesimi interi) e valuta se le impostazioni mancano.
-const PAYWALL_DEFAULTS = { priceSingleCents: 199, priceAllCents: 999, currency: "EUR" };
-
-// GET /api/admin/paywall/config — master switch chat a pagamento + prezzi.
-const getPaywallConfig: RequestHandler = async (req, res) => {
-  try {
-    const session = await requireAdmin(req, res);
-    if (!session) return;
-    const { db } = await import("@workspace/db");
-    const { appSettingsTable } = await import("@workspace/db");
-    const rows = await db.select().from(appSettingsTable);
-    const map: Record<string, string> = {};
-    rows.forEach(r => { map[r.key] = r.value; });
-    res.json({
-      chatPaywallEnabled: map["chat_paywall_enabled"] === "true",
-      priceSingleCents: parseInt(map["price_single_cents"] ?? String(PAYWALL_DEFAULTS.priceSingleCents), 10),
-      priceAllCents: parseInt(map["price_all_cents"] ?? String(PAYWALL_DEFAULTS.priceAllCents), 10),
-      currency: map["paywall_currency"] ?? PAYWALL_DEFAULTS.currency,
-    });
-  } catch {
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
-// PUT /api/admin/paywall/config — aggiorna master switch e prezzi (centesimi interi).
-const updatePaywallConfig: RequestHandler = async (req, res) => {
-  try {
-    const session = await requireAdmin(req, res);
-    if (!session) return;
-    const { db } = await import("@workspace/db");
-    const { appSettingsTable } = await import("@workspace/db");
-    const { eq } = await import("drizzle-orm");
-
-    const upsert = async (key: string, value: string) => {
-      const existing = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, key)).limit(1);
-      if (existing.length) {
-        await db.update(appSettingsTable).set({ value, updatedAt: new Date() }).where(eq(appSettingsTable.key, key));
-      } else {
-        await db.insert(appSettingsTable).values({ key, value });
-      }
-    };
-
-    if (req.body.chatPaywallEnabled !== undefined) await upsert("chat_paywall_enabled", String(!!req.body.chatPaywallEnabled));
-    // Prezzi: SEMPRE centesimi interi (mai float). Floor difensivo.
-    if (req.body.priceSingleCents !== undefined) await upsert("price_single_cents", String(Math.max(0, Math.floor(Number(req.body.priceSingleCents) || 0))));
-    if (req.body.priceAllCents !== undefined) await upsert("price_all_cents", String(Math.max(0, Math.floor(Number(req.body.priceAllCents) || 0))));
-    if (req.body.currency !== undefined) await upsert("paywall_currency", String(req.body.currency));
-
-    const rows = await db.select().from(appSettingsTable);
-    const map: Record<string, string> = {};
-    rows.forEach(r => { map[r.key] = r.value; });
-    res.json({
-      chatPaywallEnabled: map["chat_paywall_enabled"] === "true",
-      priceSingleCents: parseInt(map["price_single_cents"] ?? String(PAYWALL_DEFAULTS.priceSingleCents), 10),
-      priceAllCents: parseInt(map["price_all_cents"] ?? String(PAYWALL_DEFAULTS.priceAllCents), 10),
-      currency: map["paywall_currency"] ?? PAYWALL_DEFAULTS.currency,
-    });
-  } catch {
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
-// POST /api/admin/users/:userId/premium — sblocco/revoca manuale "tutte le chat".
-// hasAllChats coincide con isPremium: questo è l'unico modo lato admin per
-// concederlo/revocarlo senza pagamento.
-const setUserPremium: RequestHandler = async (req, res) => {
-  try {
-    const session = await requireAdmin(req, res);
-    if (!session) return;
-    const userId = parseInt(req.params.userId as string, 10);
-    const grant = !!req.body?.grant;
-    const { db } = await import("@workspace/db");
-    const { usersTable, userAlbumsTable } = await import("@workspace/db");
-    const { eq } = await import("drizzle-orm");
-
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-    if (!user) { res.status(404).json({ error: "NOT_FOUND" }); return; }
-
-    const [updated] = await db.update(usersTable).set({ isPremium: grant }).where(eq(usersTable.id, userId)).returning();
-    const albums = await db.select().from(userAlbumsTable).where(eq(userAlbumsTable.userId, userId));
-    const { chatUnlocksTable } = await import("@workspace/db");
-    const unlocks = await db.select({ id: chatUnlocksTable.id }).from(chatUnlocksTable).where(eq(chatUnlocksTable.userId, userId));
-
-    res.json({
-      id: updated.id,
-      nickname: updated.nickname,
-      cap: updated.cap,
-      area: updated.area,
-      isPremium: updated.isPremium,
-      hasAllChats: updated.isPremium,
-      unlockedChats: unlocks.length,
-      albumCount: albums.length,
-      exchangesCompleted: updated.exchangesCompleted,
-      isBlocked: updated.isBlocked,
-      createdAt: updated.createdAt.toISOString(),
-    });
-  } catch (err) {
-    req.log?.error(err);
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-};
-
 router.get("/stats", getStats);
 router.get("/users", listUsers);
 router.patch("/users/:userId/block", toggleBlock);
-router.post("/users/:userId/premium", setUserPremium);
 router.get("/chats", listChats);
 router.patch("/chats/:chatId/close", closeChat);
 router.patch("/chats/:chatId/reopen", reopenChat);
 router.patch("/chats/:chatId/resolve-report", resolveChatReports);
 router.get("/chats/:chatId/messages", getChatMessages);
 router.get("/reports", listReports);
-router.get("/paywall/config", getPaywallConfig);
-router.put("/paywall/config", updatePaywallConfig);
 
 export default router;

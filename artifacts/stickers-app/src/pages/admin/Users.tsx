@@ -10,7 +10,6 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
-import { ChatAccessBadge, classifyAccess } from "@/components/admin/ChatAccessBadge";
 import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
 import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
 import { useConfirm } from "@/components/admin/ConfirmDialog";
@@ -39,16 +38,11 @@ export function AdminUsers() {
   }, [users, sortKey, sortDir]);
 
   // Ricerca (nickname/CAP/area) + filtro rapido di stato. Si combinano tra loro.
-  // Lo stato chat usa la stessa classificazione dei badge (none/some/full).
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "free" | "some" | "full" | "blocked">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "blocked">("all");
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
     return regularUsers.filter(u => {
-      const access = classifyAccess(u); // "none" | "some" | "full"
-      if (statusFilter === "free" && access !== "none") return false;
-      if (statusFilter === "some" && access !== "some") return false;
-      if (statusFilter === "full" && access !== "full") return false;
       if (statusFilter === "blocked" && !u.isBlocked) return false;
       if (!q) return true;
       return u.nickname.toLowerCase().includes(q)
@@ -85,7 +79,7 @@ export function AdminUsers() {
         </div>
       }
     >
-      <AdminFilterBar<"all" | "free" | "some" | "full" | "blocked">
+      <AdminFilterBar<"all" | "blocked">
         search={search}
         onSearch={setSearch}
         placeholder="Cerca nickname, CAP o area…"
@@ -93,9 +87,6 @@ export function AdminUsers() {
         onFilter={setStatusFilter}
         options={[
           ["all", "Tutti"],
-          ["free", "Free"],
-          ["some", "Alcune chat"],
-          ["full", "Tutte le chat"],
           ["blocked", "Bloccati"],
         ]}
       />
@@ -115,7 +106,6 @@ export function AdminUsers() {
             <th className="hidden sm:table-cell">
               <SortHeader label="Area" col="area" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
             </th>
-            <th>Stato</th>
             <th className="hidden md:table-cell">Scambi</th>
             <th>Azioni</th>
           </>
@@ -123,7 +113,7 @@ export function AdminUsers() {
       >
         {!isLoading && filteredUsers.length === 0 && (
           <tr>
-            <td colSpan={6} className="text-center text-muted-foreground">
+            <td colSpan={5} className="text-center text-muted-foreground">
               <div className="py-8">
                 {regularUsers.length === 0
                   ? "Nessun utente da mostrare."
@@ -142,9 +132,6 @@ export function AdminUsers() {
               </td>
               <td className="hidden sm:table-cell text-center text-foreground">{user.cap}</td>
               <td className="hidden sm:table-cell text-center text-muted-foreground">{user.area}</td>
-              <td className="text-center">
-                <ChatAccessBadge access={classifyAccess(user)} count={user.unlockedChats} />
-              </td>
               <td className="hidden md:table-cell text-center text-foreground">{user.exchangesCompleted}</td>
               <td>
                 <div className="flex justify-center">

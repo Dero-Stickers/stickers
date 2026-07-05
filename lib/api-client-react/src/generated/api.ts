@@ -31,8 +31,6 @@ import type {
   BulkSetStickersResponse,
   Chat,
   ChatTrade,
-  CheckoutBody,
-  CheckoutResponse,
   ConfirmTradeBody,
   ConfirmTradeResponse,
   CreateAlbumBody,
@@ -44,14 +42,11 @@ import type {
   MatchSummary,
   Message,
   OpenChatBody,
-  PaywallConfig,
-  PremiumRequiredResponse,
   PublishBody,
   RegisterBody,
   Report,
   ReportBody,
   SendMessageBody,
-  SetPremiumBody,
   Sticker,
   SuccessResponse,
   UnreadCountResponse,
@@ -2118,7 +2113,7 @@ export const openChat = async (
 };
 
 export const getOpenChatMutationOptions = <
-  TError = ErrorType<PremiumRequiredResponse>,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2159,13 +2154,13 @@ export type OpenChatMutationResult = NonNullable<
   Awaited<ReturnType<typeof openChat>>
 >;
 export type OpenChatMutationBody = BodyType<OpenChatBody>;
-export type OpenChatMutationError = ErrorType<PremiumRequiredResponse>;
+export type OpenChatMutationError = ErrorType<unknown>;
 
 /**
  * @summary Open or get chat with another user
  */
 export const useOpenChat = <
-  TError = ErrorType<PremiumRequiredResponse>,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2779,94 +2774,6 @@ export function useGetUnreadChatsCount<
 }
 
 /**
- * Per ora è uno STUB: nessun pagamento reale. Risponde sempre con status='not_configured'. Quando il provider sarà collegato, restituirà un URL di checkout e lo sblocco verrà concesso lato server dal webhook.
-
- * @summary Avvia il checkout per sbloccare la chat (single o all)
- */
-export const getBillingCheckoutUrl = () => {
-  return `/api/billing/checkout`;
-};
-
-export const billingCheckout = async (
-  checkoutBody: CheckoutBody,
-  options?: RequestInit,
-): Promise<CheckoutResponse> => {
-  return customFetch<CheckoutResponse>(getBillingCheckoutUrl(), {
-    ...options,
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(checkoutBody),
-  });
-};
-
-export const getBillingCheckoutMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof billingCheckout>>,
-    TError,
-    { data: BodyType<CheckoutBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof billingCheckout>>,
-  TError,
-  { data: BodyType<CheckoutBody> },
-  TContext
-> => {
-  const mutationKey = ["billingCheckout"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof billingCheckout>>,
-    { data: BodyType<CheckoutBody> }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return billingCheckout(data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type BillingCheckoutMutationResult = NonNullable<
-  Awaited<ReturnType<typeof billingCheckout>>
->;
-export type BillingCheckoutMutationBody = BodyType<CheckoutBody>;
-export type BillingCheckoutMutationError = ErrorType<unknown>;
-
-/**
- * @summary Avvia il checkout per sbloccare la chat (single o all)
- */
-export const useBillingCheckout = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof billingCheckout>>,
-    TError,
-    { data: BodyType<CheckoutBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof billingCheckout>>,
-  TError,
-  { data: BodyType<CheckoutBody> },
-  TContext
-> => {
-  return useMutation(getBillingCheckoutMutationOptions(options));
-};
-
-/**
  * @summary Get dashboard stats
  */
 export const getGetAdminStatsUrl = () => {
@@ -3425,254 +3332,6 @@ export function useAdminListReports<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
-
-/**
- * @summary Get chat-paywall configuration (master switch + prices)
- */
-export const getGetPaywallConfigUrl = () => {
-  return `/api/admin/paywall/config`;
-};
-
-export const getPaywallConfig = async (
-  options?: RequestInit,
-): Promise<PaywallConfig> => {
-  return customFetch<PaywallConfig>(getGetPaywallConfigUrl(), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetPaywallConfigQueryKey = () => {
-  return [`/api/admin/paywall/config`] as const;
-};
-
-export const getGetPaywallConfigQueryOptions = <
-  TData = Awaited<ReturnType<typeof getPaywallConfig>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getPaywallConfig>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetPaywallConfigQueryKey();
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof getPaywallConfig>>
-  > = ({ signal }) => getPaywallConfig({ signal, ...requestOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getPaywallConfig>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetPaywallConfigQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getPaywallConfig>>
->;
-export type GetPaywallConfigQueryError = ErrorType<unknown>;
-
-/**
- * @summary Get chat-paywall configuration (master switch + prices)
- */
-
-export function useGetPaywallConfig<
-  TData = Awaited<ReturnType<typeof getPaywallConfig>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getPaywallConfig>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetPaywallConfigQueryOptions(options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
- * @summary Update chat-paywall master switch and prices
- */
-export const getUpdatePaywallConfigUrl = () => {
-  return `/api/admin/paywall/config`;
-};
-
-export const updatePaywallConfig = async (
-  paywallConfig: PaywallConfig,
-  options?: RequestInit,
-): Promise<PaywallConfig> => {
-  return customFetch<PaywallConfig>(getUpdatePaywallConfigUrl(), {
-    ...options,
-    method: "PUT",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(paywallConfig),
-  });
-};
-
-export const getUpdatePaywallConfigMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updatePaywallConfig>>,
-    TError,
-    { data: BodyType<PaywallConfig> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof updatePaywallConfig>>,
-  TError,
-  { data: BodyType<PaywallConfig> },
-  TContext
-> => {
-  const mutationKey = ["updatePaywallConfig"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof updatePaywallConfig>>,
-    { data: BodyType<PaywallConfig> }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return updatePaywallConfig(data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UpdatePaywallConfigMutationResult = NonNullable<
-  Awaited<ReturnType<typeof updatePaywallConfig>>
->;
-export type UpdatePaywallConfigMutationBody = BodyType<PaywallConfig>;
-export type UpdatePaywallConfigMutationError = ErrorType<unknown>;
-
-/**
- * @summary Update chat-paywall master switch and prices
- */
-export const useUpdatePaywallConfig = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updatePaywallConfig>>,
-    TError,
-    { data: BodyType<PaywallConfig> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof updatePaywallConfig>>,
-  TError,
-  { data: BodyType<PaywallConfig> },
-  TContext
-> => {
-  return useMutation(getUpdatePaywallConfigMutationOptions(options));
-};
-
-/**
- * @summary Concedi o revoca "tutte le chat" (isPremium) a un utente
- */
-export const getAdminSetUserPremiumUrl = (userId: number) => {
-  return `/api/admin/users/${userId}/premium`;
-};
-
-export const adminSetUserPremium = async (
-  userId: number,
-  setPremiumBody: SetPremiumBody,
-  options?: RequestInit,
-): Promise<AdminUser> => {
-  return customFetch<AdminUser>(getAdminSetUserPremiumUrl(userId), {
-    ...options,
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(setPremiumBody),
-  });
-};
-
-export const getAdminSetUserPremiumMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminSetUserPremium>>,
-    TError,
-    { userId: number; data: BodyType<SetPremiumBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof adminSetUserPremium>>,
-  TError,
-  { userId: number; data: BodyType<SetPremiumBody> },
-  TContext
-> => {
-  const mutationKey = ["adminSetUserPremium"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminSetUserPremium>>,
-    { userId: number; data: BodyType<SetPremiumBody> }
-  > = (props) => {
-    const { userId, data } = props ?? {};
-
-    return adminSetUserPremium(userId, data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminSetUserPremiumMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminSetUserPremium>>
->;
-export type AdminSetUserPremiumMutationBody = BodyType<SetPremiumBody>;
-export type AdminSetUserPremiumMutationError = ErrorType<unknown>;
-
-/**
- * @summary Concedi o revoca "tutte le chat" (isPremium) a un utente
- */
-export const useAdminSetUserPremium = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminSetUserPremium>>,
-    TError,
-    { userId: number; data: BodyType<SetPremiumBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof adminSetUserPremium>>,
-  TError,
-  { userId: number; data: BodyType<SetPremiumBody> },
-  TContext
-> => {
-  return useMutation(getAdminSetUserPremiumMutationOptions(options));
-};
 
 /**
  * @summary Get app settings

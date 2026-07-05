@@ -1,60 +1,55 @@
-# Monetizzazione — Sblocco chat a pagamento
+# Donazioni — App 100% gratuita
 
-> Modello cambiato (giu 2026): **niente più demo a tempo, niente piani/abbonamenti.**
-> L'app è **100% gratis e visibile**; si paga **solo** per **sbloccare la chat** di un
-> match. La vecchia "demo premium 24h" è stata eliminata da tutto lo stack.
+> Modello cambiato (lug 2026): **niente più paywall.** L'app è **completamente
+> gratuita**: album, figurine, match, chat — tutto libero, senza pagamenti. La
+> monetizzazione a pagamento (sblocco chat) è stata RIMOSSA da tutto lo stack
+> come se non fosse mai esistita. L'unico "introito" sarà la **donazione
+> spontanea** via Ko-fi (liberalità, nessuna contropartita).
 
-## Modello
+## Modello attuale
 
-L'intera app è gratuita: album, figurine, match (migliori + vicini), dettaglio
-scambi. L'**unica** cosa a pagamento è **aprire una chat** con un match.
+L'intera app è gratuita e sempre accessibile. Nessuna funzione è dietro
+pagamento: aprire una chat con un match è gratis come tutto il resto.
 
-Due acquisti (una tantum, mai ricorrenti):
-- **Una chat** (`single`) — sblocca la conversazione con **quel** match.
-- **Tutte le chat** (`all`) — pagamento unico più alto, sblocca **tutte** le chat a
-  vita (= flag `isPremium` dell'utente).
+Cosa è stato rimosso (era: "si paga per sbloccare la chat"):
+- Backend: `lib/billing.ts`, `routes/billing.ts`, gli handler admin
+  paywall/premium in `routes/admin.ts`, il gate 403 in `routes/chats.ts`, i
+  flag `chatUnlocked`/`isPremium`/`paywallEnabled`/`hasAllChats` dai payload.
+- Frontend: il modale "Sblocca la chat" in `MatchDetail`, la pagina admin
+  Monetizzazione, il badge accesso-chat, i campi premium in AuthContext.
+- Spec API (`openapi.yaml`): endpoint billing/paywall/premium e relativi schemi
+  → i tipi/hook generati (`api-client-react`, `api-zod`) sono spariti alla
+  rigenerazione.
+- DB (schema Drizzle): tabelle `payments` e `chat_unlocks` rimosse dal codice.
+  La colonna `users.is_premium` resta **INERTE** (non più letta/scritta, default
+  false) — scelta owner: nessuna operazione distruttiva su `users`.
 
-Prezzi in **centesimi interi** (mai float), configurabili da admin:
-`price_single_cents` (default 199), `price_all_cents` (default 999), `paywall_currency` (EUR).
+## Donazione Ko-fi (introito unico, di sola lettura)
 
-## Interruttore master (admin)
+L'unico introito è la **donazione volontaria** tramite Ko-fi — una liberalità:
+non sblocca nulla, non dà vantaggi, non tocca permessi/RLS/feature. L'app non
+tratta né salva dati di pagamento: tutto avviene su Ko-fi/PayPal.
 
-Setting `chat_paywall_enabled` in `app_settings` (default **false** = SPENTO):
-- **OFF** → tutte le chat sono **gratis**, l'app funziona come se il paywall non esistesse.
-- **ON** → per aprire una **nuova** chat con un match serve uno sblocco (single o all).
+- **Pagina Ko-fi:** `https://ko-fi.com/deroarts` (codice pagina `A6A522N3IW`).
+- **Pulsante** = link esterno che apre la pagina Ko-fi (NON lo script
+  `kofiwidget2`, che rende male in React/PWA). Verde Ko-fi `#3dbd45`.
+- **Frase obbligatoria** dove il contributo è presentato: *"Non sblocca nulla:
+  è solo un grazie."* — qualifica il pagamento come liberalità (niente P.IVA).
+  MAI legare la gratuità dell'app alla donazione (es. "gratis solo se doni"):
+  la trasformerebbe in corrispettivo.
 
-Esposto nel profilo come `UserProfile.paywallEnabled` e in `AdminUser` come
-`hasAllChats` + `unlockedChats`. Le chat **già aperte** restano sempre accessibili.
+## Pagina admin "Donazioni" (predisposta)
 
-## Gate e concessioni (solo lato server)
+`pages/admin/Donations.tsx` (voce menu "Donazioni", rotta `/admin/donazioni`) —
+riusa il layout admin. Mostra un riepilogo (totale, n°, media, ultima) e una
+tabella. **Stato: predisposta ma non collegata** — Ko-fi invia i dati via
+**webhook** SOLO con l'app online e il webhook configurato. È di **sola lettura**:
+nessun pagamento passa dall'app. Integrazione Ko-fi = passo separato.
 
-Logica unica in `api-server/src/lib/billing.ts` (NON duplicare altrove):
-- `isChatPaywallEnabled()` — legge il master switch.
-- `canOpenChat(userId, otherUserId)` — `true` se: paywall OFF **oppure** utente premium
-  (`hasAllChats`) **oppure** esiste una riga `chat_unlocks` per la coppia. Altrimenti `false`.
-- `grantAllChats(userId)` — imposta `isPremium=true` (sblocco totale).
-- `grantChatUnlock(userId, otherUserId, paymentId?)` — inserisce in `chat_unlocks`
-  (idempotente, `onConflictDoNothing`).
+## DB — cleanup da applicare a mano
 
-Il gate è in `routes/chats.ts` (apertura chat): se la chat **non** esiste ancora e
-`canOpenChat` è `false` → **403 PREMIUM_REQUIRED**. Le concessioni avvengono **solo**
-server-side; mai dal frontend.
-
-## Pagamenti reali — DA COLLEGARE (ultimo step, non ancora attivo)
-
-`routes/billing.ts` → `POST /billing/checkout` è uno **stub inerte**: ritorna
-`{ status: "not_configured" }`, **non addebita nulla**. Da fare alla fine:
-- collegare provider **senza partita IVA** (PayPal o simili — Stripe richiede P.IVA);
-  prima in **modalità test** (pagamenti di prova fatti dall'owner);
-- il checkout crea una riga `payments` (status `pending`) e ritorna l'URL di pagamento;
-- un **webhook** sul pagamento confermato chiama `grantChatUnlock`/`grantAllChats`
-  (idempotenza via `payments.provider_ref`).
-
-Distribuzione **fuori dagli store** (link Render condiviso): nessuna commissione del 30%.
-
-## Tabelle DB
-
-`payments` (audit/incassi) e `chat_unlocks` (sblocchi singoli) — schema in
-`09_DATABASE.md`. Create dalla migrazione additiva `0003_monetization_foundation.sql`
-(già applicata). Il cleanup demo `0004_drop_demo.sql` è **da applicare a mano** (vedi
-`09_DATABASE.md` → divergenza codice/DB).
+Migrazione `lib/db/migrations/0005_drop_monetization.sql` (stile `0004`):
+`DROP TABLE chat_unlocks` + `DROP TABLE payments` + `DELETE` delle 4 chiavi
+paywall in `app_settings`. **NON** tocca `users.is_premium` (resta inerte).
+⚠️ Le tabelle sono vuote (paywall mai attivato) → nessuna perdita dati.
+**DA APPLICARE A MANO** sul DB (non gira in automatico), con conferma owner.

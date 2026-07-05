@@ -38,11 +38,6 @@ export interface UserProfile {
   nickname: string;
   cap: string;
   area?: string;
-  isPremium: boolean;
-  /** Riflette il master switch chat_paywall_enabled. Se false, tutte le chat sono gratis. */
-  paywallEnabled: boolean;
-  /** L'utente ha sbloccato TUTTE le chat (= isPremium). */
-  hasAllChats: boolean;
   exchangesCompleted: number;
   isAdmin: boolean;
   /** Esiste almeno una segnalazione pendente a carico dell'utente. Mostra un avviso generico "conversazioni sotto revisione" senza rivelare chi ha segnalato. */
@@ -192,8 +187,6 @@ export interface MatchDetail {
   totalReceive: number;
   distanceKm?: number | null;
   exchangesCompleted: number;
-  /** True se l'utente corrente può già aprire la chat (premium/all, sblocco coppia, oppure paywall spento). */
-  chatUnlocked: boolean;
   give: MatchAlbumGroup[];
   receive: MatchAlbumGroup[];
 }
@@ -271,46 +264,11 @@ export interface UnreadCountResponse {
   count: number;
 }
 
-export interface PremiumRequiredResponse {
-  error: string;
-  message?: string;
-}
-
-export type CheckoutBodyKind =
-  (typeof CheckoutBodyKind)[keyof typeof CheckoutBodyKind];
-
-export const CheckoutBodyKind = {
-  single: "single",
-  all: "all",
-} as const;
-
-export interface CheckoutBody {
-  kind: CheckoutBodyKind;
-  /** Richiesto per kind='single' — il match con cui sbloccare la chat. */
-  otherUserId?: number;
-}
-
-export interface CheckoutResponse {
-  /** Per ora sempre 'not_configured' (pagamenti non ancora attivi). */
-  status: string;
-  /** URL di checkout del provider (assente finché i pagamenti non sono collegati). */
-  url?: string;
-}
-
-export interface SetPremiumBody {
-  /** true = sblocca tutte le chat (isPremium); false = revoca. */
-  grant: boolean;
-}
-
 export interface AdminStats {
   totalUsers: number;
   totalAlbums: number;
   totalMessages: number;
   activeChats: number;
-  /** Utenti con "tutte le chat" sbloccate (isPremium). */
-  premiumUsers: number;
-  /** Numero totale di sblocchi di singola chat (righe chat_unlocks). */
-  unlocks: number;
   blockedUsers: number;
   pendingReports: number;
 }
@@ -320,11 +278,6 @@ export interface AdminUser {
   nickname: string;
   cap: string;
   area?: string | null;
-  isPremium: boolean;
-  /** L'utente ha sbloccato TUTTE le chat (= isPremium). */
-  hasAllChats: boolean;
-  /** Numero di chat singole sbloccate (acquisti 'single'). */
-  unlockedChats: number;
   albumCount: number;
   exchangesCompleted: number;
   isBlocked: boolean;
@@ -372,17 +325,6 @@ export interface Report {
   reason: string;
   status: ReportStatus;
   createdAt: string;
-}
-
-export interface PaywallConfig {
-  /** Master switch. Se false, tutte le chat sono gratis. */
-  chatPaywallEnabled: boolean;
-  /** Prezzo sblocco di UNA chat, in centesimi interi. */
-  priceSingleCents: number;
-  /** Prezzo sblocco di TUTTE le chat, in centesimi interi. */
-  priceAllCents: number;
-  /** Valuta usata per gli sblocchi (es. EUR). */
-  currency: string;
 }
 
 export interface AppSettings {

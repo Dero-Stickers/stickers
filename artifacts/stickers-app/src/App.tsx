@@ -21,7 +21,7 @@ import { BlockedAccountDialog } from "@/components/auth/BlockedAccountDialog";
 // possibile, prima ancora del render: così nessun errore silente sfugge.
 installGlobalErrorCapture();
 // Ogni chiamata API che fallisce con 5xx o per rete assente diventa una
-// segnalazione automatica (i 4xx normali — PIN errato, paywall — sono esclusi).
+// segnalazione automatica (i 4xx normali — es. PIN errato — sono esclusi).
 setFetchFailureObserver(reportApiFailure);
 
 // Recupero automatico dallo "schermo bianco": se un chunk lazy non si scarica
@@ -59,7 +59,7 @@ const importAdminAlbums = () => import("@/pages/admin/Albums");
 const importAdminUsers = () => import("@/pages/admin/Users");
 const importAdminMessages = () => import("@/pages/admin/Messages");
 const importAdminErrors = () => import("@/pages/admin/Errors");
-const importAdminPremium = () => import("@/pages/admin/Premium");
+const importAdminDonations = () => import("@/pages/admin/Donations");
 const importAdminSettings = () => import("@/pages/admin/Settings");
 
 const AlbumDetail = lazy(() => importAlbumDetail().then((m) => ({ default: m.AlbumDetail })));
@@ -74,7 +74,7 @@ const AdminAlbums = lazy(() => importAdminAlbums().then((m) => ({ default: m.Adm
 const AdminUsers = lazy(() => importAdminUsers().then((m) => ({ default: m.AdminUsers })));
 const AdminMessages = lazy(() => importAdminMessages().then((m) => ({ default: m.AdminMessages })));
 const AdminErrors = lazy(() => importAdminErrors().then((m) => ({ default: m.AdminErrors })));
-const AdminPremium = lazy(() => importAdminPremium().then((m) => ({ default: m.AdminPremium })));
+const AdminDonations = lazy(() => importAdminDonations().then((m) => ({ default: m.AdminDonations })));
 const AdminSettings = lazy(() => importAdminSettings().then((m) => ({ default: m.AdminSettings })));
 
 function prefetchUserChunks() {
@@ -93,7 +93,7 @@ function prefetchAdminChunks() {
   void importAdminUsers();
   void importAdminMessages();
   void importAdminErrors();
-  void importAdminPremium();
+  void importAdminDonations();
   void importAdminSettings();
 }
 
@@ -139,8 +139,8 @@ function ProtectedUserRoute({ component: Component }: { component: React.FC }) {
 
   if (redirect) return null;
 
-  // App 100% gratis e visibile: i match e tutte le sezioni sono sempre
-  // accessibili. Il paywall vive SOLO sull'apertura della chat (lato server).
+  // App 100% gratis e visibile: match, chat e tutte le sezioni sono sempre
+  // accessibili, senza alcun pagamento.
   return (
     <MobileLayout>
       <Component />
@@ -210,7 +210,7 @@ function Router() {
             "Segnalazioni & proposte" (scritte dagli utenti), distinte da `group`. */}
         <Route path="/admin/segnalazioni" component={() => <ProtectedAdminRoute component={() => <AdminErrors group="auto" />} />} />
         <Route path="/admin/proposte" component={() => <ProtectedAdminRoute component={() => <AdminErrors group="manual" />} />} />
-        <Route path="/admin/premium" component={() => <ProtectedAdminRoute component={AdminPremium} />} />
+        <Route path="/admin/donazioni" component={() => <ProtectedAdminRoute component={AdminDonations} />} />
         <Route path="/admin/impostazioni" component={() => <ProtectedAdminRoute component={AdminSettings} />} />
 
         <Route component={NotFound} />

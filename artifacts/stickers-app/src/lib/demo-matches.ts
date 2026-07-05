@@ -173,7 +173,7 @@ interface DemoAlbumGroup { albumId: number; albumTitle: string; stickers: DemoSt
 export interface DemoDetail {
   userId: number; nickname: string; area?: string;
   totalExchanges: number; totalGive: number; totalReceive: number;
-  distanceKm?: number | null; exchangesCompleted: number; chatUnlocked: boolean;
+  distanceKm?: number | null; exchangesCompleted: number;
   give: DemoAlbumGroup[]; receive: DemoAlbumGroup[];
 }
 
@@ -282,7 +282,6 @@ export function buildDemoDetail(
     totalReceive,
     distanceKm: summary.distanceKm,
     exchangesCompleted: p.exchangesCompleted,
-    chatUnlocked: true, // niente paywall sui demo
     give,
     receive,
   };

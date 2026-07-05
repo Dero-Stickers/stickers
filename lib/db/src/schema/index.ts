@@ -7,6 +7,4 @@ export * from "./user-albums";
 export * from "./user-stickers";
 export * from "./chats";
 export * from "./error-reports";
-export * from "./payments";
-export * from "./chat-unlocks";
 export * from "./trade-confirmations";

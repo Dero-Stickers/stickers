@@ -11,11 +11,6 @@ export interface UserProfile {
   nickname: string;
   cap: string;
   area?: string;
-  isPremium: boolean;
-  /** Riflette il master switch chat_paywall_enabled. Se false, tutte le chat sono gratis. */
-  paywallEnabled: boolean;
-  /** L'utente ha sbloccato TUTTE le chat (= isPremium). */
-  hasAllChats: boolean;
   exchangesCompleted: number;
   isAdmin: boolean;
   /** Esiste almeno una segnalazione pendente a carico dell'utente. Mostra un avviso generico "conversazioni sotto revisione" senza rivelare chi ha segnalato. */
