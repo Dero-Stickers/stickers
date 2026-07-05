@@ -74,6 +74,27 @@ Webhook URL = `<LINK_DEPLOY>/api/kofi/webhook`, e il **Verification Token** di
 Ko-fi va copiato in `KOFI_VERIFICATION_TOKEN` (env Render + App Control). Poi le
 donazioni compaiono in admin da sole.
 
+## Invito a donare (una-tantum, admin → utente) — 5 lug 2026
+
+Funzione **100% interna** (DB + backend nostri; Ko-fi entra solo se l'utente
+sceglie di donare). Serve a invitare gentilmente gli utenti più attivi a
+sostenere l'app, **senza spam** e nel rispetto delle policy store.
+
+- **Tabella** `donation_nudges` (schema `donation-nudges.ts`, mig.
+  `0011_donation_nudges.sql`): `user_id` UNIQUE, `sent_at`, `seen_at`.
+- **Admin** (`pages/admin/Users.tsx`, colonna **"Invito"**): pulsante "Invita"
+  (`POST /api/admin/users/:id/nudge`, upsert) — **sempre con conferma**; agli
+  utenti **bloccati** non si invia (mostra "—"). Storico anti-spam in colonna:
+  "Inviato · data" / "Visto · data" + "Reinvia". L'admin sceglie a mano chi
+  invitare (nessun invio automatico di massa).
+- **Utente** (`components/brand/NudgeDialog.tsx` → `<NudgeGate>` montato in
+  `App.tsx`): al prossimo accesso `GET /api/me/nudge` restituisce l'invito non
+  visto → modale **una volta sola**; alla chiusura (sia "Sostieni Stickers" sia
+  "No grazie") `POST /api/me/nudge/seen` lo consuma e non riappare più. Le route
+  `/me/*` sono dietro il gate auth+anti-blocco.
+- **Testo** (concordato con l'owner): complimento ("sei tra i più attivi"),
+  **mai** colpevolizzazione; contributo libero, non sblocca nulla, chiudibile.
+
 ## DB — cleanup APPLICATO (5 lug 2026)
 
 `DROP TABLE chat_unlocks` + `DROP TABLE payments` (erano vuote) + `DELETE` delle

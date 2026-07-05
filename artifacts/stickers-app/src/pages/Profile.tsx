@@ -148,44 +148,45 @@ export function Profile() {
           </CardContent>
         </Card>
 
-        <div className="mt-4 space-y-2">
-          <Button
-            variant="outline"
-            className="w-full h-11 rounded-xl bg-white text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive font-semibold gap-2"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4" />
-            Esci dall'account
-          </Button>
-
-          {!currentUser?.isAdmin && (
-            <Button
-              onClick={() => { setShowDeleteDialog(true); setDeleteStep("form"); setDeleteConfirm(""); setDeleteError(null); }}
-              className="w-full h-11 rounded-xl bg-destructive text-white border border-destructive hover:bg-destructive/90 font-semibold gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Elimina account
-            </Button>
-          )}
+        {/* Box donazione Ko-fi — box bianco dedicato. Ordine: PRIMA il pulsante,
+            POI l'info in piccolo (font regular, attenuato). Contributo LIBERO,
+            non sblocca nulla (liberalità, non corrispettivo): la frase "è solo un
+            grazie" va mantenuta. Il pulsante apre Ko-fi. */}
+        <div className="mt-4">
+          <div className="rounded-2xl border border-border bg-white px-4 py-4 text-center shadow-sm">
+            <KofiButton />
+            <p className="mt-3 text-xs font-normal text-muted-foreground leading-relaxed">
+              Stickers oggi è gratuita. Un contributo, se ti va, aiuta a tenerla
+              così. Non sblocca nulla: è solo un grazie!
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Spacer che cresce: mangia lo spazio libero e spinge donazione + firma in
-          fondo, a ridosso della nav bar (flex-1 è affidabile; mt-auto non basta). */}
+      {/* Spacer che cresce: mangia lo spazio libero e spinge i pulsanti rossi +
+          firma in fondo, a ridosso della nav bar (flex-1 è affidabile). */}
       <div className="flex-1" />
 
-      {/* Box donazione Ko-fi — box bianco dedicato, sopra la firma. Ordine:
-          PRIMA il pulsante, POI l'info in piccolo (font regular, attenuato).
-          Contributo LIBERO, non sblocca nulla (liberalità, non corrispettivo):
-          la frase "è solo un grazie" va mantenuta. Il pulsante apre Ko-fi. */}
-      <div className="shrink-0 px-4">
-        <div className="rounded-2xl border border-border bg-white px-4 py-4 text-center shadow-sm">
-          <KofiButton />
-          <p className="mt-3 text-xs font-normal text-muted-foreground leading-relaxed">
-            Stickers oggi è gratuita. Un contributo, se ti va, aiuta a tenerla
-            così. Non sblocca nulla: è solo un grazie!
-          </p>
-        </div>
+      {/* Pulsanti rossi (Esci / Elimina account) in fondo, sopra la firma. */}
+      <div className="shrink-0 px-4 space-y-2">
+        <Button
+          variant="outline"
+          className="w-full h-11 rounded-xl bg-white text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive font-semibold gap-2"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4" />
+          Esci dall'account
+        </Button>
+
+        {!currentUser?.isAdmin && (
+          <Button
+            onClick={() => { setShowDeleteDialog(true); setDeleteStep("form"); setDeleteConfirm(""); setDeleteError(null); }}
+            className="w-full h-11 rounded-xl bg-destructive text-white border border-destructive hover:bg-destructive/90 font-semibold gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Elimina account
+          </Button>
+        )}
       </div>
 
       {/* Firma progetto — minimale: solo il logo deroarts, cliccabile.

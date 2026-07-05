@@ -7,6 +7,19 @@
 
 ## 2026-07
 
+- **Invito a donare una-tantum (admin → utente), 100% interno [5 lug]** — nuova funzione: l'admin
+  dalla pagina Utenti (colonna "Invito") invia a un utente attivo un gentile invito a donare; l'utente
+  lo vede UNA volta al prossimo accesso (modale `<NudgeGate>`), poi è consumato (`seen_at`). Tabella
+  `donation_nudges` (mig. `0011`, additiva, RLS ON, `user_id` UNIQUE); backend `POST /admin/users/:id/nudge`
+  + `GET/POST /me/nudge*` (dietro gate auth+anti-blocco → i bloccati non ricevono). **Anti-spam**: invio
+  manuale (no massa), storico Inviato/Visto+data in colonna, **conferma sempre** sul pulsante. Testo =
+  complimento, mai colpevolizzazione (scelta owner per conformità store). Nessuna piattaforma esterna per
+  far arrivare l'invito (Ko-fi solo se l'utente sceglie di donare). Dettagli in `06` e `09`.
+- **Admin: barra filtri consolidata + reset [5 lug]** — `AdminFilterBar` unica per Utenti/Album/Messaggi/
+  Donazioni/Errori: placeholder **"Cerca..."** ovunque + pulsante **refresh = reset** (tondo, posizione
+  fissa dopo la ricerca) che riporta la tabella allo stato originale (ricarica + azzera ricerca, filtri e
+  ordinamento). In Utenti: colonne separate Donazioni (importo) / Dettagli (pulsante "Vedi" → modale),
+  rimossa icona libro da Album e cuore da Donazioni.
 - **Donazioni: rifiniture UX post-test dal vivo [5 lug]** — testato in produzione col tip-test
   Ko-fi (dato finto in USD, normale). Aggiunti: pagina admin Donazioni con **pulsante Aggiorna**
   (refetch senza cambiare pagina) + `refetchOnMount:always`; **modale dettaglio** donazione (messaggio

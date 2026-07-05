@@ -160,7 +160,7 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - **Produzione**: PostgreSQL su Supabase, connessione via `SUPABASE_DATABASE_URL`
   (SSL abilitato). Il client (`lib/db/src/index.ts`) imposta `search_path=public`.
 - **Push schema**: `cd lib/db && pnpm push-force` (Drizzle Kit).
-- Stato attuale: **14 tabelle** con indici integri (+`donations`, +`trade_confirmations`, +`blocked_emails`).
+- Stato attuale: **15 tabelle** con indici integri (+`donations`, +`donation_nudges`, +`trade_confirmations`, +`blocked_emails`).
   `albums` ha `category` (mig. 0009). Monetizzazione **rimossa** anche dal DB (lug 2026, vedi sotto).
 
 ### Monetizzazione — RIMOSSA anche dal DB (lug 2026)
@@ -191,6 +191,12 @@ DB reale** — codice e DB allineati.
   deny-all — solo backend). Salva le donazioni Ko-fi ricevute via webhook `POST /api/kofi/webhook`.
   `kofi_message_id` UNIQUE (idempotenza retry Ko-fi) + indice su `created_at`. Sola lettura lato
   admin (`GET /api/admin/donations`). Dettagli in `06_PREMIUM_DEMO.md` → "Integrazione Ko-fi".
+- **`0011_donation_nudges.sql`** — **APPLICATA** (5 lug 2026). Additiva: crea `donation_nudges`
+  (RLS attiva deny-all — solo backend). "Invito a donare" una-tantum: l'admin invita un utente
+  (`POST /api/admin/users/:id/nudge`), l'utente lo vede UNA volta al prossimo accesso e lo consuma
+  (`GET/POST /api/me/nudge*`). `user_id` UNIQUE (un invito per utente; reinvitare riarma sent_at e
+  azzera seen_at). `sent_at`/`seen_at` = storico anti-spam mostrato in admin → Utenti (colonna
+  "Invito"). Non tocca dati esistenti. Dettagli in `06_PREMIUM_DEMO.md` → "Invito a donare".
 
 ### Seed e ripristino album "default" (sicuro)
 
@@ -220,7 +226,7 @@ ripristinabili in qualsiasi momento, senza re-scraping.
 
 ### Sicurezza accessi (RLS)
 
-- **RLS attiva su tutte le 14 tabelle** (`ENABLE ROW LEVEL SECURITY`), **deny-by-default**: nessuna policy → i ruoli `anon`/`authenticated` (chiave pubblica nel frontend) **non possono leggere/scrivere** via PostgREST `/rest/v1`.
+- **RLS attiva su tutte le 15 tabelle** (`ENABLE ROW LEVEL SECURITY`), **deny-by-default**: nessuna policy → i ruoli `anon`/`authenticated` (chiave pubblica nel frontend) **non possono leggere/scrivere** via PostgREST `/rest/v1`.
 - Il backend si connette come ruolo **`postgres`** (proprietario delle tabelle, `rolbypassrls=true`): **bypassa RLS**, quindi tutte le API continuano a funzionare. Tutti i dati passano **solo** dal backend.
 - La chiave anon nel frontend serve **esclusivamente** al Realtime **broadcast** della chat (non legge tabelle): RLS non lo tocca.
 - ⚠️ Se in futuro un client dovesse leggere tabelle **direttamente** con la chiave anon, servirà aggiungere **policy esplicite** (oggi non necessarie).
