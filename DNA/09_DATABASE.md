@@ -160,21 +160,21 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
 - **Produzione**: PostgreSQL su Supabase, connessione via `SUPABASE_DATABASE_URL`
   (SSL abilitato). Il client (`lib/db/src/index.ts`) imposta `search_path=public`.
 - **Push schema**: `cd lib/db && pnpm push-force` (Drizzle Kit).
-- Stato attuale: 15 tabelle con indici integri (+`payments`, +`chat_unlocks`, +`trade_confirmations`, +`blocked_emails`). `albums` ha `category` (mig. 0009).
+- Stato attuale: **14 tabelle** con indici integri (+`donations`, +`trade_confirmations`, +`blocked_emails`).
+  `albums` ha `category` (mig. 0009). Monetizzazione **rimossa** anche dal DB (lug 2026, vedi sotto).
 
-### Monetizzazione — migrazioni e divergenza codice/DB (giu 2026)
+### Monetizzazione — RIMOSSA anche dal DB (lug 2026)
 
-- **`0003_monetization_foundation.sql`** — **APPLICATA**. Additiva: crea `payments` e
-  `chat_unlocks` (RLS attiva, deny-by-default), inserisce le impostazioni paywall
-  (`chat_paywall_enabled=false`, `price_single_cents=199`, `price_all_cents=999`,
-  `paywall_currency=EUR`). Non tocca dati esistenti. Modello in `06_PREMIUM_DEMO.md`.
-- **`0004_drop_demo.sql`** — **NON ancora applicata** (è **distruttiva**: `DROP COLUMN`).
-  Rimuove `users.demo_started_at`, `users.demo_expires_at` e le impostazioni
-  `demo_hours` / `premium_demo_enabled`.
-  ⚠️ **Divergenza nota**: lo schema Drizzle e il codice **non** usano più le colonne demo,
-  ma il **DB reale le ha ancora** (colonne nullable, ignorate → nessuna rottura a runtime).
-  Da applicare a mano su Supabase quando confermato; finché non lo è, la divergenza è
-  innocua. Lo schema parziale Drizzle **non** viene mai pushato, quindi nessun rischio.
+Il paywall "sblocco chat a pagamento" è stato eliminato dal codice (app 100% gratuita) e ora **anche dal
+DB reale** — codice e DB allineati.
+- **Consolidamento applicato (5 lug):** `DROP payments` + `DROP chat_unlocks` (erano vuote) + `DELETE` delle
+  4 chiavi paywall in `app_settings` (`chat_paywall_enabled`, `paywall_currency`, `price_single_cents`,
+  `price_all_cents`). Corrisponde a `0005_drop_monetization.sql`, ora **applicata**.
+- **Colonne demo** (`users.demo_started_at`/`demo_expires_at`): **già assenti** dal DB reale (0004 di
+  fatto applicata). Resta solo `users.is_premium` **INERTE** (non letta/scritta, scelta owner: no drop).
+- `app_settings` ora contiene solo: `app_name`, `cookie_policy`, `privacy_policy`, `support_email`, `terms`.
+- Le migrazioni storiche `0003_monetization_foundation.sql` / `0004_drop_demo.sql` restano nello storico
+  come traccia, ma il loro effetto netto è annullato dal consolidamento sopra.
 - **`0005_trade_confirmations.sql`** — **APPLICATA**. Additiva: crea `trade_confirmations`
   (RLS attiva, unique `chat_id,user_id`) per la conferma scambio concluso. Non tocca dati
   esistenti. Modello in `04_MATCHING_SCAMBI.md` → "Conferma scambio concluso".
@@ -187,6 +187,10 @@ Da eseguire nel Supabase SQL Editor per creare lo schema in produzione.
   `albums.category` text NOT NULL DEFAULT 'campionato' + backfill Mondiali→'mondiali'.
   Categoria master assegnata dall'admin (sostituisce la deduzione dal titolo). Valori
   canonici in `ALBUM_CATEGORIES`. Dettagli in `03_ALBUM_FIGURINE.md` → "Categorie master".
+- **`0010_donations.sql`** — **APPLICATA** (5 lug 2026). Additiva: crea `donations` (RLS attiva
+  deny-all — solo backend). Salva le donazioni Ko-fi ricevute via webhook `POST /api/kofi/webhook`.
+  `kofi_message_id` UNIQUE (idempotenza retry Ko-fi) + indice su `created_at`. Sola lettura lato
+  admin (`GET /api/admin/donations`). Dettagli in `06_PREMIUM_DEMO.md` → "Integrazione Ko-fi".
 
 ### Seed e ripristino album "default" (sicuro)
 

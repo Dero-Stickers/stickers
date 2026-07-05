@@ -7,6 +7,19 @@
 
 ## 2026-07
 
+- **DB consolidato: monetizzazione rimossa anche dal DB reale [5 lug]** — applicato
+  `0005_drop_monetization.sql` (era "da applicare a mano"): DROP `payments` + `chat_unlocks`
+  (vuote) + DELETE 4 chiavi paywall in `app_settings`. Attivata **RLS su `donations`**
+  (era OFF → allineata alla regola "RLS su ogni tabella con dati utente"; pattern progetto =
+  RLS ON senza policy, accesso solo backend via service role). `users.is_premium` resta INERTE.
+  Ora codice e DB sono allineati: 14 tabelle, `app_settings` con sole 5 chiavi (app_name,
+  cookie_policy, privacy_policy, support_email, terms). Ko-fi webhook attivo e testato ONLINE.
+  Vedi `09_DATABASE.md`.
+- **Ko-fi LIVE in produzione + testo pulsante "Support Stickers" [5 lug]** — deploy Render andato
+  (commit feat donazioni), webhook testato online (token errato 401, valido 200), token vero
+  allineato in `.env` + Render + App Control. Testo pulsante donazione cambiato in "Support
+  Stickers" (fonte unica `KofiButton`). Scheda dominio `19_DOMINIO_DEROARTS.md` integrata e pulita
+  (URL Render reali, Ko-fi, email definitiva `stickers@deroarts.com`).
 - **Donazioni Ko-fi COLLEGATE (webhook → DB → admin) [5 lug]** — chiusa la
   funzione donazioni end-to-end, sola lettura. Nuova tabella `donations` (schema
   Drizzle + migrazione additiva `0010`, applicata al DB). Webhook PUBBLICO

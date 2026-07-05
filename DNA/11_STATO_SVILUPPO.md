@@ -120,9 +120,9 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 
 ### Frontend (stickers-app)
 - **User**: login/registrazione (nickname, PIN, CAP, domanda sicurezza), codice recupero, Home, Album, Match (migliori/vicini + slider distanza), Chat (**realtime** via Supabase Broadcast, fallback polling adattivo 8s/30s, + segnalazione), Profilo
-- **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Monetizzazione, Impostazioni, Segnalazioni errori
+- **Admin**: Dashboard, Album CRUD, Figurine, Utenti (blocco), Messaggi (moderazione), Donazioni (Ko-fi, sola lettura), Impostazioni, Segnalazioni errori
 - **Layout admin consolidato** (`components/admin/AdminPage` + `AdminTable` + `AdminScrollArea`): testata di pagina fissa, **solo il contenuto/lista scorre**; tabelle con intestazioni centrate e sticky, griglia verticale, righe a colorazione alternata, densità compatta. Album: azione unica **Gestisci** (rinomina + figurine), stato **On Line/Off Line**, colonna **Utenti** (`userCount` lato admin), ordine stabile per id (Off Line non sposta la riga). Vedi `07_ADMIN_PANNELLO.md`.
-- **Monetizzazione — sblocco chat a pagamento** (giu 2026, sostituisce la demo a tempo): app 100% gratis, si paga **solo** per aprire la chat di un match. Due acquisti una tantum: **una chat** (`single`) o **tutte le chat** (`all` = `isPremium`). Interruttore master `chat_paywall_enabled` in `app_settings` (default **OFF** = tutte le chat gratis). Logica unica server-side in `api-server/src/lib/billing.ts` (`canOpenChat`/`grantChatUnlock`/`grantAllChats`); gate in `routes/chats.ts` (403 `PREMIUM_REQUIRED` solo per chat **nuova**). Tabelle `payments` + `chat_unlocks`. Pagamento reale **non ancora collegato** (`routes/billing.ts` → checkout stub inerte). Admin **Monetizzazione**: master switch + prezzi + tabella unica consolidata con filtri. Vedi `06_PREMIUM_DEMO.md`.
+- ~~**Monetizzazione — sblocco chat a pagamento** (giu 2026)~~ → **SUPERATO (lug 2026): RIMOSSO da codice E DB.** L'app è 100% gratuita, la chat è sempre apribile. Tolti paywall/`billing.ts`/`payments`/`chat_unlocks`/chiavi paywall. Unico introito = **donazione Ko-fi** (liberalità, admin → Donazioni). Vedi `06_PREMIUM_DEMO.md` e `09_DATABASE.md`.
 - Lazy loading route (bundle iniziale ~152 KB gzip), ErrorBoundary
 - PWA mobile-first: manifest, icone, splash, safe-area (icone PNG ottimizzate con pngquant, ~−50% peso senza perdita visibile; logo `.webp`). **Service worker** via `vite-plugin-pwa` (registerType autoUpdate): precache dell'app-shell, **mai** in cache le `/api`, font **Inter self-hosted** via `@fontsource/inter` (nessuna connessione a Google → conforme GDPR), nel precache → app **installabile e con caricamento offline**. Manifest e `index.html` con `theme-color` uniformato (`#9DC9E8`).
 - **Head bar unificata** (`components/layout/AppHeader`): solo logo, sfondo a sfumatura orizzontale, usata da Home/Album/Match/**Dettaglio match**/Profilo; testi sotto la barra. Su queste pagine **scorre solo il contenuto**, testate fisse. Note legali (Privacy + Termini) consolidate in un'unica voce Profilo → rotta `/legal/note`.
@@ -161,15 +161,11 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
   (`sticker-pulsante-ua-non-toccare`). **Solo segnalazione, non intervenire.**
 
 **Non bloccanti (si possono fare dopo il lancio gratuito):**
-- [ ] **Pagamento chat reale (PayPal)**: oggi `routes/billing.ts` è uno **stub** (nessun pagamento). Se si
-  pubblica con paywall **OFF** (chat gratis per tutti, default) NON è bloccante. Provider deciso: **PayPal
-  Business** senza P.IVA (l'unico con verifica automatica del pagamento; PayPal privato/link non si collega,
-  Stripe richiede P.IVA). Owner sta valutando l'apertura account. Poi: checkout crea `payments` pending + URL,
-  webhook conferma → `grantChatUnlock`/`grantAllChats`. Vedi `06_PREMIUM_DEMO.md`.
+- [x] ~~**Pagamento chat reale (paywall)**~~ — **ABBANDONATO [lug 2026]**: niente più pagamenti. App 100%
+  gratuita; unico introito = **donazione Ko-fi** (già collegata: webhook + admin Donazioni). Vedi `06_PREMIUM_DEMO.md`.
 - [ ] **Email anti-spam**: mittente su `deroarts.com` (Zoho/Brevo con DKIM/DMARC) al posto del gmail → esce
   dallo spam. Vedi `19_DOMINIO_DEROARTS.md`.
 - [ ] **Dominio proprio** `stickers.deroarts.com` (CNAME Render → Cloudflare + update Supabase URL/CSP). Vedi `19`.
-- [ ] Email supporto **hardcoded** (`stickersmatchbox@hotmail.com`) in `MatchDetail.tsx` → aggiornare al nuovo dominio.
 - [ ] Test **PWA installata** su iOS Safari / Android Chrome reali (service worker già attivo).
 - [ ] Verifica **da telefono** dei flussi (login Google/Email, chat, match multi-album, cambio CAP).
 - [ ] Onboarding interattivo (ora toast placeholder).
@@ -177,7 +173,6 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 ### Media priorità
 - [ ] **Scaling oltre ~2.000 utenti (free)**: leva #1 = non salvare le righe "mancante" (mancante = album posseduto + nessuna riga) → 2-3× tetto storage; poi modello bitmap per album per i 50k. Intervento profondo, vedi `16_STRESS_TEST_AUDIT.md`
 - [ ] Notifiche push
-- [ ] **Collegare il pagamento reale** (ultimo step monetizzazione): provider **senza P.IVA** (PayPal o simili — Stripe richiede P.IVA), prima in **test**. Il checkout (`routes/billing.ts`, oggi stub inerte) deve creare la riga `payments` pending + URL pagamento; un **webhook** sul pagamento confermato chiama `grantChatUnlock`/`grantAllChats`. Schema e gate già pronti. Vedi `06_PREMIUM_DEMO.md`
 - [x] ~~Applicare la migrazione `0004_drop_demo.sql`~~ **FATTO [4 lug]** — colonne `users.demo_*` e settings demo rimosse; DB ora 100% allineato allo schema Drizzle.
 - [ ] Landing page pubblica con dominio
 

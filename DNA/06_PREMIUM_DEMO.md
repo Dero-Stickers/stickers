@@ -74,10 +74,12 @@ Webhook URL = `<LINK_DEPLOY>/api/kofi/webhook`, e il **Verification Token** di
 Ko-fi va copiato in `KOFI_VERIFICATION_TOKEN` (env Render + App Control). Poi le
 donazioni compaiono in admin da sole.
 
-## DB — cleanup da applicare a mano
+## DB — cleanup APPLICATO (5 lug 2026)
 
-Migrazione `lib/db/migrations/0005_drop_monetization.sql` (stile `0004`):
-`DROP TABLE chat_unlocks` + `DROP TABLE payments` + `DELETE` delle 4 chiavi
-paywall in `app_settings`. **NON** tocca `users.is_premium` (resta inerte).
-⚠️ Le tabelle sono vuote (paywall mai attivato) → nessuna perdita dati.
-**DA APPLICARE A MANO** sul DB (non gira in automatico), con conferma owner.
+`DROP TABLE chat_unlocks` + `DROP TABLE payments` (erano vuote) + `DELETE` delle
+4 chiavi paywall in `app_settings` (`chat_paywall_enabled`, `paywall_currency`,
+`price_single_cents`, `price_all_cents`) — corrisponde a
+`lib/db/migrations/0005_drop_monetization.sql`, ora **eseguito** con conferma owner.
+**NON** ha toccato `users.is_premium` (resta inerte). Codice e DB ora allineati:
+`app_settings` contiene solo `app_name`, `cookie_policy`, `privacy_policy`,
+`support_email`, `terms`. Vedi `09_DATABASE.md`.
