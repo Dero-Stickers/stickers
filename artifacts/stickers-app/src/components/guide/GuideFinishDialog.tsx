@@ -61,7 +61,7 @@ export function GuideFinishDialog({
             <span className="font-semibold">Stickers è appena nata! 🎁</span><br />
             Stickers oggi è gratuita. Il tuo contributo, se ti va, aiuta a
             tenerla così.<br />
-            <span className="text-muted-foreground">Non sblocca nulla: è solo un grazie.</span>
+            <span className="text-muted-foreground">Non sblocca nulla: è solo un grazie!</span>
           </p>
         </div>
 

@@ -118,7 +118,7 @@ export function KofiButton({ label = KOFI_LABEL, className = "" }: { label?: str
           </button>
 
           <p className="text-xs text-muted-foreground text-center">
-            Il contributo è libero e non sblocca nulla: è solo un grazie.
+            Il contributo è libero e non sblocca nulla: è solo un grazie!
           </p>
         </DialogContent>
       </Dialog>

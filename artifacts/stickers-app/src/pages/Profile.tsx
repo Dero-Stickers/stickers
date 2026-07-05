@@ -183,7 +183,7 @@ export function Profile() {
           <KofiButton />
           <p className="mt-3 text-xs font-normal text-muted-foreground leading-relaxed">
             Stickers oggi è gratuita. Un contributo, se ti va, aiuta a tenerla
-            così. Non sblocca nulla: è solo un grazie.
+            così. Non sblocca nulla: è solo un grazie!
           </p>
         </div>
       </div>
