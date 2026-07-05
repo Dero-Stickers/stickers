@@ -128,11 +128,14 @@ export function AdminAlbums() {
   const [statusFilter, setStatusFilter] = useState<"all" | "online" | "offline">("all");
   const [catFilter, setCatFilter] = useState<AlbumCategoryKey | "all">("all");
 
-  // Aggiorna + azzera: ricarica gli album e pulisce ricerca e tutti i filtri.
+  // Aggiorna + azzera: riporta la tabella allo stato originale (ricarica e
+  // pulisce ricerca, tutti i filtri e l'ordinamento).
   const resetAndRefresh = () => {
     setSearch("");
     setStatusFilter("all");
     setCatFilter("all");
+    setSortKey(null);
+    setSortDir("asc");
     invalidate();
   };
 

@@ -86,10 +86,13 @@ export function AdminMessages() {
   const refreshChats = () =>
     queryClient.invalidateQueries({ queryKey: getAdminListChatsQueryKey() });
 
-  // Aggiorna + azzera: ricarica le chat e pulisce ricerca e filtro di stato.
+  // Aggiorna + azzera: riporta la tabella allo stato originale (ricarica e
+  // pulisce ricerca, filtro di stato e ordinamento).
   const resetAndRefresh = () => {
     setSearch("");
     setStatusFilter("all");
+    setSortKey(null);
+    setSortDir("asc");
     refreshChats();
   };
 

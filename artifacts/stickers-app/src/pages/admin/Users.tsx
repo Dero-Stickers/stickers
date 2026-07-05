@@ -89,10 +89,13 @@ export function AdminUsers() {
     },
   });
 
-  // Aggiorna + azzera: ricarica gli utenti dal server e pulisce ricerca/filtro.
+  // Aggiorna + azzera: riporta la tabella allo stato originale (ricarica dal
+  // server e pulisce ricerca, filtro di stato e ordinamento).
   const resetAndRefresh = () => {
     setSearch("");
     setStatusFilter("all");
+    setSortKey("nickname");
+    setSortDir("asc");
     refetch();
   };
 
@@ -181,8 +184,7 @@ export function AdminUsers() {
               </td>
               <td className="text-center">
                 {user.donationCount > 0 ? (
-                  <span className="inline-flex items-center gap-1.5 font-medium text-accent">
-                    <Heart className="h-3.5 w-3.5 fill-accent text-accent" />
+                  <span className="font-medium text-accent">
                     {money(user.donationTotal, user.donationCurrency)}
                   </span>
                 ) : (

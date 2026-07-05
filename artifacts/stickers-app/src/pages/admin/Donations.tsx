@@ -69,9 +69,12 @@ export function AdminDonations() {
 
   // Ricerca su nome donatore + messaggio (coerente con le altre sezioni admin).
   const [search, setSearch] = useState("");
-  // Aggiorna + azzera: ricarica dal server e pulisce la ricerca.
+  // Aggiorna + azzera: riporta l'elenco allo stato originale (ricarica dal
+  // server e pulisce ricerca e ordinamento).
   const resetAndRefresh = () => {
     setSearch("");
+    setSortKey(null);
+    setSortDir("asc");
     refetch();
   };
 

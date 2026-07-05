@@ -81,10 +81,12 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
   // Se lo stato non era "all", riportarlo ad "all" fa già ripartire il fetch via
   // useEffect; se era già "all", ricarico esplicitamente. La ricerca è client-side
   // → basta svuotarla. Così un solo tap riporta la lista pulita e aggiornata.
+  // Aggiorna + azzera: riporta la vista allo stato originale (ricarica dal
+  // server e pulisce ricerca e filtro di stato) — coerente con le altre sezioni.
   const resetAndRefresh = () => {
     setSearch("");
-    if (statusFilter !== "all") setStatusFilter("all");
-    else void fetchData();
+    setStatusFilter("all");
+    void fetchData();
   };
 
   const filtered = useMemo(() => {
