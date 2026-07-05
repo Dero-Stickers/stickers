@@ -7,6 +7,14 @@
 
 ## 2026-07
 
+- **Donazioni: rifiniture UX post-test dal vivo [5 lug]** — testato in produzione col tip-test
+  Ko-fi (dato finto in USD, normale). Aggiunti: pagina admin Donazioni con **pulsante Aggiorna**
+  (refetch senza cambiare pagina) + `refetchOnMount:always`; **modale dettaglio** donazione (messaggio
+  intero) + ordinamento Data/Importo (SortHeader); sottotitolo Donazioni = **link a Ko-fi "donazioni
+  ricevute"**; tabella con celle centrate e solo-tabella-scrolla. Pulsante donazione: testo IT
+  **"Sostieni Stickers"** (no "Ko-fi" nel testo utente) e al clic apre un **modale nickname+Copia**
+  (l'utente incolla il nick nel messaggio Ko-fi → l'admin riconosce chi dona; Ko-fi non passa il nick
+  in automatico). Modale con `rounded-3xl` come gli altri.
 - **DB consolidato: monetizzazione rimossa anche dal DB reale [5 lug]** — applicato
   `0005_drop_monetization.sql` (era "da applicare a mano"): DROP `payments` + `chat_unlocks`
   (vuote) + DELETE 4 chiavi paywall in `app_settings`. Attivata **RLS su `donations`**

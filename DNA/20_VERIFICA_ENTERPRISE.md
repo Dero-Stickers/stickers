@@ -70,7 +70,8 @@
 ▸ DNA: `06_PREMIUM_DEMO.md`, `19_DOMINIO_DEROARTS.md` §2bis
 ▸ Codice: `components/brand/KofiButton.tsx`, `pages/admin/Donations.tsx`, `routes/kofi.ts`,
   `routes/admin.ts` (`getDonations`), schema `donations`
-- ☐ Pulsante "Support Stickers" (fonte unica `KofiButton`) in Profilo + modale guida.
+- ☐ Pulsante "Sostieni Stickers" (fonte unica `KofiButton`, testo IT senza citare Ko-fi) in Profilo + modale guida.
+- ☐ Al clic apre un modale con **nickname + Copia** → "Sostieni Stickers" apre Ko-fi (per riconoscere chi dona dal messaggio).
 - ☐ Webhook `POST /api/kofi/webhook`: verifica `KOFI_VERIFICATION_TOKEN`, idempotente (`kofi_message_id` UNIQUE). **Testato LIVE**.
 - ☐ Admin → Donazioni: riepilogo + elenco (sola lettura); avviso "in attesa" finché vuoto.
 - ⚠ **Nessuna monetizzazione residua**: paywall/billing/payments/chat_unlocks rimossi da codice E DB. `users.is_premium` inerte.

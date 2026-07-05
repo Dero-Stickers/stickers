@@ -19,10 +19,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-// Pagina Ko-fi dell'owner + colore ufficiale del bottone + testo.
+// Pagina Ko-fi dell'owner + colore del bottone + testo in ITALIANO.
+// Non citiamo "Ko-fi" nel testo utente: è un dettaglio tecnico (Ko-fi è solo il
+// mezzo). Il pulsante comunica il gesto: "Sostieni Stickers".
 export const KOFI_URL = "https://ko-fi.com/deroarts";
 const KOFI_GREEN = "#3dbd45";
-const KOFI_LABEL = "Support Stickers";
+const KOFI_LABEL = "Sostieni Stickers";
 
 // Tazza Ko-fi come nel widget: tazzina BIANCA con il CUORE ROSSO Ko-fi dentro
 // (SVG inline → nessuna risorsa esterna, ok CSP/PWA).
@@ -78,12 +80,12 @@ export function KofiButton({ label = KOFI_LABEL, className = "" }: { label?: str
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Facci sapere che è tua 💚</DialogTitle>
+            <DialogTitle>Facci sapere che sei tu ❤️</DialogTitle>
             <DialogDescription>
-              Su Ko-fi, incolla il tuo nickname nel messaggio: così sappiamo che
-              la donazione arriva da te.
+              Incolla il tuo nickname nel messaggio: così sappiamo che la
+              donazione arriva da te.
             </DialogDescription>
           </DialogHeader>
 
@@ -109,7 +111,7 @@ export function KofiButton({ label = KOFI_LABEL, className = "" }: { label?: str
             style={{ background: KOFI_GREEN }}
           >
             <KofiCup />
-            <span>Vai a Ko-fi</span>
+            <span>Sostieni Stickers</span>
           </button>
 
           <p className="text-xs text-muted-foreground text-center">

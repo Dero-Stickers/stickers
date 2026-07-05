@@ -34,7 +34,7 @@ tratta né salva dati di pagamento: tutto avviene su Ko-fi/PayPal.
 - **Pulsante** = componente riusabile `components/brand/KofiButton.tsx`: link
   esterno (`target=_blank`) che apre la pagina Ko-fi — NON lo script `kofiwidget2`
   (rende male in React/PWA). **Replica FEDELE del widget ufficiale**: tazza bianca
-  con cuore rosso (SVG inline), testo "Support me on Ko-fi", verde `#3dbd45`.
+  con cuore rosso (SVG inline), testo IT "Sostieni Stickers" (no "Ko-fi" nel testo utente), verde `#3dbd45`.
   `KOFI_URL`/`KOFI_LABEL` sono l'unico punto di verità.
 - **Dove appare:** box donazione nel **Profilo** (sopra la firma DeroArts) e nel
   **modale finale della guida** (`GuideFinishDialog`, ex bottone PayPal rimosso).
