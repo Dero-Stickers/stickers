@@ -42,6 +42,10 @@ export interface GuideStep {
   tapPhases?: { body: string }[];
   /** Solo kind "try": avanza quando il dialog aperto dall'utente viene chiuso. */
   waitDialogClose?: boolean;
+  /** Solo kind "try"+waitDialogClose: istruzione mostrata SUL dialog aperto, così
+   *  l'utente sa che deve chiuderlo per proseguire. */
+  dialogTitle?: string;
+  dialogBody?: string;
 }
 
 export const GUIDE_STEPS: GuideStep[] = [
@@ -102,7 +106,10 @@ export const GUIDE_STEPS: GuideStep[] = [
     dynamicRoute: true,
     target: "guide-first-sticker",
     title: "Trucco ✋",
-    body: "Ora tienila premuta: si aprono i dettagli. Chiudili per continuare.",
+    body: "Ora tieni premuta la figurina: si aprono i dettagli.",
+    // Istruzione mostrata SUL dialog aperto (l'utente sa come proseguire).
+    dialogTitle: "Ecco i dettagli 👀",
+    dialogBody: "Da qui gestisci la figurina. Chiudi (✕) per continuare la guida.",
   },
   // DIMOSTRAZIONE AUTOMATICA — la guida mostra i 3 filtri uno alla volta:
   // "tieni premuto = segni TUTTE le figurine così", con la griglia che cambia

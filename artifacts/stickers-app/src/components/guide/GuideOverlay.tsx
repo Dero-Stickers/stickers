@@ -216,19 +216,26 @@ export function GuideOverlay() {
   }, [active, step, setLocation]);
 
   // Passi "try" con long-press: quando l'utente APRE il dettaglio (dialog reale)
-  // e poi lo CHIUDE, si avanza. Watcher leggero sul DOM (dialog Radix aperto).
+  // la guida evidenzia IL DIALOG con l'istruzione "chiudi per continuare" (così
+  // l'utente sa come proseguire); alla CHIUSURA del dialog si avanza.
   useEffect(() => {
     if (!active || !step || step.kind !== "try" || !step.waitDialogClose) return;
     let seenOpen = false;
     const iv = setInterval(() => {
-      const open = !!document.querySelector(OPEN_DIALOG_SELECTOR);
-      if (open) {
+      const dialog = document.querySelector<HTMLElement>('[data-guide="guide-sticker-dialog"]')
+        ?? document.querySelector<HTMLElement>(OPEN_DIALOG_SELECTOR);
+      if (dialog) {
         if (!seenOpen) {
-          // Il dialog reale (z-50) starebbe DIETRO al velo di driver.js:
-          // togliamo il velo e lasciamo la scena al dialog. Verrà ricreato
-          // dal passo successivo.
-          drvRef.current?.destroy();
-          drvRef.current = null;
+          // Sposta lo spotlight+fumetto SUL dialog aperto (il dialog Radix ha uno
+          // z-index alto: evidenziandolo, il fumetto-guida resta visibile sopra).
+          getDrv().highlight({
+            element: dialog,
+            disableActiveInteraction: false, // l'utente deve poter chiudere il dialog
+            popover: {
+              title: step.dialogTitle ?? step.title,
+              description: `<p class="sg-body">${step.dialogBody ?? "Chiudi per continuare."}</p>`,
+            },
+          });
         }
         seenOpen = true;
         return;

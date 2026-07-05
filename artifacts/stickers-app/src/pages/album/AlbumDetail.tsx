@@ -358,8 +358,10 @@ export function AlbumDetail() {
       </div>
 
       <Dialog open={!!selectedSticker} onOpenChange={() => setSelectedSticker(null)}>
-        {/* Angoli arrotondati coerenti con gli altri modali (rounded-3xl). */}
-        <DialogContent className="max-w-sm rounded-3xl sm:rounded-3xl">
+        {/* Angoli arrotondati coerenti con gli altri modali (rounded-3xl).
+            data-guide sul dialog demo → la guida lo evidenzia con l'istruzione
+            "chiudi per continuare" (altrimenti l'utente non saprebbe come uscire). */}
+        <DialogContent className="max-w-sm rounded-3xl sm:rounded-3xl" data-guide={isGuideDemo ? "guide-sticker-dialog" : undefined}>
           <DialogHeader>
             <DialogTitle>Figurina {selectedSticker?.code || `#${selectedSticker?.number}`}</DialogTitle>
           </DialogHeader>

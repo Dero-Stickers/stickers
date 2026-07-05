@@ -45,8 +45,9 @@ Montaggio in `src/App.tsx`: `GuideGate` (userId) → `GuideProvider` →
   (verde=trovate, rosso=doppie, grigio=mancanti) e dopo l'ULTIMO tocco
   l'avanzamento è **MANUALE** (tocca lo schermo: tempo di leggere). Senza
   tapPhases (es. ➕ aggiungi album): feedback breve e avanti da solo. Oppure
-  `waitDialogClose: true` (long-press reale → dettaglio read-only; alla chiusura
-  si avanza; il velo driver viene tolto mentre il dialog è aperto, z-index).
+  `waitDialogClose: true` (long-press reale → dettaglio read-only; la guida
+  EVIDENZIA il dialog con l'istruzione `dialogTitle`/`dialogBody` "chiudi per
+  continuare", così l'utente sa come proseguire; alla chiusura si avanza).
 - `demo` → dimostrazione AUTOMATICA (filtri bulk): evidenzia i 3 filtri uno
   alla volta colorando TUTTA la griglia (classi CSS `sg-demo-*`), poi ripristina
   e avanza. Tocchi ignorati durante la demo.
