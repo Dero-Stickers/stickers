@@ -817,6 +817,12 @@ export const GetAppSettingsResponse = zod.object({
   privacyPolicyText: zod.string().optional(),
   termsText: zod.string().optional(),
   cookiePolicyText: zod.string().optional(),
+  guideMode: zod
+    .enum(["off", "first", "always"])
+    .optional()
+    .describe(
+      "Modalità della guida interattiva (globale, decisa da admin): 'off' = disattivata, 'first' = solo alla prima autenticazione, 'always' = a ogni refresh. Default 'off'.\n",
+    ),
 });
 
 /**
@@ -828,6 +834,12 @@ export const UpdateAppSettingsBody = zod.object({
   privacyPolicyText: zod.string().optional(),
   termsText: zod.string().optional(),
   cookiePolicyText: zod.string().optional(),
+  guideMode: zod
+    .enum(["off", "first", "always"])
+    .optional()
+    .describe(
+      "Modalità della guida interattiva (globale, decisa da admin): 'off' = disattivata, 'first' = solo alla prima autenticazione, 'always' = a ogni refresh. Default 'off'.\n",
+    ),
 });
 
 export const UpdateAppSettingsResponse = zod.object({
@@ -836,4 +848,10 @@ export const UpdateAppSettingsResponse = zod.object({
   privacyPolicyText: zod.string().optional(),
   termsText: zod.string().optional(),
   cookiePolicyText: zod.string().optional(),
+  guideMode: zod
+    .enum(["off", "first", "always"])
+    .optional()
+    .describe(
+      "Modalità della guida interattiva (globale, decisa da admin): 'off' = disattivata, 'first' = solo alla prima autenticazione, 'always' = a ogni refresh. Default 'off'.\n",
+    ),
 });

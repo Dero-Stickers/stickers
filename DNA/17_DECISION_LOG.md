@@ -7,6 +7,12 @@
 
 ## 2026-07
 
+- **Guida · modalità globale da admin [5 lug]** — la guida non parte più "sempre a ogni refresh"
+  hardcoded: la MODALITÀ è ora un setting globale `guide_mode` in `app_settings`, gestito da
+  **Admin → Impostazioni** con 3 opzioni indipendenti: `off` (default, disattivata) · `first` (solo
+  alla prima autenticazione, usa `hasSeenGuide`) · `always` (a ogni refresh). `GuideAutoStart` lo
+  legge via `useGetAppSettings` (endpoint `/settings` pubblico). Owner ha scelto `off` per ora. Vedi
+  `18_GUIDA_INTERATTIVA.md`.
 - **Monetizzazione RIMOSSA — app 100% gratuita [5 lug]** — eliminato TUTTO il paywall "si paga per
   sbloccare la chat", come se non fosse mai esistito. Backend: via `lib/billing.ts`, `routes/billing.ts`,
   gli handler admin paywall/premium, il gate 403 in `chats.ts` (chat sempre apribile), i flag

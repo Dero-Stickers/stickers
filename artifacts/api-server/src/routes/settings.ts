@@ -17,7 +17,7 @@ async function requireAdmin(req: any, res: any): Promise<{ userId: number; isAdm
   return session;
 }
 
-const SETTING_KEYS = ["support_email", "privacy_policy", "terms", "cookie_policy", "app_name"];
+const SETTING_KEYS = ["support_email", "privacy_policy", "terms", "cookie_policy", "app_name", "guide_mode"];
 
 // GET /api/settings
 const getSettings: RequestHandler = async (req, res) => {
@@ -28,12 +28,20 @@ const getSettings: RequestHandler = async (req, res) => {
     const map: Record<string, string> = {};
     rows.forEach(r => { map[r.key] = r.value; });
 
+    // Modalità della guida interattiva (globale, decisa da admin): 'off' =
+    // disattivata, 'first' = solo alla prima autenticazione, 'always' = a ogni
+    // refresh. Default 'off'. Letta anche lato user (endpoint pubblico) da
+    // GuideAutoStart. Solo valori validi (fallback a 'off').
+    const gm = map["guide_mode"];
+    const guideMode = gm === "first" || gm === "always" ? gm : "off";
+
     res.json({
       supportEmail: map["support_email"] ?? "info-stickers@deroarts.com",
       appName: map["app_name"] ?? "Stickers Matchbox",
       privacyPolicyText: map["privacy_policy"] ?? "",
       termsText: map["terms"] ?? "",
       cookiePolicyText: map["cookie_policy"] ?? "",
+      guideMode,
     });
   } catch (err) {
     req.log?.error(err);
@@ -55,6 +63,11 @@ const updateSettings: RequestHandler = async (req, res) => {
     if (req.body.privacyPolicyText !== undefined) updates.push({ key: "privacy_policy", value: req.body.privacyPolicyText });
     if (req.body.termsText !== undefined) updates.push({ key: "terms", value: req.body.termsText });
     if (req.body.cookiePolicyText !== undefined) updates.push({ key: "cookie_policy", value: req.body.cookiePolicyText });
+    // Modalità guida: accetta solo 'off' | 'first' | 'always' (validazione difensiva).
+    if (req.body.guideMode !== undefined) {
+      const v = ["off", "first", "always"].includes(req.body.guideMode) ? req.body.guideMode : "off";
+      updates.push({ key: "guide_mode", value: v });
+    }
 
     for (const update of updates) {
       const existing = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, update.key)).limit(1);

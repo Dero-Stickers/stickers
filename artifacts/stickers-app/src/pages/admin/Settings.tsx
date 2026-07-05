@@ -55,15 +55,26 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage, AdminScrollArea } from "@/components/admin/AdminPage";
 
+// Modalità globale della guida interattiva. Le 3 opzioni sono indipendenti:
+// una sola attiva alla volta. Descrizioni mostrate all'admin sotto ogni scelta.
+type GuideMode = "off" | "first" | "always";
+const GUIDE_MODES: { value: GuideMode; label: string; hint: string }[] = [
+  { value: "off", label: "Disattivata", hint: "La guida non parte mai." },
+  { value: "first", label: "Solo al primo avvio", hint: "Parte una volta sola, alla prima registrazione/accesso." },
+  { value: "always", label: "A ogni avvio", hint: "Parte ogni volta che l'utente apre o ricarica l'app." },
+];
+
 export function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading } = useGetAppSettings();
   // `legal` = i 3 testi uniti in un unico campo modificabile insieme.
-  const [form, setForm] = useState({
+  // `guideMode` = modalità globale della guida (off | first | always).
+  const [form, setForm] = useState<{ supportEmail: string; legal: string; guideMode: GuideMode }>({
     supportEmail: "",
     legal: "",
+    guideMode: "off",
   });
 
   useEffect(() => {
@@ -75,6 +86,7 @@ export function AdminSettings() {
           settings.termsText ?? "",
           settings.cookiePolicyText ?? "",
         ),
+        guideMode: (settings.guideMode as GuideMode) ?? "off",
       });
     }
   }, [settings]);
@@ -98,6 +110,7 @@ export function AdminSettings() {
         privacyPolicyText: privacy,
         termsText: terms,
         cookiePolicyText: cookies,
+        guideMode: form.guideMode,
       },
     });
   };
@@ -138,6 +151,37 @@ export function AdminSettings() {
               placeholder="email@esempio.it"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Guida interattiva — 3 modalità indipendenti (una attiva alla volta). */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Guida interattiva</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground mb-1">
+            Decidi se e quando mostrare la guida ai nuovi utenti.
+          </p>
+          {GUIDE_MODES.map(m => {
+            const active = form.guideMode === m.value;
+            return (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => setForm(p => ({ ...p, guideMode: m.value }))}
+                className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-colors ${
+                  active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`h-4 w-4 rounded-full border-2 shrink-0 ${active ? "border-primary bg-primary" : "border-muted-foreground/40"}`} />
+                  <span className={`text-sm font-semibold ${active ? "text-primary" : "text-foreground"}`}>{m.label}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 ml-6">{m.hint}</p>
+              </button>
+            );
+          })}
         </CardContent>
       </Card>
 

@@ -10,10 +10,10 @@ import NotFound from "@/pages/not-found";
 import { DevQuickSwitch } from "@/components/dev/DevQuickSwitch";
 import { CookieBanner, COOKIE_ACK_KEY } from "@/components/CookieBanner";
 import { ConfirmProvider } from "@/components/admin/ConfirmDialog";
-import { GuideProvider, useGuide } from "@/lib/guide/GuideContext";
+import { GuideProvider, useGuide, hasSeenGuide } from "@/lib/guide/GuideContext";
 import { GuideOverlay } from "@/components/guide/GuideOverlay";
 import { dismissBootSplash } from "@/components/brand/SplashScreen";
-import { setFetchFailureObserver, setAccountBlockedObserver } from "@workspace/api-client-react";
+import { setFetchFailureObserver, setAccountBlockedObserver, useGetAppSettings } from "@workspace/api-client-react";
 import { installGlobalErrorCapture, reportApiFailure } from "@/lib/error-capture";
 import { BlockedAccountDialog } from "@/components/auth/BlockedAccountDialog";
 
@@ -227,20 +227,27 @@ function GuideGate({ children }: { children: React.ReactNode }) {
   return <GuideProvider userId={currentUser?.id}>{children}</GuideProvider>;
 }
 
-// Avvio automatico della guida. SCELTA OWNER (vale anche in DEPLOY/produzione):
-// la guida parte a OGNI refresh per l'utente loggato NON-admin — ma UNA SOLA
-// VOLTA per caricamento pagina: se l'utente la chiude/salta NON si riapre da
-// sola (si riparte solo al prossimo refresh). NON usare `!hasSeenGuide` finché
-// l'owner non lo chiede esplicitamente: per ora deve ripartire sempre, ovunque.
-// (`hasSeenGuide`/`markGuideSeen` restano pronti in GuideContext se un giorno
-// servisse limitarla alla prima autenticazione.)
+// Avvio automatico della guida. La MODALITÀ è GLOBALE, decisa dall'admin in
+// Impostazioni (setting `guideMode`, letto dall'endpoint pubblico /settings):
+//   - 'off'    → non parte mai (default);
+//   - 'first'  → parte SOLO alla prima autenticazione (finché `hasSeenGuide`
+//                è false; `finish()`/`next()` in GuideContext segnano "vista");
+//   - 'always' → parte a OGNI refresh (una sola volta per caricamento pagina:
+//                se l'utente la chiude non si riapre finché non ricarica).
+// Vale sempre per l'utente NON-admin (l'admin non fa il tour).
 function GuideAutoStart() {
   const { isAuthenticated, currentUser } = useAuth();
   const { start } = useGuide();
+  // Solo lettura del setting globale (stessa cache di tutta l'app).
+  const { data: settings } = useGetAppSettings();
+  const guideMode = settings?.guideMode ?? "off";
   const startedRef = useRef(false);
   useEffect(() => {
     if (startedRef.current) return;               // già avviata in questa pagina
     if (!isAuthenticated || currentUser?.isAdmin) return;
+    if (guideMode === "off") return;              // guida disattivata
+    // Modalità 'first': parte solo se l'utente non l'ha mai vista/chiusa.
+    if (guideMode === "first" && hasSeenGuide(currentUser?.id)) return;
     // ASPETTA che il cookie banner sia stato chiuso ("Ho capito"): parte solo
     // dopo, altrimenti il banner coprirebbe la navbar durante il tour.
     const cookieAck = () => {
@@ -264,7 +271,7 @@ function GuideAutoStart() {
     if (tryStart()) return;
     const iv = setInterval(() => { if (tryStart()) clearInterval(iv); }, 400);
     return () => clearInterval(iv);
-  }, [isAuthenticated, currentUser?.isAdmin, start]);
+  }, [isAuthenticated, currentUser?.isAdmin, currentUser?.id, guideMode, start]);
   return null;
 }
 

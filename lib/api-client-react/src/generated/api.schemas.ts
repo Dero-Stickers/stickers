@@ -327,12 +327,28 @@ export interface Report {
   createdAt: string;
 }
 
+/**
+ * Modalità della guida interattiva (globale, decisa da admin): 'off' = disattivata, 'first' = solo alla prima autenticazione, 'always' = a ogni refresh. Default 'off'.
+
+ */
+export type AppSettingsGuideMode =
+  (typeof AppSettingsGuideMode)[keyof typeof AppSettingsGuideMode];
+
+export const AppSettingsGuideMode = {
+  off: "off",
+  first: "first",
+  always: "always",
+} as const;
+
 export interface AppSettings {
   supportEmail: string;
   appName: string;
   privacyPolicyText?: string;
   termsText?: string;
   cookiePolicyText?: string;
+  /** Modalità della guida interattiva (globale, decisa da admin): 'off' = disattivata, 'first' = solo alla prima autenticazione, 'always' = a ogni refresh. Default 'off'.
+   */
+  guideMode?: AppSettingsGuideMode;
 }
 
 export type GetNearbyMatchesParams = {

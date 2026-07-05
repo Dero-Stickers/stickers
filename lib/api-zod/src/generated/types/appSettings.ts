@@ -5,6 +5,7 @@
  * Sticker Matchbox API
  * OpenAPI spec version: 0.1.0
  */
+import type { AppSettingsGuideMode } from "./appSettingsGuideMode";
 
 export interface AppSettings {
   supportEmail: string;
@@ -12,4 +13,7 @@ export interface AppSettings {
   privacyPolicyText?: string;
   termsText?: string;
   cookiePolicyText?: string;
+  /** Modalità della guida interattiva (globale, decisa da admin): 'off' = disattivata, 'first' = solo alla prima autenticazione, 'always' = a ogni refresh. Default 'off'.
+   */
+  guideMode?: AppSettingsGuideMode;
 }

@@ -1398,4 +1398,11 @@ components:
           type: string
         cookiePolicyText:
           type: string
+        guideMode:
+          type: string
+          enum: [off, first, always]
+          description: >
+            Modalità della guida interattiva (globale, decisa da admin): 'off' =
+            disattivata, 'first' = solo alla prima autenticazione, 'always' = a
+            ogni refresh. Default 'off'.
       required: [supportEmail, appName]

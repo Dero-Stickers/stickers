@@ -142,19 +142,21 @@ visibile solo col tab "nearby" attivo) (MatchList) · `guide-first-match`
 
 ## Avvio e "già vista"
 
-Scelta owner (5 lug): la guida è **onboarding puro** — parte una sola volta, alla
-PRIMA autenticazione, quando l'utente è vergine (0 album, l'album di prova ha
-senso). **Nessun trigger dal Profilo** (pulsante rimosso): meno combinazioni di
-stato = codice più semplice e robusto.
-
-- **Auto-start** (`GuideAutoStart` in App.tsx): ⚠️ PER ORA (fase test) parte a
-  OGNI refresh, UNA volta per caricamento pagina, e SOLO DOPO che il cookie
-  banner è stato chiuso (`COOKIE_ACK_KEY`, altrimenti coprirebbe la navbar).
-  Per il rilascio: cambiare la condizione in `!hasSeenGuide(userId)` (già pronta
-  in GuideContext) → parte solo alla prima autenticazione in assoluto.
-- **Flag**: localStorage `sticker_guide_seen_v1:<userId>`; alzare la versione
-  ri-mostra la guida a tutti. In test, per rivederla: cancella questa chiave (o
-  basta il refresh, dato che ora parte comunque a ogni refresh).
+**Modalità GLOBALE decisa da admin** (5 lug) — setting `guideMode` in
+`app_settings`, gestito da **Admin → Impostazioni** (3 opzioni indipendenti,
+una attiva alla volta). Letto da `GuideAutoStart` (App.tsx) via `useGetAppSettings`
+(endpoint `/settings` pubblico → ogni utente lo legge). **Default: `off`**.
+- **`off`** → la guida non parte mai.
+- **`first`** → parte SOLO alla prima autenticazione: `GuideAutoStart` controlla
+  `!hasSeenGuide(userId)`; `finish()`/`next()` in GuideContext segnano "vista".
+- **`always`** → parte a OGNI refresh, UNA volta per caricamento pagina (se
+  l'utente la chiude non si riapre finché non ricarica).
+In tutti i casi parte solo per l'utente NON-admin, SOLO DOPO che il cookie banner
+è chiuso (`COOKIE_ACK_KEY`) e lo splash è sparito. **Nessun trigger dal Profilo**.
+- **Backend**: `routes/settings.ts` legge/scrive la chiave `guide_mode` (valori
+  validati a `off|first|always`, fallback `off`). Esposto come `AppSettings.guideMode`.
+- **Flag "già vista"**: localStorage `sticker_guide_seen_v1:<userId>` (usato solo
+  in modalità `first`); alzare la versione (v1→v2) ri-mostra la guida a tutti.
 
 ## Dettagli non ovvi (imparati nei test — NON regredire)
 
