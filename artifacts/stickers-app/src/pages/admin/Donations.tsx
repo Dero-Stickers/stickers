@@ -5,7 +5,7 @@
 // dall'app. Finché non è arrivata nessuna donazione, mostriamo lo stato "in
 // arrivo" (Ko-fi si collega configurando il webhook nel pannello Ko-fi).
 
-import { Heart, Gift, TrendingUp, Clock } from "lucide-react";
+import { Heart, Gift, TrendingUp, Clock, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
@@ -33,7 +33,7 @@ export function AdminDonations() {
   // refetchOnMount "always" + niente cache stantia: ogni apertura della pagina
   // ricarica i dati freschi dal server, così una donazione appena arrivata via
   // webhook Ko-fi compare subito senza bisogno di refresh forzato del browser.
-  const { data, isLoading } = useGetAdminDonations({
+  const { data, isLoading, isFetching, refetch } = useGetAdminDonations({
     query: { queryKey: getGetAdminDonationsQueryKey(), refetchOnMount: "always", staleTime: 0 },
   });
   const summary = data?.summary;
@@ -49,7 +49,21 @@ export function AdminDonations() {
   ];
 
   return (
-    <AdminPage title="Donazioni" subtitle="Andamento dei contributi spontanei (Ko-fi)">
+    <AdminPage
+      title="Donazioni"
+      subtitle="Andamento dei contributi spontanei (Ko-fi)"
+      actions={
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          aria-label="Aggiorna donazioni"
+          title="Aggiorna donazioni"
+          className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+        </button>
+      }
+    >
       {/* Riepilogo + avviso: FISSI in cima (shrink-0). Solo l'AdminTable sotto
           scorre (ha già il proprio scroll interno) → coerente con le altre
           pagine admin: testata e riepilogo restano sempre visibili. */}
