@@ -246,8 +246,17 @@ function GuideAutoStart() {
     const cookieAck = () => {
       try { return localStorage.getItem(COOKIE_ACK_KEY) === "1"; } catch { return true; }
     };
+    // ASPETTA che lo splash iniziale (#boot-splash, logo STICKERS) sia sparito
+    // o almeno in dissolvenza: altrimenti il primo fumetto ("Tocca Album")
+    // comparirebbe sull'intro, dove la navbar non c'è ancora e non c'è nulla da
+    // toccare. (Il setTimeout(start, 500) sotto copre il resto della dissolvenza.)
+    const splashGone = () => {
+      const el = document.getElementById("boot-splash");
+      return !el || el.classList.contains("boot-splash-hide");
+    };
+    const ready = () => cookieAck() && splashGone();
     const tryStart = () => {
-      if (startedRef.current || !cookieAck()) return false;
+      if (startedRef.current || !ready()) return false;
       startedRef.current = true;
       setTimeout(start, 500); // lascia montare la UI prima di evidenziare
       return true;
