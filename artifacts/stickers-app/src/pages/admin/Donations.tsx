@@ -9,7 +9,7 @@ import { Heart, Gift, TrendingUp, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPage, AdminScrollArea } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
-import { useGetAdminDonations } from "@workspace/api-client-react";
+import { useGetAdminDonations, getGetAdminDonationsQueryKey } from "@workspace/api-client-react";
 
 // Formatta un importo "12.50" + valuta in "€ 12,50" (o simbolo generico).
 function money(amount: string | number, currency = "EUR"): string {
@@ -30,7 +30,12 @@ function formatDate(iso: string | null | undefined): string {
 }
 
 export function AdminDonations() {
-  const { data, isLoading } = useGetAdminDonations();
+  // refetchOnMount "always" + niente cache stantia: ogni apertura della pagina
+  // ricarica i dati freschi dal server, così una donazione appena arrivata via
+  // webhook Ko-fi compare subito senza bisogno di refresh forzato del browser.
+  const { data, isLoading } = useGetAdminDonations({
+    query: { queryKey: getGetAdminDonationsQueryKey(), refetchOnMount: "always", staleTime: 0 },
+  });
   const summary = data?.summary;
   const donations = data?.donations ?? [];
   const currency = summary?.currency ?? "EUR";
