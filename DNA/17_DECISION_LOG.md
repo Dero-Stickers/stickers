@@ -7,6 +7,15 @@
 
 ## 2026-07
 
+- **Difesa in profondità sui grant DB [6 lug]** — audit privacy/sicurezza (sola lettura) confermato
+  BASSO rischio: RLS attiva su tutte le 15 tabelle, zero policy = deny-all, lettura anonima reale = 0 righe
+  (`users` mostra `*/0` all'anon mentre nel DB ce ne sono; verifica via PostgREST + catalogo Postgres),
+  service role assente dal frontend/bundle, nessun segreto in git, nessuna RPC/vista/bucket esposti.
+  Unico gap teorico: i ruoli `anon`/`authenticated` avevano ancora i GRANT pieni sulle tabelle (neutralizzati
+  dalla RLS, ma difesa a strato singolo). Migrazione **additiva** `0012_revoke_anon_grants.sql`: `REVOKE ALL`
+  su tabelle/sequenze/funzioni esistenti + `ALTER DEFAULT PRIVILEGES` per gli oggetti futuri. Non tocca RLS,
+  dati, né il ruolo `postgres` (backend guardiano invariato). Validata in dry-run (BEGIN…ROLLBACK: grant
+  residui 0, DB invariato). **Da applicare in sessione dedicata con conferma** (non ancora in produzione).
 - **Dominio, hardening sicurezza, icone [6 lug]** — (1) **`stickers.deroarts.com` LIVE**: collegato a Render
   (CNAME Solo DNS), CORS + Supabase redirect aggiunti in CONVIVENZA con onrender (vedi `19`). (2) **Hardening
   a costo zero** dopo audit: freno anti-flood globale su `/api` (240 req/min per IP, `middlewares/rateLimitGlobal.ts`,
