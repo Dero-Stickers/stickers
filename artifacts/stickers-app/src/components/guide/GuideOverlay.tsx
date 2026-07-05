@@ -11,9 +11,9 @@
 //  - "info"   → si avanza toccando OVUNQUE lo schermo.
 //  - "action" → si avanza toccando il PULSANTE REALE dell'app indicato dalla
 //    freccia (l'azione avviene davvero: la guida naviga con l'utente).
-//  - "try"    → prova pratica dell'utente, SIMULATA (colori finti / viste
-//    read-only): zero scritture.
-//  - "demo"   → dimostrazione automatica: la guida mostra e poi RIPRISTINA.
+//  - "try"    → prova pratica dell'utente, SIMULATA (tocchi la cella, long-press
+//    per il dettaglio read-only, o tieni premuto un filtro per colorare la
+//    griglia): zero scritture.
 //  - La guida non modifica MAI il database; a fine guida l'app è com'era.
 
 import { useEffect, useRef } from "react";
@@ -36,13 +36,15 @@ const GRID_SELECTOR = '[data-guide="guide-sticker-grid"]';
 
 // Corpo del fumetto — MINIMALE: solo la frase + un hint dove serve. Niente
 // pulsanti, niente pallini, niente "salta": la guida si fa e basta.
-function stepDescription(body: string, kind: string): string {
+function stepDescription(body: string, kind: string, hintOverride?: string): string {
   const hint =
-    kind === "info"
-      ? `<p class="sg-hint">Tocca lo schermo per continuare</p>`
-      : kind === "try"
-        ? `<p class="sg-hint">Provaci ora 👇</p>`
-        : "";
+    hintOverride
+      ? `<p class="sg-hint">${hintOverride}</p>`
+      : kind === "info"
+        ? `<p class="sg-hint">Tocca lo schermo per continuare</p>`
+        : kind === "try"
+          ? `<p class="sg-hint">Provaci ora 👇</p>`
+          : "";
   return `<p class="sg-body">${body}</p>${hint}`;
 }
 
@@ -120,12 +122,16 @@ export function GuideOverlay() {
       stepRef.current = step; // letto dall'hook overlayClickBehavior
       getDrv().highlight({
         element: el ?? undefined,
-        // Su info/demo l'elemento è SOLO mostrato (nessuna interazione):
-        // impossibile toccare l'app per sbaglio durante la guida.
-        disableActiveInteraction: step.kind === "info" || step.kind === "demo",
+        // Su info l'elemento è SOLO mostrato (nessuna interazione): impossibile
+        // toccare l'app per sbaglio durante la guida.
+        disableActiveInteraction: step.kind === "info",
         popover: {
           title: step.title,
-          description: stepDescription(step.body, step.kind),
+          description: stepDescription(
+            step.body,
+            step.kind,
+            step.longPressGrid ? "Tieni premuto 👇" : undefined,
+          ),
         },
       });
     };
@@ -144,9 +150,11 @@ export function GuideOverlay() {
   useEffect(() => {
     tapsRef.current = 0;
     tryDoneRef.current = false;
+    // Ripristina SEMPRE eventuali colori-demo rimasti (celle singole + griglia).
     document
       .querySelectorAll(CELL_DEMO_CYCLE.map((c) => `.${c}`).join(","))
       .forEach((el) => el.classList.remove(...CELL_DEMO_CYCLE));
+    document.querySelector(GRID_SELECTOR)?.classList.remove(...GRID_DEMO_CLASSES);
   }, [stepIndex]);
 
   useEffect(() => {
@@ -160,6 +168,13 @@ export function GuideOverlay() {
         // overlay di driver.js scatta sullo stesso tocco. preventDefault →
         // il tocco non arriva mai all'app (nessun dato toccato per sbaglio).
         e.preventDefault(); e.stopPropagation(); advance();
+        return;
+      }
+      if (step.kind === "try" && step.longPressGrid) {
+        // PROVA long-press: il long-press è gestito da pointerdown/up (effetto
+        // dedicato). Qui blocchiamo SOLO il click sul filtro, così l'app non
+        // esegue il bulk reale. L'avanzamento avviene nel gestore pointer.
+        e.preventDefault(); e.stopPropagation();
         return;
       }
       if (step.kind === "try" && step.taps) {
@@ -195,11 +210,6 @@ export function GuideOverlay() {
           // prova senza fasi (es. ➕ aggiungi album): breve feedback e avanti
           setTimeout(() => { cell.classList.remove(...CELL_DEMO_CYCLE); advance(); }, 700);
         }
-        return;
-      }
-      if (step.kind === "demo") {
-        // Dimostrazione automatica in corso: i tocchi non fanno nulla.
-        e.preventDefault(); e.stopPropagation();
         return;
       }
       if (step.kind !== "action") return;
@@ -247,38 +257,65 @@ export function GuideOverlay() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, step]);
 
-  // Passi "demo": DIMOSTRAZIONE AUTOMATICA dei 3 filtri (bulk). La guida mostra
-  // da sola, UN filtro alla volta, cosa succede tenendolo premuto: evidenzia il
-  // filtro e colora TUTTA la griglia di quello stato (solo CSS, zero dati),
-  // poi RIPRISTINA tutto e avanza. L'app torna esattamente com'era.
+  // Passi "try" con long-press sui FILTRI (bulk): l'utente TIENE PREMUTO il
+  // filtro evidenziato e vede TUTTA la griglia colorarsi di quello stato (solo
+  // CSS, zero dati). Completato il long-press si resta sul risultato finché non
+  // tocca lo schermo (avanzamento MANUALE, tempo di leggere); la guida ripristina
+  // SEMPRE i colori reali. L'app torna esattamente com'era.
   useEffect(() => {
-    if (!active || !step || step.kind !== "demo") return;
-    let cancelled = false;
+    if (!active || !step || step.kind !== "try" || !step.longPressGrid) return;
+    const lp = step.longPressGrid;
     const clearGrid = () =>
       document.querySelector(GRID_SELECTOR)?.classList.remove(...GRID_DEMO_CLASSES);
-    const phases = [
-      { target: "guide-filter-possedute", cls: GRID_DEMO_CLASSES[0], title: "Tieni premuto “Mie” ✋", body: "…e le segni TUTTE come possedute." },
-      { target: "guide-filter-doppie", cls: GRID_DEMO_CLASSES[1], title: "Tieni premuto “Doppie” ✋", body: "…tutte doppie, in un colpo solo." },
-      { target: "guide-filter-mancanti", cls: GRID_DEMO_CLASSES[2], title: "Tieni premuto “Mancanti” ✋", body: "…o azzeri tutto. Ora rimetto com'era!" },
-    ];
-    const timers: number[] = [];
-    const at = (ms: number, fn: () => void) =>
-      timers.push(window.setTimeout(() => { if (!cancelled) fn(); }, ms));
-    // Il fumetto-intro del passo è già a schermo → poi le 3 fasi → ripristino.
-    phases.forEach((ph, i) =>
-      at(1600 + i * 1800, () => {
+    let pressTimer: number | null = null;
+    const filterEl = () =>
+      document.querySelector<HTMLElement>(`[data-guide="${step.target}"]`);
+
+    const onDown = (e: PointerEvent) => {
+      if (tryDoneRef.current) return; // già fatto: il tocco avanza (vedi onUp)
+      const t = e.target as HTMLElement | null;
+      if (!t?.closest(`[data-guide="${step.target}"]`)) return;
+      // È il filtro giusto: partiamo col long-press SIMULATO. preventDefault →
+      // il filtro reale non riceve nulla (nessun bulk sull'app).
+      e.preventDefault(); e.stopPropagation();
+      pressTimer = window.setTimeout(() => {
+        // Long-press riuscito: colora TUTTA la griglia + testo "fatto".
         clearGrid();
-        document.querySelector(GRID_SELECTOR)?.classList.add(ph.cls);
-        const el = document.querySelector<HTMLElement>(`[data-guide="${ph.target}"]`);
+        const grid = document.querySelector<HTMLElement>(GRID_SELECTOR);
+        grid?.classList.add(lp.color);
+        tryDoneRef.current = true; // ora un tocco qualsiasi avanza
+        // Sposto lo SPOTLIGHT sulla GRIGLIA (non sul filtro): così esce dal velo
+        // scuro e l'utente VEDE davvero tutte le figurine cambiare colore
+        // insieme. Senza questo, sotto l'ombra il cambio-colore non si nota.
         getDrv().highlight({
-          element: el ?? undefined,
-          disableActiveInteraction: true,
-          popover: { title: ph.title, description: `<p class="sg-body">${ph.body}</p>` },
+          element: grid ?? filterEl() ?? undefined,
+          disableActiveInteraction: false,
+          popover: {
+            title: step.title,
+            description: `<p class="sg-body">${lp.doneBody}</p><p class="sg-hint">Tocca lo schermo per continuare</p>`,
+          },
         });
-      }),
-    );
-    at(1600 + phases.length * 1800 + 500, () => { clearGrid(); advance(); });
-    return () => { cancelled = true; timers.forEach(clearTimeout); clearGrid(); };
+      }, 550); // soglia long-press
+    };
+    const cancelPress = () => {
+      if (pressTimer != null) { clearTimeout(pressTimer); pressTimer = null; }
+    };
+    const onUp = (e: PointerEvent) => {
+      // Dopo il long-press, un tocco qualsiasi avanza (l'overlayClickBehavior
+      // copre il velo; qui copriamo il tocco sul filtro/fumetto).
+      if (tryDoneRef.current) { e.preventDefault(); e.stopPropagation(); advance(); return; }
+      cancelPress(); // rilascio troppo presto → nessun bulk, si può riprovare
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("pointerup", onUp, true);
+    document.addEventListener("pointercancel", cancelPress, true);
+    return () => {
+      cancelPress();
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("pointerup", onUp, true);
+      document.removeEventListener("pointercancel", cancelPress, true);
+      clearGrid();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, step]);
 

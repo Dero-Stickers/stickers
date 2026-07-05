@@ -4,21 +4,20 @@
 // REGOLA D'ORO: ogni passo evidenzia un elemento REALMENTE PRESENTE nella
 // schermata. Testo BREVE (una frase), stile semplice/diretto/minimale.
 //
-// QUATTRO TIPI DI PASSO — nella guida si va SOLO AVANTI:
+// TRE TIPI DI PASSO — nella guida si va SOLO AVANTI:
 //  - "info"   → fumetto informativo; si avanza TOCCANDO OVUNQUE lo schermo.
 //  - "action" → fumetto con freccia sul pulsante REALE dell'app: si avanza
 //               toccando QUEL pulsante (l'azione avviene davvero: si naviga).
-//  - "try"    → PROVA PRATICA dell'utente, ma SIMULATA: i tocchi mostrano
-//               l'effetto SOLO visivamente (colori finti sulla cella) oppure
-//               aprono viste read-only (dettaglio figurina). ZERO scritture DB.
-//  - "demo"   → DIMOSTRAZIONE AUTOMATICA: la guida mostra da sola cosa succede
-//               (es. i 3 filtri uno alla volta con la griglia che cambia
-//               colore), poi RIPRISTINA tutto e avanza. ZERO scritture DB.
+//  - "try"    → PROVA PRATICA dell'utente, ma SIMULATA. Varianti:
+//               • taps → tocchi la cella e cambia colore (verde/rosso/grigio);
+//               • waitDialogClose → long-press reale = apre il dettaglio (read-only);
+//               • longPressGrid → tieni premuto un filtro = TUTTA la griglia si
+//                 colora (solo visivo). ZERO scritture DB in ogni caso.
 //
 // La guida NON modifica MAI il database: tutto ciò che mostra è visivo e
 // reversibile; a fine guida l'app è ESATTAMENTE com'era.
 
-export type GuideStepKind = "info" | "action" | "try" | "demo";
+export type GuideStepKind = "info" | "action" | "try";
 
 export interface GuideStep {
   id: string;
@@ -48,6 +47,11 @@ export interface GuideStep {
    *  l'utente sa che deve chiuderlo per proseguire. */
   dialogTitle?: string;
   dialogBody?: string;
+  /** Solo kind "try": PROVA long-press su un filtro → l'INTERA griglia si colora
+   *  (solo visivo). L'utente tiene premuto il target; poi avanza toccando lo
+   *  schermo (avanzamento MANUALE, tempo di leggere). `color` = classe-demo
+   *  applicata alla griglia; `doneBody` = testo mostrato dopo il long-press. */
+  longPressGrid?: { color: "sg-demo-posseduta" | "sg-demo-doppia" | "sg-demo-mancante"; doneBody: string };
 }
 
 export const GUIDE_STEPS: GuideStep[] = [
@@ -114,17 +118,23 @@ export const GUIDE_STEPS: GuideStep[] = [
     dialogTitle: "Ecco i dettagli 👀",
     dialogBody: "Da qui gestisci la figurina. Chiudi (✕) per continuare la guida.",
   },
-  // DIMOSTRAZIONE AUTOMATICA — la guida mostra i 3 filtri uno alla volta:
-  // "tieni premuto = segni TUTTE le figurine così", con la griglia che cambia
-  // colore (solo visivo), poi ripristina tutto da sola.
+  // PROVA PRATICA — long-press su un filtro: l'utente lo tiene premuto e vede
+  // TUTTA la griglia colorarsi (solo visivo). Poi tocca per continuare; la
+  // guida ripristina i colori reali. Zero scritture DB.
   {
     id: "filters-bulk",
-    kind: "demo",
+    kind: "try",
     route: "/album",
     dynamicRoute: true,
-    target: "guide-filters",
+    target: "guide-filter-possedute",
     title: "Trucco ⚡",
-    body: "Guarda: tenendo premuto un filtro segni TUTTE le figurine insieme.",
+    body: "Tieni premuto “Mie”: segni TUTTE le figurine come trovate in un colpo solo.",
+    // Al long-press la griglia diventa tutta verde (solo demo), poi avanti manuale.
+    // Verde = coerente con lo stato "trovata" appena spiegato sulle figurine.
+    longPressGrid: {
+      color: "sg-demo-posseduta",
+      doneBody: "Fatto! Tutte segnate come trovate in un attimo. ⚡",
+    },
   },
   // → Match (freccia sulla voce navbar)
   {

@@ -33,25 +33,31 @@ match**, facendo VEDERE le funzioni (anche i trucchi nascosti).
 Montaggio in `src/App.tsx`: `GuideGate` (userId) → `GuideProvider` →
 `<GuideAutoStart/>` + `<GuideOverlay/>`.
 
-## I 4 tipi di passo
+## I 3 tipi di passo
 
 - `info` → fumetto informativo; si avanza toccando OVUNQUE (hint "Tocca lo
   schermo per continuare").
 - `action` → freccia sul pulsante REALE; si avanza toccando QUEL pulsante
   (naviga davvero: la guida intercetta il click e fa `next()` PRIMA di
   `setLocation(href)` — deterministico).
-- `try` → prova pratica SIMULATA dell'utente: `taps: N` (tocchi → la cella
-  cambia colore SOLO visivamente). La cella parte col suo colore reale (001 =
-  verde), già spiegato nel `body` iniziale; ogni `tapPhases[i]` porta la cella al
-  suo `color` e aggiorna il testo (rosso=doppie, grigio=mancanti). Dopo l'ULTIMO
-  tocco l'avanzamento è **MANUALE** (tocca lo schermo: tempo di leggere). Senza
-  tapPhases (es. ➕ aggiungi album): feedback breve e avanti da solo. Oppure
-  `waitDialogClose: true` (long-press reale → dettaglio read-only; la guida
-  EVIDENZIA il dialog con l'istruzione `dialogTitle`/`dialogBody` "chiudi per
-  continuare", così l'utente sa come proseguire; alla chiusura si avanza).
-- `demo` → dimostrazione AUTOMATICA (filtri bulk): evidenzia i 3 filtri uno
-  alla volta colorando TUTTA la griglia (classi CSS `sg-demo-*`), poi ripristina
-  e avanza. Tocchi ignorati durante la demo.
+- `try` → prova pratica SIMULATA dell'utente (l'utente FA, non guarda). Tre
+  varianti, tutte a ZERO scritture DB:
+  - **`taps: N`** (segna figurine) → tocchi → la cella cambia colore SOLO
+    visivamente. La cella parte col suo colore reale (001 = verde), già spiegato
+    nel `body` iniziale; ogni `tapPhases[i]` porta la cella al suo `color` e
+    aggiorna il testo (rosso=doppie, grigio=mancanti). Dopo l'ULTIMO tocco
+    l'avanzamento è **MANUALE** (tocca lo schermo: tempo di leggere). Senza
+    tapPhases (es. ➕ aggiungi album): feedback breve e avanti da solo.
+  - **`waitDialogClose: true`** (long-press figurina) → apre il dettaglio
+    read-only; la guida EVIDENZIA il dialog con `dialogTitle`/`dialogBody`
+    "chiudi per continuare"; alla chiusura si avanza.
+  - **`longPressGrid: {color, doneBody}`** (long-press filtro "Mie") → l'utente
+    TIENE PREMUTO il filtro evidenziato (soglia ~550ms via `pointerdown`
+    capture) e TUTTA la griglia si colora (`sg-demo-*`, solo CSS). Poi
+    avanzamento **MANUALE** (tocca lo schermo). La guida ripristina SEMPRE i
+    colori reali. Target = "Mie" (verde) per coerenza con lo stato "trovata"
+    appena spiegato. Il `pointerdown` in capture con `stopPropagation` blocca il
+    long-press REALE del filtro → nessun `BulkStateDialog`, nessun bulk.
 
 ## Album di prova (stato standard per QUALSIASI account)
 
@@ -69,8 +75,10 @@ flusso IDENTICO, 0 scritture, 0 residui.
 ## Percorso attuale (11 passi)
 
 nav Album → ➕ aggiungi album (Disponibili, simulato) → apri l'album di prova →
-prova 3 tocchi figurina (fumetto spiega i 3 colori, avanzo manuale sul grigio) →
-prova long-press (dettaglio) → demo 3 filtri → nav Match → apri primo match
+prova 2 tocchi figurina (verde già spiegato all'arrivo → rosso → grigio, avanzo
+manuale sul grigio) → prova long-press figurina (dettaglio read-only) → prova
+long-press filtro "Mie" (griglia illuminata diventa tutta verde, avanzo manuale)
+→ nav Match → apri primo match
 (PROVA) → Dai/Ricevi → bottone chat → Fatto.
 
 ## Aggancio (`data-guide`)
@@ -101,9 +109,16 @@ demo Disponibili) e `guide-first-album` (riga demo "I miei album") in AlbumList 
   evidenziata, target) passa dal listener document in CAPTURE.
 - **ESC in CAPTURE**: se c'è un dialog Radix aperto, ESC chiude quello e non la
   guida (in bubble il dialog risulterebbe già chiuso → race).
-- **Zero scritture**: nei passi `try` con `taps` il click è `preventDefault`
-  (l'app non lo vede); verificato in test: 0 chiamate POST/PATCH/PUT/DELETE
-  durante l'intera guida e 0 classi-demo residue.
+- **Zero scritture**: nei passi `try` (taps, long-press filtro) i tocchi sono
+  `preventDefault`+`stopPropagation` in CAPTURE (l'app non li vede: né il tap
+  sulla figurina né il bulk del filtro); verificato in test: 0 chiamate
+  POST/PATCH/PUT/DELETE durante l'intera guida e 0 classi-demo residue.
+- **Long-press filtro (`longPressGrid`)**: soglia ~550ms via `pointerdown` in
+  CAPTURE su `document` (React attacca i suoi listener al root container → il
+  `stopPropagation` in capture li precede e li blocca: il long-press REALE del
+  filtro non parte). A press riuscito lo SPOTLIGHT si sposta sulla GRIGLIA (non
+  sul filtro) così esce dal velo scuro e l'utente VEDE le figurine cambiare
+  colore tutte insieme. Rilascio anticipato (< 550ms) → nessun bulk, si riprova.
 - Selettori/classi condivisi in costanti (`OPEN_DIALOG_SELECTOR`,
   `CELL_DEMO_CYCLE`, `GRID_DEMO_CLASSES`, `GRID_SELECTOR`) in GuideOverlay.
 

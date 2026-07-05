@@ -7,15 +7,24 @@
 
 ## 2026-07
 
+- **Guida · passo filtri ora INTERATTIVO (non più demo automatica) [5 lug]** — il passo dei 3 filtri era una
+  `demo` automatica che scorreva da sola: sostituita da una prova `try` con **long-press reale** sul filtro
+  "Mie" (scelta owner: coerenza "clicco e vedo cosa succede"). L'utente tiene premuto → TUTTA la griglia
+  diventa verde (solo CSS `sg-demo-posseduta`), poi avanzamento MANUALE. Target = "Mie" (VERDE, non "Doppie"
+  rosso) per coerenza con lo stato "trovata" appena spiegato sulle figurine. A press riuscito lo **spotlight si
+  sposta sulla GRIGLIA** (non sul filtro) così le figurine escono dal velo scuro e si VEDE il cambio-colore di
+  gruppo (senza, sotto l'ombra non si notava). Il tipo `demo` è stato rimosso (ora 3 tipi: info/action/try);
+  `stopPropagation` in capture blocca il bulk reale → 0 scritture (verificato in test E2E). Dettagli in
+  `DNA/18`.
 - **Guida interattiva (onboarding tour) [4-5 lug]** — guida in stile classico: velo + spotlight + **fumetto con
   freccia** sul tasto. Motore di rendering = **driver.js** (~5KB, libreria standard dei tour — scelta dopo aver
   provato un motore fatto in casa: troppi edge-case su overlay/pointer-events con Tailwind v4); flusso, passi e
   stato restano nostri (config `lib/guide/steps.ts` · stato `GuideContext.tsx` · wrapper `GuideOverlay.tsx` ·
   stile `guide-theme.css`). Conduce nel primo album e nel primo match. REGOLA D'ORO: ogni passo evidenzia un
   elemento presente nella schermata. Fumetti SOLO informativi (nessun pulsante/pallino/salta; si va solo
-  avanti). 4 tipi di passo: info (tocca ovunque) · action (tocchi il pulsante vero, naviga davvero) · **try**
-  (prova SIMULATA: 3 tocchi = ciclo colori solo CSS; long-press = dettaglio reale read-only, chiuso→avanza) ·
-  **demo** (automatica: i 3 filtri uno alla volta con griglia colorata, poi ripristino). **ZERO scritture DB
+  avanti). 3 tipi di passo: info (tocca ovunque) · action (tocchi il pulsante vero, naviga davvero) · **try**
+  (prova SIMULATA: tocchi = ciclo colori solo CSS; long-press figurina = dettaglio reale read-only,
+  chiuso→avanza; long-press filtro = griglia colorata solo CSS — vedi voce [5 lug]). **ZERO scritture DB
   verificate in test** (0 POST/PATCH durante la guida, 0 classi residue: l'app torna com'era). Avvio: PER ORA a
   ogni refresh, dopo il cookie banner (altrimenti copre la navbar); per il rilascio passare a
   `!hasSeenGuide(userId)`. Riapribile da Profilo → "Guida Stickers". **[5 lug] Album di prova**: la sezione
