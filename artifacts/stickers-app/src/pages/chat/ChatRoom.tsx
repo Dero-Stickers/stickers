@@ -167,6 +167,7 @@ export function ChatRoom() {
             onClick={() => setShowReport(true)}
             aria-label="Segnala questa chat"
             title="Segnala"
+            data-guide="guide-chat-report"
             className="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full text-destructive bg-destructive/10 hover:bg-destructive/15 active:scale-95 transition-transform"
           >
             <AlertTriangle className="h-4 w-4" />
@@ -174,7 +175,7 @@ export function ChatRoom() {
         </div>
 
         {/* Avviso sicurezza — comprimibile (di default una riga, si apre a tendina) */}
-        <div className="shrink-0 bg-amber-50 border-b border-amber-200">
+        <div data-guide="guide-chat-notice" className="shrink-0 bg-amber-50 border-b border-amber-200">
           <button
             type="button"
             onClick={() => setNoticeOpen(o => !o)}
@@ -230,6 +231,7 @@ export function ChatRoom() {
             onClick={() => setShowTrade(true)}
             aria-label="Conferma scambio concluso"
             title="Scambio fatto"
+            data-guide="guide-chat-confirm"
             className="absolute right-4 -top-18 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 active:scale-95 transition-transform"
           >
             <Check className="h-8 w-8" strokeWidth={3} />
@@ -239,6 +241,7 @@ export function ChatRoom() {
             onChange={e => setText(e.target.value)}
             placeholder="Scrivi un messaggio..."
             className="flex-1"
+            data-guide="guide-chat-input"
             onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
           />
           <Button

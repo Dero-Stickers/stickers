@@ -43,6 +43,12 @@ export interface GuideStep {
   route: string;
   /** data-guide dell'elemento da evidenziare. Assente → fumetto centrato. */
   target?: string;
+  /** Lato su cui mettere il fumetto rispetto al target (freccia dal lato opposto).
+   *  Default: driver.js sceglie da solo. Impostarlo SOLO quando l'auto-scelta è
+   *  sbagliata — es. un elemento largo e in fondo va evidenziato con `side:"top"`
+   *  (fumetto sopra) per non coprirlo. `align` regola l'allineamento sul lato. */
+  side?: "top" | "bottom" | "left" | "right";
+  align?: "start" | "center" | "end";
   /** Titolo brevissimo. */
   title: string;
   /** UNA frase, semplice e diretta. Per un'icona uguale all'app scrivi il
@@ -204,7 +210,42 @@ export const GUIDE_STEPS: GuideStep[] = [
     dynamicRoute: true,
     target: "nav-match",
     title: "Passiamo ai Match {match}",
-    body: "Tocca qui sotto per trovare con chi scambiare.",
+    body: "Tocca qui sotto quando vuoi scambiare le tue doppie.",
+  },
+  // Spiegazione dei 3 filtri della schermata Match (solo info, nessuna
+  // interazione: si guarda e si tocca lo schermo per continuare).
+  {
+    id: "match-nearby",
+    kind: "info",
+    route: "/match",
+    dynamicRoute: true,
+    target: "guide-tab-nearby",
+    side: "bottom",
+    align: "start",
+    title: "Vicini a te",
+    body: "I collezionisti vicini. Il raggio decide quanto lontano cercare.",
+  },
+  {
+    id: "match-best",
+    kind: "info",
+    route: "/match",
+    dynamicRoute: true,
+    target: "guide-tab-best",
+    side: "bottom",
+    align: "center",
+    title: "Migliori match",
+    body: "Chi ha più figurine da scambiare con te, ovunque sia.",
+  },
+  {
+    id: "match-search",
+    kind: "info",
+    route: "/match",
+    dynamicRoute: true,
+    target: "guide-tab-search",
+    side: "bottom",
+    align: "end",
+    title: "Cerca figurina {search}",
+    body: "Cerchi UNA figurina precisa? Qui trovi subito chi ce l'ha.",
   },
   // → apri il primo match (freccia sulla card)
   {
@@ -212,7 +253,10 @@ export const GUIDE_STEPS: GuideStep[] = [
     kind: "action",
     route: "/match",
     target: "guide-first-match",
-    title: "Il tuo primo scambio",
+    // Card larga e in basso: fumetto SOPRA (freccia in giù) per non coprirla.
+    side: "top",
+    align: "center",
+    title: "Il tuo Match!",
     body: "Tocca questo collezionista per vedere cosa scambiare.",
   },
   // Dentro il match: sezioni Dai/Ricevi
@@ -223,23 +267,72 @@ export const GUIDE_STEPS: GuideStep[] = [
     dynamicRoute: true,
     target: "guide-trade-sections",
     title: "Dai e Ricevi",
-    body: "Qui vedi cosa puoi dare e cosa ricevere in cambio.",
+    // La forza dell'app: uno scambio SMART che unisce più figurine da album
+    // diversi. Le righe album sono toccabili (si aprono per vedere le figurine).
+    body: "Tocca un album per vedere le figurine.<br>In un solo scambio unisci più figurine di album diversi.",
   },
-  // Il bottone chat
+  // Il bottone chat — APRE la chat (demo): il passo è "action", toccandolo si
+  // entra davvero nella chat, dove i 4 passi sotto spiegano ogni funzione.
   {
     id: "chat",
-    kind: "info",
+    kind: "action",
     route: "/match",
     dynamicRoute: true,
     target: "guide-chat-button",
+    side: "bottom",
+    align: "end",
     title: "Mettetevi d'accordo {messaggi}",
-    body: "Da qui aprite la chat. A scambio fatto, l'album si aggiorna da solo.",
+    body: "Tocca qui per aprire la chat con il collezionista.",
+  },
+  // DENTRO la chat (rotta /chat/demo…). 4 passi: scrivi · conferma scambio ·
+  // segnala · avviso sicurezza. Tutti "info" (si guarda; con i profili-prova
+  // invio e conferma non sono attivi, la guida lo spiega dove serve).
+  {
+    id: "chat-write",
+    kind: "info",
+    route: "/chat",
+    dynamicRoute: true,
+    target: "guide-chat-input",
+    side: "top",
+    title: "Scrivete qui",
+    body: "Accordatevi sullo scambio: dove e quando vedervi.",
+  },
+  {
+    id: "chat-confirm",
+    kind: "info",
+    route: "/chat",
+    dynamicRoute: true,
+    target: "guide-chat-confirm",
+    side: "left",
+    title: "Scambio fatto?",
+    body: "Tocca il ✓ verde per confermarlo.<br>Il tuo album si aggiorna da solo.",
+  },
+  {
+    id: "chat-report",
+    kind: "info",
+    route: "/chat",
+    dynamicRoute: true,
+    target: "guide-chat-report",
+    side: "bottom",
+    align: "end",
+    title: "Qualcosa non va?",
+    body: "Segnala la chat: la valuta l'admin, in modo anonimo.",
+  },
+  {
+    id: "chat-notice",
+    kind: "info",
+    route: "/chat",
+    dynamicRoute: true,
+    target: "guide-chat-notice",
+    side: "bottom",
+    title: "Chat protetta",
+    body: "Per sicurezza le chat possono essere controllate, solo se serve.",
   },
   // Fine (fumetto centrato)
   {
     id: "done",
     kind: "info",
-    route: "/match",
+    route: "/chat",
     dynamicRoute: true,
     title: "Tutto qui!",
     body: "Ora tocca a te: aggiungi i tuoi album e trova i primi scambi.",

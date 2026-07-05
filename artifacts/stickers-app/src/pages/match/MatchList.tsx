@@ -107,14 +107,14 @@ export function MatchList() {
       </div>
 
       <div className="px-4 pt-4 shrink-0">
-        <div className="flex rounded-lg bg-muted p-1">
-          <button className={tabClass("nearby")} onClick={() => setActiveTab("nearby")}>
+        <div data-guide="guide-match-tabs" className="flex rounded-lg bg-muted p-1">
+          <button data-guide="guide-tab-nearby" className={tabClass("nearby")} onClick={() => setActiveTab("nearby")}>
             Vicini a te
           </button>
-          <button className={tabClass("best")} onClick={() => setActiveTab("best")}>
+          <button data-guide="guide-tab-best" className={tabClass("best")} onClick={() => setActiveTab("best")}>
             Migliori match
           </button>
-          <button className={tabClass("search")} onClick={() => setActiveTab("search")}>
+          <button data-guide="guide-tab-search" className={tabClass("search")} onClick={() => setActiveTab("search")}>
             Cerca figurina
           </button>
         </div>
@@ -122,7 +122,7 @@ export function MatchList() {
 
       {activeTab === "nearby" && (
         <div className="px-4 pt-4 shrink-0">
-          <div className="px-3 py-2.5 bg-card rounded-xl border border-border">
+          <div data-guide="guide-match-radius" className="px-3 py-2.5 bg-card rounded-xl border border-border">
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-primary" />

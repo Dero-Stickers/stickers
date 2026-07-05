@@ -287,9 +287,12 @@ function MatchDetailInner({ matchUserId }: { matchUserId: number }) {
         {detail.totalGive === 0 && detail.totalReceive === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-8">Nessuno scambio possibile al momento.</p>
         ) : (
-          // Wrapper con anchor per la guida interattiva (passo "Dai e Ricevi").
-          <div data-guide="guide-trade-sections" className="space-y-4">
-            <DirectionSection variant="give" total={detail.totalGive} groups={detail.give} />
+          // Anchor guida (passo "Dai e Ricevi") sulla SOLA sezione DAI: è in alto
+          // e compatta, così il fumetto ci sta sotto senza coprire RICEVI.
+          <div className="space-y-4">
+            <div data-guide="guide-trade-sections">
+              <DirectionSection variant="give" total={detail.totalGive} groups={detail.give} />
+            </div>
             <DirectionSection variant="receive" total={detail.totalReceive} groups={detail.receive} />
           </div>
         )}

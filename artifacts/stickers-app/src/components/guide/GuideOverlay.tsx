@@ -152,6 +152,10 @@ export function GuideOverlay() {
           // le icone-app sono nei segnaposto {…}, sia nel titolo sia nel body
           title: withGuideIcons(step.title),
           description: stepDescription(step.body, step.kind),
+          // side/align dal passo: forza il posizionamento quando l'auto-scelta
+          // di driver.js coprirebbe il target (es. card larga in fondo).
+          ...(step.side ? { side: step.side } : {}),
+          ...(step.align ? { align: step.align } : {}),
         },
       });
     };
@@ -238,10 +242,17 @@ export function GuideOverlay() {
       if (step.kind !== "action") return;
       const hit = t.closest(`[data-guide="${step.target}"]`) as HTMLElement | null;
       if (hit) {
-        e.preventDefault(); e.stopPropagation();
         const href = hit.getAttribute("href");
-        advance();
-        if (href) setLocation(href);
+        if (href) {
+          // <Link href>: navighiamo noi (deterministico), niente click reale.
+          e.preventDefault(); e.stopPropagation();
+          advance();
+          setLocation(href);
+        } else {
+          // <button onClick> che naviga da solo (es. apri chat): NON blocchiamo
+          // il click — lasciamo scattare il suo handler reale, e avanziamo.
+          advance();
+        }
       }
     };
     document.addEventListener("click", onClick, true);

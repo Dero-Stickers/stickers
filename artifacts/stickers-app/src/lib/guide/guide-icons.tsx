@@ -12,15 +12,16 @@
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
-import { BookOpen, Zap, MessageCircle, Plus, type LucideIcon } from "lucide-react";
+import { BookOpen, Zap, MessageCircle, Plus, Search, type LucideIcon } from "lucide-react";
 
-// Mappa segnaposto → componente lucide (STESSI import della navbar).
+// Mappa segnaposto → componente lucide (STESSI import dell'app).
 // `filled`: il fulmine "Match" in navbar da attivo è arancione PIENO (fill-accent).
 const ICONS: Record<string, { Comp: LucideIcon; filled?: boolean }> = {
   album: { Comp: BookOpen },
   match: { Comp: Zap, filled: true },
   messaggi: { Comp: MessageCircle },
   aggiungi: { Comp: Plus },
+  search: { Comp: Search }, // lente "Cerca figurina" / Home
 };
 
 const ACCENT = "hsl(37 90% 55%)"; // arancione della palette (= fill-accent)
