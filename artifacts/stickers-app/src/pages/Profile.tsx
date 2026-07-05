@@ -174,17 +174,17 @@ export function Profile() {
           fondo, a ridosso della nav bar (flex-1 è affidabile; mt-auto non basta). */}
       <div className="flex-1" />
 
-      {/* Box donazione Ko-fi — contributo LIBERO, sopra la firma. Non sblocca
-          nulla (liberalità, non un corrispettivo): la frase "è solo un grazie"
-          va mantenuta. Il pulsante apre Ko-fi (link esterno). */}
+      {/* Box donazione Ko-fi — box bianco dedicato, sopra la firma. Ordine:
+          PRIMA il pulsante, POI l'info in piccolo (font regular, attenuato).
+          Contributo LIBERO, non sblocca nulla (liberalità, non corrispettivo):
+          la frase "è solo un grazie" va mantenuta. Il pulsante apre Ko-fi. */}
       <div className="shrink-0 px-4">
-        <div className="rounded-2xl border border-accent/20 bg-accent/5 px-4 py-3.5 text-center">
-          <p className="text-sm text-foreground leading-relaxed">
-            Stickers oggi è gratuita. Il tuo contributo, se ti va, aiuta a
-            tenerla così.<br />
-            <span className="text-muted-foreground">Non sblocca nulla: è solo un grazie.</span>
+        <div className="rounded-2xl border border-border bg-white px-4 py-4 text-center shadow-sm">
+          <KofiButton />
+          <p className="mt-3 text-xs font-normal text-muted-foreground leading-relaxed">
+            Stickers oggi è gratuita. Un contributo, se ti va, aiuta a tenerla
+            così. Non sblocca nulla: è solo un grazie.
           </p>
-          <KofiButton className="mt-3" />
         </div>
       </div>
 
