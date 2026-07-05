@@ -86,38 +86,59 @@
   color: #93a0b4;
 }
 
-/* ── Comparsa curata — SOLO sul primo passo (benvenuto) ─────────────────────
-   Il fumetto entra con un "pop" morbido (scale + salita, molla leggera) e un
-   alone dorato che si accende e sfuma. Titolo e testo salgono in sequenza,
-   puliti (nessun blur, nessun clip che rovini il colore). Elegante, non
-   invasivo. Tutto CSS, parte una volta. Rispetta prefers-reduced-motion. */
+/* ── Comparsa MAGICA — SOLO sul primo passo (benvenuto) ─────────────────────
+   Il fumetto appare (pop morbido + alone dorato). Poi il testo si MATERIALIZZA
+   dalla "polvere magica": parte sfocato e disperso (blur forte, lettere
+   allargate, bagliore dorato diffuso = grani di polvere), e si CONDENSA nelle
+   lettere nitide mentre la polvere dorata sfuma. Titolo e testo in sequenza.
+   Tutto CSS, nessuna particella iniettata, parte una volta. Rispetta
+   prefers-reduced-motion. */
 .driver-popover.sticker-guide.sg-magic {
-  animation: sg-pop .5s cubic-bezier(.34, 1.4, .5, 1) both;
+  animation: sg-pop .5s cubic-bezier(.34, 1.4, .5, 1) both,
+             sg-glow 1.4s ease-out .1s both;
 }
 @keyframes sg-pop {
   0%   { opacity: 0; transform: scale(.9) translateY(6px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 /* Alone dorato caldo che si accende attorno al fumetto e sfuma (glow). */
-.driver-popover.sticker-guide.sg-magic {
-  animation: sg-pop .5s cubic-bezier(.34, 1.4, .5, 1) both,
-             sg-glow 1.3s ease-out .15s both;
-}
 @keyframes sg-glow {
   0%   { box-shadow: 0 10px 30px rgba(15,23,42,.28); }
   35%  { box-shadow: 0 10px 30px rgba(15,23,42,.28), 0 0 0 3px rgba(249,180,33,.35), 0 0 26px 4px rgba(249,180,33,.45); }
   100% { box-shadow: 0 10px 30px rgba(15,23,42,.28); }
 }
-/* Titolo e testo salgono in sequenza (fade + rise), morbidi e a fuoco. */
+
+/* IL TESTO SI MATERIALIZZA DALLA POLVERE ───────────────────────────────────
+   Da: sfocato + lettere disperse (letter-spacing) + alone dorato = polvere.
+   A:  lettere nitide, alone spento. Il titolo prima, la descrizione dopo. */
 .driver-popover.sticker-guide.sg-magic .driver-popover-title {
-  animation: sg-rise .5s cubic-bezier(.2, .8, .2, 1) .1s both;
+  animation: sg-dust .9s cubic-bezier(.2, .7, .2, 1) .3s both;
 }
 .driver-popover.sticker-guide.sg-magic .driver-popover-description {
-  animation: sg-rise .5s cubic-bezier(.2, .8, .2, 1) .24s both;
+  animation: sg-dust .9s cubic-bezier(.2, .7, .2, 1) .62s both;
 }
-@keyframes sg-rise {
-  0%   { opacity: 0; transform: translateY(6px); }
-  100% { opacity: 1; transform: translateY(0); }
+@keyframes sg-dust {
+  0% {
+    opacity: 0;
+    letter-spacing: .32em;
+    filter: blur(7px);
+    text-shadow: 0 0 8px rgba(249,180,33,.9), 0 0 16px rgba(255,209,90,.7),
+                 4px -2px 10px rgba(249,180,33,.6), -4px 2px 10px rgba(255,209,90,.6);
+    transform: translateY(3px);
+  }
+  55% {
+    opacity: 1;
+    letter-spacing: .06em;
+    filter: blur(1.4px);
+    text-shadow: 0 0 6px rgba(249,180,33,.55), 0 0 12px rgba(255,209,90,.4);
+  }
+  100% {
+    opacity: 1;
+    letter-spacing: normal;
+    filter: blur(0);
+    text-shadow: none;
+    transform: translateY(0);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .driver-popover.sticker-guide.sg-magic,

@@ -57,9 +57,10 @@ function stepDescription(body: string, kind: string, hintOverride?: string): str
 }
 
 // Comparsa "magica" del testo del fumetto (solo il passo di benvenuto): aggiunge
-// la classe `sg-magic` → titolo e descrizione si materializzano (blur→fuoco +
-// sheen dorato) via CSS. driver.js renderizza il popover async → retry finché il
-// nodo esiste. Nessuna particella iniettata, nessun cleanup: solo una classe.
+// la classe `sg-magic` → titolo e descrizione si MATERIALIZZANO dalla polvere
+// dorata (parte sfocato+disperso → si condensa nitido) via CSS. driver.js
+// renderizza il popover async → retry finché il nodo esiste. Nessuna particella
+// iniettata, nessun cleanup: solo una classe, riparte col reflow.
 function applyMagicText() {
   let tries = 0;
   const run = () => {
