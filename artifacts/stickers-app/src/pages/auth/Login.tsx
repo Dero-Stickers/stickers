@@ -367,7 +367,7 @@ function CompleteProfile({
           <label className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed cursor-pointer">
             <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" checked={accept} onChange={(e) => setAccept(e.target.checked)} />
             <span>
-              Dichiaro di avere almeno 14 anni e di aver letto la{" "}
+              Dichiaro di avere almeno 16 anni e di aver letto la{" "}
               <a href="/legal/privacy" target="_blank" rel="noopener" className="underline text-primary">Privacy Policy</a>
               {" "}e i{" "}
               <a href="/legal/termini" target="_blank" rel="noopener" className="underline text-primary">Termini d'uso</a>.
