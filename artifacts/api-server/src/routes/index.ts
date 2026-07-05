@@ -10,6 +10,7 @@ import adminRouter from "./admin";
 import settingsRouter from "./settings";
 import errorsRouter from "./errors";
 import kofiRouter from "./kofi";
+import meRouter from "./me";
 import { requireAuth, requireNotBlocked } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -30,6 +31,10 @@ const blockGate = [requireAuth, requireNotBlocked];
 
 // User-specific routes
 router.use("/user", ...blockGate, userAlbumsRouter);
+
+// "Io" (utente corrente): invito a donare, ecc. Dietro il gate auth+blocco
+// (un utente bloccato non deve vedere l'invito).
+router.use("/me", ...blockGate, meRouter);
 
 // Match routes
 router.use("/matches", ...blockGate, matchesRouter);

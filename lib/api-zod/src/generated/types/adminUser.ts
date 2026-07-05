@@ -17,6 +17,10 @@ export interface AdminUser {
   donationTotal: string;
   donationCurrency: string;
   donations: AdminUserDonationsItem[];
+  /** Quando l'admin ha inviato l'invito a donare (null = mai invitato) */
+  nudgeSentAt?: string | null;
+  /** Quando l'utente ha visto l'invito (null = non ancora visto) */
+  nudgeSeenAt?: string | null;
   exchangesCompleted: number;
   isBlocked: boolean;
   createdAt?: string;

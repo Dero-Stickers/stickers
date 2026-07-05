@@ -101,9 +101,24 @@ const listUsers: RequestHandler = async (req, res) => {
       donationsByNick.set(key, list);
     }
 
+    // Inviti a donare inviati (storico anti-spam): una query, poi mappa per
+    // user_id. `sent_at` = quando l'admin ha invitato; `seen_at` = quando
+    // l'utente ha visto il modale (NULL = ancora da vedere). Serve all'admin
+    // per sapere a chi ha già scritto e non ripetere l'invito.
+    const nudgeRows = await db.execute<{ user_id: number; sent_at: Date; seen_at: Date | null }>(
+      sql`SELECT user_id, sent_at, seen_at FROM donation_nudges`,
+    );
+    const nudgeMap = new Map<number, { sentAt: string; seenAt: string | null }>(
+      (((nudgeRows as any).rows ?? nudgeRows) as { user_id: number; sent_at: Date; seen_at: Date | null }[]).map(r => [
+        r.user_id,
+        { sentAt: new Date(r.sent_at).toISOString(), seenAt: r.seen_at ? new Date(r.seen_at).toISOString() : null },
+      ]),
+    );
+
     const result = users.map(u => {
       const donations = donationsByNick.get(u.nickname.toLowerCase()) ?? [];
       const donationTotal = donations.reduce((s, d) => s + Number(d.amount || 0), 0);
+      const nudge = nudgeMap.get(u.id) ?? null;
       return {
         id: u.id,
         nickname: u.nickname,
@@ -114,6 +129,9 @@ const listUsers: RequestHandler = async (req, res) => {
         donationTotal: donationTotal.toFixed(2),
         donationCurrency: donations[0]?.currency ?? "EUR",
         donations,
+        // stato invito a donare (null = mai invitato)
+        nudgeSentAt: nudge?.sentAt ?? null,
+        nudgeSeenAt: nudge?.seenAt ?? null,
         exchangesCompleted: u.exchangesCompleted,
         isBlocked: u.isBlocked,
         createdAt: u.createdAt.toISOString(),
@@ -156,6 +174,43 @@ const toggleBlock: RequestHandler = async (req, res) => {
       createdAt: updated.createdAt.toISOString(),
     });
   } catch {
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
+// POST /api/admin/users/:userId/nudge
+// L'admin invia a un utente un gentile invito (una tantum) a sostenere l'app con
+// una donazione libera via Ko-fi. L'utente lo vede UNA volta al prossimo accesso.
+// Un solo invito per utente (UNIQUE su user_id): reinvitare aggiorna sent_at e
+// azzera seen_at, così l'invito ricompare. Registra lo storico (anti-spam).
+const nudgeUser: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    const userId = parseInt(req.params.userId as string, 10);
+    if (!Number.isInteger(userId)) { res.status(400).json({ error: "BAD_REQUEST" }); return; }
+    const { db } = await import("@workspace/db");
+    const { usersTable, donationNudgesTable } = await import("@workspace/db");
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "NOT_FOUND" }); return; }
+    if (user.isAdmin) { res.status(400).json({ error: "CANNOT_NUDGE_ADMIN" }); return; }
+    // Upsert: se esiste già un invito per l'utente lo "riarma" (nuovo sent_at,
+    // seen_at azzerato); altrimenti lo crea. onConflict su user_id (UNIQUE).
+    const [row] = await db
+      .insert(donationNudgesTable)
+      .values({ userId, sentAt: new Date(), seenAt: null })
+      .onConflictDoUpdate({
+        target: donationNudgesTable.userId,
+        set: { sentAt: new Date(), seenAt: null },
+      })
+      .returning();
+    res.json({
+      success: true,
+      nudgeSentAt: row.sentAt.toISOString(),
+      nudgeSeenAt: row.seenAt ? row.seenAt.toISOString() : null,
+    });
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -375,6 +430,7 @@ router.get("/stats", getStats);
 router.get("/donations", getDonations);
 router.get("/users", listUsers);
 router.patch("/users/:userId/block", toggleBlock);
+router.post("/users/:userId/nudge", nudgeUser);
 router.get("/chats", listChats);
 router.patch("/chats/:chatId/close", closeChat);
 router.patch("/chats/:chatId/reopen", reopenChat);

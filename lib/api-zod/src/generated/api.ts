@@ -81,6 +81,29 @@ export const GetMeResponse = zod.object({
 });
 
 /**
+ * @summary Get the pending (unseen) donation invite for the current user
+ */
+export const GetMyNudgeResponse = zod
+  .object({
+    nudge: zod
+      .object({
+        sentAt: zod.string(),
+      })
+      .nullable(),
+  })
+  .describe(
+    "Invito a donare in attesa per l'utente corrente (null se nessuno)",
+  );
+
+/**
+ * @summary Mark the current user's donation invite as seen (one-shot)
+ */
+export const MarkMyNudgeSeenResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
  * @summary List all published albums
  */
 export const ListAlbumsResponseItem = zod.object({
@@ -750,6 +773,16 @@ export const AdminListUsersResponseItem = zod.object({
       createdAt: zod.string(),
     }),
   ),
+  nudgeSentAt: zod
+    .string()
+    .nullish()
+    .describe(
+      "Quando l'admin ha inviato l'invito a donare (null = mai invitato)",
+    ),
+  nudgeSeenAt: zod
+    .string()
+    .nullish()
+    .describe("Quando l'utente ha visto l'invito (null = non ancora visto)"),
   exchangesCompleted: zod.number(),
   isBlocked: zod.boolean(),
   createdAt: zod.string().optional(),
@@ -785,10 +818,35 @@ export const ToggleBlockUserResponse = zod.object({
       createdAt: zod.string(),
     }),
   ),
+  nudgeSentAt: zod
+    .string()
+    .nullish()
+    .describe(
+      "Quando l'admin ha inviato l'invito a donare (null = mai invitato)",
+    ),
+  nudgeSeenAt: zod
+    .string()
+    .nullish()
+    .describe("Quando l'utente ha visto l'invito (null = non ancora visto)"),
   exchangesCompleted: zod.number(),
   isBlocked: zod.boolean(),
   createdAt: zod.string().optional(),
 });
+
+/**
+ * @summary Send a one-time gentle donation invite to a user
+ */
+export const NudgeUserParams = zod.object({
+  userId: zod.coerce.number(),
+});
+
+export const NudgeUserResponse = zod
+  .object({
+    success: zod.boolean(),
+    nudgeSentAt: zod.string(),
+    nudgeSeenAt: zod.string().nullish(),
+  })
+  .describe("Esito dell'invio dell'invito a donare (lato admin)");
 
 /**
  * @summary List all chats

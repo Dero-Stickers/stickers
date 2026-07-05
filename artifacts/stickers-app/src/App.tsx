@@ -13,6 +13,7 @@ import { ConfirmProvider } from "@/components/admin/ConfirmDialog";
 import { GuideProvider, useGuide, hasSeenGuide } from "@/lib/guide/GuideContext";
 import { GuideOverlay } from "@/components/guide/GuideOverlay";
 import { dismissBootSplash } from "@/components/brand/SplashScreen";
+import { NudgeGate } from "@/components/brand/NudgeDialog";
 import { setFetchFailureObserver, setAccountBlockedObserver, useGetAppSettings } from "@workspace/api-client-react";
 import { installGlobalErrorCapture, reportApiFailure } from "@/lib/error-capture";
 import { BlockedAccountDialog } from "@/components/auth/BlockedAccountDialog";
@@ -340,6 +341,7 @@ function App() {
                   <GuideOverlay />
                 </WouterRouter>
                 <BlockedGate />
+                <NudgeGate />
                 <Toaster />
               </GuideGate>
             </ConfirmProvider>

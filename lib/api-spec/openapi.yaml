@@ -124,6 +124,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /me/nudge:
+    get:
+      operationId: getMyNudge
+      tags: [me]
+      summary: Get the pending (unseen) donation invite for the current user
+      responses:
+        "200":
+          description: Pending invite, or null if none
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyNudge"
+
+  /me/nudge/seen:
+    post:
+      operationId: markMyNudgeSeen
+      tags: [me]
+      summary: Mark the current user's donation invite as seen (one-shot)
+      responses:
+        "200":
+          description: Marked as seen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
   # ALBUMS
   /albums:
     get:
@@ -757,6 +783,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminUser"
 
+  /admin/users/{userId}/nudge:
+    post:
+      operationId: nudgeUser
+      tags: [admin]
+      summary: Send a one-time gentle donation invite to a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Invite sent (or re-armed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NudgeResult"
+
   /admin/chats:
     get:
       operationId: adminListChats
@@ -884,6 +929,32 @@ components:
         message:
           type: string
       required: [success]
+
+    NudgeResult:
+      type: object
+      description: Esito dell'invio dell'invito a donare (lato admin)
+      properties:
+        success:
+          type: boolean
+        nudgeSentAt:
+          type: string
+        nudgeSeenAt:
+          type: string
+          nullable: true
+      required: [success, nudgeSentAt]
+
+    MyNudge:
+      type: object
+      description: Invito a donare in attesa per l'utente corrente (null se nessuno)
+      properties:
+        nudge:
+          type: object
+          nullable: true
+          properties:
+            sentAt:
+              type: string
+          required: [sentAt]
+      required: [nudge]
 
     RegisterBody:
       type: object
@@ -1403,6 +1474,14 @@ components:
               createdAt:
                 type: string
             required: [amount, currency, createdAt]
+        nudgeSentAt:
+          type: string
+          nullable: true
+          description: Quando l'admin ha inviato l'invito a donare (null = mai invitato)
+        nudgeSeenAt:
+          type: string
+          nullable: true
+          description: Quando l'utente ha visto l'invito (null = non ancora visto)
         exchangesCompleted:
           type: integer
         isBlocked:

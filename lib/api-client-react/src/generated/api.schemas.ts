@@ -19,6 +19,26 @@ export interface SuccessResponse {
   message?: string;
 }
 
+/**
+ * Esito dell'invio dell'invito a donare (lato admin)
+ */
+export interface NudgeResult {
+  success: boolean;
+  nudgeSentAt: string;
+  nudgeSeenAt?: string | null;
+}
+
+export type MyNudgeNudge = {
+  sentAt: string;
+} | null;
+
+/**
+ * Invito a donare in attesa per l'utente corrente (null se nessuno)
+ */
+export interface MyNudge {
+  nudge: MyNudgeNudge;
+}
+
 export interface RegisterBody {
   nickname: string;
   pin: string;
@@ -313,6 +333,10 @@ export interface AdminUser {
   donationTotal: string;
   donationCurrency: string;
   donations: AdminUserDonationsItem[];
+  /** Quando l'admin ha inviato l'invito a donare (null = mai invitato) */
+  nudgeSentAt?: string | null;
+  /** Quando l'utente ha visto l'invito (null = non ancora visto) */
+  nudgeSeenAt?: string | null;
   exchangesCompleted: number;
   isBlocked: boolean;
   createdAt?: string;

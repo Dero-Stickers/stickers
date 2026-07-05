@@ -42,6 +42,8 @@ import type {
   MatchDetail,
   MatchSummary,
   Message,
+  MyNudge,
+  NudgeResult,
   OpenChatBody,
   PublishBody,
   RegisterBody,
@@ -457,6 +459,160 @@ export function useGetMe<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get the pending (unseen) donation invite for the current user
+ */
+export const getGetMyNudgeUrl = () => {
+  return `/api/me/nudge`;
+};
+
+export const getMyNudge = async (options?: RequestInit): Promise<MyNudge> => {
+  return customFetch<MyNudge>(getGetMyNudgeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyNudgeQueryKey = () => {
+  return [`/api/me/nudge`] as const;
+};
+
+export const getGetMyNudgeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyNudge>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyNudge>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyNudgeQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyNudge>>> = ({
+    signal,
+  }) => getMyNudge({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyNudge>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyNudgeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyNudge>>
+>;
+export type GetMyNudgeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get the pending (unseen) donation invite for the current user
+ */
+
+export function useGetMyNudge<
+  TData = Awaited<ReturnType<typeof getMyNudge>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyNudge>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyNudgeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Mark the current user's donation invite as seen (one-shot)
+ */
+export const getMarkMyNudgeSeenUrl = () => {
+  return `/api/me/nudge/seen`;
+};
+
+export const markMyNudgeSeen = async (
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getMarkMyNudgeSeenUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getMarkMyNudgeSeenMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markMyNudgeSeen>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof markMyNudgeSeen>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["markMyNudgeSeen"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof markMyNudgeSeen>>,
+    void
+  > = () => {
+    return markMyNudgeSeen(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MarkMyNudgeSeenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof markMyNudgeSeen>>
+>;
+
+export type MarkMyNudgeSeenMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Mark the current user's donation invite as seen (one-shot)
+ */
+export const useMarkMyNudgeSeen = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markMyNudgeSeen>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof markMyNudgeSeen>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getMarkMyNudgeSeenMutationOptions(options));
+};
 
 /**
  * @summary List all published albums
@@ -3084,6 +3240,90 @@ export const useToggleBlockUser = <
   TContext
 > => {
   return useMutation(getToggleBlockUserMutationOptions(options));
+};
+
+/**
+ * @summary Send a one-time gentle donation invite to a user
+ */
+export const getNudgeUserUrl = (userId: number) => {
+  return `/api/admin/users/${userId}/nudge`;
+};
+
+export const nudgeUser = async (
+  userId: number,
+  options?: RequestInit,
+): Promise<NudgeResult> => {
+  return customFetch<NudgeResult>(getNudgeUserUrl(userId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getNudgeUserMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof nudgeUser>>,
+    TError,
+    { userId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof nudgeUser>>,
+  TError,
+  { userId: number },
+  TContext
+> => {
+  const mutationKey = ["nudgeUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof nudgeUser>>,
+    { userId: number }
+  > = (props) => {
+    const { userId } = props ?? {};
+
+    return nudgeUser(userId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type NudgeUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof nudgeUser>>
+>;
+
+export type NudgeUserMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Send a one-time gentle donation invite to a user
+ */
+export const useNudgeUser = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof nudgeUser>>,
+    TError,
+    { userId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof nudgeUser>>,
+  TError,
+  { userId: number },
+  TContext
+> => {
+  return useMutation(getNudgeUserMutationOptions(options));
 };
 
 /**
