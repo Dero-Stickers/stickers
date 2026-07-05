@@ -97,7 +97,16 @@ export function AdminDonations() {
   return (
     <AdminPage
       title="Donazioni"
-      subtitle="Andamento dei contributi spontanei (Ko-fi)"
+      subtitle={
+        <a
+          href="https://ko-fi.com/manage/supportreceived?filter=all&purchaseSource=Received&searchKey="
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          Vedi le donazioni ricevute su Ko-fi ↗
+        </a>
+      }
       actions={
         <button
           onClick={() => refetch()}
