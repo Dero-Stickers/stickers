@@ -75,6 +75,11 @@ verificare prima se il piano Zoho Free lo consente (eventuale upgrade a Zoho Mai
   3. Fallback [`settings.ts`](../artifacts/api-server/src/routes/settings.ts) (default `supportEmail`).
   4. Fallback [`LegalPage.tsx`](../artifacts/stickers-app/src/pages/LegalPage.tsx).
   I 3 fallback codice sono solo di sicurezza (usati se il DB non risponde): allineati per coerenza.
+- **Riconoscere le mail a stickers@ (filtro Zoho, 5 lug):** le mail arrivano nella stessa Posta in arrivo
+  di `info@`. Creato un **tag verde "Stickers"** + una **regola in entrata** (Impostazioni → Filtri →
+  Filtro e-mail in entrata → "Stickers": *A contiene stickers@deroarts.com → Tagga come Stickers*) che le
+  etichetta in automatico. Per vedere solo quelle: cliccare il tag "Stickers" nel menu a sinistra della
+  webmail. Testato (mail di prova arrivata taggata). Tutto su Zoho, nessun costo/servizio esterno.
 
 ## 4. Record DNS attuali (email Zoho) — NON modificare senza verifica
 
