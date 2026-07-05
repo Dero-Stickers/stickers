@@ -35,6 +35,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { BulkStateDialog, type BulkState } from "@/components/album/BulkStateDialog";
 import { StickerCell, stateColors, type StickerState } from "@/components/album/StickerCell";
 import { isGuideDemoAlbumId, GUIDE_DEMO_ALBUM, buildGuideDemoStickers } from "@/lib/guide/guide-demo";
+import { useGuideStepId } from "@/lib/guide/GuideContext";
 
 type FilterType = "tutte" | "mancanti" | "possedute" | "doppie";
 
@@ -65,6 +66,11 @@ export function AlbumDetail() {
   // API (hook disabilitato). Le interazioni reali sono disattivate più sotto:
   // durante la guida i gesti sono simulati dal motore (vedi GuideOverlay).
   const isGuideDemo = isGuideDemoAlbumId(albumId);
+  // Passo della guida corrente: durante "sticker-tap" (spiegazione dei 3 colori)
+  // il long-press NON deve aprire il dettaglio — è illustrato nel passo dopo
+  // ("sticker-longpress"). Così ogni funzione compare solo quando spiegata.
+  const guideStepId = useGuideStepId();
+  const guideBlockLongPress = guideStepId === "sticker-tap";
 
   const { data: userAlbums } = useGetUserAlbums();
   const albumInfo = isGuideDemo ? GUIDE_DEMO_ALBUM : userAlbums?.find(a => a.id === albumId);
@@ -140,8 +146,11 @@ export function AlbumDetail() {
   }, [albumId, mutateStickerState]);
 
   const handlePointerDown = useCallback((s: UserSticker) => {
+    // Durante il passo-guida dei 3 colori il long-press è disattivato: il
+    // dettaglio si apre solo nel passo dedicato (evita di anticipare funzioni).
+    if (guideBlockLongPress) return;
     longPressTimer.current = setTimeout(() => setSelectedSticker(s), 500);
-  }, []);
+  }, [guideBlockLongPress]);
   const handlePointerUp = useCallback(() => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   }, []);
@@ -329,15 +338,22 @@ export function AlbumDetail() {
             )}
             <div className="grid gap-1.5 grid-cols-7 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12">
               {block.stickers.map((s, cellIdx) => (
-                // La PRIMA cella in assoluto porta l'anchor della guida, per
-                // evidenziare "una figurina" reale nel passo dedicato.
+                // Anchor della guida su DUE figurine reali per variare i passi:
+                // la 1ª (guide-first-sticker) per "Gestisci le figurine", una nel
+                // mezzo (guide-mid-sticker) per il passo "Dettagli" (long-press).
                 <StickerCell
                   key={s.stickerId}
                   sticker={s}
                   onTap={tapSticker}
                   onPressStart={handlePointerDown}
                   onPressEnd={handlePointerUp}
-                  dataGuide={blockIdx === 0 && cellIdx === 0 ? "guide-first-sticker" : undefined}
+                  dataGuide={
+                    blockIdx === 0 && cellIdx === 0
+                      ? "guide-first-sticker"
+                      : blockIdx === 0 && cellIdx === 9
+                        ? "guide-mid-sticker"
+                        : undefined
+                  }
                 />
               ))}
             </div>
@@ -378,10 +394,13 @@ export function AlbumDetail() {
                     key={st}
                     size="sm"
                     variant={selectedSticker.state === st ? "default" : "outline"}
-                    className={`flex-1 capitalize text-xs ${selectedSticker.state === st ? "bg-primary text-primary-foreground" : ""}`}
+                    // Durante la guida il dettaglio è SOLO da guardare: i pulsanti
+                    // stato sono disattivati, si esce solo con la X (read-only).
+                    disabled={isGuideDemo}
+                    className={`flex-1 capitalize text-xs ${selectedSticker.state === st ? "bg-primary text-primary-foreground" : ""} ${isGuideDemo ? "pointer-events-none opacity-60" : ""}`}
                     onClick={() => {
-                      // Album di prova della guida: il dettaglio è read-only.
-                      if (!isGuideDemo) updateState.mutate({ albumId, stickerId: selectedSticker.stickerId, data: { state: st } });
+                      if (isGuideDemo) return; // read-only: nessuna azione, resta aperto
+                      updateState.mutate({ albumId, stickerId: selectedSticker.stickerId, data: { state: st } });
                       setSelectedSticker(null);
                     }}
                   >

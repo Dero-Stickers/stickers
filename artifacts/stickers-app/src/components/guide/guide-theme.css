@@ -19,6 +19,58 @@
   line-height: 1.25;
 }
 
+/* Freccia del fumetto: UN solo triangolo, più LUNGO e AFFUSOLATO del default
+   (driver.js = 5px in ogni lato). Meccanica: la freccia è un box con UN lato
+   colorato (la punta) e i due lati laterali che ne danno la larghezza. Per
+   allungarla e assottigliarla → lato-punta più lungo (11px), lati più stretti
+   (7px). Impostiamo TUTTI e 4 i border ogni volta (evita che ne resti uno a
+   10px del default e sembri doppia). Uguale in ogni direzione. */
+.driver-popover.sticker-guide .driver-popover-arrow {
+  border-width: 7px; /* base: i due lati "larghezza" (gli altri due sovrascritti) */
+}
+/* Fumetto SOPRA il target → punta in basso (lato TOP colorato e lungo) */
+.driver-popover.sticker-guide .driver-popover-arrow-side-bottom {
+  border-width: 0 7px 11px 7px;
+  border-color: transparent transparent #fff transparent;
+}
+/* Fumetto SOTTO il target → punta in alto */
+.driver-popover.sticker-guide .driver-popover-arrow-side-top {
+  border-width: 11px 7px 0 7px;
+  border-color: #fff transparent transparent transparent;
+}
+/* Fumetto a DESTRA del target → punta a sinistra */
+.driver-popover.sticker-guide .driver-popover-arrow-side-left {
+  border-width: 7px 11px 7px 0;
+  border-color: transparent #fff transparent transparent;
+}
+/* Fumetto a SINISTRA del target → punta a destra */
+.driver-popover.sticker-guide .driver-popover-arrow-side-right {
+  border-width: 7px 0 7px 11px;
+  border-color: transparent transparent transparent #fff;
+}
+
+/* Icone INLINE nel fumetto = le STESSE dell'app (SVG lucide): grandi quanto il
+   testo, allineate alla riga. Di default ereditano il colore del testo; il
+   fulmine "Match" (.sg-icon-match) è arancione pieno come la voce attiva in
+   navbar (colore già nell'SVG). */
+.driver-popover.sticker-guide .sg-icon {
+  display: inline-block;
+  vertical-align: -2px;
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* Pallino-colore = lo stato della figurina (verde/rosso/grigio), stessi colori
+   delle celle dell'app. Tondo, grande quanto il testo, allineato alla riga. */
+.driver-popover.sticker-guide .sg-dot {
+  display: inline-block;
+  vertical-align: -1px;
+  width: 0.85em;
+  height: 0.85em;
+  border-radius: 50%;
+  margin-right: 3px;
+}
+
 .driver-popover.sticker-guide .driver-popover-description {
   margin-top: 2px;
   font-size: 13px;
@@ -42,6 +94,19 @@
 .sg-cell-posseduta { background: #dcfce7 !important; color: #15803d !important; border-color: #bbf7d0 !important; }
 .sg-cell-doppia    { background: #fee2e2 !important; color: #dc2626 !important; border-color: #fecaca !important; }
 .sg-cell-mancante  { background: #f3f4f6 !important; color: #9ca3af !important; border-color: #e5e7eb !important; }
+
+/* "Illumina" un elemento durante un passo: lo porta SOPRA il velo scuro della
+   guida (ma sotto il fumetto), con sfondo pieno così esce dall'ombra. Usato per
+   mostrare un contesto oltre al target evidenziato (es. il tab "Disponibili"
+   mentre la freccia punta il ➕). Il velo driver.js sta sotto z-index 1e9. */
+.sg-lit {
+  position: relative;
+  z-index: 999999998;
+  background: #fff !important;
+  color: hsl(222 47% 11%) !important;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.9);
+}
 
 /* Intera griglia (prova long-press sul filtro; il passo usa il verde, gli altri
    due restano per simmetria) — con piccola transizione */

@@ -23,6 +23,7 @@ import "driver.js/dist/driver.css";
 import "./guide-theme.css";
 import { useGuide } from "@/lib/guide/GuideContext";
 import { GUIDE_STEPS } from "@/lib/guide/steps";
+import { withGuideIcons } from "@/lib/guide/guide-icons";
 
 // ── Costanti condivise (un solo punto di verità, niente stringhe duplicate) ──
 // Dialog reale aperto (Radix): usato sia dal watcher long-press sia da ESC.
@@ -34,18 +35,24 @@ const CELL_DEMO_CYCLE = ["sg-cell-posseduta", "sg-cell-doppia", "sg-cell-mancant
 const GRID_DEMO_CLASSES = ["sg-demo-posseduta", "sg-demo-doppia", "sg-demo-mancante"] as const;
 const GRID_SELECTOR = '[data-guide="guide-sticker-grid"]';
 
+// Icone INLINE nel fumetto = LE STESSE dell'app: i segnaposto {album}/{match}/
+// {messaggi}/{aggiungi} nel testo dei passi vengono sostituiti dall'SVG del
+// componente lucide reale (vedi lib/guide/guide-icons — nessun markup duplicato).
+
 // Corpo del fumetto — MINIMALE: solo la frase + un hint dove serve. Niente
 // pulsanti, niente pallini, niente "salta": la guida si fa e basta.
 function stepDescription(body: string, kind: string, hintOverride?: string): string {
+  // Hint minimale: solo dove aggiunge informazione. I passi "try" NON hanno un
+  // hint generico ("Provaci ora" era palese) — l'azione è già chiara dal testo;
+  // eventuali istruzioni specifiche arrivano da hintOverride (es. "Tieni premuto").
   const hint =
     hintOverride
       ? `<p class="sg-hint">${hintOverride}</p>`
       : kind === "info"
         ? `<p class="sg-hint">Tocca lo schermo per continuare</p>`
-        : kind === "try"
-          ? `<p class="sg-hint">Provaci ora 👇</p>`
-          : "";
-  return `<p class="sg-body">${body}</p>${hint}`;
+        : "";
+  // withGuideIcons: sostituisce i segnaposto {album}/{match}/… con l'SVG dell'app.
+  return `<p class="sg-body">${withGuideIcons(body)}</p>${hint}`;
 }
 
 export function GuideOverlay() {
@@ -70,6 +77,12 @@ export function GuideOverlay() {
     nextRef.current();
   };
 
+  // Stato dei passi a fasi (bulkPhases): indice fase, se è già colorata, e la
+  // funzione "vai alla fase dopo" (esposta via ref così il tocco sul velo la usa).
+  const bulkPhaseRef = useRef(0);
+  const bulkColoredRef = useRef(false);
+  const bulkNextRef = useRef<() => void>(() => {});
+
   const getDrv = (): Driver => {
     if (!drvRef.current) {
       drvRef.current = driver({
@@ -78,17 +91,21 @@ export function GuideOverlay() {
         // ben leggibile, mantenendo un minimo di contrasto sull'elemento in
         // luce. Unico punto: vale per TUTTI i passi.
         overlayOpacity: 0.4,
-        stagePadding: 6,
+        // Margine attorno all'elemento evidenziato: piccolo (2px) così lo
+        // spotlight ADERISCE al target (es. la sola voce "Album" in navbar) e
+        // NON sborda sopra/fuori dalla barra.
+        stagePadding: 2,
         stageRadius: 12,
         allowClose: false,
         showButtons: [], // NIENTE pulsanti nel fumetto
         popoverClass: "sticker-guide",
         // Tocco sul VELO: nei passi info avanza ("tocca ovunque"); nei passi
         // try avanza SOLO a prova completata (lettura ultimo colore); nei passi
-        // azione non fa nulla (si avanza toccando il pulsante vero).
+        // a fasi (bulkPhases) passa alla fase dopo; azione non fa nulla.
         overlayClickBehavior: () => {
-          const k = stepRef.current?.kind;
-          if (k === "info" || (k === "try" && tryDoneRef.current)) advance();
+          const s = stepRef.current;
+          if (s?.bulkPhases && bulkColoredRef.current) { bulkNextRef.current(); return; }
+          if (s?.kind === "info" || (s?.kind === "try" && tryDoneRef.current)) advance();
         },
       });
     }
@@ -117,6 +134,9 @@ export function GuideOverlay() {
     let tries = 0;
     const show = () => {
       if (cancelled) return;
+      // I passi a fasi (bulkPhases) hanno un fumetto PER FASE gestito dal loro
+      // effetto dedicato: qui non mostriamo nulla (evita un flash col body vuoto).
+      if (step.bulkPhases) { stepRef.current = step; return; }
       const el = step.target
         ? document.querySelector<HTMLElement>(`[data-guide="${step.target}"]`)
         : null;
@@ -129,12 +149,9 @@ export function GuideOverlay() {
         // toccare l'app per sbaglio durante la guida.
         disableActiveInteraction: step.kind === "info",
         popover: {
-          title: step.title,
-          description: stepDescription(
-            step.body,
-            step.kind,
-            step.longPressGrid ? "Tieni premuto 👇" : undefined,
-          ),
+          // le icone-app sono nei segnaposto {…}, sia nel titolo sia nel body
+          title: withGuideIcons(step.title),
+          description: stepDescription(step.body, step.kind),
         },
       });
     };
@@ -173,10 +190,10 @@ export function GuideOverlay() {
         e.preventDefault(); e.stopPropagation(); advance();
         return;
       }
-      if (step.kind === "try" && step.longPressGrid) {
-        // PROVA long-press: il long-press è gestito da pointerdown/up (effetto
-        // dedicato). Qui blocchiamo SOLO il click sul filtro, così l'app non
-        // esegue il bulk reale. L'avanzamento avviene nel gestore pointer.
+      if (step.kind === "try" && step.bulkPhases) {
+        // PROVA long-press sui filtri: gestita da pointerdown/up (effetto
+        // dedicato, a fasi). Qui blocchiamo SOLO il click sul filtro, così l'app
+        // non esegue il bulk reale. L'avanzamento avviene nel gestore pointer.
         e.preventDefault(); e.stopPropagation();
         return;
       }
@@ -203,10 +220,13 @@ export function GuideOverlay() {
             element: cell,
             disableActiveInteraction: false,
             popover: {
-              title: step.title,
-              description: `<p class="sg-body">${phase.body}</p><p class="sg-hint">${
-                last ? "Tocca lo schermo per continuare" : "Provaci ora 👇"
-              }</p>`,
+              title: withGuideIcons(step.title),
+              // Hint solo sull'ULTIMO tocco (avanzo manuale); nei tocchi
+              // intermedi il testo della fase dice già "Tocca ancora".
+              // withGuideIcons → i pallini {rosso}/{grigio} diventano colori-app.
+              description: `<p class="sg-body">${withGuideIcons(phase.body)}</p>${
+                last ? `<p class="sg-hint">Tocca lo schermo per continuare</p>` : ""
+              }`,
             },
           });
         } else if (last) {
@@ -260,42 +280,60 @@ export function GuideOverlay() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, step]);
 
-  // Passi "try" con long-press sui FILTRI (bulk): l'utente TIENE PREMUTO il
-  // filtro evidenziato e vede TUTTA la griglia colorarsi di quello stato (solo
-  // CSS, zero dati). Completato il long-press si resta sul risultato finché non
-  // tocca lo schermo (avanzamento MANUALE, tempo di leggere); la guida ripristina
-  // SEMPRE i colori reali. L'app torna esattamente com'era.
+  // Passi "try" con long-press sui FILTRI (bulk), in una o più FASI (Mie, Doppie,
+  // Mancanti). Ritmo per ogni fase, con calma: LEGGO l'istruzione → TENGO PREMUTO
+  // il filtro → GUARDO la griglia colorarsi → TOCCO per continuare. Il rilascio
+  // del long-press NON avanza (serve un tocco separato): così l'utente ha tutto
+  // il tempo di guardare. All'ultima fase, il tocco va allo step successivo.
+  // Solo CSS: zero dati; la guida ripristina SEMPRE i colori reali.
+  // (bulkPhaseRef/bulkColoredRef/bulkNextRef dichiarati in alto.)
   useEffect(() => {
-    if (!active || !step || step.kind !== "try" || !step.longPressGrid) return;
-    const lp = step.longPressGrid;
+    if (!active || !step || step.kind !== "try" || !step.bulkPhases) return;
+    const phases = step.bulkPhases;
+    bulkPhaseRef.current = 0;
+    bulkColoredRef.current = false;
     const clearGrid = () =>
       document.querySelector(GRID_SELECTOR)?.classList.remove(...GRID_DEMO_CLASSES);
     let pressTimer: number | null = null;
-    const filterEl = () =>
-      document.querySelector<HTMLElement>(`[data-guide="${step.target}"]`);
+    let ignoreNextUp = false; // ignora il pointerup DEL long-press (non deve avanzare)
+
+    // Mostra il fumetto-istruzione della fase corrente (freccia sul filtro).
+    const showInstruction = () => {
+      const ph = phases[bulkPhaseRef.current];
+      const el = document.querySelector<HTMLElement>(`[data-guide="${ph.target}"]`);
+      getDrv().highlight({
+        element: el ?? undefined,
+        disableActiveInteraction: false,
+        popover: {
+          title: withGuideIcons(ph.title),
+          description: `<p class="sg-body">${withGuideIcons(ph.body)}</p><p class="sg-hint">Tieni premuto 👇</p>`,
+        },
+      });
+    };
+    // Dà tempo alla UI di montare (rotta album già aperta) poi mostra la 1ª fase.
+    const t0 = window.setTimeout(showInstruction, 120);
 
     const onDown = (e: PointerEvent) => {
-      if (tryDoneRef.current) return; // già fatto: il tocco avanza (vedi onUp)
+      if (bulkColoredRef.current) return; // già colorata: aspetto il tocco-avanza
+      const ph = phases[bulkPhaseRef.current];
       const t = e.target as HTMLElement | null;
-      if (!t?.closest(`[data-guide="${step.target}"]`)) return;
-      // È il filtro giusto: partiamo col long-press SIMULATO. preventDefault →
-      // il filtro reale non riceve nulla (nessun bulk sull'app).
+      if (!t?.closest(`[data-guide="${ph.target}"]`)) return;
+      // preventDefault → il filtro reale non riceve nulla (nessun bulk sull'app)
       e.preventDefault(); e.stopPropagation();
       pressTimer = window.setTimeout(() => {
-        // Long-press riuscito: colora TUTTA la griglia + testo "fatto".
+        // Long-press riuscito: colora TUTTA la griglia di questo stato.
         clearGrid();
         const grid = document.querySelector<HTMLElement>(GRID_SELECTOR);
-        grid?.classList.add(lp.color);
-        tryDoneRef.current = true; // ora un tocco qualsiasi avanza
-        // Sposto lo SPOTLIGHT sulla GRIGLIA (non sul filtro): così esce dal velo
-        // scuro e l'utente VEDE davvero tutte le figurine cambiare colore
-        // insieme. Senza questo, sotto l'ombra il cambio-colore non si nota.
+        grid?.classList.add(ph.color);
+        bulkColoredRef.current = true; // ora un tocco separato avanza
+        ignoreNextUp = true;           // ...ma NON il pointerup di questo press
+        // Spotlight sulla GRIGLIA: esce dal velo, si vede il cambio-colore.
         getDrv().highlight({
-          element: grid ?? filterEl() ?? undefined,
+          element: grid ?? undefined,
           disableActiveInteraction: false,
           popover: {
-            title: step.title,
-            description: `<p class="sg-body">${lp.doneBody}</p><p class="sg-hint">Tocca lo schermo per continuare</p>`,
+            title: withGuideIcons(ph.title),
+            description: `<p class="sg-body">${withGuideIcons(ph.doneBody)}</p>`,
           },
         });
       }, 550); // soglia long-press
@@ -303,16 +341,33 @@ export function GuideOverlay() {
     const cancelPress = () => {
       if (pressTimer != null) { clearTimeout(pressTimer); pressTimer = null; }
     };
+    // Passa alla fase dopo, o allo step successivo se era l'ultima.
+    const nextPhase = () => {
+      clearGrid();
+      bulkColoredRef.current = false;
+      if (bulkPhaseRef.current < phases.length - 1) {
+        bulkPhaseRef.current += 1;
+        showInstruction();
+      } else {
+        advance();
+      }
+    };
+    bulkNextRef.current = nextPhase; // usato dal tocco sul velo (overlayClickBehavior)
     const onUp = (e: PointerEvent) => {
-      // Dopo il long-press, un tocco qualsiasi avanza (l'overlayClickBehavior
-      // copre il velo; qui copriamo il tocco sul filtro/fumetto).
-      if (tryDoneRef.current) { e.preventDefault(); e.stopPropagation(); advance(); return; }
-      cancelPress(); // rilascio troppo presto → nessun bulk, si può riprovare
+      if (ignoreNextUp) { ignoreNextUp = false; return; } // rilascio del long-press: NON avanza
+      if (bulkColoredRef.current) {
+        // tocco SEPARATO dopo aver colorato → avanti (con calma, l'ha deciso l'utente)
+        e.preventDefault(); e.stopPropagation();
+        nextPhase();
+        return;
+      }
+      cancelPress(); // rilascio troppo presto (prima dei 550ms) → si può riprovare
     };
     document.addEventListener("pointerdown", onDown, true);
     document.addEventListener("pointerup", onUp, true);
     document.addEventListener("pointercancel", cancelPress, true);
     return () => {
+      clearTimeout(t0);
       cancelPress();
       document.removeEventListener("pointerdown", onDown, true);
       document.removeEventListener("pointerup", onUp, true);

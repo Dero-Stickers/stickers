@@ -19,6 +19,28 @@ match**, facendo VEDERE le funzioni (anche i trucchi nascosti).
   pallini). Si va solo avanti. ESC (desktop) chiude.
 - **La guida non modifica MAI il database**: le prove sono simulate (colori
   finti via CSS) o read-only; a fine guida l'app è ESATTAAMENTE com'era.
+- **Emoji = solo icone dell'app**: nei titoli/testi si usano SOLO emoji che
+  è la STESSA dell'app, non un'emoji. Nei testi/titoli si scrive il segnaposto
+  `{album}`/`{match}`/`{messaggi}`/`{aggiungi}`: il motore lo sostituisce con
+  l'SVG del COMPONENTE lucide reale (`lib/guide/guide-icons`, estratto a runtime
+  → nessun markup duplicato, se lucide cambia la guida eredita). Il fulmine
+  `{match}` è arancione pieno come la voce Match attiva in navbar (`fill-accent`).
+  Colori-cella (🟩🟥⬜) restano emoji: rappresentano gli stati reali.
+- **Niente hint ovvi**: i passi `try` non mostrano un hint generico (il vecchio
+  "Provaci ora" era palese); l'hint appare solo se aggiunge informazione
+  (`hintOverride` es. "Tieni premuto", o "Tocca lo schermo per continuare").
+- **Primo passo = anche benvenuto**: `go-album` apre con "Benvenuto in Stickers!"
+  + una frase-visione (Album {album} + Match {match}), poi l'istruzione a capo.
+- **Aggiungi album in 2 passi**: `find-album` (dove sono: tab "Disponibili"
+  illuminato) → `add-album` (tocca ➕ per averlo). Il tab resta illuminato
+  (`sg-lit`) in entrambi; AlbumList forza il tab e mostra la card demo.
+- **Spotlight aderente**: `stagePadding: 2` — evidenzia SOLO il target (es. la
+  sola voce "Album" in navbar), senza sbordare fuori dalla barra.
+- **Freccia del fumetto**: un solo triangolo affusolato (11px punta × 7px lati),
+  uguale in ogni direzione (CSS `driver-popover-arrow-side-*`). NON allargare i
+  border a caso o sembra doppia.
+- **Avvio a OGNI refresh anche in DEPLOY** (scelta owner): mai `!hasSeenGuide`
+  finché non richiesto; deve ripartire sempre, ovunque.
 
 ## File (architettura modulare)
 
@@ -27,8 +49,16 @@ match**, facendo VEDERE le funzioni (anche i trucchi nascosti).
 | `src/lib/guide/steps.ts` | **Config dei passi** (testi, target, tipo, rotta, tapPhases) | Aggiungere/togliere/modificare passi |
 | `src/lib/guide/GuideContext.tsx` | **Stato** (attiva? passo? flag "già vista"; `useGuideStepId` per le pagine) | Raramente |
 | `src/lib/guide/guide-demo.ts` | **Album di prova** (id -1, card + 60 figurine demo deterministiche) | Cambiare i dati demo |
+| `src/lib/guide/guide-icons.tsx` | **Icone-app** (estrae l'SVG dei componenti lucide per i segnaposto {…}) | Aggiungere un'icona |
 | `src/components/guide/GuideOverlay.tsx` | **Motore** (wrapper driver.js: highlight, avanzamento, prove, demo) | Raramente |
-| `src/components/guide/guide-theme.css` | **Stile fumetto** (palette) + classi-demo colori | Ritocchi visivi |
+| `src/components/guide/guide-theme.css` | **Stile fumetto** (palette, freccia, `.sg-icon`, `.sg-lit`) | Ritocchi visivi |
+
+**Lingua unificata (owner)**: TITOLO = concetto/funzione (non un'azione: "Gestisci
+i tuoi album", non "Aprilo"); BODY = l'azione. Stessi termini ovunque, niente
+sinonimi — verbi: **Tocca** (tap), **Tieni premuto/a** (long-press), **Segna**
+(figurine), **Trova/Scegli** (album), **Aggiungi** (alla collezione),
+**Scambiare** (match). Sostantivi: **album**, **collezione**, **figurine**,
+**scambio**, **match**.
 
 Montaggio in `src/App.tsx`: `GuideGate` (userId) → `GuideProvider` →
 `<GuideAutoStart/>` + `<GuideOverlay/>`.

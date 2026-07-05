@@ -93,8 +93,12 @@ export function AlbumList() {
   // riga demo in cima a "I miei album" (passo open-album). Il tab viene portato
   // su quello coerente col passo. Tutto sparisce a guida chiusa.
   const guideStepId = useGuideStepId();
-  const guideAddDemo = guideStepId === "add-album";
+  // Passi "Disponibili" della guida: trova (find-album) + aggiungi (add-album).
+  // Entrambi mostrano il tab Disponibili con la card demo e il ➕.
+  const guideAddDemo = guideStepId === "find-album" || guideStepId === "add-album";
   const guideOpenDemo = guideStepId === "open-album";
+  // Il tab "Disponibili" resta illuminato in tutti e due i passi.
+  const guideLitTab = guideAddDemo;
   useEffect(() => {
     if (guideAddDemo) setActiveTab("available");
     else if (guideOpenDemo) setActiveTab("my");
@@ -179,7 +183,8 @@ export function AlbumList() {
             I miei album ({myAlbums?.length ?? 0})
           </button>
           <button
-            className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === "available" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+            data-guide="guide-available-tab"
+            className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === "available" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"} ${guideLitTab ? "sg-lit" : ""}`}
             onClick={() => setActiveTab("available")}
           >
             Disponibili ({availableAlbums.length})

@@ -227,13 +227,13 @@ function GuideGate({ children }: { children: React.ReactNode }) {
   return <GuideProvider userId={currentUser?.id}>{children}</GuideProvider>;
 }
 
-// Avvio automatico della guida. PER ORA (fase di test) parte a OGNI refresh per
-// l'utente loggato NON-admin — ma UNA SOLA VOLTA per caricamento pagina: se
-// l'utente la chiude/salta NON si riapre da sola (si riparte solo al prossimo
-// refresh). Quando la guida sarà definitiva, sostituire la condizione con
-// `!hasSeenGuide(currentUser?.id)` così parte solo alla PRIMA autenticazione in
-// assoluto (unico trigger: non è più riapribile dal Profilo, per scelta owner —
-// l'utente è vergine solo al primo avvio, dove l'album di prova ha senso).
+// Avvio automatico della guida. SCELTA OWNER (vale anche in DEPLOY/produzione):
+// la guida parte a OGNI refresh per l'utente loggato NON-admin — ma UNA SOLA
+// VOLTA per caricamento pagina: se l'utente la chiude/salta NON si riapre da
+// sola (si riparte solo al prossimo refresh). NON usare `!hasSeenGuide` finché
+// l'owner non lo chiede esplicitamente: per ora deve ripartire sempre, ovunque.
+// (`hasSeenGuide`/`markGuideSeen` restano pronti in GuideContext se un giorno
+// servisse limitarla alla prima autenticazione.)
 function GuideAutoStart() {
   const { isAuthenticated, currentUser } = useAuth();
   const { start } = useGuide();
