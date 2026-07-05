@@ -1,5 +1,5 @@
-// Pulsante donazione Ko-fi — replica FEDELE del widget ufficiale (tazza + testo
-// "Support me on Ko-fi", verde #3dbd45), ma reso come LINK NATIVO (non lo script
+// Pulsante donazione Ko-fi — stile del widget ufficiale (tazza + verde #3dbd45),
+// testo "Support Stickers", ma reso come LINK NATIVO (non lo script
 // kofiwidget2, che rende male in React/PWA). Apre la pagina Ko-fi in nuova scheda.
 // È una donazione LIBERA senza contropartita: non sblocca nulla, non tocca
 // permessi/RLS. L'app non tratta dati di pagamento (tutto su Ko-fi/PayPal).
@@ -7,10 +7,10 @@
 // Un solo punto di verità per link, colore, icona e testo: riusato ovunque serva
 // (Profilo, modale benvenuto della guida).
 
-// Pagina Ko-fi dell'owner + colore ufficiale del bottone + testo del widget.
+// Pagina Ko-fi dell'owner + colore ufficiale del bottone + testo.
 export const KOFI_URL = "https://ko-fi.com/deroarts";
 const KOFI_GREEN = "#3dbd45";
-const KOFI_LABEL = "Support me on Ko-fi";
+const KOFI_LABEL = "Support Stickers";
 
 // Tazza Ko-fi come nel widget: tazzina BIANCA con il CUORE ROSSO Ko-fi dentro
 // (SVG inline → nessuna risorsa esterna, ok CSP/PWA).
