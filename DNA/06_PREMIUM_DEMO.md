@@ -43,9 +43,10 @@ tratta né salva dati di pagamento: tutto avviene su Ko-fi/PayPal.
   MAI legare la gratuità dell'app alla donazione (es. "gratis solo se doni"):
   la trasformerebbe in corrispettivo.
 - **Legali (DB, non codice):** i testi Privacy/ToS vivono in `app_settings`
-  (editabili da Admin → Impostazioni). Va aggiunta a mano lì una riga sul
-  contributo volontario esterno Ko-fi: facoltativo, non dà accesso a funzioni a
-  pagamento, l'app non tratta dati di pagamento (gestiti da Ko-fi/PayPal).
+  (editabili da Admin → Impostazioni). Le clausole sul contributo volontario
+  esterno Ko-fi sono state **aggiunte** (5 lug): Termini ("Contributi volontari" —
+  facoltativo, non dà accesso a funzioni a pagamento) e Privacy (l'app non tratta
+  dati di pagamento, gestiti da Ko-fi/PayPal).
 
 ## Pagina admin "Donazioni" (predisposta)
 

@@ -7,13 +7,27 @@
 
 ## 2026-07
 
+- **Età minima 14 → 16 anni [5 lug]** — soglia alzata a 16 per scelta del titolare (chat + incontri
+  di persona tra privati), più cautelativa del minimo di legge italiano (14, art. 8 GDPR + art.
+  2-quinquies d.lgs. 196/2003). Toccato: checkbox registrazione (`Login.tsx`, unica occorrenza UI;
+  nessuna validazione backend sull'età — è autodichiarazione), testi legali nel DB (`app_settings`:
+  Termini "Età minima" + Privacy "Minori", quest'ultima riformulata perché 16 NON è obbligo di legge ma
+  scelta più protettiva del minimo di 14). Nessuna costante condivisa: la soglia non è hardcoded in più
+  punti. Vedi `10_PRIVACY_LEGALE.md`.
+- **Legali · clausole donazioni Ko-fi nel DB [5 lug]** — in `app_settings` aggiunte a mano (metodo
+  chirurgico + backup + verifica integrità) le clausole sul contributo volontario Ko-fi: Termini
+  ("Contributi volontari" — liberalità, non dà accesso a funzioni a pagamento) e Privacy (l'app non
+  tratta dati di pagamento, gestiti da Ko-fi/PayPal). Chiude la nota "da aggiungere a mano" del 5 lug.
+- **Profilo · box donazione ridisegnato [5 lug]** — box bianco dedicato (era azzurrino attaccato al
+  bottone Elimina): pulsante Ko-fi SOPRA, info in piccolo (`text-xs` regular, attenuato) SOTTO. Solo
+  estetica/layout, nessuna logica toccata. Pagina Profilo più omogenea (card bianche coerenti).
 - **Donazione Ko-fi integrata [5 lug]** — pulsante donazione `KofiButton` (componente riusabile,
   link esterno verde `#3dbd45` a `https://ko-fi.com/deroarts`, NON lo script kofiwidget2). Appare nel
   **Profilo** (box sopra la firma DeroArts) e nel **modale finale della guida** (rimosso il vecchio
   bottone PayPal). Testo con frase obbligatoria "Non sblocca nulla: è solo un grazie" (liberalità, non
-  corrispettivo). Nessun impatto su RLS/permessi/dati di pagamento (gestiti da Ko-fi/PayPal). NB legali:
-  i testi Privacy/ToS sono nel DB (app_settings), la clausola sul contributo va aggiunta a mano da
-  Admin → Impostazioni. Vedi `06_PREMIUM_DEMO.md`.
+  corrispettivo). Nessun impatto su RLS/permessi/dati di pagamento (gestiti da Ko-fi/PayPal). Legali
+  (nel DB, app_settings): clausole sul contributo volontario aggiunte il 5 lug (vedi entry sopra).
+  Vedi `06_PREMIUM_DEMO.md`.
 - **Guida · modalità globale da admin [5 lug]** — la guida non parte più "sempre a ogni refresh"
   hardcoded: la MODALITÀ è ora un setting globale `guide_mode` in `app_settings`, gestito da
   **Admin → Impostazioni** con 3 opzioni indipendenti: `off` (default, disattivata) · `first` (solo
