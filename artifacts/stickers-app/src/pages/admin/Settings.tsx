@@ -54,6 +54,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage, AdminScrollArea } from "@/components/admin/AdminPage";
+import { AdminAccountFields } from "@/pages/admin/AdminAccountCard";
 
 // Modalità globale della guida interattiva. Le 3 opzioni sono indipendenti:
 // una sola attiva alla volta. Descrizioni mostrate all'admin sotto ogni scelta.
@@ -142,7 +143,10 @@ export function AdminSettings() {
           <CardTitle className="text-base">Configurazione generale</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
+          {/* Account admin (nickname + PIN) — in cima alla configurazione. */}
+          <AdminAccountFields />
+
+          <div className="border-t border-border pt-4">
             <label className="text-sm font-medium text-foreground block mb-1">Email supporto</label>
             <Input
               type="email"

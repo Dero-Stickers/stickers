@@ -99,6 +99,15 @@ export function verifyToken(token: string): SessionPayload | null {
   }
 }
 
+// Crea l'hash scrypt di un PIN, nel formato `scrypt$<salt>$<hash>` (base64),
+// stesso schema letto da verifyPin. Salt casuale 16 byte, chiave 64 byte.
+export async function hashPin(pin: string): Promise<string> {
+  const { randomBytes } = await import("crypto");
+  const salt = randomBytes(16);
+  const derived = await scryptAsync(pin, salt, 64, { N: SCRYPT_COST });
+  return `${SCRYPT_PREFIX}${salt.toString("base64")}$${derived.toString("base64")}`;
+}
+
 export async function verifyPin(pin: string, hash: string): Promise<boolean> {
   if (!hash) return false;
   if (!hash.startsWith(SCRYPT_PREFIX)) return false;

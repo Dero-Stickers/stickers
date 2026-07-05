@@ -4,6 +4,7 @@ import type { RequestHandler } from "express";
 import {
   signToken,
   verifyPin,
+  hashPin,
   checkRateLimit,
   resetRateLimit,
 } from "../lib/auth";
@@ -382,6 +383,65 @@ const changeLocation: RequestHandler = async (req, res) => {
   }
 };
 
+// PATCH /api/auth/me/credentials — cambia nickname e/o PIN dell'account
+// corrente (usato dall'admin da Impostazioni). Richiede il PIN ATTUALE come
+// conferma (l'account deve avere un PIN: utenti social non ne hanno). Almeno
+// uno tra newNickname / newPin dev'essere presente.
+const ChangeCredentialsBody = z
+  .object({
+    currentPin: z.string().min(4).max(6),
+    newNickname: z.string().trim().min(3).max(15).optional(),
+    newPin: z.string().regex(/^\d{4,6}$/, "Il PIN deve avere 4-6 cifre").optional(),
+  })
+  .refine((b) => b.newNickname || b.newPin, {
+    message: "Indica un nuovo nickname o un nuovo PIN",
+  });
+
+const changeCredentials: RequestHandler = async (req, res) => {
+  try {
+    const body = ChangeCredentialsBody.parse(req.body);
+    const session = req.session!;
+    const { db } = await import("@workspace/db");
+    const { usersTable } = await import("@workspace/db");
+    const { eq, and, ne, sql } = await import("drizzle-orm");
+
+    const [me] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+    if (!me) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
+    // Serve un PIN esistente da verificare (gli account social non l'hanno).
+    if (!me.pinHash || !(await verifyPin(body.currentPin, me.pinHash))) {
+      res.status(403).json({ error: "WRONG_PIN", message: "PIN attuale errato" });
+      return;
+    }
+
+    const updates: { nickname?: string; pinHash?: string } = {};
+    if (body.newNickname) {
+      // Unicità nickname case-insensitive (esclude sé stesso).
+      const [dup] = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(and(sql`lower(${usersTable.nickname}) = lower(${body.newNickname})`, ne(usersTable.id, me.id)))
+        .limit(1);
+      if (dup) { res.status(409).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" }); return; }
+      updates.nickname = body.newNickname;
+    }
+    if (body.newPin) updates.pinHash = await hashPin(body.newPin);
+
+    const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, me.id)).returning();
+    // Nuovo token (il payload non cambia, ma restituirlo è comodo lato client).
+    res.json({
+      user: await userPayload(updated),
+      token: signToken({ userId: updated.id, isAdmin: updated.isAdmin }),
+    });
+  } catch (err) {
+    if ((err as any)?.name === "ZodError" || (err as any)?.issues) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: (err as any)?.issues?.[0]?.message ?? "Dati non validi" });
+      return;
+    }
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
+  }
+};
+
 // ---------------------------------------------------------------------------
 // Accesso social (Google / Email via Supabase Auth)
 // ---------------------------------------------------------------------------
@@ -581,5 +641,6 @@ router.get("/me", requireAuth, getMe);
 router.get("/me/export", requireAuth, exportMe);
 router.delete("/me", requireAuth, deleteMe);
 router.patch("/me/location", requireAuth, changeLocation);
+router.patch("/me/credentials", requireAuth, changeCredentials);
 
 export default router;
