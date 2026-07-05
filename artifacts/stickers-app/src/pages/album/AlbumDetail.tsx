@@ -232,7 +232,8 @@ export function AlbumDetail() {
     { key: "tutte", label: "Tutte", count: total, numberColor: "text-foreground" },
     { key: "possedute", label: "Mie", count: owned, numberColor: "text-green-600", bulkState: "posseduta" },
     { key: "doppie", label: "Doppie", count: duplicates, numberColor: "text-red-500", bulkState: "doppia" },
-    { key: "mancanti", label: "Mancanti", count: missing, numberColor: "text-accent", bulkState: "mancante" },
+    // Grigio come le celle "mancante" della griglia (stateColors) — coerenza visiva.
+    { key: "mancanti", label: "Mancanti", count: missing, numberColor: "text-gray-400", bulkState: "mancante" },
   ];
 
   if (isLoading) {

@@ -37,7 +37,8 @@
 - **Dettaglio album: contatori e filtri UNIFICATI [4 lug]** — i 4 box informativi (Totale/Possedute/Doppie/
   Mancanti, solo numeri) e i 4 pulsanti-filtro sotto (Tutte/Mie/Doppie/Mancanti) erano ridondanti: fusi in
   **4 card-pulsante** uniche (`AlbumDetail.tsx`), ognuna insieme **contatore + filtro**. Etichette Tutte/Mie/
-  Doppie/Mancanti, numero colorato (nero/verde/rosso/arancione), sfondo bianco, angoli arrotondati, touch-
+  Doppie/Mancanti, numero colorato (nero/verde/rosso/grigio — Mancanti in grigio come le celle "mancante"
+  della griglia, per coerenza [5 lug]), sfondo bianco, angoli arrotondati, touch-
   friendly; la card attiva ha bordo+anello primario. Conserva tap=filtra e **long-press=imposta tutte a quello
   stato** (bulk, tranne "Tutte"). Robusto anche con numeri a 4 cifre (verificato: nessun overflow). Barra %
   resta sotto. Meno refusi, più minimale.
