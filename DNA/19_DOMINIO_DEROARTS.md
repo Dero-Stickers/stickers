@@ -29,7 +29,10 @@ Quando integreremo Stickers nel dominio, useremo:
 - Dominio acquistato e attivo su Cloudflare; DNS gestito da Cloudflare; DNSSEC attivo; SSL/HTTPS ok.
 - Email professionale attiva via **Zoho Mail Free** (area EU). Casella: **info@deroarts.com** — invio,
   ricezione, webmail OK. SPF/DKIM/DMARC = **PASS**.
-- Sito/app **non ancora collegati al dominio**. Record web A/CNAME non configurati. Record DNS totali: 7.
+- **App Stickers COLLEGATA al dominio (5 lug 2026):** `stickers.deroarts.com` → servizio Render
+  `stickers-matchbox` (CNAME, Solo DNS). Render: **Verified**, certificato HTTPS in emissione. Record DNS
+  totali: 8. **Restano da fare** per il go-live sul dominio: Supabase Auth (Site/Redirect URL), CSP/CORS,
+  webhook Ko-fi, testi legali — vedi §8.
 - **Sito vetrina deroarts** (separato da Stickers): `https://deroarts.onrender.com` (Render).
 
 ### Dove gira OGGI Stickers (URL Render reali, in attesa del dominio)
@@ -81,18 +84,22 @@ verificare prima se il piano Zoho Free lo consente (eventuale upgrade a Zoho Mai
   etichetta in automatico. Per vedere solo quelle: cliccare il tag "Stickers" nel menu a sinistra della
   webmail. Testato (mail di prova arrivata taggata). Tutto su Zoho, nessun costo/servizio esterno.
 
-## 4. Record DNS attuali (email Zoho) — NON modificare senza verifica
+## 4. Record DNS attuali — NON modificare senza verifica
 
-| Tipo | Nome | Contenuto | Prio | TTL |
-|---|---|---|---|---|
-| TXT | @ | `zoho-verification=zb87474940.zmverify.zoho.eu` | — | Auto |
-| MX | @ | `mx.zoho.eu` | 10 | Auto |
-| MX | @ | `mx2.zoho.eu` | 20 | Auto |
-| MX | @ | `mx3.zoho.eu` | 50 | Auto |
-| TXT (SPF) | @ | `v=spf1 include:zohomail.eu ~all` | — | Auto |
-| TXT (DKIM) | `zmail._domainkey` | `v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCRNNXxxp8waQbMNj5Ujh/NZZ3yMCCsVCpmsyDe5r2yBOiXLcqcBln42U33yNavmxCxM0tCJOuzFJQ9FsSgKh7HZlvuRPRHAMZ9BB+Yd9Z3d04k516cog209IYf3DiBv/m38mjSkm23Ijw9hhDXdxTkZr7nsOaz9MNFkMxLGHLnsQIDAQAB` | — | Auto |
-| TXT (DMARC) | `_dmarc` | `v=DMARC1; p=none; rua=mailto:info@deroarts.com` | — | Auto |
+| Tipo | Nome | Contenuto | Prio | Proxy | TTL |
+|---|---|---|---|---|---|
+| **CNAME** | **`stickers`** | **`stickers-matchbox.onrender.com`** | — | **Solo DNS** | Auto |
+| TXT | @ | `zoho-verification=zb87474940.zmverify.zoho.eu` | — | Solo DNS | Auto |
+| MX | @ | `mx.zoho.eu` | 10 | Solo DNS | Auto |
+| MX | @ | `mx2.zoho.eu` | 20 | Solo DNS | Auto |
+| MX | @ | `mx3.zoho.eu` | 50 | Solo DNS | Auto |
+| TXT (SPF) | @ | `v=spf1 include:zohomail.eu ~all` | — | Solo DNS | Auto |
+| TXT (DKIM) | `zmail._domainkey` | `v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCRNNXxxp8waQbMNj5Ujh/NZZ3yMCCsVCpmsyDe5r2yBOiXLcqcBln42U33yNavmxCxM0tCJOuzFJQ9FsSgKh7HZlvuRPRHAMZ9BB+Yd9Z3d04k516cog209IYf3DiBv/m38mjSkm23Ijw9hhDXdxTkZr7nsOaz9MNFkMxLGHLnsQIDAQAB` | — | Solo DNS | Auto |
+| TXT (DMARC) | `_dmarc` | `v=DMARC1; p=none; rua=mailto:info@deroarts.com` | — | Solo DNS | Auto |
 
+- **CNAME `stickers` (app):** creato 5 lug 2026 → punta al servizio Render `stickers-matchbox`. **Proxy OFF
+  ("Solo DNS") obbligatorio** (Render gestisce lui SSL/certificato; col proxy Cloudflare la verifica fallisce).
+  Su Render: Custom Domain `stickers.deroarts.com` **Verified**, certificato in emissione automatica.
 - DKIM: Cloudflare mostra `zmail._domainkey` come `zmail._domainkey.deroarts.com` → è corretto.
 - DMARC: `p=none` (solo monitoraggio, non blocca). Da irrigidire in futuro solo dopo consolidamento.
 
@@ -120,12 +127,12 @@ verificare prima se il piano Zoho Free lo consente (eventuale upgrade a Zoho Mai
 - Prima di modificare email/DNS **documentare**: tipo record, nome/host, valore, TTL, priorità (se MX), motivo,
   piattaforma richiedente.
 
-## 8. Cosa servirà quando integreremo Stickers (checklist futura, NON ora)
+## 8. Integrazione Stickers sul dominio — checklist
 
-1. Su **Render**: aggiungere il custom domain `stickers.deroarts.com` (uno solo: deploy unico) → Render
-   fornisce un target CNAME.
-2. Su **Cloudflare DNS**: creare il CNAME col valore dato da Render (modalità proxy on/off secondo
-   quanto richiede Render). Documentare il record come da §7.
+1. **Render: FATTO** ✅ (5 lug) — custom domain `stickers.deroarts.com` aggiunto e **Verified**;
+   certificato HTTPS in emissione automatica.
+2. **Cloudflare DNS: FATTO** ✅ (5 lug) — CNAME `stickers` → `stickers-matchbox.onrender.com`,
+   **Solo DNS** (proxy OFF, richiesto da Render). Documentato in §4.
 3. Aggiornare in **Supabase Auth**: Site URL + Redirect URLs al nuovo dominio `stickers.deroarts.com` (oggi puntano
    a `stickers-matchbox.onrender.com` — vedi `18_PIANO_AUTH.md`).
 4. Aggiornare **CSP/CORS** e eventuali URL hardcoded nell'app al nuovo dominio.
