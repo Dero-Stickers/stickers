@@ -84,8 +84,8 @@ export const GUIDE_STEPS: GuideStep[] = [
     title: "Entra nell'album 👆",
     body: "Eccolo tra i tuoi album: toccalo per aprirlo.",
   },
-  // Dentro l'album: PROVA PRATICA — 3 tocchi reali = ciclo completo dei colori
-  // (torna allo stato iniziale → nessun dato alterato a fine giro).
+  // Dentro l'album: PROVA PRATICA — la cella parte VERDE (già spiegato), poi
+  // 2 tocchi la portano a rosso e grigio (solo visivo, nessun dato alterato).
   {
     id: "sticker-tap",
     kind: "try",

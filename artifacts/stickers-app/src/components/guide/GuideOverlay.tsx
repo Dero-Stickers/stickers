@@ -28,9 +28,9 @@ import { GUIDE_STEPS } from "@/lib/guide/steps";
 // Dialog reale aperto (Radix): usato sia dal watcher long-press sia da ESC.
 const OPEN_DIALOG_SELECTOR =
   '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]';
-// Classi-demo della SINGOLA cella (prova "3 tocchi") — ordine del ciclo visivo.
+// Classi-demo della SINGOLA cella (prova "tocca la figurina") — i 3 colori.
 const CELL_DEMO_CYCLE = ["sg-cell-posseduta", "sg-cell-doppia", "sg-cell-mancante"] as const;
-// Classi-demo dell'INTERA griglia (demo automatica filtri).
+// Classi-demo dell'INTERA griglia (prova long-press sul filtro).
 const GRID_DEMO_CLASSES = ["sg-demo-posseduta", "sg-demo-doppia", "sg-demo-mancante"] as const;
 const GRID_SELECTOR = '[data-guide="guide-sticker-grid"]';
 

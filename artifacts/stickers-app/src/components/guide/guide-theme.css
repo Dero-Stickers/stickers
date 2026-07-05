@@ -38,12 +38,13 @@
    Colori identici a stateColors (StickerCell): posseduta=verde, doppia=rossa,
    mancante=grigia. Applicati/rimossi via classi: l'app torna com'era. */
 
-/* Singola cella (prova "3 tocchi") */
+/* Singola cella (prova "tocca la figurina": verde→rosso→grigio) */
 .sg-cell-posseduta { background: #dcfce7 !important; color: #15803d !important; border-color: #bbf7d0 !important; }
 .sg-cell-doppia    { background: #fee2e2 !important; color: #dc2626 !important; border-color: #fecaca !important; }
 .sg-cell-mancante  { background: #f3f4f6 !important; color: #9ca3af !important; border-color: #e5e7eb !important; }
 
-/* Intera griglia (demo automatica dei filtri) — con piccola transizione */
+/* Intera griglia (prova long-press sul filtro; il passo usa il verde, gli altri
+   due restano per simmetria) — con piccola transizione */
 [data-guide="guide-sticker-grid"] .cv-cell { transition: background-color .35s, color .35s; }
 .sg-demo-posseduta .cv-cell { background: #dcfce7 !important; color: #15803d !important; border-color: #bbf7d0 !important; }
 .sg-demo-doppia    .cv-cell { background: #fee2e2 !important; color: #dc2626 !important; border-color: #fecaca !important; }
