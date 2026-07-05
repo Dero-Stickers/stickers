@@ -16,6 +16,23 @@
 //
 // La guida NON modifica MAI il database: tutto ciò che mostra è visivo e
 // reversibile; a fine guida l'app è ESATTAMENTE com'era.
+//
+// ┌── COME MODIFICARE LA GUIDA (si tocca SOLO questo file) ───────────────────┐
+// │ • CAMBIARE UN TESTO: modifica `title`/`body` del passo. Fine.             │
+// │ • RIORDINARE: sposta gli oggetti nell'array GUIDE_STEPS (l'ordine è       │
+// │   quello di visualizzazione). Nessun indice numerico da aggiornare.       │
+// │ • TOGLIERE UN PASSO: cancella il suo oggetto dall'array.                   │
+// │ • AGGIUNGERE UN PASSO INFORMATIVO (il caso più comune):                    │
+// │     { id: "mio-passo", kind: "info", route: "/album",                     │
+// │       target: "guide-xyz",           // data-guide dell'elemento (opz.)   │
+// │       title: "Titolo 👍", body: "Una frase chiara." }                     │
+// │   → l'elemento va marcato nel JSX con  data-guide="guide-xyz".            │
+// │ • AGGIUNGERE UN PASSO-AZIONE (naviga toccando un pulsante vero):           │
+// │     { id:"vai", kind:"action", route:"/", target:"nav-album",            │
+// │       title:"...", body:"Tocca qui." }  // il target deve avere href      │
+// │ ⚠ Se aggiorni molto i passi, alza la versione del flag "già vista" in      │
+// │   GuideContext (SEEN_KEY_PREFIX v1→v2) per ri-mostrarla a tutti.          │
+// └───────────────────────────────────────────────────────────────────────────┘
 
 export type GuideStepKind = "info" | "action" | "try";
 
