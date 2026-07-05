@@ -34,8 +34,12 @@ export interface GuideStep {
   /** true = rotta DINAMICA (album/match aperti dal passo precedente): il
    *  motore NON forza la navigazione via `route`. */
   dynamicRoute?: boolean;
-  /** Solo kind "try": avanza dopo N tocchi reali sul target. */
+  /** Solo kind "try": numero di tocchi della prova sul target. */
   taps?: number;
+  /** Solo kind "try"+taps: testo del fumetto DOPO ogni tocco (spiega il colore
+   *  appena mostrato). Dopo l'ULTIMO tocco l'avanzamento è MANUALE (tocca lo
+   *  schermo), così l'utente ha il tempo di leggere. */
+  tapPhases?: { body: string }[];
   /** Solo kind "try": avanza quando il dialog aperto dall'utente viene chiuso. */
   waitDialogClose?: boolean;
 }
@@ -50,14 +54,25 @@ export const GUIDE_STEPS: GuideStep[] = [
     title: "I tuoi Album 📖",
     body: "Tocca “Album”.",
   },
-  // → apri il primo album (freccia sulla card)
+  // PROVA SIMULATA — aggiungi un album dai "Disponibili" (tab forzato dalla
+  // guida; card demo col ➕, vedi guide-demo.ts). Nessuna API: tocco bloccato.
+  {
+    id: "add-album",
+    kind: "try",
+    taps: 1,
+    route: "/album",
+    target: "guide-add-album",
+    title: "Aggiungi un album ➕",
+    body: "Da “Disponibili” scegli un album e tocca ➕ per averlo nella collezione.",
+  },
+  // → apri l'album di prova (tab "I miei album" forzato; riga demo in cima)
   {
     id: "open-album",
     kind: "action",
     route: "/album",
     target: "guide-first-album",
     title: "Entra nell'album 👆",
-    body: "Tocca l'album evidenziato.",
+    body: "Eccolo tra i tuoi album: toccalo per aprirlo.",
   },
   // Dentro l'album: PROVA PRATICA — 3 tocchi reali = ciclo completo dei colori
   // (torna allo stato iniziale → nessun dato alterato a fine giro).
@@ -69,7 +84,14 @@ export const GUIDE_STEPS: GuideStep[] = [
     dynamicRoute: true,
     target: "guide-first-sticker",
     title: "Segna le figurine 🎯",
-    body: "Tocca la figurina evidenziata 3 volte: mancante → posseduta → doppia.",
+    body: "Ogni tocco cambia lo stato. Prova: tocca la figurina evidenziata.",
+    // Dopo ogni tocco il fumetto spiega il colore appena apparso; sul grigio
+    // (ultimo) si resta finché l'utente non tocca lo schermo per continuare.
+    tapPhases: [
+      { body: "🟩 Verde: le figurine che hai già trovato. Tocca ancora." },
+      { body: "🟥 Rosso: le tue doppie, pronte per lo scambio. Tocca ancora." },
+      { body: "⬜ Grigio: le mancanti, quelle da trovare." },
+    ],
   },
   // PROVA PRATICA — long-press reale: si apre il dettaglio; chiuso = si avanza.
   {

@@ -78,10 +78,12 @@ export function GuideOverlay() {
         allowClose: false,
         showButtons: [], // NIENTE pulsanti nel fumetto
         popoverClass: "sticker-guide",
-        // Tocco sul VELO: nei passi info avanza (è il "tocca ovunque");
-        // nei passi azione non fa nulla (si avanza toccando il pulsante vero).
+        // Tocco sul VELO: nei passi info avanza ("tocca ovunque"); nei passi
+        // try avanza SOLO a prova completata (lettura ultimo colore); nei passi
+        // azione non fa nulla (si avanza toccando il pulsante vero).
         overlayClickBehavior: () => {
-          if (stepRef.current?.kind === "info") advance();
+          const k = stepRef.current?.kind;
+          if (k === "info" || (k === "try" && tryDoneRef.current)) advance();
         },
       });
     }
@@ -135,9 +137,13 @@ export function GuideOverlay() {
   // resto): tocco sul FUMETTO nei passi info → avanza; tocco sul TARGET nei
   // Contatore tocchi per i passi "try" (si azzera a ogni passo) + pulizia di
   // eventuali colori-demo rimasti sulle celle (la guida ripristina SEMPRE).
+  // `tryDoneRef`: prova a fasi completata → si resta sull'ultimo colore finché
+  // l'utente non tocca lo schermo (avanzamento MANUALE, tempo di leggere).
   const tapsRef = useRef(0);
+  const tryDoneRef = useRef(false);
   useEffect(() => {
     tapsRef.current = 0;
+    tryDoneRef.current = false;
     document
       .querySelectorAll(CELL_DEMO_CYCLE.map((c) => `.${c}`).join(","))
       .forEach((el) => el.classList.remove(...CELL_DEMO_CYCLE));
@@ -158,20 +164,35 @@ export function GuideOverlay() {
       }
       if (step.kind === "try" && step.taps) {
         // PROVA PRATICA SIMULATA: il tocco NON arriva all'app (preventDefault →
-        // ZERO scritture DB). La cella cambia colore solo VISIVAMENTE, un ciclo
-        // completo: posseduta → doppia → mancante; all'ultimo tocco si
-        // ripristina l'aspetto originale e si avanza.
+        // ZERO scritture DB). La cella cambia colore solo VISIVAMENTE
+        // (verde → rosso → grigio) e il fumetto spiega OGNI colore (tapPhases).
+        e.preventDefault(); e.stopPropagation();
+        // Prova completata: si resta sull'ultimo colore finché l'utente non
+        // tocca lo schermo → avanzamento MANUALE (tempo di leggere il grigio).
+        if (tryDoneRef.current) { advance(); return; }
         const cell = t.closest(`[data-guide="${step.target}"]`) as HTMLElement | null;
-        if (cell) {
-          e.preventDefault(); e.stopPropagation();
-          tapsRef.current += 1;
-          const cls = CELL_DEMO_CYCLE[(tapsRef.current - 1) % CELL_DEMO_CYCLE.length];
-          cell.classList.remove(...CELL_DEMO_CYCLE);
-          cell.classList.add(cls);
-          if (tapsRef.current >= (step.taps ?? 1)) {
-            // ultimo tocco: mostra l'ultimo colore un attimo, poi ripristina
-            setTimeout(() => { cell.classList.remove(...CELL_DEMO_CYCLE); advance(); }, 700);
-          }
+        if (!cell) return; // prima della fine contano solo i tocchi sulla figurina
+        tapsRef.current += 1;
+        const idx = Math.min(tapsRef.current, step.taps) - 1;
+        cell.classList.remove(...CELL_DEMO_CYCLE);
+        cell.classList.add(CELL_DEMO_CYCLE[idx % CELL_DEMO_CYCLE.length]);
+        const last = tapsRef.current >= step.taps;
+        const phase = step.tapPhases?.[idx];
+        if (phase) {
+          if (last) tryDoneRef.current = true; // niente auto-avanzamento
+          getDrv().highlight({
+            element: cell,
+            disableActiveInteraction: false,
+            popover: {
+              title: step.title,
+              description: `<p class="sg-body">${phase.body}</p><p class="sg-hint">${
+                last ? "Tocca lo schermo per continuare" : "Provaci ora 👇"
+              }</p>`,
+            },
+          });
+        } else if (last) {
+          // prova senza fasi (es. ➕ aggiungi album): breve feedback e avanti
+          setTimeout(() => { cell.classList.remove(...CELL_DEMO_CYCLE); advance(); }, 700);
         }
         return;
       }

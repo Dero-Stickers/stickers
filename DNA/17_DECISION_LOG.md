@@ -18,7 +18,12 @@
   **demo** (automatica: i 3 filtri uno alla volta con griglia colorata, poi ripristino). **ZERO scritture DB
   verificate in test** (0 POST/PATCH durante la guida, 0 classi residue: l'app torna com'era). Avvio: PER ORA a
   ogni refresh, dopo il cookie banner (altrimenti copre la navbar); per il rilascio passare a
-  `!hasSeenGuide(userId)`. Riapribile da Profilo → "Guida Stickers". Dettagli anti-regressione (doppio
+  `!hasSeenGuide(userId)`. Riapribile da Profilo → "Guida Stickers". **[5 lug] Album di prova**: la sezione
+  Album usa uno stato-demo standard per QUALSIASI account (nuovo = 0 album): passo "➕ aggiungi" simulato dai
+  Disponibili, riga demo in "I miei album", dettaglio `/album/-1` da `guide-demo.ts` (60 figurine, zero API);
+  i 3 tocchi spiegano i colori (verde=trovate, rosso=doppie, grigio=mancanti) con avanzamento MANUALE
+  sull'ultimo. Verificato su entrambi gli scenari (stub API utente nuovo): flusso identico, 0 scritture.
+  Dettagli anti-regressione (doppio
   avanzamento, ESC in capture, overlayClickBehavior) in `DNA/18_GUIDA_INTERATTIVA.md`.
 - **Profili-prova · ripristinata eliminazione dal dettaglio [4 lug]** — la rimozione del singolo profilo-prova
   era sparita quando si è tolto il vecchio bottone "Scambio fatto" (unificazione col flusso reale). Ripristinata

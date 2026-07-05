@@ -34,6 +34,7 @@ import type { UserSticker } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { BulkStateDialog, type BulkState } from "@/components/album/BulkStateDialog";
 import { StickerCell, stateColors, type StickerState } from "@/components/album/StickerCell";
+import { isGuideDemoAlbumId, GUIDE_DEMO_ALBUM, buildGuideDemoStickers } from "@/lib/guide/guide-demo";
 
 type FilterType = "tutte" | "mancanti" | "possedute" | "doppie";
 
@@ -60,10 +61,20 @@ export function AlbumDetail() {
   const chipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chipLongPressed = useRef(false);
 
-  const { data: userAlbums } = useGetUserAlbums();
-  const albumInfo = userAlbums?.find(a => a.id === albumId);
+  // ALBUM DI PROVA della guida (id negativo): dati demo locali, NESSUNA chiamata
+  // API (hook disabilitato). Le interazioni reali sono disattivate più sotto:
+  // durante la guida i gesti sono simulati dal motore (vedi GuideOverlay).
+  const isGuideDemo = isGuideDemoAlbumId(albumId);
 
-  const { data: stickers, isLoading } = useGetUserAlbumStickers(albumId);
+  const { data: userAlbums } = useGetUserAlbums();
+  const albumInfo = isGuideDemo ? GUIDE_DEMO_ALBUM : userAlbums?.find(a => a.id === albumId);
+
+  const { data: apiStickers, isLoading: apiLoading } = useGetUserAlbumStickers(albumId, {
+    query: { enabled: !isGuideDemo, queryKey: getGetUserAlbumStickersQueryKey(albumId) },
+  });
+  const demoStickers = useMemo(() => (isGuideDemo ? buildGuideDemoStickers() : null), [isGuideDemo]);
+  const stickers = isGuideDemo ? demoStickers! : apiStickers;
+  const isLoading = isGuideDemo ? false : apiLoading;
 
   const stickersKey = getGetUserAlbumStickersQueryKey(albumId);
   const updateState = useUpdateUserStickerState({
@@ -123,6 +134,7 @@ export function AlbumDetail() {
   // ri-renderizzare le celle non cambiate. `mutate` di react-query è stabile.
   const { mutate: mutateStickerState } = updateState;
   const tapSticker = useCallback((s: UserSticker) => {
+    if (albumId < 0) return; // album di prova della guida: nessuna scrittura
     const nextState = NEXT_STATE[(s.state ?? "mancante") as StickerState];
     mutateStickerState({ albumId, stickerId: s.stickerId, data: { state: nextState } });
   }, [albumId, mutateStickerState]);
@@ -332,15 +344,17 @@ export function AlbumDetail() {
           </div>
         ))}
 
-        <div className="pt-6 pb-2">
-          <Button
-            variant="outline"
-            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
-            onClick={() => setShowRemoveDialog(true)}
-          >
-            Rimuovi album dalla collezione
-          </Button>
-        </div>
+        {!isGuideDemo && (
+          <div className="pt-6 pb-2">
+            <Button
+              variant="outline"
+              className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={() => setShowRemoveDialog(true)}
+            >
+              Rimuovi album dalla collezione
+            </Button>
+          </div>
+        )}
       </div>
 
       <Dialog open={!!selectedSticker} onOpenChange={() => setSelectedSticker(null)}>
@@ -364,7 +378,8 @@ export function AlbumDetail() {
                     variant={selectedSticker.state === st ? "default" : "outline"}
                     className={`flex-1 capitalize text-xs ${selectedSticker.state === st ? "bg-primary text-primary-foreground" : ""}`}
                     onClick={() => {
-                      updateState.mutate({ albumId, stickerId: selectedSticker.stickerId, data: { state: st } });
+                      // Album di prova della guida: il dettaglio è read-only.
+                      if (!isGuideDemo) updateState.mutate({ albumId, stickerId: selectedSticker.stickerId, data: { state: st } });
                       setSelectedSticker(null);
                     }}
                   >
@@ -374,7 +389,7 @@ export function AlbumDetail() {
               </div>
               {/* Solo per le figurine che MANCANO: trova chi le ha come doppia.
                   Apre la ricerca mirata già pre-compilata su questa figurina. */}
-              {(selectedSticker.state ?? "mancante") === "mancante" && (
+              {(selectedSticker.state ?? "mancante") === "mancante" && !isGuideDemo && (
                 <Link href={`/match?tab=search&album=${albumId}&sticker=${selectedSticker.stickerId}`}>
                   <Button
                     size="sm"
@@ -396,7 +411,7 @@ export function AlbumDetail() {
         target={bulkTarget}
         pending={bulkSet.isPending}
         onOpenChange={(open) => { if (!open) setBulkTarget(null); }}
-        onConfirm={(target) => bulkSet.mutate({ albumId, data: { state: target } })}
+        onConfirm={(target) => { if (!isGuideDemo) bulkSet.mutate({ albumId, data: { state: target } }); else setBulkTarget(null); }}
       />
 
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>

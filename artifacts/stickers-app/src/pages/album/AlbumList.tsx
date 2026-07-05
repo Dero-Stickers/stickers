@@ -26,6 +26,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { ALBUM_CATEGORIES } from "@workspace/api-client-react";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { useGuideStepId } from "@/lib/guide/GuideContext";
+import { GUIDE_DEMO_ALBUM } from "@/lib/guide/guide-demo";
 import worldCupIcon from "/world-cup.png?url";
 import euroCupIcon from "/coppa-europei.png?url";
 import scudettoIcon from "/scudetto.svg?url";
@@ -84,6 +86,19 @@ export function AlbumList() {
 
   const { data: myAlbums, isLoading: loadingMy } = useGetUserAlbums();
   const { data: allAlbums, isLoading: loadingAll } = useListAlbums();
+
+  // GUIDA interattiva: durante i passi della sezione Album la pagina mostra uno
+  // stato-demo STANDARD, uguale per ogni account (nuovo o veterano) e mai
+  // salvato: card "Album di prova" col ➕ in Disponibili (passo add-album) e
+  // riga demo in cima a "I miei album" (passo open-album). Il tab viene portato
+  // su quello coerente col passo. Tutto sparisce a guida chiusa.
+  const guideStepId = useGuideStepId();
+  const guideAddDemo = guideStepId === "add-album";
+  const guideOpenDemo = guideStepId === "open-album";
+  useEffect(() => {
+    if (guideAddDemo) setActiveTab("available");
+    else if (guideOpenDemo) setActiveTab("my");
+  }, [guideAddDemo, guideOpenDemo]);
 
   // Al primo caricamento, se l'utente non ha ancora album, apri direttamente
   // su "Disponibili" (la scheda "I miei album" vuota non è utile come default).
@@ -226,20 +241,39 @@ export function AlbumList() {
         {activeTab === "my" && (
           <div className="grid gap-2 md:grid-cols-2 items-start">
             {loadingMy && [1, 2].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
-            {!loadingMy && (myAlbums?.length ?? 0) === 0 && (
+            {/* Riga ALBUM DI PROVA (solo durante il passo-guida "open-album"):
+                stessa card delle righe reali, in cima, per QUALSIASI account. */}
+            {guideOpenDemo && (
+              <Card className="shadow-sm">
+                <CardContent className="p-0">
+                  <div className="flex items-center">
+                    <Link
+                      href={`/album/${GUIDE_DEMO_ALBUM.id}`}
+                      data-guide="guide-first-album"
+                      className="flex flex-1 min-w-0 items-center gap-3 px-3 py-5 cursor-pointer"
+                    >
+                      <CategoryIcon category={GUIDE_DEMO_ALBUM.category} h="h-7" w="w-8" />
+                      <p className="font-semibold text-foreground truncate min-w-0 flex-1">{GUIDE_DEMO_ALBUM.title}</p>
+                      <span className="text-primary font-bold text-sm shrink-0">{GUIDE_DEMO_ALBUM.completionPercent}%</span>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {!loadingMy && !guideOpenDemo && (myAlbums?.length ?? 0) === 0 && (
               <div className="text-center py-12 text-muted-foreground md:col-span-2">
                 <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">Nessun album aggiunto</p>
                 <p className="text-sm mt-1">Vai su "Disponibili" per aggiungere il tuo primo album</p>
               </div>
             )}
-            {filteredMyAlbums.map((ua, i) => (
+            {filteredMyAlbums.map(ua => (
               <Card key={ua.id} className="shadow-sm">
                 <CardContent className="p-0">
                   <div className="flex items-center">
                     {/* py più ampio: card alte e spaziose come "Disponibili" pur
                         restando una riga sola (nessun contenuto aggiunto). */}
-                    <Link href={`/album/${ua.id}`} data-guide={i === 0 ? "guide-first-album" : undefined} className="flex flex-1 min-w-0 items-center gap-3 px-3 py-5 cursor-pointer">
+                    <Link href={`/album/${ua.id}`} className="flex flex-1 min-w-0 items-center gap-3 px-3 py-5 cursor-pointer">
                       <CategoryIcon category={ua.category} h="h-7" w="w-8" />
                       <p className="font-semibold text-foreground truncate min-w-0 flex-1">{ua.title}</p>
                       <span className="text-primary font-bold text-sm shrink-0">{ua.completionPercent}%</span>
@@ -260,6 +294,29 @@ export function AlbumList() {
 
         {activeTab === "available" && (
           <div className="grid gap-2 md:grid-cols-2 items-start">
+            {/* Card ALBUM DI PROVA col ➕ (solo durante il passo-guida "add-album"):
+                stessa card delle disponibili reali; il tocco sul ➕ è SIMULATO
+                dalla guida (nessuna API), serve solo a far provare il gesto. */}
+            {guideAddDemo && (
+              <Card className="shadow-sm">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-3">
+                    <CategoryIcon category={GUIDE_DEMO_ALBUM.category} h="h-7" w="w-8" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-foreground text-sm truncate">{GUIDE_DEMO_ALBUM.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{GUIDE_DEMO_ALBUM.totalStickers} figurine</p>
+                    </div>
+                    <Button
+                      aria-label={`Aggiungi ${GUIDE_DEMO_ALBUM.title}`}
+                      data-guide="guide-add-album"
+                      className="h-11 w-11 shrink-0 rounded-full p-0 bg-accent text-accent-foreground hover:bg-accent/90"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {loadingAll && [1, 2].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
             {!loadingAll && filteredAvailable.length === 0 && (
               <div className="text-center py-12 text-muted-foreground md:col-span-2">

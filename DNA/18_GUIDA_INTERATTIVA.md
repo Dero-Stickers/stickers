@@ -24,8 +24,9 @@ match**, facendo VEDERE le funzioni (anche i trucchi nascosti).
 
 | File | Ruolo | Quando toccarlo |
 |---|---|---|
-| `src/lib/guide/steps.ts` | **Config dei passi** (testi, target, tipo, rotta) | Aggiungere/togliere/modificare passi |
-| `src/lib/guide/GuideContext.tsx` | **Stato** (attiva? passo? flag "già vista" per-utente) | Raramente |
+| `src/lib/guide/steps.ts` | **Config dei passi** (testi, target, tipo, rotta, tapPhases) | Aggiungere/togliere/modificare passi |
+| `src/lib/guide/GuideContext.tsx` | **Stato** (attiva? passo? flag "già vista"; `useGuideStepId` per le pagine) | Raramente |
+| `src/lib/guide/guide-demo.ts` | **Album di prova** (id -1, card + 60 figurine demo deterministiche) | Cambiare i dati demo |
 | `src/components/guide/GuideOverlay.tsx` | **Motore** (wrapper driver.js: highlight, avanzamento, prove, demo) | Raramente |
 | `src/components/guide/guide-theme.css` | **Stile fumetto** (palette) + classi-demo colori | Ritocchi visivi |
 
@@ -39,26 +40,43 @@ Montaggio in `src/App.tsx`: `GuideGate` (userId) → `GuideProvider` →
 - `action` → freccia sul pulsante REALE; si avanza toccando QUEL pulsante
   (naviga davvero: la guida intercetta il click e fa `next()` PRIMA di
   `setLocation(href)` — deterministico).
-- `try` → prova pratica SIMULATA dell'utente: `taps: N` (N tocchi → la cella
-  cambia colore SOLO visivamente, ciclo completo poi ripristino) oppure
-  `waitDialogClose: true` (long-press reale → si apre il dettaglio read-only;
-  alla chiusura si avanza; il velo driver viene tolto mentre il dialog è aperto
-  perché starebbe sopra, z-index).
+- `try` → prova pratica SIMULATA dell'utente: `taps: N` (tocchi → la cella
+  cambia colore SOLO visivamente). Con `tapPhases` il fumetto spiega OGNI colore
+  (verde=trovate, rosso=doppie, grigio=mancanti) e dopo l'ULTIMO tocco
+  l'avanzamento è **MANUALE** (tocca lo schermo: tempo di leggere). Senza
+  tapPhases (es. ➕ aggiungi album): feedback breve e avanti da solo. Oppure
+  `waitDialogClose: true` (long-press reale → dettaglio read-only; alla chiusura
+  si avanza; il velo driver viene tolto mentre il dialog è aperto, z-index).
 - `demo` → dimostrazione AUTOMATICA (filtri bulk): evidenzia i 3 filtri uno
   alla volta colorando TUTTA la griglia (classi CSS `sg-demo-*`), poi ripristina
   e avanza. Tocchi ignorati durante la demo.
 
-## Percorso attuale (10 passi)
+## Album di prova (stato standard per QUALSIASI account)
 
-nav Album → apri primo album → prova 3 tocchi figurina → prova long-press
-(dettaglio) → demo 3 filtri → nav Match → apri primo match (PROVA) →
-Dai/Ricevi → bottone chat → Fatto.
+La sezione Album della guida NON dipende dall'account (un nuovo utente ha 0
+album): durante i passi `add-album`/`open-album`, `AlbumList` legge
+`useGuideStepId()` e mostra uno stato-demo — tab forzato su Disponibili con la
+card "Album di prova" + ➕ (anchor `guide-add-album`, tocco simulato senza API),
+poi tab "I miei album" con la riga demo in cima (anchor `guide-first-album`,
+href `/album/-1`). `AlbumDetail` con id negativo usa i dati di `guide-demo.ts`
+(hook API disabilitati, griglia 60 figurine 30/15/15 = 75%) e disattiva ogni
+scrittura (tap, dialog, bulk, rimozione nascosta). Tutto sparisce a guida chiusa.
+Verificato con entrambi gli scenari (account pieno e utente nuovo via stub API):
+flusso IDENTICO, 0 scritture, 0 residui.
+
+## Percorso attuale (11 passi)
+
+nav Album → ➕ aggiungi album (Disponibili, simulato) → apri l'album di prova →
+prova 3 tocchi figurina (fumetto spiega i 3 colori, avanzo manuale sul grigio) →
+prova long-press (dettaglio) → demo 3 filtri → nav Match → apri primo match
+(PROVA) → Dai/Ricevi → bottone chat → Fatto.
 
 ## Aggancio (`data-guide`)
 
 Anchor sugli elementi CLICCABILI (sul `<Link>`, non sulla Card che lo avvolge):
-`nav-album`/`nav-match`/… (navbar, MobileLayout) · `guide-first-album`
-(AlbumList) · `guide-first-sticker` (StickerCell via prop) · `guide-filters` +
+`nav-album`/`nav-match`/… (navbar, MobileLayout) · `guide-add-album` (➕ card
+demo Disponibili) e `guide-first-album` (riga demo "I miei album") in AlbumList ·
+`guide-first-sticker` (StickerCell via prop) · `guide-filters` +
 `guide-filter-<key>` + `guide-sticker-grid` (AlbumDetail) · `guide-first-match`
 (MatchCard via prop) · `guide-trade-sections` + `guide-chat-button` (MatchDetail).
 

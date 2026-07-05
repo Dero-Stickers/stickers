@@ -91,3 +91,11 @@ export function useGuide(): GuideContextValue {
   if (!ctx) throw new Error("useGuide deve stare dentro <GuideProvider>");
   return ctx;
 }
+
+// Id del passo corrente (null se la guida non è attiva). Serve alle pagine che
+// mostrano lo stato-demo della guida (es. AlbumList: album di prova, tab forzato)
+// senza accoppiarle all'indice numerico dei passi.
+export function useGuideStepId(): string | null {
+  const { active, stepIndex } = useGuide();
+  return active ? (GUIDE_STEPS[stepIndex]?.id ?? null) : null;
+}
