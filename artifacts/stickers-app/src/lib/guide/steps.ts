@@ -250,8 +250,8 @@ export const GUIDE_STEPS: GuideStep[] = [
     target: "guide-tab-search",
     side: "bottom",
     align: "end",
-    title: "Cerca figurina {search}",
-    body: "Cerchi UNA figurina precisa?<br>Qui trovi subito chi ce l'ha.",
+    title: "Cerca figurina",
+    body: "Cerchi UNA figurina precisa?<br>Qui trovi subito chi ce l'ha.<br>La trovi anche in Home, con l'icona {search}",
   },
   // → apri il primo match (freccia sulla card)
   {
