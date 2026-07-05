@@ -108,6 +108,13 @@ const login: RequestHandler = async (req, res) => {
     // Normalize nickname (lowercase + trim) so users typing it with capitals
     // still match. Legacy DB rows may have mixed case so we compare with lower().
     const nickname = LoginNicknameSchema.parse(body.nickname);
+    // Validazione formato PIN anche in INGRESSO al login (oltre a changeCredentials):
+    // il PIN è solo numerico 4-6 cifre. Rifiuta subito input anomali prima di
+    // arrivare a scrypt (uniforma le regole, riduce input malformati).
+    if (!/^\d{4,6}$/.test(body.pin)) {
+      res.status(401).json({ error: "INVALID_CREDENTIALS", message: "Nickname o PIN non corretti." });
+      return;
+    }
 
     const ip = clientIp(req);
     const rateKey = `login:${ip}:${nickname}`;

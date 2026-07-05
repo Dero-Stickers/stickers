@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { existsSync } from "fs";
 import router from "./routes";
+import { rateLimitGlobal } from "./middlewares/rateLimitGlobal";
 import { logger } from "./lib/logger";
 import { startKeepAlive } from "./keepalive";
 
@@ -115,6 +116,8 @@ app.use(compression());
 app.use(express.json({ limit: "256kb" }));
 app.use(express.urlencoded({ extended: true, limit: "256kb" }));
 
+// Freno anti-flood globale per IP (sopra ai limiti mirati su login/ecc.).
+app.use("/api", rateLimitGlobal);
 app.use("/api", router);
 
 // Keep Supabase Free tier alive with a lightweight ping every 12 hours
