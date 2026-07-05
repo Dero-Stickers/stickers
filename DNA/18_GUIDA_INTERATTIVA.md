@@ -56,10 +56,13 @@ match**, facendo VEDERE le funzioni (anche i trucchi nascosti).
 
 **Passo finale = MODALE, non fumetto**: l'ultimo passo `done` NON usa driver.js;
 il motore mostra `GuideFinishDialog` (Radix Dialog centrale): logo Stickers,
-"Benvenuto tra noi", nota "app gratis + contributo" e bottone PayPal "Dona ora"
-(PREDISPOSTO, non collegato: `handleDonate` mostra un ringraziamento). Chiuso →
-`finish()`. **Effetto `magic`** (solo `go-album`): la classe `.sg-magic` fa
-materializzare titolo+testo (blur→fuoco + sheen dorato), solo CSS.
+titolo **"Welcome in Stickers!"**, nota "app gratis + contributo" e bottone PayPal
+**"Supporta con"** (PREDISPOSTO, non collegato: `handleDonate` mostra un
+ringraziamento). Il bottone in fondo **"Inizia! Trova il tuo primo Match"** chiude
+la guida E porta in Home (`setLocation("/")`, non resta sull'ultima pagina/chat).
+Chiuso → `finish()`. **Effetto `magic`** (solo `go-album`): la classe `.sg-magic`
+fa comparire titolo+testo con un **fade-in ritardato** (~0,7s dopo il fumetto
+vuoto, prima il titolo poi la descrizione) — semplice, solo CSS, niente blur/glow.
 **Posizionamento**: campi `side`/`align` per passo forzano il lato del fumetto
 quando l'auto-scelta di driver.js coprirebbe il target (es. card match: `side: top`).
 
@@ -119,10 +122,12 @@ aggiungi col ➕ (simulato) → apri l'album (tab "I miei album" illuminato) →
 2 tocchi figurina (verde→rosso→grigio, pallini-colore, avanzo manuale; il
 long-press è disattivato in questo passo) → long-press figurina 011 verde
 (dettaglio READ-ONLY: solo la X chiude) → 3 filtri bulk Mie/Doppie/Mancanti
-(leggo→tengo premuto→guardo→tocco, per fase) → nav Match → spiegazione 3 filtri
-Match (Vicini/Migliori/Cerca figurina) → apri primo match → Dai&Ricevi
-(scambio smart multi-album) → **apri la chat** → scrivi · conferma scambio (✓) ·
-segnala · avviso sicurezza → **MODALE finale** (logo + donazione).
+(leggo→tengo premuto→guardo→tocco, per fase) → nav Match → **Vicini a te** →
+**Raggio di ricerca** (illumina la barra `guide-match-radius`, "trascina per
+decidere quanto lontano") → **Migliori match** → **Cerca figurina** (la lente è
+nel testo, non nel titolo; ricorda che c'è anche in Home) → apri primo match →
+Dai&Ricevi (scambio smart multi-album) → **apri la chat** → scrivi · conferma
+scambio (✓) · segnala · avviso sicurezza → **MODALE finale** (logo + donazione).
 
 ## Aggancio (`data-guide`)
 
@@ -130,7 +135,9 @@ Anchor sugli elementi CLICCABILI (sul `<Link>`, non sulla Card che lo avvolge):
 `nav-album`/`nav-match`/… (navbar, MobileLayout) · `guide-add-album` (➕ card
 demo Disponibili) e `guide-first-album` (riga demo "I miei album") in AlbumList ·
 `guide-first-sticker` (StickerCell via prop) · `guide-filters` +
-`guide-filter-<key>` + `guide-sticker-grid` (AlbumDetail) · `guide-first-match`
+`guide-filter-<key>` + `guide-sticker-grid` (AlbumDetail) · `guide-tab-nearby`/
+`guide-tab-best`/`guide-tab-search` + `guide-match-radius` (barra del raggio,
+visibile solo col tab "nearby" attivo) (MatchList) · `guide-first-match`
 (MatchCard via prop) · `guide-trade-sections` + `guide-chat-button` (MatchDetail).
 
 ## Avvio e "già vista"

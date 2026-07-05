@@ -7,6 +7,16 @@
 
 ## 2026-07
 
+- **Guida · rifiniture testi/effetti + Home [5 lug]** — comparsa del primo fumetto = **fade-in semplice
+  ritardato** (~0,7s dopo il fumetto vuoto, prima titolo poi testo); rimossi gli effetti "polvere magica"/
+  blur/glow perché tremolanti. Aggiunto step **"Raggio di ricerca"** (illumina la barra `guide-match-radius`)
+  tra "Vicini a te" e "Migliori match", e tolto il refuso "vicini a te" ripetuto tra titolo e testo. Step
+  "Cerca figurina": lente spostata dal titolo al testo + rimando alla stessa ricerca in Home. Modale finale:
+  titolo **"Welcome in Stickers!"**, box supporto ("Stickers è appena nata! …"), bottone **"Supporta con"
+  PayPal** (ancora non collegato), bottone **"Inizia! Trova il tuo primo Match"** che chiude la guida e apre
+  la **Home** (`setLocation("/")`). **Home**: box "La tua collezione" ora **sempre visibile** — a 0 album mostra
+  i contatori a 0/0% con l'invito "Nessun album presente — clicca qui per aggiungerne uno" (link a /album);
+  unificati i due rami (niente più riquadro minimale separato) per un layout stabile. Vedi `18_GUIDA_INTERATTIVA.md`.
 - **Guida · copertura completa Album→Match→Chat + modale finale [5 lug]** — la guida ora copre TUTTA l'app:
   spiegazione dei 3 filtri Match (Vicini/Migliori/Cerca figurina, icona lente {search}), entra nella CHAT e
   spiega scrivi/conferma-scambio(✓)/segnala/avviso-sicurezza, poi chiude con un **MODALE centrale**

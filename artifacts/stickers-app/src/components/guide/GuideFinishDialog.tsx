@@ -89,7 +89,7 @@ export function GuideFinishDialog({
         </div>
 
         <div className="flex flex-col gap-2.5 pt-1">
-          {/* Bottone PayPal "Dona ora" classico (oro), riconoscibile. Per ora
+          {/* Bottone PayPal "Supporta con" classico (oro), riconoscibile. Per ora
               NON collegato: al tocco un ringraziamento (vedi handleDonate). */}
           <button
             onClick={handleDonate}
