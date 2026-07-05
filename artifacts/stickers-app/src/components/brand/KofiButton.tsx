@@ -84,9 +84,9 @@ export function KofiButton({ label = KOFI_LABEL, className = "" }: { label?: str
           <DialogHeader className="items-center">
             <DialogTitle className="text-center">Fai sapere che sei tu ❤️</DialogTitle>
             <DialogDescription className="text-center">
-              Nel prossimo step
+              Copia il tuo nickname
               <br />
-              incolla il tuo nickname nel messaggio,
+              e incollalo quando fai la donazione,
               <br />
               così sappiamo che la donazione arriva da te.
             </DialogDescription>
