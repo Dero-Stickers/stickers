@@ -72,7 +72,16 @@ export function AdminUsers() {
   return (
     <AdminPage
       title="Gestione Utenti"
-      subtitle="Visualizza e gestisci gli utenti registrati"
+      subtitle={
+        <a
+          href="https://ko-fi.com/manage/supportreceived?filter=all&purchaseSource=Received&searchKey="
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          Vedi le donazioni ricevute su Ko-fi ↗
+        </a>
+      }
       actions={
         <div className="bg-primary text-primary-foreground text-sm font-bold px-3 py-1.5 rounded-lg">
           {isLoading ? "..." : `${filteredUsers.length} utenti`}
