@@ -41,9 +41,10 @@ Montaggio in `src/App.tsx`: `GuideGate` (userId) → `GuideProvider` →
   (naviga davvero: la guida intercetta il click e fa `next()` PRIMA di
   `setLocation(href)` — deterministico).
 - `try` → prova pratica SIMULATA dell'utente: `taps: N` (tocchi → la cella
-  cambia colore SOLO visivamente). Con `tapPhases` il fumetto spiega OGNI colore
-  (verde=trovate, rosso=doppie, grigio=mancanti) e dopo l'ULTIMO tocco
-  l'avanzamento è **MANUALE** (tocca lo schermo: tempo di leggere). Senza
+  cambia colore SOLO visivamente). La cella parte col suo colore reale (001 =
+  verde), già spiegato nel `body` iniziale; ogni `tapPhases[i]` porta la cella al
+  suo `color` e aggiorna il testo (rosso=doppie, grigio=mancanti). Dopo l'ULTIMO
+  tocco l'avanzamento è **MANUALE** (tocca lo schermo: tempo di leggere). Senza
   tapPhases (es. ➕ aggiungi album): feedback breve e avanti da solo. Oppure
   `waitDialogClose: true` (long-press reale → dettaglio read-only; la guida
   EVIDENZIA il dialog con l'istruzione `dialogTitle`/`dialogBody` "chiudi per

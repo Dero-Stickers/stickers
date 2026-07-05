@@ -174,11 +174,12 @@ export function GuideOverlay() {
         if (!cell) return; // prima della fine contano solo i tocchi sulla figurina
         tapsRef.current += 1;
         const idx = Math.min(tapsRef.current, step.taps) - 1;
-        cell.classList.remove(...CELL_DEMO_CYCLE);
-        cell.classList.add(CELL_DEMO_CYCLE[idx % CELL_DEMO_CYCLE.length]);
         const last = tapsRef.current >= step.taps;
         const phase = step.tapPhases?.[idx];
         if (phase) {
+          // colore della FASE (il verde iniziale è già sulla cella demo)
+          cell.classList.remove(...CELL_DEMO_CYCLE);
+          cell.classList.add(phase.color);
           if (last) tryDoneRef.current = true; // niente auto-avanzamento
           getDrv().highlight({
             element: cell,

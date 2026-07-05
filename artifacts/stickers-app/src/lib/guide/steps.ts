@@ -36,10 +36,12 @@ export interface GuideStep {
   dynamicRoute?: boolean;
   /** Solo kind "try": numero di tocchi della prova sul target. */
   taps?: number;
-  /** Solo kind "try"+taps: testo del fumetto DOPO ogni tocco (spiega il colore
-   *  appena mostrato). Dopo l'ULTIMO tocco l'avanzamento è MANUALE (tocca lo
-   *  schermo), così l'utente ha il tempo di leggere. */
-  tapPhases?: { body: string }[];
+  /** Solo kind "try"+taps: cosa mostrare DOPO ogni tocco. `color` = classe del
+   *  colore-demo applicato alla cella; `body` = testo del fumetto (spiega quel
+   *  colore). Dopo l'ULTIMO tocco l'avanzamento è MANUALE (tocca lo schermo),
+   *  così l'utente ha il tempo di leggere. Il colore INIZIALE (prima dei tocchi)
+   *  è quello reale della cella demo. */
+  tapPhases?: { color: "sg-cell-posseduta" | "sg-cell-doppia" | "sg-cell-mancante"; body: string }[];
   /** Solo kind "try": avanza quando il dialog aperto dall'utente viene chiuso. */
   waitDialogClose?: boolean;
   /** Solo kind "try"+waitDialogClose: istruzione mostrata SUL dialog aperto, così
@@ -83,18 +85,19 @@ export const GUIDE_STEPS: GuideStep[] = [
   {
     id: "sticker-tap",
     kind: "try",
-    taps: 3,
+    taps: 2, // la cella parte VERDE (spiegato nel body); 2 tocchi → rosso, grigio
     route: "/album",
     dynamicRoute: true,
     target: "guide-first-sticker",
     title: "Segna le figurine 🎯",
-    body: "Ogni tocco cambia lo stato. Prova: tocca la figurina evidenziata.",
+    // La figurina evidenziata parte VERDE → spieghiamo subito il verde, poi ogni
+    // tocco cambia colore e aggiorna la spiegazione (rosso, grigio).
+    body: "Il colore dice lo stato. 🟩 Verde: le figurine che hai già trovato. Tocca per cambiarlo.",
     // Dopo ogni tocco il fumetto spiega il colore appena apparso; sul grigio
     // (ultimo) si resta finché l'utente non tocca lo schermo per continuare.
     tapPhases: [
-      { body: "🟩 Verde: le figurine che hai già trovato. Tocca ancora." },
-      { body: "🟥 Rosso: le tue doppie, pronte per lo scambio. Tocca ancora." },
-      { body: "⬜ Grigio: le mancanti, quelle da trovare." },
+      { color: "sg-cell-doppia", body: "🟥 Rosso: le tue doppie, pronte per lo scambio. Tocca ancora." },
+      { color: "sg-cell-mancante", body: "⬜ Grigio: le mancanti, quelle da trovare." },
     ],
   },
   // PROVA PRATICA — long-press reale: si apre il dettaglio; chiuso = si avanza.
