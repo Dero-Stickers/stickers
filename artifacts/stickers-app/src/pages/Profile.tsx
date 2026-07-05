@@ -184,7 +184,7 @@ export function Profile() {
             tenerla così.<br />
             <span className="text-muted-foreground">Non sblocca nulla: è solo un grazie.</span>
           </p>
-          <KofiButton label="Dona ora" className="mt-3" />
+          <KofiButton className="mt-3" />
         </div>
       </div>
 

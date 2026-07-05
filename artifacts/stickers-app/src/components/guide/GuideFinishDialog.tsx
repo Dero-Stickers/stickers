@@ -67,7 +67,7 @@ export function GuideFinishDialog({
 
         <div className="flex flex-col gap-2.5 pt-1">
           {/* Donazione Ko-fi (link esterno). Contributo libero, non sblocca nulla. */}
-          <KofiButton label="Dona ora" className="w-full" />
+          <KofiButton className="w-full" />
           <Button variant="ghost" onClick={handleStart} className="w-full">
             Inizia! Trova il tuo primo Match
           </Button>
