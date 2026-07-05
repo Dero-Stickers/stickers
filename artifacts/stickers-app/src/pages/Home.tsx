@@ -99,6 +99,11 @@ export function Home() {
                 <span className="text-sm font-semibold text-foreground">La tua collezione</span>
                 <span className="absolute right-0 text-primary font-bold text-lg leading-none">{overallPercent}%</span>
               </div>
+              {albums.length === 0 && (
+                <p className="text-center text-xs text-muted-foreground mb-3">
+                  Nessun album presente
+                </p>
+              )}
               <Progress value={overallPercent} className="h-2 mb-3" />
               <div className="grid grid-cols-4 gap-2">
                 <div className="text-center">
