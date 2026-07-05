@@ -92,13 +92,19 @@ demo Disponibili) e `guide-first-album` (riga demo "I miei album") in AlbumList 
 
 ## Avvio e "già vista"
 
+Scelta owner (5 lug): la guida è **onboarding puro** — parte una sola volta, alla
+PRIMA autenticazione, quando l'utente è vergine (0 album, l'album di prova ha
+senso). **Nessun trigger dal Profilo** (pulsante rimosso): meno combinazioni di
+stato = codice più semplice e robusto.
+
 - **Auto-start** (`GuideAutoStart` in App.tsx): ⚠️ PER ORA (fase test) parte a
   OGNI refresh, UNA volta per caricamento pagina, e SOLO DOPO che il cookie
   banner è stato chiuso (`COOKIE_ACK_KEY`, altrimenti coprirebbe la navbar).
-  Per il rilascio: usare `!hasSeenGuide(userId)` (già pronta in GuideContext).
-- **Riapertura**: Profilo → "Guida Stickers" → `useGuide().start()`.
+  Per il rilascio: cambiare la condizione in `!hasSeenGuide(userId)` (già pronta
+  in GuideContext) → parte solo alla prima autenticazione in assoluto.
 - **Flag**: localStorage `sticker_guide_seen_v1:<userId>`; alzare la versione
-  ri-mostra la guida a tutti.
+  ri-mostra la guida a tutti. In test, per rivederla: cancella questa chiave (o
+  basta il refresh, dato che ora parte comunque a ogni refresh).
 
 ## Dettagli non ovvi (imparati nei test — NON regredire)
 

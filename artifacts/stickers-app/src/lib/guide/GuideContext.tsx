@@ -35,7 +35,7 @@ function markGuideSeen(userId: number | undefined) {
 interface GuideContextValue {
   active: boolean;
   stepIndex: number;
-  /** Avvia la guida dal primo passo (trigger auto e Profilo → "Guida Stickers"). */
+  /** Avvia la guida dal primo passo (trigger: auto-start alla prima autenticazione). */
   start: () => void;
   /** Passo successivo; all'ultimo chiude e segna "vista". */
   next: () => void;

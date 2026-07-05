@@ -181,7 +181,7 @@ export const GUIDE_STEPS: GuideStep[] = [
     kind: "info",
     route: "/match",
     dynamicRoute: true,
-    title: "Fatto! 🎉",
-    body: "Riapri la guida quando vuoi da Profilo → Guida Stickers.",
+    title: "Tutto qui! 🎉",
+    body: "Ora tocca a te: aggiungi i tuoi album e trova i primi scambi.",
   },
 ];

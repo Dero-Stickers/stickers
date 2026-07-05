@@ -231,8 +231,9 @@ function GuideGate({ children }: { children: React.ReactNode }) {
 // l'utente loggato NON-admin — ma UNA SOLA VOLTA per caricamento pagina: se
 // l'utente la chiude/salta NON si riapre da sola (si riparte solo al prossimo
 // refresh). Quando la guida sarà definitiva, sostituire la condizione con
-// `!hasSeenGuide(currentUser?.id)` così parte solo al PRIMO avvio in assoluto;
-// resta comunque riapribile da Profilo → Guida.
+// `!hasSeenGuide(currentUser?.id)` così parte solo alla PRIMA autenticazione in
+// assoluto (unico trigger: non è più riapribile dal Profilo, per scelta owner —
+// l'utente è vergine solo al primo avvio, dove l'album di prova ha senso).
 function GuideAutoStart() {
   const { isAuthenticated, currentUser } = useAuth();
   const { start } = useGuide();

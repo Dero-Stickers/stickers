@@ -37,7 +37,7 @@ Tre blocchi essenziali (no dati duplicati dalle altre sezioni, no dettaglio sing
 
 Testata: nickname + area/CAP. Voci raggruppate in **sezioni con titoletto** (stile impostazioni), ogni riga con icona + titolo (no sottotitoli) + freccia `›`:
 - **Account**: codice di recupero (protetto da PIN), cambia nickname (PIN), cambia zona (CAP)
-- **Aiuto e supporto**: Guida Stickers, Segnala un problema
+- **Aiuto e supporto**: Segnala un problema
 - **Informazioni**: Privacy e Termini d'uso → `/legal/note`
 
 In fondo due pulsanti speculari, vicini, `rounded-xl`: **Esci dall'account** (bianco, bordo+testo rossi) e **Elimina account** (rosso pieno, testo bianco; nascosto agli admin; apre dialog PIN+conferma).

@@ -7,6 +7,13 @@
 
 ## 2026-07
 
+- **Guida = onboarding puro, solo alla 1ª autenticazione [5 lug]** — scelta owner: la guida parte SOLO al primo
+  accesso (utente vergine, 0 album → l'album di prova è coerente), **rimosso il pulsante "Guida Stickers" dal
+  Profilo** (con esso l'import `useGuide`/`HelpCircle`). Motivo: eliminare il caso "utente che rientra con album
+  veri" azzera le combinazioni di stato da gestire → codice più semplice e robusto. In fase test l'avvio resta
+  a ogni refresh (una riga da cambiare in `!hasSeenGuide` al rilascio). **Reso Dero975 (id 69) vergine**: DELETE
+  mirato di `user_albums` (6) + `user_stickers` (4070) SOLO per user 69, backup CSV prima, catalogo e altri
+  account intatti — così lo stato di test = nuovo utente. Il pulsante U/A resta.
 - **Guida · passo filtri ora INTERATTIVO (non più demo automatica) [5 lug]** — il passo dei 3 filtri era una
   `demo` automatica che scorreva da sola: sostituita da una prova `try` con **long-press reale** sul filtro
   "Mie" (scelta owner: coerenza "clicco e vedo cosa succede"). L'utente tiene premuto → TUTTA la griglia
@@ -27,7 +34,7 @@
   chiuso→avanza; long-press filtro = griglia colorata solo CSS — vedi voce [5 lug]). **ZERO scritture DB
   verificate in test** (0 POST/PATCH durante la guida, 0 classi residue: l'app torna com'era). Avvio: PER ORA a
   ogni refresh, dopo il cookie banner (altrimenti copre la navbar); per il rilascio passare a
-  `!hasSeenGuide(userId)`. Riapribile da Profilo → "Guida Stickers". **[5 lug] Album di prova**: la sezione
+  `!hasSeenGuide(userId)`. (Trigger dal Profilo RIMOSSO il 5 lug — vedi voce in alto.) **[5 lug] Album di prova**: la sezione
   Album usa uno stato-demo standard per QUALSIASI account (nuovo = 0 album): passo "➕ aggiungi" simulato dai
   Disponibili, riga demo in "I miei album", dettaglio `/album/-1` da `guide-demo.ts` (60 figurine, zero API);
   i 3 tocchi spiegano i colori (verde=trovate, rosso=doppie, grigio=mancanti) con avanzamento MANUALE

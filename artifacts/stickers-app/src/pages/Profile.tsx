@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { MapPin, HelpCircle, LogOut, Shield, Trash2, MessageSquarePlus, ChevronRight } from "lucide-react";
+import { MapPin, LogOut, Shield, Trash2, MessageSquarePlus, ChevronRight } from "lucide-react";
 import { ReportDialog } from "@/components/report/ReportDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useGuide } from "@/lib/guide/GuideContext";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useSupportEmail } from "@/hooks/useSupportEmail";
@@ -21,7 +20,6 @@ export function Profile() {
   const { currentUser, logout, login } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { start: startGuide } = useGuide();
   const supportEmail = useSupportEmail();
 
   const handleLogout = () => {
@@ -126,15 +124,6 @@ export function Profile() {
             >
               <MapPin className="h-5 w-5 text-primary shrink-0" />
               <p className="flex-1 font-medium text-sm text-foreground">Cambia zona</p>
-              <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
-            </button>
-
-            <button
-              className="group w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-              onClick={() => startGuide()}
-            >
-              <HelpCircle className="h-5 w-5 text-primary shrink-0" />
-              <p className="flex-1 font-medium text-sm text-foreground">Guida Stickers</p>
               <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
             </button>
 
