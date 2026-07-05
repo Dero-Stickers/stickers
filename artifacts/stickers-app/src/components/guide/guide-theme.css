@@ -86,48 +86,38 @@
   color: #93a0b4;
 }
 
-/* ── Effetto "polvere magica" — SOLO sul primo passo (benvenuto) ─────────────
-   Il fumetto si materializza (scale+fade) e sopra scintillano alcune particelle
-   dorate che si dissolvono. Tutto CSS, parte una volta, si auto-rimuove: nessun
-   peso runtime né dipendenze. Rispetta prefers-reduced-motion. */
-.driver-popover.sticker-guide.sg-magic {
-  animation: sg-materialize .55s cubic-bezier(.2, .9, .25, 1.4) both;
+/* ── Comparsa "magica" del TESTO — SOLO sul primo passo (benvenuto) ──────────
+   Il fumetto appare (vuoto), poi titolo e testo si MATERIALIZZANO: partono da
+   sfocati/trasparenti e si compongono a fuoco, come scritti da polvere magica,
+   con un lieve luccichìo dorato che attraversa il testo. Tutto CSS, parte una
+   volta, nessuna dipendenza. Rispetta prefers-reduced-motion. */
+.driver-popover.sticker-guide.sg-magic .driver-popover-title {
+  animation: sg-text-in .7s cubic-bezier(.2, .8, .2, 1) both;
 }
-@keyframes sg-materialize {
-  0%   { opacity: 0; transform: scale(.82); filter: blur(3px); }
+.driver-popover.sticker-guide.sg-magic .driver-popover-description {
+  animation: sg-text-in .7s cubic-bezier(.2, .8, .2, 1) both;
+  animation-delay: .18s; /* il testo si compone poco dopo il titolo */
+}
+@keyframes sg-text-in {
+  0%   { opacity: 0; filter: blur(6px); letter-spacing: .06em; transform: translateY(3px); }
   60%  { opacity: 1; filter: blur(0); }
-  100% { transform: scale(1); }
+  100% { letter-spacing: normal; transform: none; }
 }
-/* Layer particelle: figlio del popover, non intercetta i tocchi. */
-.sg-magic-dust {
-  position: absolute;
-  inset: -14px;
-  pointer-events: none;
-  overflow: visible;
-  z-index: 2;
+/* Luccichìo dorato che passa sul titolo mentre si materializza (sheen). */
+.driver-popover.sticker-guide.sg-magic .driver-popover-title {
+  background-image: linear-gradient(100deg, transparent 40%, rgba(255,224,138,.9) 50%, transparent 60%);
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text; background-clip: text;
+  animation: sg-text-in .7s cubic-bezier(.2, .8, .2, 1) both, sg-sheen 1.1s ease-out .1s 1 both;
 }
-.sg-magic-dust i {
-  position: absolute;
-  top: var(--y, 50%);
-  left: var(--x, 50%);
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  /* scintilla dorata (accent) con alone */
-  background: radial-gradient(circle, #ffe08a 0%, hsl(37 90% 55%) 55%, rgba(255,193,7,0) 72%);
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0);
-  animation: sg-sparkle 1s ease-out forwards;
-  animation-delay: var(--d, 0s);
-}
-@keyframes sg-sparkle {
-  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0); }
-  35%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -22px))) scale(.2); }
+@keyframes sg-sheen {
+  0%   { background-position: 160% 0; }
+  100% { background-position: -60% 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .driver-popover.sticker-guide.sg-magic { animation: none; }
-  .sg-magic-dust { display: none; }
+  .driver-popover.sticker-guide.sg-magic .driver-popover-title,
+  .driver-popover.sticker-guide.sg-magic .driver-popover-description { animation: none; }
 }
 
 /* ── Effetti DIMOSTRATIVI della guida (solo visivi, zero dati) ───────────────

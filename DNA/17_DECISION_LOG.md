@@ -7,6 +7,16 @@
 
 ## 2026-07
 
+- **Guida · copertura completa Album→Match→Chat + modale finale [5 lug]** — la guida ora copre TUTTA l'app:
+  spiegazione dei 3 filtri Match (Vicini/Migliori/Cerca figurina, icona lente {search}), entra nella CHAT e
+  spiega scrivi/conferma-scambio(✓)/segnala/avviso-sicurezza, poi chiude con un **MODALE centrale**
+  (`GuideFinishDialog`): logo Stickers, "Benvenuto tra noi", nota "app gratis, la regala l'owner + contributo
+  spontaneo per i database", bottone **PayPal "Dona ora"** PREDISPOSTO (non collegato: ringraziamento al
+  tocco; la funzione donazione si gestirà più avanti). Rifiniture: linguaggio unificato (titolo=concetto,
+  body=azione), regola PUNTO A CAPO ovunque, icone=componenti lucide reali + pallini-colore, freccia fumetto
+  affusolata, velo 0.4, `side`/`align` per non coprire il target, long-press bloccato nel passo colori, dialog
+  dettaglio read-only (solo X), effetto `magic` sul benvenuto (testo che si materializza, solo CSS), guida a
+  OGNI refresh anche in deploy (scelta owner). Tutto frontend, 0 scritture DB (verificato nei test visivi).
 - **Guida = onboarding puro, solo alla 1ª autenticazione [5 lug]** — scelta owner: la guida parte SOLO al primo
   accesso (utente vergine, 0 album → l'album di prova è coerente), **rimosso il pulsante "Guida Stickers" dal
   Profilo** (con esso l'import `useGuide`/`HelpCircle`). Motivo: eliminare il caso "utente che rientra con album

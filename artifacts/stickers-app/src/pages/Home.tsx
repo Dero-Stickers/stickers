@@ -122,7 +122,7 @@ export function Home() {
         {!loadingAlbums && albums.length === 0 && (
           <Card className="shadow-sm">
             <CardContent className="p-4 text-center text-muted-foreground text-sm">
-              Nessun album nella collezione — <Link href="/album" className="text-primary font-medium underline">aggiungine uno</Link>
+              Nessun album nella collezione — <Link href="/album" className="text-primary font-medium underline whitespace-nowrap">aggiungine uno</Link>
             </CardContent>
           </Card>
         )}

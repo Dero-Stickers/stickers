@@ -49,9 +49,19 @@ match**, facendo VEDERE le funzioni (anche i trucchi nascosti).
 | `src/lib/guide/steps.ts` | **Config dei passi** (testi, target, tipo, rotta, tapPhases) | Aggiungere/togliere/modificare passi |
 | `src/lib/guide/GuideContext.tsx` | **Stato** (attiva? passo? flag "già vista"; `useGuideStepId` per le pagine) | Raramente |
 | `src/lib/guide/guide-demo.ts` | **Album di prova** (id -1, card + 60 figurine demo deterministiche) | Cambiare i dati demo |
-| `src/lib/guide/guide-icons.tsx` | **Icone-app** (estrae l'SVG dei componenti lucide per i segnaposto {…}) | Aggiungere un'icona |
-| `src/components/guide/GuideOverlay.tsx` | **Motore** (wrapper driver.js: highlight, avanzamento, prove, demo) | Raramente |
-| `src/components/guide/guide-theme.css` | **Stile fumetto** (palette, freccia, `.sg-icon`, `.sg-lit`) | Ritocchi visivi |
+| `src/lib/guide/guide-icons.tsx` | **Icone-app** (SVG dei componenti lucide per i segnaposto {…}) + pallini-colore {verde}/{rosso}/{grigio} | Aggiungere un'icona |
+| `src/components/guide/GuideOverlay.tsx` | **Motore** (wrapper driver.js: highlight, avanzamento, prove, `side`/`align`, effetto `magic`) | Raramente |
+| `src/components/guide/GuideFinishDialog.tsx` | **Schermata finale** = modale centrale (logo + benvenuto + donazione PayPal) | Testi/donazione finale |
+| `src/components/guide/guide-theme.css` | **Stile fumetto** (palette, freccia, `.sg-icon`, `.sg-dot`, `.sg-lit`, `.sg-magic`) | Ritocchi visivi |
+
+**Passo finale = MODALE, non fumetto**: l'ultimo passo `done` NON usa driver.js;
+il motore mostra `GuideFinishDialog` (Radix Dialog centrale): logo Stickers,
+"Benvenuto tra noi", nota "app gratis + contributo" e bottone PayPal "Dona ora"
+(PREDISPOSTO, non collegato: `handleDonate` mostra un ringraziamento). Chiuso →
+`finish()`. **Effetto `magic`** (solo `go-album`): la classe `.sg-magic` fa
+materializzare titolo+testo (blur→fuoco + sheen dorato), solo CSS.
+**Posizionamento**: campi `side`/`align` per passo forzano il lato del fumetto
+quando l'auto-scelta di driver.js coprirebbe il target (es. card match: `side: top`).
 
 **Lingua unificata (owner)**: TITOLO = concetto/funzione (non un'azione: "Gestisci
 i tuoi album", non "Aprilo"); BODY = l'azione. Stessi termini ovunque, niente
@@ -102,14 +112,17 @@ scrittura (tap, dialog, bulk, rimozione nascosta). Tutto sparisce a guida chiusa
 Verificato con entrambi gli scenari (account pieno e utente nuovo via stub API):
 flusso IDENTICO, 0 scritture, 0 residui.
 
-## Percorso attuale (11 passi)
+## Percorso attuale (~20 passi)
 
-nav Album → ➕ aggiungi album (Disponibili, simulato) → apri l'album di prova →
-prova 2 tocchi figurina (verde già spiegato all'arrivo → rosso → grigio, avanzo
-manuale sul grigio) → prova long-press figurina (dettaglio read-only) → prova
-long-press filtro "Mie" (griglia illuminata diventa tutta verde, avanzo manuale)
-→ nav Match → apri primo match
-(PROVA) → Dai/Ricevi → bottone chat → Fatto.
+**Benvenuto** (nav Album, con effetto magic) → trova album (tab Disponibili) →
+aggiungi col ➕ (simulato) → apri l'album (tab "I miei album" illuminato) →
+2 tocchi figurina (verde→rosso→grigio, pallini-colore, avanzo manuale; il
+long-press è disattivato in questo passo) → long-press figurina 011 verde
+(dettaglio READ-ONLY: solo la X chiude) → 3 filtri bulk Mie/Doppie/Mancanti
+(leggo→tengo premuto→guardo→tocco, per fase) → nav Match → spiegazione 3 filtri
+Match (Vicini/Migliori/Cerca figurina) → apri primo match → Dai&Ricevi
+(scambio smart multi-album) → **apri la chat** → scrivi · conferma scambio (✓) ·
+segnala · avviso sicurezza → **MODALE finale** (logo + donazione).
 
 ## Aggancio (`data-guide`)
 
