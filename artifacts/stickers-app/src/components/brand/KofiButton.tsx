@@ -1,11 +1,23 @@
 // Pulsante donazione Ko-fi — stile del widget ufficiale (tazza + verde #3dbd45),
-// testo "Support Stickers", ma reso come LINK NATIVO (non lo script
-// kofiwidget2, che rende male in React/PWA). Apre la pagina Ko-fi in nuova scheda.
-// È una donazione LIBERA senza contropartita: non sblocca nulla, non tocca
-// permessi/RLS. L'app non tratta dati di pagamento (tutto su Ko-fi/PayPal).
+// testo "Support Stickers". NON è più un link diretto: al clic apre un MODALE
+// che invita l'utente a incollare il proprio nickname nel messaggio Ko-fi, così
+// l'admin può riconoscere chi ha donato (Ko-fi NON permette di passare il nick
+// in automatico via link → questo è l'unico modo pulito e gratuito).
+// Flusso: [Support Stickers] → modale (nickname + Copia) → [Vai a Ko-fi].
 //
 // Un solo punto di verità per link, colore, icona e testo: riusato ovunque serva
 // (Profilo, modale benvenuto della guida).
+
+import { useState } from "react";
+import { Copy, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // Pagina Ko-fi dell'owner + colore ufficiale del bottone + testo.
 export const KOFI_URL = "https://ko-fi.com/deroarts";
@@ -32,17 +44,79 @@ function KofiCup() {
 }
 
 export function KofiButton({ label = KOFI_LABEL, className = "" }: { label?: string; className?: string }) {
+  const { currentUser } = useAuth();
+  const nickname = currentUser?.nickname ?? "";
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyNick = async () => {
+    try {
+      await navigator.clipboard.writeText(nickname);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // clipboard può fallire (permessi/HTTP): l'utente può copiare a mano.
+    }
+  };
+
+  const goToKofi = () => {
+    window.open(KOFI_URL, "_blank", "noopener,noreferrer");
+    setOpen(false);
+  };
+
   return (
-    <a
-      href={KOFI_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={label}
-      className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-bold text-white shadow-sm active:scale-[.98] transition-transform ${className}`}
-      style={{ background: KOFI_GREEN }}
-    >
-      <KofiCup />
-      <span>{label}</span>
-    </a>
+    <>
+      <button
+        type="button"
+        onClick={() => { setCopied(false); setOpen(true); }}
+        aria-label={label}
+        className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-bold text-white shadow-sm active:scale-[.98] transition-transform ${className}`}
+        style={{ background: KOFI_GREEN }}
+      >
+        <KofiCup />
+        <span>{label}</span>
+      </button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Facci sapere che è tua 💚</DialogTitle>
+            <DialogDescription>
+              Su Ko-fi, incolla il tuo nickname nel messaggio: così sappiamo che
+              la donazione arriva da te.
+            </DialogDescription>
+          </DialogHeader>
+
+          {nickname && (
+            <button
+              type="button"
+              onClick={copyNick}
+              className="w-full flex items-center justify-between gap-3 rounded-xl border bg-muted/40 px-4 py-3 hover:bg-muted transition-colors"
+              title="Copia il tuo nickname"
+            >
+              <span className="font-semibold text-foreground truncate">{nickname}</span>
+              <span className="shrink-0 inline-flex items-center gap-1 text-sm text-primary font-medium">
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copiato" : "Copia"}
+              </span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={goToKofi}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-bold text-white shadow-sm active:scale-[.98] transition-transform"
+            style={{ background: KOFI_GREEN }}
+          >
+            <KofiCup />
+            <span>Vai a Ko-fi</span>
+          </button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Il contributo è libero e non sblocca nulla: è solo un grazie.
+          </p>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
