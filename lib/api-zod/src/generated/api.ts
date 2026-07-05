@@ -707,6 +707,30 @@ export const GetAdminStatsResponse = zod.object({
 });
 
 /**
+ * @summary Ko-fi donations summary and list (read-only)
+ */
+export const GetAdminDonationsResponse = zod.object({
+  summary: zod.object({
+    total: zod.string(),
+    count: zod.number(),
+    average: zod.string(),
+    lastAt: zod.string().nullish(),
+    currency: zod.string(),
+  }),
+  donations: zod.array(
+    zod.object({
+      id: zod.string(),
+      fromName: zod.string().nullish(),
+      message: zod.string().nullish(),
+      amount: zod.string(),
+      currency: zod.string(),
+      type: zod.string().nullish(),
+      createdAt: zod.string(),
+    }),
+  ),
+});
+
+/**
  * @summary List all users
  */
 export const AdminListUsersResponseItem = zod.object({

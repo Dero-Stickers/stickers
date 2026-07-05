@@ -273,6 +273,29 @@ export interface AdminStats {
   pendingReports: number;
 }
 
+export interface AdminDonation {
+  id: string;
+  fromName?: string | null;
+  message?: string | null;
+  amount: string;
+  currency: string;
+  type?: string | null;
+  createdAt: string;
+}
+
+export type AdminDonationsSummary = {
+  total: string;
+  count: number;
+  average: string;
+  lastAt?: string | null;
+  currency: string;
+};
+
+export interface AdminDonations {
+  summary: AdminDonationsSummary;
+  donations: AdminDonation[];
+}
+
 export interface AdminUser {
   id: number;
   nickname: string;

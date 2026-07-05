@@ -18,6 +18,7 @@ import type {
 
 import type {
   AdminChat,
+  AdminDonations,
   AdminStats,
   AdminUser,
   Album,
@@ -2840,6 +2841,81 @@ export function useGetAdminStats<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetAdminStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Ko-fi donations summary and list (read-only)
+ */
+export const getGetAdminDonationsUrl = () => {
+  return `/api/admin/donations`;
+};
+
+export const getAdminDonations = async (
+  options?: RequestInit,
+): Promise<AdminDonations> => {
+  return customFetch<AdminDonations>(getGetAdminDonationsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminDonationsQueryKey = () => {
+  return [`/api/admin/donations`] as const;
+};
+
+export const getGetAdminDonationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminDonations>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDonations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminDonationsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAdminDonations>>
+  > = ({ signal }) => getAdminDonations({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDonations>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminDonationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminDonations>>
+>;
+export type GetAdminDonationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Ko-fi donations summary and list (read-only)
+ */
+
+export function useGetAdminDonations<
+  TData = Awaited<ReturnType<typeof getAdminDonations>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDonations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminDonationsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

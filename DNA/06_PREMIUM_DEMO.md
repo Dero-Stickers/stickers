@@ -48,13 +48,31 @@ tratta né salva dati di pagamento: tutto avviene su Ko-fi/PayPal.
   facoltativo, non dà accesso a funzioni a pagamento) e Privacy (l'app non tratta
   dati di pagamento, gestiti da Ko-fi/PayPal).
 
-## Pagina admin "Donazioni" (predisposta)
+## Integrazione Ko-fi — COLLEGATA (webhook → DB → admin)
 
-`pages/admin/Donations.tsx` (voce menu "Donazioni", rotta `/admin/donazioni`) —
-riusa il layout admin. Mostra un riepilogo (totale, n°, media, ultima) e una
-tabella. **Stato: predisposta ma non collegata** — Ko-fi invia i dati via
-**webhook** SOLO con l'app online e il webhook configurato. È di **sola lettura**:
-nessun pagamento passa dall'app. Integrazione Ko-fi = passo separato.
+Catena completa e testata (5 lug), di **sola lettura** (nessun pagamento passa
+dall'app):
+
+1. **Webhook** `POST /api/kofi/webhook` (`routes/kofi.ts`, PUBBLICO, fuori dai
+   gate auth). Ko-fi manda `application/x-www-form-urlencoded` con campo `data`
+   = JSON. L'handler **verifica `verification_token`** contro l'env
+   `KOFI_VERIFICATION_TOKEN` (in `.env` + App Control, segreto); se manca l'env →
+   503 KOFI_NOT_CONFIGURED. **Idempotente**: `kofi_message_id` UNIQUE +
+   `onConflictDoNothing` → i retry di Ko-fi non creano doppioni.
+2. **Tabella** `donations` (schema Drizzle `donations.ts`, migrazione
+   `0010_donations.sql` — additiva, applicata). Colonne: importo, valuta, nome,
+   messaggio, tipo, id transazione, raw payload.
+3. **Lettura admin** `GET /api/admin/donations` (`routes/admin.ts`, requireAdmin):
+   riepilogo aggregato (totale, n°, media, ultima) + elenco (ultime 100).
+4. **Pagina** `pages/admin/Donations.tsx` (voce menu "Donazioni",
+   `/admin/donazioni`): usa l'hook generato `useGetAdminDonations`. Mostra le 4
+   card + tabella; l'avviso "in attesa della prima donazione" appare solo finché
+   è vuota.
+
+**Config Ko-fi (owner, una tantum):** pannello Ko-fi → More → Webhooks →
+Webhook URL = `<LINK_DEPLOY>/api/kofi/webhook`, e il **Verification Token** di
+Ko-fi va copiato in `KOFI_VERIFICATION_TOKEN` (env Render + App Control). Poi le
+donazioni compaiono in admin da sole.
 
 ## DB — cleanup da applicare a mano
 

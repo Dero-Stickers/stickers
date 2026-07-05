@@ -9,6 +9,7 @@ import chatTradeRouter from "./chat-trade";
 import adminRouter from "./admin";
 import settingsRouter from "./settings";
 import errorsRouter from "./errors";
+import kofiRouter from "./kofi";
 import { requireAuth, requireNotBlocked } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -46,6 +47,11 @@ router.use("/admin", adminRouter);
 
 // Settings routes
 router.use("/settings", settingsRouter);
+
+// Webhook Ko-fi — PUBBLICO (Ko-fi non ha login): niente gate di auth/blocco. La
+// sicurezza è il verification_token verificato dentro l'handler. Sola scrittura
+// da parte di Ko-fi; l'app non tratta pagamenti.
+router.use("/kofi", kofiRouter);
 
 // Error reports (user opt-in submission + admin management)
 router.use(errorsRouter);

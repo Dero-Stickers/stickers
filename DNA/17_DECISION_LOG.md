@@ -7,6 +7,17 @@
 
 ## 2026-07
 
+- **Donazioni Ko-fi COLLEGATE (webhook → DB → admin) [5 lug]** — chiusa la
+  funzione donazioni end-to-end, sola lettura. Nuova tabella `donations` (schema
+  Drizzle + migrazione additiva `0010`, applicata al DB). Webhook PUBBLICO
+  `POST /api/kofi/webhook` (`routes/kofi.ts`) che verifica `KOFI_VERIFICATION_TOKEN`
+  (segreto, in `.env` + App Control) ed è **idempotente** (`kofi_message_id`
+  UNIQUE + onConflictDoNothing → i retry di Ko-fi non duplicano). Lettura
+  `GET /api/admin/donations` (riepilogo + elenco) → pagina `admin/Donations.tsx`
+  ora legge dati veri via hook generato `useGetAdminDonations`. Testato end-to-end
+  (token valido salva, errato 401, idempotenza ok, admin legge riepilogo).
+  Manca solo la config lato Ko-fi (URL webhook + token) = passo owner. Vedi
+  `06_PREMIUM_DEMO.md`.
 - **Età minima 14 → 16 anni [5 lug]** — soglia alzata a 16 per scelta del titolare (chat + incontri
   di persona tra privati), più cautelativa del minimo di legge italiano (14, art. 8 GDPR + art.
   2-quinquies d.lgs. 196/2003). Toccato: checkbox registrazione (`Login.tsx`, unica occorrenza UI;

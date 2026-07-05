@@ -282,7 +282,59 @@ const listReports: RequestHandler = async (req, res) => {
   }
 };
 
+// GET /api/admin/donations — riepilogo + elenco donazioni Ko-fi (sola lettura).
+// L'app è 100% gratuita: qui l'owner monitora i contributi spontanei. Nessun
+// pagamento passa dall'app; questa rotta legge solo ciò che il webhook ha salvato.
+const getDonations: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    const { db, donationsTable } = await import("@workspace/db");
+
+    // Riepilogo aggregato a DB (una query): totale, numero, media, ultima data.
+    const sumRows = await db.execute<Record<string, unknown>>(sql`
+      SELECT
+        COALESCE(SUM(amount), 0)::text            AS total,
+        COUNT(*)::int                             AS count,
+        COALESCE(ROUND(AVG(amount), 2), 0)::text  AS average,
+        MAX(created_at)                           AS last_at
+      FROM donations
+    `);
+    const s = (((sumRows as any).rows ?? sumRows) as Record<string, unknown>[])[0] ?? {};
+
+    // Elenco (ultime 100, più recenti in alto).
+    const rows = await db
+      .select()
+      .from(donationsTable)
+      .orderBy(desc(donationsTable.createdAt))
+      .limit(100);
+
+    res.json({
+      summary: {
+        total: String(s.total ?? "0"),
+        count: Number(s.count ?? 0),
+        average: String(s.average ?? "0"),
+        lastAt: s.last_at ?? null,
+        currency: rows[0]?.currency ?? "EUR",
+      },
+      donations: rows.map((d) => ({
+        id: d.id,
+        fromName: d.fromName,
+        message: d.message,
+        amount: d.amount,
+        currency: d.currency,
+        type: d.type,
+        createdAt: d.createdAt,
+      })),
+    });
+  } catch (err) {
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
 router.get("/stats", getStats);
+router.get("/donations", getDonations);
 router.get("/users", listUsers);
 router.patch("/users/:userId/block", toggleBlock);
 router.get("/chats", listChats);

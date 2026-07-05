@@ -704,6 +704,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminStats"
 
+  /admin/donations:
+    get:
+      operationId: getAdminDonations
+      tags: [admin]
+      summary: Ko-fi donations summary and list (read-only)
+      responses:
+        "200":
+          description: Donations summary and list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDonations"
+
   /admin/users:
     get:
       operationId: adminListUsers
@@ -1308,6 +1321,52 @@ components:
         pendingReports:
           type: integer
       required: [totalUsers, totalAlbums, totalMessages, activeChats, blockedUsers, pendingReports]
+
+    AdminDonation:
+      type: object
+      properties:
+        id:
+          type: string
+        fromName:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true
+        amount:
+          type: string
+        currency:
+          type: string
+        type:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, amount, currency, createdAt]
+
+    AdminDonations:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            total:
+              type: string
+            count:
+              type: integer
+            average:
+              type: string
+            lastAt:
+              type: string
+              nullable: true
+            currency:
+              type: string
+          required: [total, count, average, currency]
+        donations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDonation"
+      required: [summary, donations]
 
     AdminUser:
       type: object
