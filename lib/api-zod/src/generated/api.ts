@@ -740,6 +740,16 @@ export const AdminListUsersResponseItem = zod.object({
   area: zod.string().nullish(),
   albumCount: zod.number(),
   donationCount: zod.number(),
+  donationTotal: zod.string(),
+  donationCurrency: zod.string(),
+  donations: zod.array(
+    zod.object({
+      amount: zod.string(),
+      currency: zod.string(),
+      message: zod.string().nullish(),
+      createdAt: zod.string(),
+    }),
+  ),
   exchangesCompleted: zod.number(),
   isBlocked: zod.boolean(),
   createdAt: zod.string().optional(),
@@ -765,6 +775,16 @@ export const ToggleBlockUserResponse = zod.object({
   area: zod.string().nullish(),
   albumCount: zod.number(),
   donationCount: zod.number(),
+  donationTotal: zod.string(),
+  donationCurrency: zod.string(),
+  donations: zod.array(
+    zod.object({
+      amount: zod.string(),
+      currency: zod.string(),
+      message: zod.string().nullish(),
+      createdAt: zod.string(),
+    }),
+  ),
   exchangesCompleted: zod.number(),
   isBlocked: zod.boolean(),
   createdAt: zod.string().optional(),

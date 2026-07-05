@@ -6,8 +6,16 @@ import {
   useAdminListUsers,
   useToggleBlockUser,
   getAdminListUsersQueryKey,
+  type AdminUser,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
@@ -16,12 +24,33 @@ import { useConfirm } from "@/components/admin/ConfirmDialog";
 
 type SortKey = "nickname" | "cap" | "area";
 
+// Formattatori riusati nel modale donazioni.
+function money(amount: string | number, currency = "EUR"): string {
+  const n = typeof amount === "string" ? Number(amount) : amount;
+  const safe = Number.isFinite(n) ? n : 0;
+  try {
+    return new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(safe);
+  } catch {
+    return `${safe.toFixed(2)} ${currency}`;
+  }
+}
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  }).format(d);
+}
+
 export function AdminUsers() {
   const { toast } = useToast();
   const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [sortKey, setSortKey] = useState<SortKey>("nickname");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  // Modale dettaglio donazioni dell'utente (può averne più di una).
+  const [donationsOf, setDonationsOf] = useState<AdminUser | null>(null);
 
   const { data: users, isLoading } = useAdminListUsers();
 
@@ -143,13 +172,16 @@ export function AdminUsers() {
               </td>
               <td className="text-center">
                 {user.donationCount > 0 ? (
-                  <span
-                    className="inline-flex items-center gap-1 text-accent font-medium"
-                    title="Rilevata almeno una donazione col suo nickname (indizio, non certo)"
+                  <button
+                    type="button"
+                    onClick={() => setDonationsOf(user)}
+                    className="inline-flex items-center gap-1.5 text-accent font-medium hover:underline"
+                    title="Vedi le donazioni rilevate col suo nickname"
                   >
                     <Heart className="h-3.5 w-3.5 fill-accent" />
-                    {user.donationCount}
-                  </span>
+                    {money(user.donationTotal, user.donationCurrency)}
+                    <span className="text-xs text-primary underline">Vedi</span>
+                  </button>
                 ) : (
                   <span className="text-muted-foreground/50">—</span>
                 )}
@@ -185,6 +217,42 @@ export function AdminUsers() {
         })}
       </AdminTable>
       </div>
+
+      {/* Modale donazioni dell'utente — un utente può averne PIÙ di una: qui
+          l'elenco completo con data, importo e messaggio di ognuna. Il match col
+          nickname è best-effort (indizio, non certo). */}
+      <Dialog open={donationsOf !== null} onOpenChange={(o) => { if (!o) setDonationsOf(null); }}>
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="h-4 w-4 fill-accent text-accent" />
+              Donazioni di {donationsOf?.nickname}
+            </DialogTitle>
+            <DialogDescription>
+              {donationsOf && (
+                <>
+                  {donationsOf.donationCount} donazione{donationsOf.donationCount === 1 ? "" : "i"} · totale{" "}
+                  {money(donationsOf.donationTotal, donationsOf.donationCurrency)}. Abbinamento dal nickname:
+                  è un indizio, non una certezza.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {donationsOf?.donations.map((d, i) => (
+              <div key={i} className="rounded-xl border bg-muted/40 px-3 py-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold text-foreground">{money(d.amount, d.currency)}</span>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(d.createdAt)}</span>
+                </div>
+                {d.message && (
+                  <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap break-words">{d.message}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminPage>
   );
 }

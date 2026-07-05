@@ -296,6 +296,13 @@ export interface AdminDonations {
   donations: AdminDonation[];
 }
 
+export type AdminUserDonationsItem = {
+  amount: string;
+  currency: string;
+  message?: string | null;
+  createdAt: string;
+};
+
 export interface AdminUser {
   id: number;
   nickname: string;
@@ -303,6 +310,9 @@ export interface AdminUser {
   area?: string | null;
   albumCount: number;
   donationCount: number;
+  donationTotal: string;
+  donationCurrency: string;
+  donations: AdminUserDonationsItem[];
   exchangesCompleted: number;
   isBlocked: boolean;
   createdAt?: string;

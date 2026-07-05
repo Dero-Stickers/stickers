@@ -1384,13 +1384,32 @@ components:
           type: integer
         donationCount:
           type: integer
+        donationTotal:
+          type: string
+        donationCurrency:
+          type: string
+        donations:
+          type: array
+          items:
+            type: object
+            properties:
+              amount:
+                type: string
+              currency:
+                type: string
+              message:
+                type: string
+                nullable: true
+              createdAt:
+                type: string
+            required: [amount, currency, createdAt]
         exchangesCompleted:
           type: integer
         isBlocked:
           type: boolean
         createdAt:
           type: string
-      required: [id, nickname, cap, albumCount, donationCount, exchangesCompleted, isBlocked]
+      required: [id, nickname, cap, albumCount, donationCount, donationTotal, donationCurrency, donations, exchangesCompleted, isBlocked]
 
     BlockUserBody:
       type: object

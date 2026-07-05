@@ -74,32 +74,51 @@ const listUsers: RequestHandler = async (req, res) => {
     // Donazioni per nickname (best-effort): match sul nome del donatore Ko-fi
     // (from_name) OPPURE sul messaggio che contiene il nickname (il modale invita
     // l'utente a incollarlo). NON è garantito al 100% — è un INDIZIO, non un dato
-    // certo. Una sola query aggregata: per ogni nickname, quante donazioni lo
-    // citano. Confronto case-insensitive.
-    const donRows = await db.execute<{ nick: string; n: number }>(
-      sql`SELECT u.nickname AS nick, COUNT(d.id)::int AS n
+    // certo. Un utente può avere PIÙ donazioni: restituiamo l'elenco completo
+    // (data, importo, valuta, messaggio) così l'admin apre il dettaglio dal modale.
+    // Una sola query, poi raggruppiamo in memoria per nickname (dataset piccolo).
+    const donRows = await db.execute<{
+      nick: string; amount: string; currency: string; message: string | null; created_at: Date;
+    }>(
+      sql`SELECT u.nickname AS nick, d.amount, d.currency, d.message, d.created_at
           FROM users u
           JOIN donations d
             ON lower(d.from_name) = lower(u.nickname)
             OR d.message ILIKE '%' || u.nickname || '%'
           WHERE u.is_admin = false
-          GROUP BY u.nickname`,
+          ORDER BY d.created_at DESC`,
     );
-    const donationMap = new Map<string, number>(
-      (((donRows as any).rows ?? donRows) as { nick: string; n: number }[]).map(r => [r.nick.toLowerCase(), r.n]),
-    );
+    const donationsByNick = new Map<string, Array<{ amount: string; currency: string; message: string | null; createdAt: string }>>();
+    for (const r of ((donRows as any).rows ?? donRows) as any[]) {
+      const key = String(r.nick).toLowerCase();
+      const list = donationsByNick.get(key) ?? [];
+      list.push({
+        amount: String(r.amount),
+        currency: r.currency,
+        message: r.message ?? null,
+        createdAt: new Date(r.created_at).toISOString(),
+      });
+      donationsByNick.set(key, list);
+    }
 
-    const result = users.map(u => ({
-      id: u.id,
-      nickname: u.nickname,
-      cap: u.cap,
-      area: u.area,
-      albumCount: albumMap.get(u.id) ?? 0,
-      donationCount: donationMap.get(u.nickname.toLowerCase()) ?? 0,
-      exchangesCompleted: u.exchangesCompleted,
-      isBlocked: u.isBlocked,
-      createdAt: u.createdAt.toISOString(),
-    }));
+    const result = users.map(u => {
+      const donations = donationsByNick.get(u.nickname.toLowerCase()) ?? [];
+      const donationTotal = donations.reduce((s, d) => s + Number(d.amount || 0), 0);
+      return {
+        id: u.id,
+        nickname: u.nickname,
+        cap: u.cap,
+        area: u.area,
+        albumCount: albumMap.get(u.id) ?? 0,
+        donationCount: donations.length,
+        donationTotal: donationTotal.toFixed(2),
+        donationCurrency: donations[0]?.currency ?? "EUR",
+        donations,
+        exchangesCompleted: u.exchangesCompleted,
+        isBlocked: u.isBlocked,
+        createdAt: u.createdAt.toISOString(),
+      };
+    });
     res.json(result);
   } catch (err) {
     req.log?.error(err);

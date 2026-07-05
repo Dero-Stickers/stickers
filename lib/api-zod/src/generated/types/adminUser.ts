@@ -5,6 +5,7 @@
  * Sticker Matchbox API
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminUserDonationsItem } from "./adminUserDonationsItem";
 
 export interface AdminUser {
   id: number;
@@ -13,6 +14,9 @@ export interface AdminUser {
   area?: string | null;
   albumCount: number;
   donationCount: number;
+  donationTotal: string;
+  donationCurrency: string;
+  donations: AdminUserDonationsItem[];
   exchangesCompleted: number;
   isBlocked: boolean;
   createdAt?: string;
