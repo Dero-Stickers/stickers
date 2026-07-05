@@ -282,7 +282,7 @@
   (`text-primary` + `strokeWidth 0.75`). Nessun cambiamento funzionale/DB.
 - **Email di supporto UNICA + testi legali in box unico** — l'email di supporto è ora una sola,
   gestita da `app_settings.support_email` (admin → Impostazioni) via hook condiviso
-  `useSupportEmail()` (fallback `info-stickers@deroarts.com`): usata da Account bloccato, firma
+  `useSupportEmail()` (fallback `stickers@deroarts.com`): usata da Account bloccato, firma
   Profilo, info Pagamenti; nei testi legali il segnaposto `{EMAIL_SUPPORTO}` è sostituito al render
   in `LegalPage`. Prima l'email era hardcoded in 3 punti e il campo admin era inerte; ora cambiarla
   in admin la propaga ovunque (verificato e2e). In Impostazioni i 3 testi legali (privacy/termini/

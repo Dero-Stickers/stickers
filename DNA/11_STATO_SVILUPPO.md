@@ -96,7 +96,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
   nuovo `DELETE /api/admin/chats/:chatId`; dialog con **Elimina chat** + **Blocca partecipante**. Vedi `07`.
 - **Privacy/Termini aggiornati** (DB `app_settings`) per Google/Email: raccolta email, fornitori Google(OAuth)+Brevo.
 - **Dominio `deroarts.com`** dell'owner acquistato (Cloudflare + Zoho Mail) — per l'integrazione FUTURA di
-  Stickers (`stickers.deroarts.com`, email `info-stickers@`, anti-spam). Solo documentato, non collegato. Vedi `19`.
+  Stickers (`stickers.deroarts.com`, email `stickers@deroarts.com` già attiva, anti-spam). Dominio non ancora collegato. Vedi `19`.
 
 ## Fatto
 

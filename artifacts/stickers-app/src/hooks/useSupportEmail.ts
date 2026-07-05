@@ -5,7 +5,7 @@ import { useGetAppSettings } from "@workspace/api-client-react";
 // o le impostazioni non sono ancora caricate. Tutti i punti dell'app che mostrano
 // un contatto di supporto devono usare questo hook, così cambiare l'email nel
 // pannello la aggiorna ovunque in modo consolidato.
-export const SUPPORT_EMAIL_FALLBACK = "info-stickers@deroarts.com";
+export const SUPPORT_EMAIL_FALLBACK = "stickers@deroarts.com";
 
 export function useSupportEmail(): string {
   const { data: settings } = useGetAppSettings();

@@ -36,7 +36,7 @@ const getSettings: RequestHandler = async (req, res) => {
     const guideMode = gm === "first" || gm === "always" ? gm : "off";
 
     res.json({
-      supportEmail: map["support_email"] ?? "info-stickers@deroarts.com",
+      supportEmail: map["support_email"] ?? "stickers@deroarts.com",
       appName: map["app_name"] ?? "Stickers Matchbox",
       privacyPolicyText: map["privacy_policy"] ?? "",
       termsText: map["terms"] ?? "",

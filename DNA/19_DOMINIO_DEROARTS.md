@@ -12,10 +12,10 @@ Quando integreremo Stickers nel dominio, useremo:
 - **Un solo sottodominio:** `stickers.deroarts.com` → app + admin + API insieme (deploy unico su
   Render, vedi §2). Niente sottodomini separati per admin/api. Da configurare su Cloudflare DNS come
   CNAME col valore dato da Render.
-- **Email dedicata definitiva:** `stickers@deroarts.com` (alias su Zoho → inoltra a `info@deroarts.com`).
-  Oggi l'app usa ancora `info-stickers@` (da allineare, vedi §3). Il dominio proprio con DKIM/DMARC
-  risolve anche il nodo anti-spam delle email auth (oggi Brevo da dominio gratuito finisce in SPAM —
-  vedi `18_PIANO_AUTH.md`).
+- **Email dedicata definitiva:** `stickers@deroarts.com` — **CREATA e ATTIVA** (alias Zoho su
+  `info@deroarts.com`, nome visualizzato "Stickers"). L'app la usa ovunque (DB `support_email` +
+  fallback codice allineati, 5 lug). Il dominio proprio con DKIM/DMARC risolve anche il nodo anti-spam
+  delle email auth (oggi Brevo da dominio gratuito finisce in SPAM — vedi `18_PIANO_AUTH.md`).
 
 ## 1. Identità dominio
 
@@ -62,17 +62,19 @@ Devono **puntare/inoltrare a `info@deroarts.com`** salvo diversa decisione; nien
 verificare prima se il piano Zoho Free lo consente (eventuale upgrade a Zoho Mail Lite).
 - Altri previsti: `info-demo@`, `info-barnode@`, `info-aquilanera@`, `info-ccv@`.
 
-### ⚠️ Email di Stickers — indirizzo DEFINITIVO vs quello usato OGGI
-- **Definitivo (scelta owner):** `stickers@deroarts.com` — sarà l'email di riferimento/supporto di Stickers.
-- **Oggi l'app usa invece `info-stickers@deroarts.com`** in 4 punti (da allineare al go-live):
-  1. DB: `app_settings.support_email` = `info-stickers@deroarts.com`.
-  2. Codice fallback: [`useSupportEmail.ts`](../artifacts/stickers-app/src/hooks/useSupportEmail.ts) (`SUPPORT_EMAIL_FALLBACK`).
-  3. Codice fallback: [`settings.ts`](../artifacts/api-server/src/routes/settings.ts) (default `supportEmail`).
-  4. Codice fallback: [`LegalPage.tsx`](../artifacts/stickers-app/src/pages/LegalPage.tsx).
-- **Nota:** nessuno dei due indirizzi **esiste ancora su Zoho** (l'alias va creato). Al go-live:
-  creare la casella/alias `stickers@deroarts.com` su Zoho (→ inoltra a `info@deroarts.com`), poi cambiare
-  i 4 punti sopra da `info-stickers@` a `stickers@`. Fonte di verità runtime = DB (`support_email`): basta
-  aggiornare quella riga da Admin → Impostazioni; i 3 fallback codice sono solo di sicurezza.
+### Email di Stickers — `stickers@deroarts.com` (DEFINITIVA, attiva e allineata)
+- **Email di riferimento/supporto di Stickers: `stickers@deroarts.com`** — CREATA e ATTIVA (5 lug 2026).
+  Alias Zoho dell'utente `info@deroarts.com` (Mail Admin → Utenti → Davide → Impostazioni cassetta
+  postale → Alias di posta → Aggiungi), nome visualizzato **"Stickers"**, NON impostato come indirizzo
+  principale (`info@` resta la cassetta; `stickers@` riceve e invia sulla stessa casella). Coperta da
+  SPF/DKIM/DMARC già attivi — nessun record DNS nuovo richiesto.
+- **Allineamento nell'app COMPLETATO (5 lug):** l'email è `stickers@deroarts.com` in tutti i punti:
+  1. DB: `app_settings.support_email` = `stickers@deroarts.com` (fonte di verità runtime; modificabile
+     da Admin → Impostazioni → aggiorna ovunque, testi legali `{EMAIL_SUPPORTO}` inclusi).
+  2. Fallback [`useSupportEmail.ts`](../artifacts/stickers-app/src/hooks/useSupportEmail.ts) (`SUPPORT_EMAIL_FALLBACK`).
+  3. Fallback [`settings.ts`](../artifacts/api-server/src/routes/settings.ts) (default `supportEmail`).
+  4. Fallback [`LegalPage.tsx`](../artifacts/stickers-app/src/pages/LegalPage.tsx).
+  I 3 fallback codice sono solo di sicurezza (usati se il DB non risponde): allineati per coerenza.
 
 ## 4. Record DNS attuali (email Zoho) — NON modificare senza verifica
 
@@ -122,8 +124,8 @@ verificare prima se il piano Zoho Free lo consente (eventuale upgrade a Zoho Mai
 3. Aggiornare in **Supabase Auth**: Site URL + Redirect URLs al nuovo dominio `stickers.deroarts.com` (oggi puntano
    a `stickers-matchbox.onrender.com` — vedi `18_PIANO_AUTH.md`).
 4. Aggiornare **CSP/CORS** e eventuali URL hardcoded nell'app al nuovo dominio.
-5. **Email Stickers:** creare su Zoho l'alias definitivo **`stickers@deroarts.com`** (→ inoltra a
-   `info@deroarts.com`) e allineare i 4 punti che oggi usano `info-stickers@` (vedi §3, box ⚠️).
+5. **Email Stickers: FATTO** ✅ — alias `stickers@deroarts.com` creato su Zoho e allineato ovunque
+   nell'app (DB + fallback codice). Vedi §3.
 6. **Email auth anti-spam:** valutare l'invio da `stickers@deroarts.com` (dominio proprio con DKIM/DMARC) al
    posto del mittente gmail su Brevo → risolve il problema SPAM documentato in `18_PIANO_AUTH.md`.
 7. **Donazioni Ko-fi:** aggiornare l'URL webhook su Ko-fi al nuovo dominio (`https://stickers.deroarts.com/api/kofi/webhook`).
