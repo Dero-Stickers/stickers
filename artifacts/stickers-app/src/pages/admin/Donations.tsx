@@ -5,11 +5,23 @@
 // dall'app. Finché non è arrivata nessuna donazione, mostriamo lo stato "in
 // arrivo" (Ko-fi si collega configurando il webhook nel pannello Ko-fi).
 
+import { useMemo, useState } from "react";
 import { Heart, Gift, TrendingUp, Clock, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
-import { useGetAdminDonations, getGetAdminDonationsQueryKey } from "@workspace/api-client-react";
+import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
+import {
+  useGetAdminDonations,
+  getGetAdminDonationsQueryKey,
+  type AdminDonation,
+} from "@workspace/api-client-react";
 
 // Formatta un importo "12.50" + valuta in "€ 12,50" (o simbolo generico).
 function money(amount: string | number, currency = "EUR"): string {
@@ -29,6 +41,16 @@ function formatDate(iso: string | null | undefined): string {
   return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short", year: "numeric" }).format(d);
 }
 
+// Data + ora, per il modale di dettaglio (l'elenco mostra solo la data).
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  }).format(d);
+}
+
 export function AdminDonations() {
   // refetchOnMount "always" + niente cache stantia: ogni apertura della pagina
   // ricarica i dati freschi dal server, così una donazione appena arrivata via
@@ -40,6 +62,30 @@ export function AdminDonations() {
   const donations = data?.donations ?? [];
   const currency = summary?.currency ?? "EUR";
   const isEmpty = !isLoading && donations.length === 0;
+
+  // Modale dettaglio: mostra TUTTE le info della donazione (messaggio intero).
+  const [selected, setSelected] = useState<AdminDonation | null>(null);
+
+  // Ordinamento su Data / Importo (SortHeader consolidato, come Album/Utenti).
+  // Default: ordine naturale (dal server: più recenti in alto).
+  const [sortKey, setSortKey] = useState<"createdAt" | "amount" | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const handleSort = (col: "createdAt" | "amount") =>
+    setSortKey((prev) => {
+      if (prev === col) { setSortDir((d) => (d === "asc" ? "desc" : "asc")); return prev; }
+      setSortDir("asc");
+      return col;
+    });
+  const sortedDonations = useMemo(() => {
+    const list = [...donations];
+    if (!sortKey) return list; // ordine naturale del server
+    list.sort((a, b) =>
+      sortKey === "amount"
+        ? Number(a.amount) - Number(b.amount)
+        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    return sortDir === "asc" ? list : list.reverse();
+  }, [donations, sortKey, sortDir]);
 
   const cards = [
     { label: "Totale raccolto", value: money(summary?.total ?? "0", currency), icon: Heart, color: "text-accent" },
@@ -102,38 +148,86 @@ export function AdminDonations() {
         </Card>
       )}
 
-      {/* Elenco donazioni — contenuto celle CENTRATO (coerente con le
-          intestazioni già centrate). Solo questa tabella scorre. */}
+      {/* Elenco donazioni — contenuto celle CENTRATO. Data e Importo sono
+          ordinabili (SortHeader). Ogni riga è cliccabile → apre il modale con
+          tutte le info (messaggio intero). Solo questa tabella scorre. */}
       <AdminTable
         isLoading={isLoading}
         head={
           <>
-            <th>Data</th>
+            <th><SortHeader label="Data" col="createdAt" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} /></th>
             <th>Da</th>
             <th className="hidden sm:table-cell">Messaggio</th>
-            <th>Importo</th>
+            <th><SortHeader label="Importo" col="amount" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} /></th>
+            <th>Dettagli</th>
           </>
         }
       >
-        {donations.length === 0 ? (
+        {sortedDonations.length === 0 ? (
           <tr>
-            <td colSpan={4} className="text-center text-muted-foreground">
+            <td colSpan={5} className="text-center text-muted-foreground">
               <div className="py-10">Nessuna donazione ancora.</div>
             </td>
           </tr>
         ) : (
-          donations.map((d) => (
-            <tr key={d.id}>
+          sortedDonations.map((d) => (
+            <tr
+              key={d.id}
+              onClick={() => setSelected(d)}
+              className="cursor-pointer hover:bg-muted/60 transition-colors"
+              title="Apri dettaglio donazione"
+            >
               <td className="whitespace-nowrap text-center text-foreground">{formatDate(d.createdAt)}</td>
               <td className="text-center text-foreground">{d.fromName || "Anonimo"}</td>
               <td className="hidden sm:table-cell max-w-xs truncate text-center text-muted-foreground">
                 {d.message || "—"}
               </td>
               <td className="whitespace-nowrap text-center font-semibold">{money(d.amount, d.currency)}</td>
+              <td className="text-center">
+                <span className="text-primary text-xs font-medium underline">Vedi</span>
+              </td>
             </tr>
           ))
         )}
       </AdminTable>
+
+      {/* Modale dettaglio donazione — tutte le info per intero, messaggio incluso. */}
+      <Dialog open={selected !== null} onOpenChange={(o) => { if (!o) setSelected(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="h-4 w-4 text-accent" />
+              Dettaglio donazione
+            </DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Importo</span>
+                <span className="font-semibold">{money(selected.amount, selected.currency)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Da</span>
+                <span className="font-medium text-right">{selected.fromName || "Anonimo"}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Data e ora</span>
+                <span className="text-right">{formatDateTime(selected.createdAt)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Tipo</span>
+                <span className="text-right">{selected.type || "—"}</span>
+              </div>
+              <div className="pt-1">
+                <p className="text-muted-foreground mb-1">Messaggio</p>
+                <div className="rounded-lg border bg-muted/40 px-3 py-2 whitespace-pre-wrap break-words text-foreground">
+                  {selected.message?.trim() || "Nessun messaggio"}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminPage>
   );
 }
