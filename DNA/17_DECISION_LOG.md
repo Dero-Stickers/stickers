@@ -7,6 +7,13 @@
 
 ## 2026-07
 
+- **Dominio, hardening sicurezza, icone [6 lug]** — (1) **`stickers.deroarts.com` LIVE**: collegato a Render
+  (CNAME Solo DNS), CORS + Supabase redirect aggiunti in CONVIVENZA con onrender (vedi `19`). (2) **Hardening
+  a costo zero** dopo audit: freno anti-flood globale su `/api` (240 req/min per IP, `middlewares/rateLimitGlobal.ts`,
+  riusa `checkRateLimit`) + validazione formato PIN (4-6 cifre) in ingresso al login. (3) **Bundle client offuscato**
+  (terser: mangle toplevel, drop console/debugger, niente sourcemap) — il JS servito al browser è illeggibile.
+  (4) **Icone PWA** rifatte da nuova sorgente brand (mobile/desktop/maskable/favicon). PIN: admin `dero`/140478
+  (6 cifre), utente `Dero975`/1404 (4 cifre). Repo GitHub privato: sorgente non accessibile.
 - **Credenziali admin gestibili da UI + PIN 6 cifre [5 lug]** — l'admin ora si chiama `dero` con PIN
   a 6 cifre (era `admin`/`0000`). Aggiunto backend `hashPin()` + `PATCH /auth/me/credentials` (cambia
   nickname/PIN confermando col PIN attuale; unicità nickname; ritorna user+token) e un blocco "Account

@@ -67,6 +67,24 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Offuscamento del bundle client (il JS servito al browser è sempre
+    // ispezionabile: qui lo rendiamo il più illeggibile/scomodo possibile a costo
+    // zero). terser è più aggressivo di esbuild: rinomina TUTTE le variabili/funzioni
+    // locali, elimina spazi/commenti, rimuove i console.* e i debugger in produzione.
+    // NIENTE sourcemap (non le generiamo): eviterebbero tutto ricostruendo il sorgente.
+    minify: "terser",
+    sourcemap: false,
+    // Cast: i tipi di terser non sono sempre risolti dai .d.ts di Vite, ma questi
+    // campi sono validi a runtime (compress/mangle/format standard di terser).
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        passes: 2,
+      },
+      mangle: { toplevel: true },
+      format: { comments: false },
+    } as Record<string, unknown>,
     rollupOptions: {
       output: {
         // Split dei "vendor" stabili in chunk separati: a ogni deploy il service
