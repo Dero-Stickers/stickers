@@ -14,7 +14,7 @@ riunisce la specifica funzionale, lo stato di sviluppo e le guide operative.
 | `03_ALBUM_FIGURINE.md` | Gestione album e figurine |
 | `04_MATCHING_SCAMBI.md` | Logica di matching e scambi 1:1 |
 | `05_CHAT_MODERAZIONE.md` | Chat, segnalazioni, moderazione admin |
-| `06_PREMIUM_DEMO.md` | Monetizzazione: sblocco chat a pagamento (no demo, no abbonamenti) |
+| `06_PREMIUM_DEMO.md` | Donazioni Ko-fi — app 100% gratuita (monetizzazione/paywall rimossi) |
 | `07_ADMIN_PANNELLO.md` | Pannello admin — sezioni e funzionalità |
 | `08_NAVIGAZIONE_UI.md` | Navigazione utente, layout, stile UI |
 | `09_DATABASE.md` | Schema DB (Drizzle), Supabase, distanza CAP |
@@ -30,16 +30,20 @@ riunisce la specifica funzionale, lo stato di sviluppo e le guide operative.
 | `15_PROSSIMO_PROMPT.md` | Prompt operativo per la prossima sessione |
 | `16_STRESS_TEST_AUDIT.md` | Audit stress test: soglie di tenuta free tier, misure, migliorie |
 | `17_DECISION_LOG.md` | Decisioni tecniche rilevanti (registro, le più recenti in alto) |
+| `18_GUIDA_INTERATTIVA.md` | Guida/onboarding interattivo: step, modalità globale (off/first/always) |
 | `18_PIANO_AUTH.md` | Sistema di accesso: Google + Email/password, nickname, stato |
-| `19_DOMINIO_DEROARTS.md` | Dominio deroarts.com (Cloudflare + Zoho Mail): riferimento per l'integrazione FUTURA di Stickers (sottodomini, email dedicata, anti-spam) |
+| `19_DOMINIO_DEROARTS.md` | Dominio deroarts.com (Cloudflare + Zoho Mail) + integrazione Stickers (URL Render, Ko-fi, email `stickers@deroarts.com`, checklist go-live) |
+| `20_VERIFICA_ENTERPRISE.md` | **Mappa-checklist per la verifica finale pre-pubblicazione**: tutte le aree (logiche, funzioni, pagine, sezioni, sicurezza) con rimando a DNA + codice |
 
 ### Archivio
 | File | Contenuto |
 |------|-----------|
-| `99_SPEC_COMPLETA_ORIGINALE.md` | Specifica tecnica completa originale (inglese) |
+| `99_SPEC_COMPLETA_ORIGINALE.md` | Specifica tecnica completa originale (inglese) — storico, molte parti superate |
 
 ## Convenzioni
 
 - Testo per l'utente in **italiano**; codice/file/cartelle in **inglese**.
 - Documentazione tecnica in italiano (salvo termini tecnici standard).
 - `11_STATO_SVILUPPO.md` è il documento da tenere **sempre aggiornato**.
+- `19_DOMINIO_DEROARTS.md` = riferimento vivo per dominio/email/URL/deploy.
+- **Per la verifica finale pre-pubblicazione** partire da `20_VERIFICA_ENTERPRISE.md` (mappa di tutte le aree da consolidare, §1→§12).
