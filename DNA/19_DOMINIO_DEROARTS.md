@@ -133,12 +133,17 @@ verificare prima se il piano Zoho Free lo consente (eventuale upgrade a Zoho Mai
    certificato HTTPS in emissione automatica.
 2. **Cloudflare DNS: FATTO** ✅ (5 lug) — CNAME `stickers` → `stickers-matchbox.onrender.com`,
    **Solo DNS** (proxy OFF, richiesto da Render). Documentato in §4.
-3. Aggiornare in **Supabase Auth**: Site URL + Redirect URLs al nuovo dominio `stickers.deroarts.com` (oggi puntano
-   a `stickers-matchbox.onrender.com` — vedi `18_PIANO_AUTH.md`).
-4. Aggiornare **CSP/CORS** e eventuali URL hardcoded nell'app al nuovo dominio.
+3. **Supabase Auth: FATTO** ✅ (5 lug) — aggiunto `https://stickers.deroarts.com/**` ai Redirect URLs
+   (CONVIVENZA: restano anche `onrender.com/**` e `localhost:5001/**`). Site URL lasciato su onrender per
+   ora (si cambierà quando si spegne onrender). Login Google/email funziona su entrambi i domini.
+4. **CORS: FATTO** ✅ (5 lug) — `app.ts` accetta ENTRAMBE le origini (onrender + stickers.deroarts.com),
+   deployato live. Nessun altro URL onrender hardcoded nel codice (il redirect social usa
+   `window.location.origin`, si adatta da solo al dominio).
 5. **Email Stickers: FATTO** ✅ — alias `stickers@deroarts.com` creato su Zoho e allineato ovunque
    nell'app (DB + fallback codice). Vedi §3.
 6. **Email auth anti-spam:** valutare l'invio da `stickers@deroarts.com` (dominio proprio con DKIM/DMARC) al
    posto del mittente gmail su Brevo → risolve il problema SPAM documentato in `18_PIANO_AUTH.md`.
-7. **Donazioni Ko-fi:** aggiornare l'URL webhook su Ko-fi al nuovo dominio (`https://stickers.deroarts.com/api/kofi/webhook`).
+7. **Donazioni Ko-fi:** webhook lasciato su `https://stickers-matchbox.onrender.com/api/kofi/webhook`
+   (funzionante) durante la convivenza — NON spostato per non rischiare di perdere donazioni. Da spostare
+   a `https://stickers.deroarts.com/api/kofi/webhook` solo quando si spegne onrender.
 8. Aggiornare i **testi legali** (privacy/termini in `app_settings`) con il nuovo dominio e la nuova email di contatto.
