@@ -86,6 +86,50 @@
   color: #93a0b4;
 }
 
+/* ── Effetto "polvere magica" — SOLO sul primo passo (benvenuto) ─────────────
+   Il fumetto si materializza (scale+fade) e sopra scintillano alcune particelle
+   dorate che si dissolvono. Tutto CSS, parte una volta, si auto-rimuove: nessun
+   peso runtime né dipendenze. Rispetta prefers-reduced-motion. */
+.driver-popover.sticker-guide.sg-magic {
+  animation: sg-materialize .55s cubic-bezier(.2, .9, .25, 1.4) both;
+}
+@keyframes sg-materialize {
+  0%   { opacity: 0; transform: scale(.82); filter: blur(3px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); }
+}
+/* Layer particelle: figlio del popover, non intercetta i tocchi. */
+.sg-magic-dust {
+  position: absolute;
+  inset: -14px;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+.sg-magic-dust i {
+  position: absolute;
+  top: var(--y, 50%);
+  left: var(--x, 50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  /* scintilla dorata (accent) con alone */
+  background: radial-gradient(circle, #ffe08a 0%, hsl(37 90% 55%) 55%, rgba(255,193,7,0) 72%);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+  animation: sg-sparkle 1s ease-out forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes sg-sparkle {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  35%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -22px))) scale(.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .driver-popover.sticker-guide.sg-magic { animation: none; }
+  .sg-magic-dust { display: none; }
+}
+
 /* ── Effetti DIMOSTRATIVI della guida (solo visivi, zero dati) ───────────────
    Colori identici a stateColors (StickerCell): posseduta=verde, doppia=rossa,
    mancante=grigia. Applicati/rimossi via classi: l'app torna com'era. */

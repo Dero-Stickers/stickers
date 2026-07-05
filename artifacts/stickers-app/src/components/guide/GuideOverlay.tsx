@@ -55,6 +55,43 @@ function stepDescription(body: string, kind: string, hintOverride?: string): str
   return `<p class="sg-body">${withGuideIcons(body)}</p>${hint}`;
 }
 
+// Effetto "polvere magica" sul fumetto (solo il passo di benvenuto): aggiunge la
+// classe `sg-magic` (materializzazione) e inietta N scintille dorate che si
+// dissolvono verso l'alto. Tutto CSS; le particelle si auto-rimuovono. driver.js
+// renderizza il popover async → piccolo retry finché il nodo esiste.
+function applyMagicDust() {
+  let tries = 0;
+  const run = () => {
+    const pop = document.querySelector<HTMLElement>(".driver-popover.sticker-guide");
+    if (!pop) { if (tries++ < 20) setTimeout(run, 30); return; }
+    pop.classList.add("sg-magic");
+    // riavvia l'animazione di materializzazione anche se il nodo è riusato
+    pop.style.animation = "none"; void pop.offsetWidth; pop.style.animation = "";
+    const old = pop.querySelector(".sg-magic-dust");
+    if (old) old.remove();
+    const dust = document.createElement("div");
+    dust.className = "sg-magic-dust";
+    // posizioni/traiettorie "casuali" ma deterministiche (niente Math.random)
+    const seeds = [
+      [12, 20, -18, -30, 0], [78, 16, 16, -34, 0.06], [46, 8, -4, -40, 0.12],
+      [26, 72, -22, 20, 0.02], [70, 80, 20, 24, 0.16], [90, 54, 28, -10, 0.1],
+      [8, 52, -28, -8, 0.2], [55, 92, 6, 28, 0.24],
+    ];
+    for (const [x, y, dx, dy, d] of seeds) {
+      const s = document.createElement("i");
+      s.style.setProperty("--x", `${x}%`);
+      s.style.setProperty("--y", `${y}%`);
+      s.style.setProperty("--dx", `${dx}px`);
+      s.style.setProperty("--dy", `${dy}px`);
+      s.style.setProperty("--d", `${d}s`);
+      dust.appendChild(s);
+    }
+    pop.appendChild(dust);
+    setTimeout(() => dust.remove(), 1400); // finita l'animazione, via le particelle
+  };
+  run();
+}
+
 export function GuideOverlay() {
   const { active, stepIndex, next, finish } = useGuide();
   const [location, setLocation] = useLocation();
@@ -158,6 +195,7 @@ export function GuideOverlay() {
           ...(step.align ? { align: step.align } : {}),
         },
       });
+      if (step.magic) applyMagicDust();
     };
     const t = setTimeout(show, 80); // lascia montare la rotta
     return () => { cancelled = true; clearTimeout(t); };

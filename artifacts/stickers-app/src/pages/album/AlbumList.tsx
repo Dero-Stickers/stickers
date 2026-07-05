@@ -177,7 +177,8 @@ export function AlbumList() {
       <div className="px-4 pt-3 shrink-0">
         <div className="flex rounded-lg bg-muted p-1">
           <button
-            className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === "my" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+            data-guide="guide-mine-tab"
+            className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${activeTab === "my" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"} ${guideOpenDemo ? "sg-lit" : ""}`}
             onClick={() => setActiveTab("my")}
           >
             I miei album ({myAlbums?.length ?? 0})

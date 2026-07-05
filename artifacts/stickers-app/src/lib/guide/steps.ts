@@ -85,6 +85,9 @@ export interface GuideStep {
     body: string;
     doneBody: string;
   }[];
+  /** true = effetto "polvere magica" alla comparsa del fumetto (solo il primo
+   *  passo di benvenuto). Solo CSS, si auto-rimuove. */
+  magic?: boolean;
 }
 
 export const GUIDE_STEPS: GuideStep[] = [
@@ -96,6 +99,7 @@ export const GUIDE_STEPS: GuideStep[] = [
     kind: "action",
     route: "/",
     target: "nav-album",
+    magic: true, // effetto polvere magica: benvenuto = primo impatto
     title: "Benvenuto in Stickers!",
     // Icone inline = le STESSE dell'app: {match} fulmine arancione, {album} libro.
     // Verbi unificati: "trova" e "gestisci" (stessi degli altri passi album).
@@ -130,7 +134,9 @@ export const GUIDE_STEPS: GuideStep[] = [
     route: "/album",
     target: "guide-first-album",
     title: "Gestisci i tuoi album",
-    body: "Eccolo nella tua collezione.<br>Tocca per vedere le figurine.",
+    // "I miei album" è illuminato (guideOpenDemo → sg-lit): l'utente vede che
+    // l'album aggiunto ora sta in QUESTA sezione, non più in "Disponibili".
+    body: "Ora è tra “I miei album”.<br>Tocca per vedere le figurine.",
   },
   // Dentro l'album: PROVA PRATICA — la cella parte VERDE (già spiegato), poi
   // 2 tocchi la portano a rosso e grigio (solo visivo, nessun dato alterato).
@@ -223,7 +229,7 @@ export const GUIDE_STEPS: GuideStep[] = [
     side: "bottom",
     align: "start",
     title: "Vicini a te",
-    body: "I collezionisti vicini. Il raggio decide quanto lontano cercare.",
+    body: "I collezionisti vicini a te.<br>Il raggio decide quanto lontano cercare.",
   },
   {
     id: "match-best",
@@ -245,7 +251,7 @@ export const GUIDE_STEPS: GuideStep[] = [
     side: "bottom",
     align: "end",
     title: "Cerca figurina {search}",
-    body: "Cerchi UNA figurina precisa? Qui trovi subito chi ce l'ha.",
+    body: "Cerchi UNA figurina precisa?<br>Qui trovi subito chi ce l'ha.",
   },
   // → apri il primo match (freccia sulla card)
   {

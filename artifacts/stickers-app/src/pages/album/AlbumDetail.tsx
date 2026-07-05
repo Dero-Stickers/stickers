@@ -339,8 +339,9 @@ export function AlbumDetail() {
             <div className="grid gap-1.5 grid-cols-7 sm:grid-cols-9 md:grid-cols-10 lg:grid-cols-12">
               {block.stickers.map((s, cellIdx) => (
                 // Anchor della guida su DUE figurine reali per variare i passi:
-                // la 1ª (guide-first-sticker) per "Gestisci le figurine", una nel
-                // mezzo (guide-mid-sticker) per il passo "Dettagli" (long-press).
+                // la 1ª (guide-first-sticker) per "Gestisci le figurine", e la
+                // 011 — VERDE/posseduta — (guide-mid-sticker) per "Dettagli"
+                // (long-press): un esempio positivo, non una grigia.
                 <StickerCell
                   key={s.stickerId}
                   sticker={s}
@@ -350,7 +351,7 @@ export function AlbumDetail() {
                   dataGuide={
                     blockIdx === 0 && cellIdx === 0
                       ? "guide-first-sticker"
-                      : blockIdx === 0 && cellIdx === 9
+                      : isGuideDemo && s.number === 11
                         ? "guide-mid-sticker"
                         : undefined
                   }
