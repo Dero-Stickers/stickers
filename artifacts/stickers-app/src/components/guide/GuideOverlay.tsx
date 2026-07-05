@@ -74,7 +74,10 @@ export function GuideOverlay() {
     if (!drvRef.current) {
       drvRef.current = driver({
         animate: true,
-        overlayOpacity: 0.72,
+        // Velo scuro della guida: chiaro (0.4) così la parte in ombra resta
+        // ben leggibile, mantenendo un minimo di contrasto sull'elemento in
+        // luce. Unico punto: vale per TUTTI i passi.
+        overlayOpacity: 0.4,
         stagePadding: 6,
         stageRadius: 12,
         allowClose: false,
