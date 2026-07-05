@@ -41,12 +41,13 @@ export function GuideFinishDialog({
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // "Inizia a giocare": chiude la guida E porta l'utente in home (l'app si apre
-  // sulla schermata principale, pronta all'uso — non resta sull'ultima pagina
-  // della guida, la chat).
+  // "Inizia! Trova il tuo primo Match": porta l'utente in HOME e chiude la guida.
+  // Navighiamo PRIMA (setLocation) e chiudiamo la guida DOPO, in un microtask:
+  // così la chiusura del modale/della guida non "vince" sul cambio rotta (con
+  // l'ordine inverso l'app restava sull'ultima pagina della guida).
   const handleStart = () => {
-    onClose();
     setLocation("/");
+    setTimeout(onClose, 0);
   };
 
   // Donazione: PER ORA solo predisposta. Al tocco un ringraziamento gentile;
