@@ -1382,13 +1382,15 @@ components:
           nullable: true
         albumCount:
           type: integer
+        donationCount:
+          type: integer
         exchangesCompleted:
           type: integer
         isBlocked:
           type: boolean
         createdAt:
           type: string
-      required: [id, nickname, cap, albumCount, exchangesCompleted, isBlocked]
+      required: [id, nickname, cap, albumCount, donationCount, exchangesCompleted, isBlocked]
 
     BlockUserBody:
       type: object

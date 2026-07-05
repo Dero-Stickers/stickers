@@ -71,12 +71,31 @@ const listUsers: RequestHandler = async (req, res) => {
       (((albumRows as any).rows ?? albumRows) as { user_id: number; n: number }[]).map(r => [r.user_id, r.n]),
     );
 
+    // Donazioni per nickname (best-effort): match sul nome del donatore Ko-fi
+    // (from_name) OPPURE sul messaggio che contiene il nickname (il modale invita
+    // l'utente a incollarlo). NON è garantito al 100% — è un INDIZIO, non un dato
+    // certo. Una sola query aggregata: per ogni nickname, quante donazioni lo
+    // citano. Confronto case-insensitive.
+    const donRows = await db.execute<{ nick: string; n: number }>(
+      sql`SELECT u.nickname AS nick, COUNT(d.id)::int AS n
+          FROM users u
+          JOIN donations d
+            ON lower(d.from_name) = lower(u.nickname)
+            OR d.message ILIKE '%' || u.nickname || '%'
+          WHERE u.is_admin = false
+          GROUP BY u.nickname`,
+    );
+    const donationMap = new Map<string, number>(
+      (((donRows as any).rows ?? donRows) as { nick: string; n: number }[]).map(r => [r.nick.toLowerCase(), r.n]),
+    );
+
     const result = users.map(u => ({
       id: u.id,
       nickname: u.nickname,
       cap: u.cap,
       area: u.area,
       albumCount: albumMap.get(u.id) ?? 0,
+      donationCount: donationMap.get(u.nickname.toLowerCase()) ?? 0,
       exchangesCompleted: u.exchangesCompleted,
       isBlocked: u.isBlocked,
       createdAt: u.createdAt.toISOString(),

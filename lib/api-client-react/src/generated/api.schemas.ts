@@ -302,6 +302,7 @@ export interface AdminUser {
   cap: string;
   area?: string | null;
   albumCount: number;
+  donationCount: number;
   exchangesCompleted: number;
   isBlocked: boolean;
   createdAt?: string;

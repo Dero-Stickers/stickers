@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Shield, ShieldOff } from "lucide-react";
+import { Shield, ShieldOff, BookOpen, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -107,13 +107,15 @@ export function AdminUsers() {
               <SortHeader label="Area" col="area" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
             </th>
             <th className="hidden md:table-cell">Scambi</th>
+            <th className="hidden md:table-cell">Album</th>
+            <th>Donazioni</th>
             <th>Azioni</th>
           </>
         }
       >
         {!isLoading && filteredUsers.length === 0 && (
           <tr>
-            <td colSpan={5} className="text-center text-muted-foreground">
+            <td colSpan={7} className="text-center text-muted-foreground">
               <div className="py-8">
                 {regularUsers.length === 0
                   ? "Nessun utente da mostrare."
@@ -133,6 +135,25 @@ export function AdminUsers() {
               <td className="hidden sm:table-cell text-center text-foreground">{user.cap}</td>
               <td className="hidden sm:table-cell text-center text-muted-foreground">{user.area}</td>
               <td className="hidden md:table-cell text-center text-foreground">{user.exchangesCompleted}</td>
+              <td className="hidden md:table-cell text-center">
+                <span className="inline-flex items-center gap-1 text-foreground">
+                  <BookOpen className="h-3.5 w-3.5 text-primary" />
+                  {user.albumCount}
+                </span>
+              </td>
+              <td className="text-center">
+                {user.donationCount > 0 ? (
+                  <span
+                    className="inline-flex items-center gap-1 text-accent font-medium"
+                    title="Rilevata almeno una donazione col suo nickname (indizio, non certo)"
+                  >
+                    <Heart className="h-3.5 w-3.5 fill-accent" />
+                    {user.donationCount}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground/50">—</span>
+                )}
+              </td>
               <td>
                 <div className="flex justify-center">
                   <Button
