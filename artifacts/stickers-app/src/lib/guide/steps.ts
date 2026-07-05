@@ -229,7 +229,20 @@ export const GUIDE_STEPS: GuideStep[] = [
     side: "bottom",
     align: "start",
     title: "Vicini a te",
-    body: "I collezionisti vicini a te.<br>Il raggio decide quanto lontano cercare.",
+    body: "I collezionisti più vicini,<br>ordinati per distanza da te.",
+  },
+  // La barra del raggio: dove si decide quanto lontano cercare. Freccia SOPRA
+  // la barra (side top) così il fumetto sta sotto e la barra resta scoperta.
+  {
+    id: "match-radius",
+    kind: "info",
+    route: "/match",
+    dynamicRoute: true,
+    target: "guide-match-radius",
+    side: "top",
+    align: "center",
+    title: "Raggio di ricerca",
+    body: "Trascina la barra per decidere<br>quanto lontano cercare.",
   },
   {
     id: "match-best",
