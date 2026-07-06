@@ -7,6 +7,22 @@
 
 ## 2026-07
 
+- **Fix: figurine aggiunte dall'admin propagate agli iscritti [6 lug]** — `batchInsertStickers`
+  (`api-server/routes/albums.ts`) creava solo le righe `stickers`, non le `user_stickers` per chi aveva
+  GIÀ l'album: le figurine aggiunte dopo l'iscrizione restavano invisibili e non marcabili (PATCH → 404) e
+  la % di completamento si sfasava (`total` cresce, `owned` no). Ora l'inserimento è in **transazione**
+  (stickers + ricalcolo `total` + propagazione): per ogni iscritto crea le `user_stickers` mancanti
+  (`onConflictDoNothing`, insert a blocchi di 1000). Preserva l'invariante "una riga per figurina" →
+  letture/PATCH/bulk invariati. Verificato e2e (iscritto 2→5 righe, PATCH 200). Emerso dall'**analisi
+  completa di sessione** (altri reperti — RLS non nelle migrazioni, gate `is_published` su detail/add,
+  debito di coerenza — lasciati come debito: non correttezza dati).
+- **UX: raggio ricerca persistente + rifiniture responsive mobile [6 lug]** — (1) lo slider "Raggio di
+  ricerca" (Match) persiste per **dispositivo** in `localStorage` (`stickers-app/lib/match-prefs.ts`, clamp
+  1-150, default 10), reset SOLO al logout (`AuthContext.logout`). (2) Pass responsive **solo-presentazione**:
+  meta `interactive-widget=resizes-content` (tastiera chat), `DialogContent` `max-h-[90dvh]`+scroll+margini/
+  angoli mobile, barra bulk Errori `flex-wrap` ("Genera report" non più tagliato), `break-words` bolle chat,
+  target tocco `h-8 sm:h-7`, stats Errori `grid-cols-2 md:grid-cols-3`, not-found i18n+tema. **Desktop
+  invariato** (classi `sm:`/`md:` preservate). Verificato a runtime 320/360/desktop.
 - **Difesa in profondità sui grant DB [6 lug]** — audit privacy/sicurezza (sola lettura) confermato
   BASSO rischio: RLS attiva su tutte le 15 tabelle, zero policy = deny-all, lettura anonima reale = 0 righe
   (`users` mostra `*/0` all'anon mentre nel DB ce ne sono; verifica via PostgREST + catalogo Postgres),
