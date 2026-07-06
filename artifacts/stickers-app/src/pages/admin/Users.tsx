@@ -299,7 +299,7 @@ export function AdminUsers() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className={`h-7 px-2 gap-1 text-xs ${user.isBlocked ? "text-green-600 hover:text-green-700" : "text-destructive hover:text-destructive/80"}`}
+                    className={`h-8 sm:h-7 px-2 gap-1 text-xs ${user.isBlocked ? "text-green-600 hover:text-green-700" : "text-destructive hover:text-destructive/80"}`}
                     disabled={toggleBlock.isPending}
                     onClick={async () => {
                       // Solo il blocco (azione rossa) chiede conferma; lo sblocco è innocuo.

@@ -342,7 +342,7 @@ export function AdminMessages() {
             </td>
             <td>
               <div className="flex items-center justify-center gap-1.5">
-                <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => setSelectedChat(chat as AdminChatExt)}>
+                <Button size="sm" variant="ghost" className="h-8 sm:h-7 px-2 gap-1 text-xs" onClick={() => setSelectedChat(chat as AdminChatExt)}>
                   <Eye className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Vedi</span>
                 </Button>
@@ -350,7 +350,7 @@ export function AdminMessages() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 px-2 gap-1 text-xs text-destructive hover:text-destructive/80"
+                    className="h-8 sm:h-7 px-2 gap-1 text-xs text-destructive hover:text-destructive/80"
                     disabled={closeChat.isPending}
                     onClick={async () => {
                       const ok = await confirm({
@@ -368,7 +368,7 @@ export function AdminMessages() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 px-2 gap-1 text-xs text-green-600 hover:text-green-700"
+                    className="h-8 sm:h-7 px-2 gap-1 text-xs text-green-600 hover:text-green-700"
                     disabled={busy}
                     onClick={() => reopenChat(chat.id)}
                   >

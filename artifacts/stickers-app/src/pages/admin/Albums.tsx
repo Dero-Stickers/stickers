@@ -284,14 +284,14 @@ export function AdminAlbums() {
             <td className="text-center text-foreground">{album.userCount ?? 0}</td>
             <td>
               <div className="flex items-center justify-center gap-1.5">
-                <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => setManageAlbum(album)}>
+                <Button size="sm" variant="ghost" className="h-8 sm:h-7 px-2 gap-1 text-xs" onClick={() => setManageAlbum(album)}>
                   <Settings2 className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Gestisci</span>
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 px-2 gap-1 text-xs"
+                  className="h-8 sm:h-7 px-2 gap-1 text-xs"
                   disabled={togglePublish.isPending}
                   onClick={() => togglePublish.mutate({ albumId: album.id, data: { isPublished: !album.isPublished } })}
                 >

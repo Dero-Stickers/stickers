@@ -138,7 +138,7 @@ export function Home() {
                   <button
                     type="button"
                     aria-label="Cerca una figurina"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-white/15 p-1.5 text-white/90 transition-colors hover:bg-white/25"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-white/15 p-2 text-white/90 transition-colors hover:bg-white/25"
                   >
                     <Search className="h-3.5 w-3.5" />
                   </button>
@@ -150,7 +150,7 @@ export function Home() {
                     onClick={() => setHeroMode("best")}
                     aria-label="Migliori match"
                     aria-pressed={heroMode === "best"}
-                    className={`rounded-full p-1.5 transition-colors ${heroMode === "best" ? "bg-white text-accent" : "text-white/80"}`}
+                    className={`rounded-full p-2 transition-colors ${heroMode === "best" ? "bg-white text-accent" : "text-white/80"}`}
                   >
                     <Zap className={`h-3.5 w-3.5 ${heroMode === "best" ? "fill-accent" : ""}`} />
                   </button>
@@ -159,7 +159,7 @@ export function Home() {
                     onClick={() => setHeroMode("nearby")}
                     aria-label="Migliori vicino a me"
                     aria-pressed={heroMode === "nearby"}
-                    className={`rounded-full p-1.5 transition-colors ${heroMode === "nearby" ? "bg-white text-primary" : "text-white/80"}`}
+                    className={`rounded-full p-2 transition-colors ${heroMode === "nearby" ? "bg-white text-primary" : "text-white/80"}`}
                   >
                     {heroMode === "nearby" ? (
                       <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
