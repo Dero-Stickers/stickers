@@ -143,7 +143,7 @@ const batchInsertStickers: RequestHandler = async (req, res) => {
   try {
     const albumId = parseInt(req.params.albumId as string, 10);
     const { db } = await import("@workspace/db");
-    const { albumsTable, stickersTable } = await import("@workspace/db");
+    const { albumsTable, stickersTable, userAlbumsTable, userStickersTable } = await import("@workspace/db");
 
     let stickersToInsert: { albumId: number; number: number; code: string; name: string; description?: string }[] = [];
 
@@ -183,9 +183,36 @@ const batchInsertStickers: RequestHandler = async (req, res) => {
       return;
     }
 
-    const inserted = await db.insert(stickersTable).values(stickersToInsert).returning();
-    const allStickers = await db.select({ id: stickersTable.id }).from(stickersTable).where(eq(stickersTable.albumId, albumId));
-    await db.update(albumsTable).set({ totalStickers: allStickers.length }).where(eq(albumsTable.id, albumId));
+    // Inserimento figurine + ricalcolo totale + propagazione agli iscritti, in
+    // UNA transazione: o riesce tutto o rollback (mai stato incoerente).
+    const inserted = await db.transaction(async (tx) => {
+      const ins = await tx.insert(stickersTable).values(stickersToInsert).returning();
+
+      const allStickers = await tx.select({ id: stickersTable.id }).from(stickersTable).where(eq(stickersTable.albumId, albumId));
+      await tx.update(albumsTable).set({ totalStickers: allStickers.length }).where(eq(albumsTable.id, albumId));
+
+      // Propaga le nuove figurine a chi ha GIÀ l'album: crea le righe
+      // user_stickers (stato "mancante") per ogni iscritto. Senza questo, le
+      // figurine aggiunte dopo l'iscrizione resterebbero invisibili e non
+      // marcabili nella collezione dell'utente (letture e PATCH presuppongono
+      // una riga per figurina). onConflictDoNothing = idempotente; insert a
+      // blocchi per non superare il limite di parametri di Postgres.
+      const subscribers = await tx
+        .select({ userId: userAlbumsTable.userId })
+        .from(userAlbumsTable)
+        .where(eq(userAlbumsTable.albumId, albumId));
+      if (subscribers.length) {
+        const rows = subscribers.flatMap(({ userId }) =>
+          ins.map(s => ({ userId, albumId, stickerId: s.id, state: "mancante" as const })));
+        for (let i = 0; i < rows.length; i += 1000) {
+          await tx
+            .insert(userStickersTable)
+            .values(rows.slice(i, i + 1000))
+            .onConflictDoNothing({ target: [userStickersTable.userId, userStickersTable.stickerId] });
+        }
+      }
+      return ins;
+    });
 
     res.status(201).json({ inserted: inserted.length, stickers: inserted.map(s => ({ id: s.id, albumId: s.albumId, number: s.number, code: s.code, name: s.name, description: s.description })) });
   } catch (err) {
