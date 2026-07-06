@@ -14,9 +14,12 @@ import { SearchSticker } from "./SearchSticker";
 import { useAuth } from "@/contexts/AuthContext";
 import { buildDemoMatches, shouldShowDemos, countRealMatches } from "@/lib/demo-matches";
 import { DemoBanner } from "@/components/match/DemoBanner";
-
-const RADIUS_MIN = 1;
-const RADIUS_MAX = 150;
+import {
+  RADIUS_MIN,
+  RADIUS_MAX,
+  getStoredRadius,
+  setStoredRadius,
+} from "@/lib/match-prefs";
 
 type Tab = "nearby" | "best" | "search";
 
@@ -37,11 +40,14 @@ export function MatchList() {
   useEffect(() => {
     setActiveTab(initialTab === "search" || initialTab === "best" ? initialTab : "nearby");
   }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [radiusKm, setRadiusKm] = useState(10);
+  // Il raggio è una preferenza di questo dispositivo: si inizializza dall'ultimo
+  // valore salvato (default 10 km) e persiste a ogni cambio. Reset solo al logout.
+  const [radiusKm, setRadiusKm] = useState(getStoredRadius);
   // Lo slider aggiorna subito il valore mostrato; la query parte "in ritardo"
   // (debounce 300ms) per non interrogare il backend a ogni km del trascinamento.
-  const [radiusQuery, setRadiusQuery] = useState(10);
+  const [radiusQuery, setRadiusQuery] = useState(radiusKm);
   useEffect(() => {
+    setStoredRadius(radiusKm);
     const t = setTimeout(() => setRadiusQuery(radiusKm), 300);
     return () => clearTimeout(t);
   }, [radiusKm]);

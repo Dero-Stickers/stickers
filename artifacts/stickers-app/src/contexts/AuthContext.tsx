@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { UserProfile, setAuthTokenGetter } from "@workspace/api-client-react";
+import { clearStoredRadius } from "@/lib/match-prefs";
 
 const TOKEN_KEY = "sticker_token";
 const USER_KEY = "sticker_user";
@@ -97,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(false);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    clearStoredRadius();
   };
 
   return (
