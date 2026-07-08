@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -13,6 +13,8 @@ export const COOKIE_ACK_KEY = "cookie_notice_ack";
 const ACK_KEY = COOKIE_ACK_KEY;
 
 export function CookieBanner() {
+  const [location] = useLocation();
+  const search = useSearch();
   const [ack, setAck] = useState<boolean>(() => {
     try {
       return localStorage.getItem(ACK_KEY) === "1";
@@ -21,7 +23,16 @@ export function CookieBanner() {
     }
   });
 
-  if (ack) return null;
+  // In area ADMIN il banner non serve: è rivolto agli utenti finali. Nascosto sia
+  // sulle rotte /admin* sia sul login staff (/login?next=/admin).
+  const nextParam = new URLSearchParams(search).get("next");
+  const isAdminArea =
+    location === "/admin" ||
+    location.startsWith("/admin/") ||
+    nextParam === "/admin" ||
+    (nextParam?.startsWith("/admin/") ?? false);
+
+  if (ack || isAdminArea) return null;
 
   const accept = () => {
     try {
