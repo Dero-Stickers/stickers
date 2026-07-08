@@ -10,6 +10,7 @@ import {
   useGetBestMatches,
 } from "@workspace/api-client-react";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { InstallBanner } from "@/components/profile/InstallBanner";
 import { buildDemoMatches, countRealMatches, isDemoUserId, NEAR_THRESHOLD_KM } from "@/lib/demo-matches";
 
 // "Vicini a me" nella Home usa la stessa soglia di vicinanza dei demo: chi è
@@ -87,6 +88,10 @@ export function Home() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-4 space-y-3 pb-4 min-h-0">
+        {/* 0 · Invito a installare l'app (banner chiudibile, non blocca). Si
+            nasconde da solo se già installata o chiuso dall'utente. */}
+        <InstallBanner />
+
         {/* 1 · Sintesi collezione — box SEMPRE mostrato (anche a 0 album: gli
             aggregati sono già 0 su collezione vuota). Senza album, sotto il
             titolo, un invito interattivo ad aggiungere il primo album. */}
