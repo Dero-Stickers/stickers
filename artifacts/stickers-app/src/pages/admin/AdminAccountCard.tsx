@@ -113,7 +113,7 @@ export function AdminAccountFields() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1">Nuovo PIN (4-6 cifre)</label>
+              <label className="text-sm font-medium text-foreground block mb-1">Nuovo PIN (6 cifre)</label>
               <Input
                 className="bg-white"
                 type="password"
