@@ -7,6 +7,13 @@
 
 ## 2026-07
 
+- **Fix: crash React #310 aprendo un album [9 lug]** — il pulsante "Condividi lista" aveva introdotto
+  `useState`/`useMemo` **dopo** l'early-return `if (isLoading)` in `AlbumDetail.tsx`, violando le regole degli
+  hooks (numero di hook variabile fra render → "Rendered more hooks than during the previous render"). Fix:
+  spostati entrambi gli hook **prima** dell'early-return; il titolo album è calcolato inline dentro il `useMemo`
+  (`albumInfo?.title ?? \`Album #${albumId}\``) per non dipendere da variabili definite più in basso. Regola
+  operativa: ogni nuovo hook va sempre in cima al componente, mai dopo un `return` condizionale. Il bug era già
+  in produzione (Condividi lista pushato prima), quindi il push di correzione è prioritario.
 - **Pre-pubblicazione: U/A nascosto, distribuzione via link, rifiniture UX [8 lug]** — decisioni della
   sessione: (1) **pulsante U/A NASCOSTO** per la pubblicazione, modo reversibile (`const ENABLED=false` →
   `return null` in `DevQuickSwitch.tsx`; componente/render/account demo intatti; deroga tracciata alla regola
