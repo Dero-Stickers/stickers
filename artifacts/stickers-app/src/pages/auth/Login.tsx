@@ -21,7 +21,7 @@ import {
 } from "@/lib/social-auth";
 import { EmailAuth } from "@/pages/auth/EmailAuth";
 import { BlockedAccountDialog } from "@/components/auth/BlockedAccountDialog";
-import { Mail } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import type { AuthResponse } from "@workspace/api-client-react";
 
 // Allineato alla regola del backend: 5-12 caratteri (lettere, numeri, - o _),
@@ -46,6 +46,11 @@ export function Login() {
   // Destinazione dopo il login (es. /admin), solo se path interno sicuro.
   const rawNext = new URLSearchParams(search).get("next");
   const nextPath = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+  // Accesso proveniente dall'area riservata (link /admin → /login?next=/admin):
+  // differenzia SOLO l'aspetto della testata (badge "Area ADMIN"), così è chiaro
+  // che stai entrando nello staff. Nessun effetto su auth/permessi: il controllo
+  // isAdmin resta invariato lato server e nel redirect post-login.
+  const isAdminLogin = nextPath === "/admin" || nextPath?.startsWith("/admin/");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [blockedOpen, setBlockedOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -164,8 +169,16 @@ export function Login() {
           <CardTitle className="flex items-center justify-center">
             <AppLogo className="h-24 w-auto" />
           </CardTitle>
+          {isAdminLogin && (
+            <div className="flex justify-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F2C4C] px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                <Lock className="h-3.5 w-3.5" />
+                Area ADMIN
+              </span>
+            </div>
+          )}
           <CardDescription className="text-base font-medium text-foreground">
-            Accedi o crea il tuo account
+            {isAdminLogin ? "Accesso riservato allo staff" : "Accedi o crea il tuo account"}
           </CardDescription>
         </CardHeader>
         <CardContent>
