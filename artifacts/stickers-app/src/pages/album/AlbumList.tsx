@@ -66,15 +66,20 @@ function CategoryIcon({ category, h, w }: { category: string; h: string; w: stri
   );
 }
 
-// Ordine categorie in lista (Mondiali, Europei, Campionato…) = ordine di
-// ALBUM_CATEGORIES; a parità di categoria, titolo dal più recente al più vecchio.
-const CATEGORY_RANK: Record<string, number> = Object.fromEntries(
-  ALBUM_CATEGORIES.map((c, i) => [c.key, i]),
-);
-const byCategoryThenTitle = (a: { title: string; category: string }, b: { title: string; category: string }) => {
-  const ra = CATEGORY_RANK[a.category] ?? 999;
-  const rb = CATEGORY_RANK[b.category] ?? 999;
-  return ra !== rb ? ra - rb : b.title.localeCompare(a.title);
+// Ordine globale degli album: dal più RECENTE al più vecchio, INDIPENDENTEMENTE
+// dalla categoria. L'anno cronologico sta nel titolo (es. "Calciatori 2025-2026",
+// "World Cup 2026", "Euro Cup 2024") — `createdAt` non serve (gli album sono stati
+// importati tutti insieme, stessa data). Estraggo l'anno PIÙ ALTO dal titolo e
+// ordino decrescente; a parità, titolo decrescente come fallback stabile.
+const latestYear = (title: string): number => {
+  const years = title.match(/(?:19|20)\d{2}/g);
+  if (!years) return -1; // titoli senza anno in fondo
+  return Math.max(...years.map(Number));
+};
+const byRecentFirst = (a: { title: string }, b: { title: string }) => {
+  const ya = latestYear(a.title);
+  const yb = latestYear(b.title);
+  return yb !== ya ? yb - ya : b.title.localeCompare(a.title);
 };
 
 export function AlbumList() {
@@ -117,9 +122,9 @@ export function AlbumList() {
   // Derivati memoizzati: Set + sort ricalcolati solo al cambio dati, non a ogni
   // render (es. cambio tab, apertura dialog di rimozione).
   const myAlbumIds = useMemo(() => new Set(myAlbums?.map(a => a.id) ?? []), [myAlbums]);
-  const sortedMyAlbums = useMemo(() => [...(myAlbums ?? [])].sort(byCategoryThenTitle), [myAlbums]);
+  const sortedMyAlbums = useMemo(() => [...(myAlbums ?? [])].sort(byRecentFirst), [myAlbums]);
   // Tutti gli album pubblicati: quelli già aggiunti restano visibili ma disabilitati.
-  const availableAlbums = useMemo(() => (allAlbums?.filter(a => a.isPublished) ?? []).sort(byCategoryThenTitle), [allAlbums]);
+  const availableAlbums = useMemo(() => (allAlbums?.filter(a => a.isPublished) ?? []).sort(byRecentFirst), [allAlbums]);
 
   // Chip-filtro per categoria in "Disponibili": "all" = tutte. Mostro solo i
   // chip delle categorie REALMENTE presenti tra gli album disponibili (scalabile).
