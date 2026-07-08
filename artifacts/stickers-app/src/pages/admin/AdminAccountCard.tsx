@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KeyRound, Pencil, X } from "lucide-react";
+import { KeyRound, Pencil, X, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PinInput } from "@/components/ui/pin-input";
@@ -8,11 +8,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { authHeaders } from "@/pages/admin/errors/types";
 
 // Blocco "Account admin" nella card "Configurazione generale". A riposo mostra il
-// nickname attuale in chiaro e il PIN mascherato (il PIN è salvato solo come hash:
-// non è leggibile, per sicurezza). Il pulsante "Modifica" apre i campi per cambiare
-// nickname e/o PIN; serve il PIN attuale come conferma. Chiama PATCH
-// /api/auth/me/credentials (verifica PIN + unicità nickname lato server) e aggiorna
-// la sessione locale col nuovo profilo/token.
+// nickname attuale e il PIN: mascherato di default, rivelabile con l'occhio (lo
+// recupera da GET /api/auth/me/pin, riservato all'admin). Il pulsante "Modifica"
+// apre i campi per cambiare nickname e/o PIN; serve il PIN attuale come conferma.
+// Chiama PATCH /api/auth/me/credentials e aggiorna la sessione col nuovo profilo/token.
 export function AdminAccountFields() {
   const { toast } = useToast();
   const { currentUser, login } = useAuth();
@@ -23,7 +22,27 @@ export function AdminAccountFields() {
   const [newPin, setNewPin] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // PIN attuale rivelato (null = mascherato). Caricato on-demand al clic sull'occhio.
+  const [revealedPin, setRevealedPin] = useState<string | null>(null);
+  const [loadingPin, setLoadingPin] = useState(false);
+
   const onlyDigits = (s: string) => s.replace(/\D/g, "").slice(0, 6);
+
+  const toggleReveal = async () => {
+    if (revealedPin !== null) { setRevealedPin(null); return; }
+    setLoadingPin(true);
+    try {
+      const res = await fetch("/api/auth/me/pin", { headers: { ...authHeaders() } });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { toast({ title: "Impossibile mostrare il PIN", variant: "destructive" }); return; }
+      // pin null = mai reimpostato dopo l'aggiornamento: invita a rigenerarlo.
+      setRevealedPin(json.pin ?? "");
+    } catch {
+      toast({ title: "Errore di connessione", variant: "destructive" });
+    } finally {
+      setLoadingPin(false);
+    }
+  };
 
   const openEdit = () => {
     // Precompilo il nickname con quello attuale: si modifica solo se serve.
@@ -94,7 +113,26 @@ export function AdminAccountFields() {
             </div>
             <div>
               <span className="text-xs text-muted-foreground block">PIN</span>
-              <span className="font-medium text-foreground tracking-widest">••••••</span>
+              <span className="flex items-center gap-2">
+                <span className="font-medium text-foreground tracking-widest">
+                  {revealedPin === null ? "••••••" : revealedPin === "" ? "—" : revealedPin}
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleReveal}
+                  disabled={loadingPin}
+                  aria-label={revealedPin !== null ? "Nascondi PIN" : "Mostra PIN"}
+                  title={revealedPin !== null ? "Nascondi PIN" : "Mostra PIN"}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  {revealedPin !== null ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </span>
+              {revealedPin === "" && (
+                <span className="text-[11px] text-muted-foreground block mt-0.5">
+                  Non ancora visibile: reimpostalo con “Modifica”.
+                </span>
+              )}
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5 shrink-0">

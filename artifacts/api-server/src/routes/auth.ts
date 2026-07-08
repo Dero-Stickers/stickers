@@ -9,7 +9,7 @@ import {
   resetRateLimit,
 } from "../lib/auth";
 import { z } from "zod";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 import { invalidateUser } from "../lib/matchCache";
 import { verifySupabaseToken, isSupabaseAuthConfigured } from "../lib/supabase-auth";
 
@@ -422,7 +422,7 @@ const changeCredentials: RequestHandler = async (req, res) => {
       return;
     }
 
-    const updates: { nickname?: string; pinHash?: string } = {};
+    const updates: { nickname?: string; pinHash?: string; pinPlain?: string } = {};
     if (body.newNickname) {
       // Unicità nickname case-insensitive (esclude sé stesso).
       const [dup] = await db
@@ -433,7 +433,11 @@ const changeCredentials: RequestHandler = async (req, res) => {
       if (dup) { res.status(409).json({ error: "NICKNAME_TAKEN", message: "Nickname già in uso" }); return; }
       updates.nickname = body.newNickname;
     }
-    if (body.newPin) updates.pinHash = await hashPin(body.newPin);
+    if (body.newPin) {
+      updates.pinHash = await hashPin(body.newPin);
+      // pin_plain: copia leggibile per la sola visualizzazione admin (cfr. 0013).
+      updates.pinPlain = body.newPin;
+    }
 
     const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, me.id)).returning();
     // Nuovo token (il payload non cambia, ma restituirlo è comodo lato client).
@@ -446,6 +450,28 @@ const changeCredentials: RequestHandler = async (req, res) => {
       res.status(400).json({ error: "VALIDATION_ERROR", message: (err as any)?.issues?.[0]?.message ?? "Dati non validi" });
       return;
     }
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
+  }
+};
+
+// GET /api/auth/me/pin — restituisce il PIN in chiaro dell'admin loggato, per
+// mostrarlo nel pannello (scelta dell'owner; cfr. migrazione 0013). Protetto da
+// requireAuth + requireAdmin: solo l'admin autenticato vede il proprio PIN.
+// Ritorna null se non impostato (account senza PIN o PIN mai reimpostato dopo 0013).
+const getMyPin: RequestHandler = async (req, res) => {
+  try {
+    const session = req.session!;
+    const { db, usersTable } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+    const [me] = await db
+      .select({ pinPlain: usersTable.pinPlain })
+      .from(usersTable)
+      .where(eq(usersTable.id, session.userId))
+      .limit(1);
+    if (!me) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
+    res.json({ pin: me.pinPlain ?? null });
+  } catch (err) {
     req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR", message: "Errore del server" });
   }
@@ -651,5 +677,6 @@ router.get("/me/export", requireAuth, exportMe);
 router.delete("/me", requireAuth, deleteMe);
 router.patch("/me/location", requireAuth, changeLocation);
 router.patch("/me/credentials", requireAuth, changeCredentials);
+router.get("/me/pin", requireAuth, requireAdmin, getMyPin);
 
 export default router;

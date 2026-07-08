@@ -7,6 +7,19 @@
 
 ## 2026-07
 
+- **Admin: PIN visibile in chiaro nel pannello (scelta owner, deroga sicurezza) [8 lug]** — l'owner ha
+  chiesto di poter RIVEDERE il PIN admin (non solo i pallini). Il PIN cifrato (pinHash) non è reversibile,
+  quindi si è aggiunta una colonna **`pin_plain`** (migrazione additiva `0013_user_pin_plain.sql`,
+  `ADD COLUMN IF NOT EXISTS`) che conserva il PIN in chiaro **solo per la visualizzazione**. Il login continua
+  a verificare via `pinHash` (invariato). `changeCredentials` popola sia `pinHash` sia `pinPlain`. Nuovo
+  endpoint **`GET /api/auth/me/pin`** protetto `requireAuth + requireAdmin` (utente normale → 403, no token →
+  401): ritorna il PIN in chiaro dell'admin loggato. Frontend: nella card Account admin l'occhio a riposo
+  rivela il PIN via quell'endpoint. `pin_plain` non passa mai dal client via PostGREST (tabella in RLS
+  deny-all, cfr. 0012): lo legge solo il backend. **Deroga esplicita** allo standard "solo-hash": accettabile
+  per app a singolo admin, ma se il DB è esposto i PIN sono in chiaro. pin_plain popolato a mano per gli
+  account esistenti (dero=140478, Dero975=1234, verificati contro l'hash). Verificato e2e (admin vede, utente
+  403, cambio PIN aggiorna pin_plain). Vale la regola [[sticker-pulsante-ua-non-toccare]] (Dero975 a 4 cifre
+  resta valido: il vincolo 6-cifre è solo su newPin, non sulla verifica).
 - **PWA: doppia icona Home User/Admin — manifest switching per-route lato server [8 lug]** — installando
   l'area Admin compariva l'icona User e si apriva l'area User. Tecnica: *path-based PWA manifest switching*.
   L'`index.html` sorgente resta quello User (**area User invariata, HTML byte-identico**); nel fallback SPA

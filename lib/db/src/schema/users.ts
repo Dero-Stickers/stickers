@@ -9,6 +9,10 @@ export const usersTable = pgTable("users", {
   // PIN e domanda di sicurezza sono OPZIONALI: gli utenti Google/email non li
   // hanno (entrano tramite Supabase Auth). Restano per gli utenti storici.
   pinHash: text("pin_hash"),
+  // PIN in chiaro, leggibile SOLO dall'admin nel pannello (scelta esplicita
+  // dell'owner: comodità di rivedere il PIN su un'app a singolo admin). Il login
+  // continua a verificare via pinHash — pin_plain è solo per la visualizzazione.
+  pinPlain: text("pin_plain"),
   cap: text("cap").notNull(),
   area: text("area"),
   securityQuestion: text("security_question"),
