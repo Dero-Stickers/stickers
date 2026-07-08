@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { MapPin, LogOut, Shield, Trash2, MessageSquarePlus, ChevronRight } from "lucide-react";
+import { MapPin, LogOut, Shield, Trash2, MessageSquarePlus, ChevronRight, Smartphone } from "lucide-react";
 import { ReportDialog } from "@/components/report/ReportDialog";
+import { InstallAppDialog } from "@/components/profile/InstallAppDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,14 @@ export function Profile() {
     logout();
     setLocation("/login");
   };
+
+  // "Installa l'app": guida Aggiungi-a-Home (l'app si divulga via link, non store).
+  // Nascosta se l'app è GIÀ installata (avviata in modalità standalone).
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
+  const isStandalone =
+    typeof window !== "undefined" &&
+    (window.matchMedia?.("(display-mode: standalone)").matches ||
+      (navigator as unknown as { standalone?: boolean }).standalone === true);
 
   // Cambio zona di ricerca (CAP). Il CAP è solo geografia: nessun PIN richiesto.
   const [showLocDialog, setShowLocDialog] = useState(false);
@@ -119,6 +128,18 @@ export function Profile() {
       <div className="flex flex-col min-h-0 px-4 pt-4 pb-1">
         <Card className="shadow-sm">
           <CardContent className="p-0 divide-y divide-border">
+            {/* "Installa l'app": mostrata solo se NON già installata (standalone). */}
+            {!isStandalone && (
+              <button
+                onClick={() => setShowInstallDialog(true)}
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+              >
+                <Smartphone className="h-5 w-5 text-primary shrink-0" />
+                <p className="flex-1 font-medium text-sm text-foreground">Installa l'app sul telefono</p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+              </button>
+            )}
+
             <button
               className="group w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
               onClick={() => { setShowLocDialog(true); setNewCap(currentUser?.cap ?? ""); setLocError(null); }}
@@ -340,6 +361,8 @@ export function Profile() {
       </Dialog>
 
       <ReportDialog open={showReportDialog} onOpenChange={setShowReportDialog} />
+
+      <InstallAppDialog open={showInstallDialog} onOpenChange={setShowInstallDialog} />
     </div>
   );
 }
