@@ -275,6 +275,7 @@ export function TradeConfirmDialog({
       toast({
         title: "Scambio non attivo",
         description: "Lo scambio non è attivo con i profili di prova: il tuo album non viene aggiornato. Con un collezionista reale, invece, le figurine si aggiornerebbero da sole.",
+        duration: 5000,
       });
       onOpenChange(false);
       return;

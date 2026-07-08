@@ -21,6 +21,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useRealtimeSignal } from "@/hooks/useRealtimeSignal";
 import { isRealtimeAvailable } from "@/lib/supabase";
+import { getDemoProfile } from "@/lib/demo-matches";
 
 const REPORT_REASONS = [
   "Comportamento offensivo o molestie",
@@ -54,8 +55,11 @@ export function ChatRoom() {
 
   const { data: chats } = useListChats({ query: { enabled: !isDemo, queryKey: getListChatsQueryKey() } });
   const chat = chats?.find(c => c.id === chatIdNum);
-  // Profili-prova: nickname fisso "Utente" (come nelle card/dettaglio).
-  const otherNickname = isDemo ? "Utente" : (chat?.otherUserNickname ?? "Utente");
+  // Profili-prova: nickname reale del demo (Luca/Sara/Marco/Elisa), coerente con
+  // card e dettaglio. Fallback "Utente" solo se il profilo non è risolvibile.
+  const otherNickname = isDemo
+    ? (getDemoProfile(demoUserId)?.nickname ?? "Utente")
+    : (chat?.otherUserNickname ?? "Utente");
 
   const { data: realMessages, isLoading: realLoading } = useGetChatMessages(chatIdNum, {
     query: {
@@ -120,6 +124,7 @@ export function ChatRoom() {
       toast({
         title: "Chat non attiva",
         description: "La chat non è attiva con i profili di prova: il messaggio non viene inviato. Con un collezionista reale, invece, potrai scrivergli davvero per accordarti sullo scambio.",
+        duration: 5000,
       });
       return;
     }
