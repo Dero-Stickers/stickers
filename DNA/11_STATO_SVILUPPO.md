@@ -31,8 +31,9 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 > Email/password via Supabase Auth), registrazione nickname+PIN **ritirata** (resta
 > solo login storico/admin), app **AZZERATA a stato vergine** per la pubblicazione
 > (0 utenti/chat/match, catalogo intatto), sezione Messaggi admin potenziata. Vedi
-> il blocco "Sessioni giu-lug 2026" più sotto e `17_DECISION_LOG.md`. **Per pubblicare
-> mancano: env Supabase su Render + decisione sul pulsante U/A** (vedi "Da fare").
+> il blocco "Sessioni giu-lug 2026" più sotto e `17_DECISION_LOG.md`. **Pulsante U/A:
+> NASCOSTO per la pubblicazione (8 lug, reversibile: `ENABLED=false` in `DevQuickSwitch.tsx`).
+> Distribuzione SOLO via link (PWA installabile, non store).** Per pubblicare manca: env Supabase su Render.
 
 ## Sessioni giu-lug 2026 — novità principali (fatte)
 

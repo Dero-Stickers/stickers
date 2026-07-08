@@ -7,6 +7,16 @@
 
 ## 2026-07
 
+- **Pre-pubblicazione: U/A nascosto, distribuzione via link, rifiniture UX [8 lug]** — decisioni della
+  sessione: (1) **pulsante U/A NASCOSTO** per la pubblicazione, modo reversibile (`const ENABLED=false` →
+  `return null` in `DevQuickSwitch.tsx`; componente/render/account demo intatti; deroga tracciata alla regola
+  [[sticker-pulsante-ua-non-toccare]]). (2) **Distribuzione SOLO via link** (PWA installabile, non store):
+  nessuna dipendenza nativa da rimuovere; aggiunti guida "Installa l'app" nel Profilo (`InstallAppDialog`,
+  rileva iOS/Android/desktop) + banner chiudibile in Home (`InstallBanner`, con install nativo via
+  `beforeinstallprompt`). (3) **Album ordinati per anno globale** (decrescente, indipendente dalla categoria;
+  l'anno è nel titolo, `createdAt` inutile perché import in blocco). (4) **PIN Dero975 1234→1404** (DB
+  hash+pin_plain + DevQuickSwitch). (5) Login admin differenziato (badge "AREA ADMIN", card gialla, occhio
+  PIN), gestione credenziali admin più pulita, PIN nuovo a 6 cifre, demo con nomi reali + badge "Utente test".
 - **Admin: PIN visibile in chiaro nel pannello (scelta owner, deroga sicurezza) [8 lug]** — l'owner ha
   chiesto di poter RIVEDERE il PIN admin (non solo i pallini). Il PIN cifrato (pinHash) non è reversibile,
   quindi si è aggiunta una colonna **`pin_plain`** (migrazione additiva `0013_user_pin_plain.sql`,
