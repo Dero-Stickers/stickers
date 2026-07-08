@@ -171,7 +171,7 @@ export function Login() {
           // ma nettamente diverso dall'azzurro dello sfondo pagina, così la card
           // stacca a colpo d'occhio. Bordo blu scuro brand. La schermata User resta
           // bianca.
-          (isAdminLogin ? " bg-[#FDF3D3] border-[#0F2C4C]/30" : "")
+          (isAdminLogin ? " bg-[#FEFAEC] border-[#0F2C4C]/30" : "")
         }
       >
         <CardHeader className="text-center space-y-2">
@@ -250,6 +250,7 @@ export function Login() {
                     <FormLabel>Nickname</FormLabel>
                     <FormControl>
                       <Input
+                        className="bg-white"
                         autoComplete="username"
                         spellCheck={false}
                         inputMode="text"
@@ -273,7 +274,7 @@ export function Login() {
                   <FormItem>
                     <FormLabel>PIN</FormLabel>
                     <FormControl>
-                      <Input type="password" maxLength={6} autoComplete="current-password" {...field} />
+                      <Input type="password" className="bg-white" maxLength={6} autoComplete="current-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
