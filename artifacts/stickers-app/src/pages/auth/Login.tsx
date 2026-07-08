@@ -164,7 +164,16 @@ export function Login() {
   return (
     <>
     <div className="h-full overflow-y-auto flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md shadow-lg">
+      <Card
+        className={
+          "w-full max-w-md shadow-lg" +
+          // In modalità Admin: sfondo carta giallo chiaro caldo — chiaro e naturale
+          // ma nettamente diverso dall'azzurro dello sfondo pagina, così la card
+          // stacca a colpo d'occhio. Bordo blu scuro brand. La schermata User resta
+          // bianca.
+          (isAdminLogin ? " bg-[#FDF3D3] border-[#0F2C4C]/30" : "")
+        }
+      >
         <CardHeader className="text-center space-y-2">
           <CardTitle className="flex items-center justify-center">
             <AppLogo className="h-24 w-auto" />
