@@ -42,7 +42,11 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,webp,png,svg,ico,woff2}"],
         navigateFallback: "index.html",
         // Le richieste alle API NON devono mai cadere sull'app-shell offline.
-        navigateFallbackDenylist: [/^\/api/],
+        // /admin* NEMMENO: l'app-shell precacheato è la versione UTENTE (apple-touch
+        // + manifest User). Se il SW servisse quello per /admin, iOS leggerebbe
+        // l'icona User all'"Aggiungi a Home". Escludendo /admin, la navigazione va
+        // alla rete, dove il server riscrive l'HTML con manifest + icona Admin.
+        navigateFallbackDenylist: [/^\/api/, /^\/admin/],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         // Bundle React+Radix può superare il default di 2 MiB.

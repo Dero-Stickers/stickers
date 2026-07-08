@@ -192,8 +192,11 @@ export function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Accesso moderno: Google + Email in evidenza. */}
-          {socialAvailable && (
+          {/* Accesso moderno: Google + Email in evidenza. NON in area admin:
+              lo staff entra SOLO con nickname+PIN (Google/Email sono per gli
+              utenti finali). Senza questo, sul deploy — dove il social è attivo —
+              l'area admin mostrerebbe erroneamente Google/Email. */}
+          {socialAvailable && !isAdminLogin && (
             <div className="space-y-2.5 mb-4">
               <Button
                 type="button"
@@ -239,8 +242,8 @@ export function Login() {
 
           {/* Form nickname + PIN: SOLO accesso (account storici/admin). I nuovi
               account si creano con Google o Email. Principale se il social non è
-              disponibile, altrimenti opzione secondaria mostrata su richiesta. */}
-          {(!socialAvailable || showLegacy) && (
+              disponibile o in area admin, altrimenti opzione secondaria su richiesta. */}
+          {(!socialAvailable || showLegacy || isAdminLogin) && (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
