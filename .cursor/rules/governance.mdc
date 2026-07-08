@@ -1,0 +1,16 @@
+---
+description: Governance operativa del progetto (regole vincolanti). Sempre attiva.
+globs:
+alwaysApply: true
+---
+
+# Governance — leggi PRIMA di operare
+
+La governance canonica, vincolante e completa di questo progetto è nel file **`AGENTS.md`**
+nella root del repository. **Leggilo e applicalo integralmente** prima di qualsiasi azione:
+contiene enforcement delle regole, vincoli permanenti (file ≤ 350 righe, no duplicazioni,
+DB unica fonte dei dati, migrazioni additive, gestione secrets/Git), flusso controllato per
+ogni modifica, checklist pre/post-modifica, e l'obbligo di leggere `DNA/` (stato e architettura).
+
+Non duplicare qui le regole: `AGENTS.md` è la fonte unica. Se questo file e `AGENTS.md`
+divergessero, **vale `AGENTS.md`**.
