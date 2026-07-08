@@ -1,14 +1,26 @@
-# AGENTS.md — Governance operativa (portabile, vincolante)
+# AGENTS.md — Governance operativa (portabile, vincolante, autosufficiente)
 
-> **Fonte canonica completa:** `CLAUDE.md` nella root (caricato automaticamente da
-> Claude Code, sincronizzato da App Control). **Stato/architettura del progetto:** `DNA/`.
-> Questo file è la versione **versionata e portabile** della governance per QUALSIASI
-> agent (Claude, Codex, Cursor, …) e per nuove chat/cloni senza storico. Non duplica i
-> dettagli: ne porta gli **essenziali vincolanti** e rimanda a `CLAUDE.md` per il testo completo.
+> **Questo file È la governance canonica e portabile del progetto.** È versionato nel repo,
+> quindi vale per QUALSIASI agent (Claude, Codex, Cursor, Copilot, …), in QUALSIASI chat nuova
+> senza storico, su QUALSIASI dispositivo o clone. Va **letto e applicato automaticamente** a
+> ogni sessione, senza doverlo ribadire. Contiene tutte le regole necessarie da solo: **non
+> dipende dalla presenza di altri file** per essere applicabile.
 >
-> ⚠️ `CLAUDE.md` è in `.gitignore` (cache di un prompt gestito su App Control, **read-only**
-> per l'agent): le modifiche al testo delle regole si fanno **su App Control**, mai con edit
-> locali. Questo `AGENTS.md` è invece versionato: tienilo allineato agli essenziali di CLAUDE.md.
+> **`CLAUDE.md`** (root) è l'**estensione operativa** per Claude Code: aggiunge il protocollo
+> di sessione e la sincronizzazione App Control. È in `.gitignore` (cache di un prompt gestito
+> su App Control, **read-only** per l'agent) → **potrebbe non esserci** in una chat nuova o in un
+> clone. Quando c'è, le sue regole valgono in aggiunta; quando manca, questo `AGENTS.md` basta.
+> Il testo delle regole di `CLAUDE.md` si modifica **su App Control**, mai con edit locali.
+> **In caso di conflitto tra i due, questo `AGENTS.md` (versionato) è la fonte di verità.**
+>
+> **Stato/architettura del progetto:** vive in `DNA/` (NON qui — la governance è "come si
+> lavora", il DNA è "com'è fatto il progetto"). Leggere `DNA/` è obbligatorio (vedi sotto).
+>
+> **Caricamento automatico da altri agent:** `.cursor/rules/governance.mdc` (Cursor) e
+> `.github/copilot-instructions.md` (GitHub Copilot) sono **puntatori leggeri** che rimandano
+> qui — non copie. Questo garantisce che la governance venga applicata in automatico anche da
+> agent che non leggono `AGENTS.md` nativamente. Se aggiungi regole, modificale **solo qui**:
+> i puntatori non vanno tenuti allineati riga per riga (rimandano, non duplicano).
 
 ## Da leggere PRIMA di operare (ogni sessione)
 1. `CLAUDE.md` (regole complete) — se presente.
@@ -48,6 +60,12 @@ correggere. In particolare:
   credenziali; service role solo lato backend, mai nel frontend/bundle.
 - **Git**: `git status` prima di toccare/committare; mai committare `.env`/backup/file generati.
   **Push = deploy in produzione** (autoDeploy Render su `main`): **mai pushare senza ok esplicito**.
+- **Performance e fluidità**: non introdurre regressioni (bundle, query N+1, re-render inutili,
+  liste non virtualizzate, immagini non ottimizzate). Se una modifica pesa sulle prestazioni,
+  segnalalo; free-tier → non saturare i limiti Supabase/Render, avvisa **prima** di avvicinarli.
+- **Portabilità**: il progetto deve restare clonabile e avviabile altrove. Nessun percorso
+  assoluto hardcoded, nessuna dipendenza dall'ambiente della macchina; ogni variabile richiesta
+  passa da `.env` (mai valori di ambiente inline nel codice). Governance e DNA versionati.
 - Ogni modifica dev'essere **verificabile, reversibile e tracciabile**; decisioni rilevanti nel decision-log.
 - Prima di implementare: analizza lo stato reale del repo. Bug: riproduci e isola la causa radice.
 
@@ -94,6 +112,23 @@ Per task banali (un testo, un colore) i punti 1-2 si riducono a una frase, mai s
 - Richiesta ambigua su punti sostanziali e rischio alto → chiedi prima.
 - Operazione distruttiva/irreversibile senza autorizzazione → fermati e segnala.
 - Tentazione di refactor/ottimizzazione non richiesti → proponi in una riga, non eseguire.
+
+## Decision log (tracciamento decisioni)
+Ogni decisione tecnica/di prodotto **rilevante** (scelta architetturale, deroga a una regola,
+trade-off, motivo di un'implementazione non ovvia) va registrata in `DNA/17_DECISION_LOG.md`,
+una riga per decisione, le più recenti in alto — **nello stesso intervento** che la prende, non
+dopo. Non serve loggare fix banali o modifiche di testo. Scopo: chi arriva dopo capisce il
+*perché*, non solo il *cosa*. (⚠️ Se `CLAUDE.md` cita `06_DECISION_LOG.md`, è un refuso: il file
+reale è `17_DECISION_LOG.md`.)
+
+## Handoff per le sessioni future
+Chi apre una nuova sessione (stesso o altro agent) deve poter riprendere senza contesto verbale:
+1. Legge questo `AGENTS.md` (regole) → `DNA/00_INDICE.md` → `DNA/11_STATO_SVILUPPO.md` (dov'è il
+   progetto adesso) → `DNA/17_DECISION_LOG.md` (perché le cose stanno così).
+2. `DNA/15_PROSSIMO_PROMPT.md` indica il prossimo passo previsto, se presente.
+3. Lo stato SVILUPPO/PRODUZIONE e "dati test/reali" in cima a `DNA/11` **vince su ogni assunzione**.
+Chi chiude una sessione con modifiche sostanziali aggiorna `DNA/11` (stato) e, se serve, `DNA/15`
+(prossimo passo), così l'handoff resta vero. Documentazione allineata = handoff funzionante.
 
 ## Avvio app in locale
 Dev su porta **5001**: backend `PORT=8080 pnpm run dev` (con `.env` caricato) + frontend
