@@ -2,6 +2,7 @@ import { useState } from "react";
 import { KeyRound, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PinInput } from "@/components/ui/pin-input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { authHeaders } from "@/pages/admin/errors/types";
@@ -114,9 +115,8 @@ export function AdminAccountFields() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground block mb-1">Nuovo PIN (6 cifre)</label>
-              <Input
+              <PinInput
                 className="bg-white"
-                type="password"
                 inputMode="numeric"
                 autoComplete="new-password"
                 value={newPin}
@@ -128,9 +128,8 @@ export function AdminAccountFields() {
 
           <div>
             <label className="text-sm font-medium text-foreground block mb-1">PIN attuale (conferma)</label>
-            <Input
+            <PinInput
               className="bg-white"
-              type="password"
               inputMode="numeric"
               autoComplete="current-password"
               value={currentPin}

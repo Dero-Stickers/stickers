@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PinInput } from "@/components/ui/pin-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
@@ -274,7 +275,7 @@ export function Login() {
                   <FormItem>
                     <FormLabel>PIN</FormLabel>
                     <FormControl>
-                      <Input type="password" className="bg-white" maxLength={6} autoComplete="current-password" {...field} />
+                      <PinInput className="bg-white" maxLength={6} autoComplete="current-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
