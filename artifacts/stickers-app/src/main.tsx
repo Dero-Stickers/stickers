@@ -22,4 +22,36 @@ if (import.meta.env.DEV && "serviceWorker" in navigator) {
   }
 }
 
+// PWA auto-aggiornamento (SOLO in produzione). Obiettivo: ogni deploy deve
+// raggiungere TUTTI gli utenti da solo, senza svuotare cache né reinstallare.
+//
+// vite-plugin-pwa registra già il service worker (injectRegister:"auto") con
+// registerType:"autoUpdate" + skipWaiting (vedi vite.config.ts). Ma il browser
+// controlla se c'è un SW nuovo solo al primo caricamento della pagina: su iOS,
+// dove l'app installata resta "sospesa" in background per giorni senza mai
+// ricaricare, un aggiornamento potrebbe non essere mai notato. Qui aggiungiamo
+// due trigger che colmano quel buco:
+//   1) update() ogni ora mentre l'app è aperta;
+//   2) update() ogni volta che l'app torna in primo piano (visibilitychange) —
+//      è il caso tipico iOS: riapri l'app dalla Home dopo giorni.
+// Quando il nuovo SW è pronto, skipWaiting lo attiva subito e la pagina prende
+// il codice aggiornato al giro successivo. Nessuna azione richiesta all'utente.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  const checkForUpdate = () => {
+    navigator.serviceWorker
+      .getRegistration()
+      .then((reg) => reg?.update())
+      .catch(() => {
+        /* offline o SW non ancora pronto: si ritenta al trigger successivo */
+      });
+  };
+  // Controllo periodico ogni ora mentre l'app resta aperta.
+  const HOUR = 60 * 60 * 1000;
+  setInterval(checkForUpdate, HOUR);
+  // Controllo al ritorno in primo piano (riapertura app installata su iOS/Android).
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") checkForUpdate();
+  });
+}
+
 createRoot(document.getElementById("root")!).render(<App />);

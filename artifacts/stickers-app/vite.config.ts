@@ -49,6 +49,15 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/, /^\/admin/],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
+        // skipWaiting: il nuovo service worker si attiva SUBITO, senza aspettare
+        // che l'utente chiuda tutte le schede. Senza questo, su iOS (dove l'app
+        // resta sospesa in background per giorni) l'aggiornamento non arriva mai:
+        // l'utente resterebbe bloccato su una versione vecchia in cache. Insieme a
+        // registerType:"autoUpdate", garantisce che ogni deploy raggiunga tutti gli
+        // utenti da solo, senza svuotare cache né reinstallare. Sicuro perché non
+        // c'è stato client che dipenda dalla versione esatta del SW (nessuna
+        // migrazione di cache incompatibile).
+        skipWaiting: true,
         // Bundle React+Radix può superare il default di 2 MiB.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // Nessun runtime caching cross-origin: i font Inter sono self-hosted e
