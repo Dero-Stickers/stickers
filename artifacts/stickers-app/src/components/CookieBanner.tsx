@@ -32,6 +32,13 @@ export function CookieBanner() {
     nextParam === "/admin" ||
     (nextParam?.startsWith("/admin/") ?? false);
 
+  // Nell'area utente c'è la tab bar in basso (MobileLayout, alta h-16 = 4rem
+  // sopra la safe-area). Il banner è renderizzato a livello globale, fuori dal
+  // layout: se restasse a bottom-0 coprirebbe la tab bar. Lo solleviamo di 4rem
+  // SOLO dove la tab bar esiste. Login (/login) e pagine legali (/legal/*) NON
+  // hanno la tab bar → lì il banner resta ancorato al fondo. (Admin è già escluso.)
+  const hasTabBar = location !== "/login" && !location.startsWith("/legal/");
+
   if (ack || isAdminArea) return null;
 
   const accept = () => {
@@ -45,7 +52,20 @@ export function CookieBanner() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-[60] border-t border-border bg-card/95 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur"
+      className="fixed inset-x-0 z-60 border-t border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur"
+      style={
+        hasTabBar
+          ? {
+              // Sopra la tab bar (h-16 = 4rem) + la sua safe-area: così non la copre.
+              bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))",
+              paddingBottom: "0.75rem",
+            }
+          : {
+              // Login/legal: nessuna tab bar → ancorato al fondo, con safe-area propria.
+              bottom: 0,
+              paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+            }
+      }
       role="region"
       aria-label="Informativa cookie"
     >
