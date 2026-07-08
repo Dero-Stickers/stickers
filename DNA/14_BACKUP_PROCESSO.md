@@ -24,8 +24,14 @@ Permette di riprendere il progetto senza dover ricostruire mentalmente le decisi
 - `pnpm --filter @workspace/db run backup` → `BACKUP/backup_<timestamp>.json`: snapshot
   logico di tutte le tabelle (righe complete). Alternativa a `pg_dump` quando non è
   installato; sufficiente per ripristinare i dati dopo test/pulizie.
-- Gli album "default" hanno inoltre un ripristino dedicato e additivo: vedi
-  `09_DATABASE.md` → `restore:albums`.
+- **Backup automatico (disaster recovery)**: il workflow `.github/workflows/backup-db.yml`
+  esegue questo stesso backup ogni notte (03:30 UTC) e conserva il JSON come **artifact
+  GitHub per 90 giorni** — fuori Supabase e fuori dal PC (Supabase Free non ha backup
+  gestiti). Richiede il secret repo `DATABASE_URL`. Solo lettura del DB.
+- **Ripristino completo**: `ALLOW_DB_RESTORE=1 pnpm --filter @workspace/db run restore:db -- <file.json>`
+  ripristina TUTTE le tabelle da un backup JSON (transazione unica, rollback su errore).
+  Distruttivo: protetto dal flag `ALLOW_DB_RESTORE=1`. Gli album "default" hanno anche un
+  ripristino additivo dedicato: `09_DATABASE.md` → `restore:albums`.
 
 ### Formato Backup
 
