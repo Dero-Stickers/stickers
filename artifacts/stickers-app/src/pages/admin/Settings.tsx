@@ -59,10 +59,10 @@ import { AdminAccountFields } from "@/pages/admin/AdminAccountCard";
 // Modalità globale della guida interattiva. Le 3 opzioni sono indipendenti:
 // una sola attiva alla volta. Descrizioni mostrate all'admin sotto ogni scelta.
 type GuideMode = "off" | "first" | "always";
-const GUIDE_MODES: { value: GuideMode; label: string; hint: string }[] = [
-  { value: "off", label: "Disattivata", hint: "La guida non parte mai." },
-  { value: "first", label: "Solo al primo avvio", hint: "Parte una volta sola, alla prima registrazione/accesso." },
-  { value: "always", label: "A ogni avvio", hint: "Parte ogni volta che l'utente apre o ricarica l'app." },
+const GUIDE_MODES: { value: GuideMode; label: string }[] = [
+  { value: "off", label: "Disattivata" },
+  { value: "first", label: "Solo al primo avvio" },
+  { value: "always", label: "A ogni avvio" },
 ];
 
 export function AdminSettings() {
@@ -163,29 +163,29 @@ export function AdminSettings() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Guida interattiva</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-xs text-muted-foreground mb-1">
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
             Decidi se e quando mostrare la guida ai nuovi utenti.
           </p>
-          {GUIDE_MODES.map(m => {
-            const active = form.guideMode === m.value;
-            return (
-              <button
-                key={m.value}
-                type="button"
-                onClick={() => setForm(p => ({ ...p, guideMode: m.value }))}
-                className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-colors ${
-                  active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-                }`}
-              >
-                <div className="flex items-center gap-2">
+          {/* Tre modalità affiancate su una riga (spazio ampio in admin). */}
+          <div className="grid grid-cols-3 gap-3">
+            {GUIDE_MODES.map(m => {
+              const active = form.guideMode === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, guideMode: m.value }))}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 transition-colors ${
+                    active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                  }`}
+                >
                   <span className={`h-4 w-4 rounded-full border-2 shrink-0 ${active ? "border-primary bg-primary" : "border-muted-foreground/40"}`} />
                   <span className={`text-sm font-semibold ${active ? "text-primary" : "text-foreground"}`}>{m.label}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 ml-6">{m.hint}</p>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 

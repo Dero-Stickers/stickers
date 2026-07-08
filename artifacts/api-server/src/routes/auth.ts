@@ -398,7 +398,9 @@ const ChangeCredentialsBody = z
   .object({
     currentPin: z.string().min(4).max(6),
     newNickname: z.string().trim().min(3).max(15).optional(),
-    newPin: z.string().regex(/^\d{4,6}$/, "Il PIN deve avere 4-6 cifre").optional(),
+    // Nuovi PIN: 6 cifre esatte (regola corrente). La VERIFICA di PIN esistenti
+    // (currentPin sopra, login) resta 4-6 per non escludere account storici.
+    newPin: z.string().regex(/^\d{6}$/, "Il PIN deve avere 6 cifre").optional(),
   })
   .refine((b) => b.newNickname || b.newPin, {
     message: "Indica un nuovo nickname o un nuovo PIN",

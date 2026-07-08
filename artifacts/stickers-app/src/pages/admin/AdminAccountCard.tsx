@@ -46,6 +46,10 @@ export function AdminAccountFields() {
       toast({ title: "Niente da cambiare", description: "Modifica il nickname o imposta un nuovo PIN." });
       return;
     }
+    if (newPin && newPin.length !== 6) {
+      toast({ title: "PIN non valido", description: "Il nuovo PIN deve avere 6 cifre.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const body: Record<string, string> = { currentPin };
