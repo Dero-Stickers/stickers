@@ -241,7 +241,6 @@ export function Login() {
                     <FormLabel>Nickname</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="es. Marco95"
                         autoComplete="username"
                         spellCheck={false}
                         inputMode="text"
@@ -265,7 +264,7 @@ export function Login() {
                   <FormItem>
                     <FormLabel>PIN</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="4-6 cifre" maxLength={6} autoComplete="current-password" {...field} />
+                      <Input type="password" maxLength={6} autoComplete="current-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
