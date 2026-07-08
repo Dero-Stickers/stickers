@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, Share2 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -271,6 +272,33 @@ export function AlbumDetail() {
 
   const albumTitle = albumInfo?.title ?? `Album #${albumId}`;
 
+  // "Condividi lista": testo sintetico (titolo + mancanti + doppie) da incollare
+  // su WhatsApp/Telegram/ecc. Usa i codici stampati sulla bustina (es. FWC1), o il
+  // numero come fallback. Dopo la copia un dialog spiega cosa è finito negli appunti.
+  const [showShare, setShowShare] = useState(false);
+  const shareText = useMemo(() => {
+    const list = stickers ?? [];
+    const label = (s: (typeof list)[number]) => s.code || String(s.number);
+    const missingCodes = list.filter(s => s.state !== "posseduta" && s.state !== "doppia").map(label);
+    const dupCodes = list.filter(s => s.state === "doppia").map(label);
+    return [
+      `📗 ${albumTitle}`,
+      ``,
+      `❌ Mancanti (${missingCodes.length}): ${missingCodes.length ? missingCodes.join(", ") : "—"}`,
+      ``,
+      `♻️ Doppie (${dupCodes.length}): ${dupCodes.length ? dupCodes.join(", ") : "—"}`,
+    ].join("\n");
+  }, [stickers, albumTitle]);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+    } catch {
+      /* clipboard non disponibile: il dialog mostra comunque il testo da copiare a mano */
+    }
+    setShowShare(true);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <AppHeader />
@@ -283,7 +311,14 @@ export function AlbumDetail() {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="flex-1 text-lg font-bold leading-tight text-foreground text-center pr-7">{albumTitle}</h1>
+          <h1 className="flex-1 text-lg font-bold leading-tight text-foreground text-center">{albumTitle}</h1>
+          <button
+            className="shrink-0 -mr-1 p-1.5 rounded-full text-foreground active:scale-95 transition-transform"
+            onClick={handleShare}
+            aria-label="Condividi mancanti e doppie"
+          >
+            <Share2 className="h-5 w-5" />
+          </button>
         </div>
         {/* 4 CARD-PULSANTE: ognuna è insieme contatore E filtro (tap = filtra,
             long-press = imposta tutte a quello stato). Sfondo bianco, angoli
@@ -455,6 +490,24 @@ export function AlbumDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Conferma "Condividi lista": spiega cosa è finito negli appunti e ne mostra
+          l'anteprima, pronta da incollare su WhatsApp/Telegram/ecc. */}
+      <Dialog open={showShare} onOpenChange={setShowShare}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Lista copiata!</DialogTitle>
+            <DialogDescription>
+              Negli appunti hai il titolo dell'album con l'elenco delle figurine
+              <b> mancanti</b> e <b>doppie</b>. Incollalo dove vuoi (WhatsApp, Telegram…)
+              per proporre i tuoi scambi.
+            </DialogDescription>
+          </DialogHeader>
+          <pre className="max-h-52 overflow-y-auto whitespace-pre-wrap rounded-lg bg-muted/50 p-3 text-xs text-foreground">
+            {shareText}
+          </pre>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
