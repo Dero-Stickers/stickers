@@ -88,7 +88,7 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - **App AZZERATA a stato vergine (pre-pubblicazione)** — eliminati TUTTI gli utenti (admin/Dero975 inclusi),
   chat, messaggi, sblocchi, pagamenti, conferme, segnalazioni, possessi; catalogo (23 album + 17.581 figurine)
   e `app_settings` INTATTI. `auth.users` Supabase = 0. Backup pre-reset in `BACKUP/db_pre_reset_*.sql.gz`.
-- **Account demo per il pulsante U/A**: `Dero975` (pin 1234, utente) + `dero` (pin 140478, admin) —
+- **Account demo per il pulsante U/A**: `Dero975` (pin 1404, utente) + `dero` (pin 140478, admin) —
   servono al `DevQuickSwitch` per il bypass (valori in `DevQuickSwitch.tsx`). ⛔ NON eliminarli, NON toccare
   il pulsante U/A senza ordine esplicito dell'owner: vedi memoria `sticker-pulsante-ua-non-toccare` e
   `17_DECISION_LOG.md`. Il PIN admin è ora visibile in chiaro nel pannello (colonna `pin_plain`, endpoint
@@ -195,8 +195,8 @@ pulsante U/A), nessun possesso, nessuna chat/match. `auth.users` Supabase = 0. C
 
 | id | Nickname | PIN | Ruolo | Note |
 |----|----------|-----|-------|------|
-| 70 | `admin`  | 0000 | admin | account admin + vista "A" del DevQuickSwitch |
-| 69 | `Dero975`| 1234 | utente | vista "U" del DevQuickSwitch |
+| 70 | `dero`   | 140478 | admin | account admin + vista "A" del DevQuickSwitch |
+| 69 | `Dero975`| 1404 | utente | vista "U" del DevQuickSwitch |
 
 ⛔ Questi 2 account **non vanno eliminati** (senza di loro il pulsante U/A si rompe). Se si ri-azzera
 l'app, vanno **ricreati** (insert con `hashPin`, `auth_provider='pin'`, `cap`/`area`, `acceptedTermsAt`).

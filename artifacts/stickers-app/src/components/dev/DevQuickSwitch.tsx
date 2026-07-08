@@ -14,7 +14,7 @@
  *   - rimuoverlo da App.tsx;
  *   - aggiungere gate su ambiente/env (import.meta.env.DEV, flag, ecc.);
  *   - cambiarne la logica di login automatico;
- *   - eliminare dal DB gli account demo Dero975(1234)/dero(140478 admin): senza di
+ *   - eliminare dal DB gli account demo Dero975(1404)/dero(140478 admin): senza di
  *     loro il pulsante è ROTTO. Se azzeri/pulisci l'app, RICREALI subito.
  *
  * "Consolida / ripulisci / standardizza / ottimizza / azzera l'app" NON
@@ -26,7 +26,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Account di test, usati solo in sviluppo per lo switch rapido.
-const USER = { nickname: "Dero975", pin: "1234" };
+const USER = { nickname: "Dero975", pin: "1404" };
 const ADMIN = { nickname: "dero", pin: "140478" };
 
 export function DevQuickSwitch() {
