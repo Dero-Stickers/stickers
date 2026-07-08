@@ -7,6 +7,18 @@
 
 ## 2026-07
 
+- **Sicurezza: migrazione 0012 (revoke grant anon/authenticated) APPLICATA in produzione [9 lug]** — un
+  audit pre-pubblicazione ha rilevato che la 0012 (difesa in profondità, revoca i grant inutili ai ruoli
+  client Supabase) era **scritta ma mai applicata**: 210 grant residui su `public` per anon/authenticated.
+  La RLS era già attiva su tutte le 15 tabelle (verificato a runtime: anon bloccato in lettura e scrittura,
+  `pin_plain` non esposto), quindi i grant erano già neutralizzati dal primo lucchetto — ma mancava il secondo
+  strato indipendente voluto dall'owner. Prima di applicare: verificato che la 0012 tocca **solo** schema
+  `public` (non `auth.*`/`realtime.*`/`storage.*`, usati da login Google e chat) e che il frontend NON legge
+  tabelle public via `supabase.from()` (usa solo auth + realtime broadcast) → applicazione sicura, nessuna
+  rottura. Backup dei 210 grant come SQL di ripristino in `BACKUP/grants_pre_0012_restore.sql` (reversibile).
+  Post-applicazione: 0 grant residui, `default privileges` impostati per oggetti futuri, backend (ruolo
+  `postgres`) invariato, e verifica e2e in produzione OK (login, /api/albums, healthz/db). Ora la protezione
+  è a **due lucchetti indipendenti** (RLS + assenza grant). Vale [[sticker-pin-plain-visibile-admin]].
 - **Fix: crash React #310 aprendo un album [9 lug]** — il pulsante "Condividi lista" aveva introdotto
   `useState`/`useMemo` **dopo** l'early-return `if (isLoading)` in `AlbumDetail.tsx`, violando le regole degli
   hooks (numero di hook variabile fra render → "Rendered more hooks than during the previous render"). Fix:
