@@ -5,7 +5,7 @@ import compression from "compression";
 import pinoHttp from "pino-http";
 import path from "path";
 import { fileURLToPath } from "url";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import router from "./routes";
 import { rateLimitGlobal } from "./middlewares/rateLimitGlobal";
 import { logger } from "./lib/logger";
@@ -129,9 +129,39 @@ if (process.env.NODE_ENV === "production") {
   const staticDir = path.resolve(__dirname, "../../stickers-app/dist/public");
   if (existsSync(staticDir)) {
     app.use(express.static(staticDir));
-    // SPA fallback — all non-API routes return index.html
-    app.get(/^\/(?!api(?:\/|$)).*/, (_req, res) => {
-      res.sendFile(path.join(staticDir, "index.html"));
+
+    // Doppia icona Home (User/Admin) — path-based PWA manifest switching.
+    // L'index.html sorgente dichiara icona+manifest dell'area User. iOS/Safari e
+    // Android/desktop leggono apple-touch-icon e manifest DALL'HTML servito al
+    // momento di "Aggiungi a Home": non li rileggono da JS. Perciò la scelta va
+    // fatta QUI, lato server: su una rotta /admin serviamo lo stesso HTML con i
+    // due tag riscritti verso l'icona e il manifest dedicati all'Admin, così
+    // /admin diventa un'app installabile distinta (id/start_url propri).
+    const indexPath = path.join(staticDir, "index.html");
+    const indexHtml = readFileSync(indexPath, "utf8");
+    // Riscrittura mirata dei due soli tag icona+manifest. Se il markup cambiasse
+    // e un replace non trovasse match, restiamo sull'HTML originale (fail-safe:
+    // mai servire un HTML corrotto; al più l'Admin mostrerebbe l'icona User).
+    const adminHtml = indexHtml
+      .replace(
+        '<link rel="manifest" href="/manifest.webmanifest" />',
+        '<link rel="manifest" href="/manifest-admin.webmanifest" />',
+      )
+      .replace(
+        '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />',
+        '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-admin.png" />',
+      )
+      .replace(
+        '<meta name="apple-mobile-web-app-title" content="Stickers" />',
+        '<meta name="apple-mobile-web-app-title" content="Admin" />',
+      );
+
+    // SPA fallback — all non-API routes return index.html (Admin variant on /admin)
+    app.get(/^\/(?!api(?:\/|$)).*/, (req, res) => {
+      const html = req.path === "/admin" || req.path.startsWith("/admin/")
+        ? adminHtml
+        : indexHtml;
+      res.type("html").send(html);
     });
     logger.info({ staticDir }, "Serving static frontend files");
   } else {
