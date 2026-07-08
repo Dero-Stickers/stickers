@@ -7,6 +7,18 @@
 
 ## 2026-07
 
+- **PWA: doppia icona Home User/Admin — manifest switching per-route lato server [8 lug]** — installando
+  l'area Admin compariva l'icona User e si apriva l'area User. Tecnica: *path-based PWA manifest switching*.
+  L'`index.html` sorgente resta quello User (**area User invariata, HTML byte-identico**); nel fallback SPA
+  di `api-server/src/app.ts`, sulle rotte `/admin*` il server serve lo **stesso HTML** con `manifest` +
+  `apple-touch-icon` + `apple-mobile-web-app-title` riscritti verso gli asset Admin. Scelta **lato server**
+  perché iOS/Safari legge icona+manifest dall'HTML servito ad "Aggiungi a Home", non da JS client → qualsiasi
+  soluzione client-side fallisce su iPhone. `manifest-admin.webmanifest` con `id`/`start_url` = `/admin` rende
+  l'Admin un'app installabile distinta (iOS, Android, desktop). Icone Admin (apple-touch/192/512/maskable)
+  generate dalla grafica fornita, ottimizzate pngquant, graficamente distinte (User = fondo azzurro pieno,
+  Admin = fondo bianco). Match esatto `/admin` o `/admin/*` (l'edge case `/administrator-*` resta User).
+  Fail-safe: se un tag non matcha resta l'HTML originale (mai HTML corrotto). Cache asset `max-age=0` già
+  in essere → la nuova icona si propaga senza svuotare cache. Verificato e2e in locale, typecheck + 14 test verdi.
 - **Fix: figurine aggiunte dall'admin propagate agli iscritti [6 lug]** — `batchInsertStickers`
   (`api-server/routes/albums.ts`) creava solo le righe `stickers`, non le `user_stickers` per chi aveva
   GIÀ l'album: le figurine aggiunte dopo l'iscrizione restavano invisibili e non marcabili (PATCH → 404) e
