@@ -402,6 +402,9 @@ importers:
       tailwindcss:
         specifier: 'catalog:'
         version: 4.2.1
+      terser:
+        specifier: ^5.48.0
+        version: 5.48.0
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
