@@ -88,9 +88,11 @@ Stack: monorepo pnpm · React 19 + Vite + TS · Express 5 + Drizzle · Supabase.
 - **App AZZERATA a stato vergine (pre-pubblicazione)** — eliminati TUTTI gli utenti (admin/Dero975 inclusi),
   chat, messaggi, sblocchi, pagamenti, conferme, segnalazioni, possessi; catalogo (23 album + 17.581 figurine)
   e `app_settings` INTATTI. `auth.users` Supabase = 0. Backup pre-reset in `BACKUP/db_pre_reset_*.sql.gz`.
-- **Account demo ricreati per il pulsante U/A**: `Dero975` (pin 1234, utente) + `admin` (pin 0000, admin) —
-  servono al `DevQuickSwitch` per il bypass. ⛔ NON eliminarli, NON toccare il pulsante U/A senza ordine
-  esplicito dell'owner: vedi memoria `sticker-pulsante-ua-non-toccare` e `17_DECISION_LOG.md`.
+- **Account demo per il pulsante U/A**: `Dero975` (pin 1234, utente) + `dero` (pin 140478, admin) —
+  servono al `DevQuickSwitch` per il bypass (valori in `DevQuickSwitch.tsx`). ⛔ NON eliminarli, NON toccare
+  il pulsante U/A senza ordine esplicito dell'owner: vedi memoria `sticker-pulsante-ua-non-toccare` e
+  `17_DECISION_LOG.md`. Il PIN admin è ora visibile in chiaro nel pannello (colonna `pin_plain`, endpoint
+  `/me/pin` solo-admin, cfr. `17_DECISION_LOG.md` e memoria `sticker-pin-plain-visibile-admin`).
 - **Cattura errori completa** (mini-Sentry self-hosted, no dipendenze esterne): ogni errore → Segnalazioni.
 - **Sezione Messaggi admin potenziata (per 2.000-3.000 utenti)**: `listChats` senza N+1 (poche query aggregate);
   nuovo `DELETE /api/admin/chats/:chatId`; dialog con **Elimina chat** + **Blocca partecipante**. Vedi `07`.
