@@ -1,0 +1,62 @@
+name: Backup DB (Supabase → GitHub artifact)
+
+# Backup automatico e INDIPENDENTE da Supabase: ogni notte esporta l'intero
+# database in un JSON e lo conserva come artifact GitHub (fuori Supabase, fuori
+# dal PC). È la rete di sicurezza per il disaster recovery: il piano Supabase
+# Free NON ha backup automatici gestiti.
+#
+# Ripristino (manuale, quando serve): scarica l'artifact dal run, poi
+#   ALLOW_DB_RESTORE=1 pnpm --filter @workspace/db run restore:db -- <file.json>
+#
+# Richiede il secret di repository DATABASE_URL (la stringa di connessione al
+# pooler Supabase). SOLO LETTURA del DB: il workflow non scrive mai nel database.
+
+on:
+  schedule:
+    - cron: "30 3 * * *"    # ogni notte alle 03:30 UTC (fascia di basso traffico)
+  workflow_dispatch:          # esecuzione manuale dal tab Actions
+
+concurrency:
+  group: backup-db
+  cancel-in-progress: true
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (solo lib/db)
+        run: pnpm install --frozen-lockfile=false --filter @workspace/db
+
+      - name: Esegui backup DB
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Secret DATABASE_URL non configurato. Aggiungilo nelle repo secrets."
+            exit 1
+          fi
+          mkdir -p BACKUP
+          pnpm --filter @workspace/db run backup
+          echo "--- File prodotti:"
+          ls -lh BACKUP/backup_*.json
+
+      - name: Carica backup come artifact (conservato 90 giorni)
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: BACKUP/backup_*.json
+          retention-days: 90
+          if-no-files-found: error
