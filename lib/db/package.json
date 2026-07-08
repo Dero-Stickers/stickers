@@ -13,6 +13,7 @@
     "export:albums": "tsx src/export-albums.ts",
     "restore:albums": "tsx src/restore-albums.ts",
     "backup": "tsx src/backup-db.ts",
+    "restore:db": "tsx src/restore-db.ts",
     "seed:mock-dev": "tsx src/seed.ts",
     "seed:testusers": "tsx src/seed-testusers.ts",
     "seed:simulazione": "tsx src/seed-simulazione.ts",
