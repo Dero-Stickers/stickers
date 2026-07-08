@@ -8,7 +8,7 @@ import { isDemoUserId } from "@/lib/demo-matches";
 // Card riutilizzabile di un utente-match. Condivisa tra la lista match
 // (Vicini/Migliori) e la ricerca per singola figurina, così l'aspetto resta
 // identico in tutti i contesti e non si duplica il markup.
-// I profili DEMO (userId negativo) mostrano un badge "PROVA" ben visibile.
+// I profili DEMO (userId negativo) mostrano un badge "Utente test" ben visibile.
 export function MatchCard({ match, dataGuide }: { match: MatchSummary; dataGuide?: string }) {
   const isDemo = isDemoUserId(match.userId);
   return (
@@ -21,8 +21,8 @@ export function MatchCard({ match, dataGuide }: { match: MatchSummary; dataGuide
                   mai troncato; è l'area/distanza (sotto) a cedere spazio. */}
               <p className="font-semibold text-foreground shrink-0">{match.nickname}</p>
               {isDemo && (
-                <span className="shrink-0 rounded-full bg-accent/15 text-accent text-[10px] font-bold px-1.5 py-0.5 leading-none">
-                  PROVA
+                <span className="shrink-0 rounded-full bg-accent/15 text-accent text-[10px] font-bold px-1.5 py-0.5 leading-none uppercase whitespace-nowrap">
+                  Utente test
                 </span>
               )}
               <p className="text-xs text-muted-foreground flex items-center gap-1 min-w-0">

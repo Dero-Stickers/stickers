@@ -186,8 +186,8 @@ export function Home() {
                         <p className="font-semibold text-sm truncate flex items-center gap-1.5">
                           <span className="truncate">{m.nickname}</span>
                           {isDemoUserId(m.userId) && (
-                            <span className="shrink-0 rounded-full bg-accent text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 leading-none">
-                              PROVA
+                            <span className="shrink-0 rounded-full bg-accent text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 leading-none uppercase whitespace-nowrap">
+                              Utente test
                             </span>
                           )}
                         </p>

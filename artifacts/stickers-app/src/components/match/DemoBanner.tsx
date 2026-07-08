@@ -10,7 +10,7 @@ export function DemoBanner() {
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-foreground">Profili di prova</p>
         <p className="text-[11px] leading-snug text-muted-foreground">
-          I profili con il badge <span className="font-semibold text-accent">PROVA</span> ti mostrano come
+          I profili con il badge <span className="font-semibold text-accent">Utente test</span> ti mostrano come
           funziona l'app. Non sono persone reali. Aprine uno e usa{" "}
           <span className="font-medium text-foreground">"Elimina profilo di prova"</span> per toglierlo.
         </p>

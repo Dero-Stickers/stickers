@@ -10,7 +10,7 @@
 // lo scambio con loro sono simulati (vetrina), non toccano dati reali.
 //
 // Riconoscibili ovunque dal userId NEGATIVO: MatchCard/MatchDetail li intercettano
-// e mostrano il badge "PROVA" + le viste dimostrative, senza chiamare il backend.
+// e mostrano il badge "Utente test" + le viste dimostrative, senza chiamare il backend.
 
 import type { MatchSummary } from "@workspace/api-client-react";
 
@@ -51,9 +51,10 @@ export interface DemoProfile {
   recipe: DemoRecipeAlbum[]; // album + distribuzione della vetrina (per profilo)
 }
 
-// Nome "Utente" per tutti (il badge PROVA accanto chiarisce che è dimostrativo).
-// Gli userId restano distinti (-101..-104) per l'isolamento tecnico; i 4 profili
-// si differenziano per distanza/album, non per nome.
+// Nomi di fantasia corti e tipici (2 maschili, 2 femminili); il badge "Utente
+// test" accanto chiarisce che sono dimostrativi. Gli userId restano distinti
+// (-101..-104) per l'isolamento tecnico; i 4 profili si differenziano anche per
+// distanza/album.
 //   +3 → ~4.6 km · +8 → ~10.6 km  (vicini, dal CAP — robusto su ogni CAP)
 //   151 km fisso × 2               (lontani, sempre fuori dal raggio max 150)
 // Deriva i totali dalla ricetta, così card e dettaglio non divergono mai:
@@ -71,26 +72,26 @@ function deriveTotals<T extends { recipe: DemoRecipeAlbum[] }>(p: T): T {
 // e dettaglio restano sempre coerenti.
 export const DEMO_PROFILES: DemoProfile[] = ([
   // Vicino · Calciatori recente + Euro 2024
-  { userId: -101, nickname: "Utente", near: true,  capOffset: 3, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 23,
+  { userId: -101, nickname: "Luca", near: true,  capOffset: 3, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 23,
     recipe: [
       { family: "calciatori", idx: 0, give: 9,  receive: 6 },
       { family: "euro",       idx: 0, give: 5,  receive: 8 },
     ] },
   // Vicino · Calciatori 2024 + Mondiali 2026
-  { userId: -102, nickname: "Utente", near: true,  capOffset: 8, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 11,
+  { userId: -102, nickname: "Sara", near: true,  capOffset: 8, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 11,
     recipe: [
       { family: "calciatori", idx: 1, give: 4,  receive: 12 },
       { family: "mondiali",   idx: 0, give: 7,  receive: 3 },
     ] },
   // Lontano · Calciatori + Euro + Mondiali (il più ricco: 3 album)
-  { userId: -103, nickname: "Utente", near: false, fixedKm: 151, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 40,
+  { userId: -103, nickname: "Marco", near: false, fixedKm: 151, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 40,
     recipe: [
       { family: "calciatori", idx: 2, give: 12, receive: 5 },
       { family: "euro",       idx: 1, give: 6,  receive: 9 },
       { family: "mondiali",   idx: 1, give: 3,  receive: 7 },
     ] },
   // Lontano · Calciatori + Mondiali
-  { userId: -104, nickname: "Utente", near: false, fixedKm: 151, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 8,
+  { userId: -104, nickname: "Elisa", near: false, fixedKm: 151, totalExchanges: 0, albumsInCommon: 0, exchangesCompleted: 8,
     recipe: [
       { family: "calciatori", idx: 3, give: 8,  receive: 4 },
       { family: "mondiali",   idx: 2, give: 2,  receive: 10 },
