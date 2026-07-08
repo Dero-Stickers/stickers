@@ -29,10 +29,19 @@ import { useAuth } from "@/contexts/AuthContext";
 const USER = { nickname: "Dero975", pin: "1404" };
 const ADMIN = { nickname: "dero", pin: "140478" };
 
+// ⛔ INTERRUTTORE UNICO (owner, per la pubblicazione): il pulsante U/A è NASCOSTO.
+// Reversibile: rimetti `true` per riattivarlo. Il codice e gli account demo restano
+// intatti — questa è la SOLA modifica autorizzata (non rimuovere il componente, non
+// gatare su env, non cancellare gli account). Vedi memoria sticker-pulsante-ua-non-toccare.
+const ENABLED = false;
+
 export function DevQuickSwitch() {
   const { currentUser, login } = useAuth();
   const [, setLocation] = useLocation();
   const [busy, setBusy] = useState(false);
+
+  // Nascosto per la pubblicazione (ENABLED=false). Torna a true per riattivarlo.
+  if (!ENABLED) return null;
 
   // Sempre attivo: nessun gate su ambiente o variabili — vedi commento in testa.
   const switchView = async () => {
