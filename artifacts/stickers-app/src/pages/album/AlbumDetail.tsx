@@ -206,6 +206,27 @@ export function AlbumDetail() {
     [stickers],
   );
 
+  // "Condividi lista": testo sintetico (titolo + mancanti + doppie) da incollare
+  // su WhatsApp/Telegram/ecc. Usa i codici stampati sulla bustina (es. FWC1), o il
+  // numero come fallback. Dopo la copia un dialog spiega cosa è finito negli appunti.
+  // NB: hook DICHIARATI QUI, prima di ogni return anticipato (es. isLoading), per
+  // non violare le regole degli hook (React #310).
+  const [showShare, setShowShare] = useState(false);
+  const shareText = useMemo(() => {
+    const list = stickers ?? [];
+    const label = (s: (typeof list)[number]) => s.code || String(s.number);
+    const missingCodes = list.filter(s => s.state !== "posseduta" && s.state !== "doppia").map(label);
+    const dupCodes = list.filter(s => s.state === "doppia").map(label);
+    const title = albumInfo?.title ?? `Album #${albumId}`;
+    return [
+      `📗 ${title}`,
+      ``,
+      `❌ Mancanti (${missingCodes.length}): ${missingCodes.length ? missingCodes.join(", ") : "—"}`,
+      ``,
+      `♻️ Doppie (${dupCodes.length}): ${dupCodes.length ? dupCodes.join(", ") : "—"}`,
+    ].join("\n");
+  }, [stickers, albumInfo, albumId]);
+
   // Suddivisione in BLOCCHI per nazione/gruppo (SOLO album a codici alfanumerici):
   // al cambio di sigla (MEX → RSA) inizia un nuovo blocco con la sua intestazione
   // (nome nazione + linea sottile) MESSA SOPRA la griglia, non dentro una cella.
@@ -271,24 +292,6 @@ export function AlbumDetail() {
   }
 
   const albumTitle = albumInfo?.title ?? `Album #${albumId}`;
-
-  // "Condividi lista": testo sintetico (titolo + mancanti + doppie) da incollare
-  // su WhatsApp/Telegram/ecc. Usa i codici stampati sulla bustina (es. FWC1), o il
-  // numero come fallback. Dopo la copia un dialog spiega cosa è finito negli appunti.
-  const [showShare, setShowShare] = useState(false);
-  const shareText = useMemo(() => {
-    const list = stickers ?? [];
-    const label = (s: (typeof list)[number]) => s.code || String(s.number);
-    const missingCodes = list.filter(s => s.state !== "posseduta" && s.state !== "doppia").map(label);
-    const dupCodes = list.filter(s => s.state === "doppia").map(label);
-    return [
-      `📗 ${albumTitle}`,
-      ``,
-      `❌ Mancanti (${missingCodes.length}): ${missingCodes.length ? missingCodes.join(", ") : "—"}`,
-      ``,
-      `♻️ Doppie (${dupCodes.length}): ${dupCodes.length ? dupCodes.join(", ") : "—"}`,
-    ].join("\n");
-  }, [stickers, albumTitle]);
 
   const handleShare = async () => {
     try {
