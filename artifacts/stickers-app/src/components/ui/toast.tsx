@@ -14,11 +14,10 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      // Toast CENTRATI nello schermo (verticalmente e orizzontalmente): l'avviso
-      // è un messaggio importante da leggere, non una notifica d'angolo. Il
-      // wrapper copre tutto ma lascia passare i click (pointer-events-none); i
-      // singoli toast riattivano gli eventi.
-      "fixed inset-0 z-[100] flex max-h-screen flex-col items-center justify-center gap-2 p-4 pointer-events-none [&>*]:pointer-events-auto",
+      // Toast IN ALTO, centrati orizzontalmente: avviso breve e discreto in cima
+      // allo schermo. Il wrapper copre la larghezza ma lascia passare i click
+      // (pointer-events-none); i singoli toast riattivano gli eventi.
+      "fixed inset-x-0 top-0 z-[100] flex max-h-screen flex-col items-center gap-2 p-4 pointer-events-none [&>*]:pointer-events-auto",
       className
     )}
     {...props}

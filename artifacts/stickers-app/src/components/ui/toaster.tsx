@@ -12,9 +12,9 @@ export function Toaster() {
   const { toasts } = useToast()
 
   return (
-    // Durata UNICA per tutti i popup dell'app: 3 secondi (fonte singola —
+    // Durata UNICA per tutti i popup dell'app: 1 secondo (fonte singola —
     // niente durate sparse nei singoli toast; Radix pausa su hover/focus).
-    <ToastProvider duration={3000}>
+    <ToastProvider duration={1000}>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>
