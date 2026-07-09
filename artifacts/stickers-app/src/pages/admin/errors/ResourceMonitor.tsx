@@ -1,5 +1,5 @@
-// Monitor risorse free tier (compatto, in alto a destra della pagina Errori):
-// mostra quanto è pieno il DB (limite Supabase Free 500 MB → sola lettura oltre)
+// Monitor risorse free tier (compatto, orizzontale, in alto a destra della pagina
+// Errori): quanto è pieno il DB (limite Supabase Free 500 MB → sola lettura oltre)
 // e la crescita utenti, con semaforo verde/giallo/rosso. Serve a non trovarsi col
 // DB pieno all'improvviso. Legge il DB reale → funziona identico in produzione.
 import { useGetResources, getGetResourcesQueryKey } from "@workspace/api-client-react";
@@ -21,13 +21,27 @@ function fmtBytes(b: number): string {
   return `${Math.round(b / (1024 * 1024))} MB`;
 }
 
-function Bar({ percent, level }: { percent: number; level: string }) {
+// Una metrica compatta: icona + label, percentuale colorata, dettaglio minuto.
+function Metric({
+  icon,
+  label,
+  percent,
+  level,
+  detail,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  percent: number;
+  level: string;
+  detail: string;
+}) {
   return (
-    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-      <div
-        className={`h-full rounded-full ${LEVEL_COLOR[level] ?? "bg-slate-400"}`}
-        style={{ width: `${Math.min(100, Math.max(2, percent))}%` }}
-      />
+    <div className="leading-tight">
+      <div className="flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">{icon}{label}</span>
+        <span className={`text-sm font-semibold ${LEVEL_TEXT[level]}`}>{percent}%</span>
+      </div>
+      <div className="text-[10px] text-muted-foreground/70">{detail}</div>
     </div>
   );
 }
@@ -46,40 +60,31 @@ export function ResourceMonitor() {
       : "green";
 
   return (
-    <div className="w-52 rounded-xl border bg-white shadow-sm p-3 text-xs">
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-semibold text-foreground">Risorse free tier</span>
+    <div className="flex items-center gap-3 rounded-xl border bg-white shadow-sm px-3 py-2">
+      <div className="flex items-center gap-1.5">
         <span className={`h-2 w-2 rounded-full ${LEVEL_COLOR[worst]}`} title={`Stato: ${worst}`} />
+        <span className="text-[11px] font-semibold text-foreground leading-tight">SUPABASE<br /><span className="font-normal text-muted-foreground">free tier</span></span>
       </div>
-
-      <div className="space-y-2">
-        {/* Database */}
-        <div>
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><Database className="h-3 w-3" /> Database</span>
-            <span className={`font-medium ${LEVEL_TEXT[data.db.level]}`}>{data.db.percent}%</span>
-          </div>
-          <Bar percent={data.db.percent} level={data.db.level} />
-          <div className="text-[10px] text-muted-foreground/70 mt-0.5">
-            {fmtBytes(data.db.usedBytes)} / {fmtBytes(data.db.limitBytes)}
-          </div>
-        </div>
-
-        {/* Utenti */}
-        <div>
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> Utenti</span>
-            <span className={`font-medium ${LEVEL_TEXT[data.users.level]}`}>{data.users.percent}%</span>
-          </div>
-          <Bar percent={data.users.percent} level={data.users.level} />
-          <div className="text-[10px] text-muted-foreground/70 mt-0.5">
-            {data.users.count} / ~{data.users.softLimit}
-          </div>
-        </div>
+      <div className="border-l pl-3">
+        <Metric
+          icon={<Database className="h-3 w-3" />}
+          label="DB"
+          percent={data.db.percent}
+          level={data.db.level}
+          detail={`${fmtBytes(data.db.usedBytes)}/${fmtBytes(data.db.limitBytes)}`}
+        />
       </div>
-
-      <div className="mt-2 pt-2 border-t text-[10px] text-muted-foreground/70">
-        Latenza DB: {data.latencyMs} ms
+      <div className="border-l pl-3">
+        <Metric
+          icon={<Users className="h-3 w-3" />}
+          label="Utenti"
+          percent={data.users.percent}
+          level={data.users.level}
+          detail={`${data.users.count}/~${data.users.softLimit}`}
+        />
+      </div>
+      <div className="border-l pl-3 text-[10px] text-muted-foreground/70 leading-tight whitespace-nowrap">
+        Latenza<br />{data.latencyMs} ms
       </div>
     </div>
   );
