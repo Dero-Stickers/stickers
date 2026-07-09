@@ -27,6 +27,7 @@ import {
   useUpdateUserStickerState,
   useBulkSetUserStickers,
   useRemoveAlbumFromUser,
+  useAddAlbumToUser,
   useGetUserAlbums,
   getGetUserAlbumsQueryKey,
   getGetUserAlbumStickersQueryKey,
@@ -73,7 +74,7 @@ export function AlbumDetail() {
   const guideStepId = useGuideStepId();
   const guideBlockLongPress = guideStepId === "sticker-tap";
 
-  const { data: userAlbums } = useGetUserAlbums();
+  const { data: userAlbums, isLoading: userAlbumsLoading } = useGetUserAlbums();
   const albumInfo = isGuideDemo ? GUIDE_DEMO_ALBUM : userAlbums?.find(a => a.id === albumId);
 
   const { data: apiStickers, isLoading: apiLoading } = useGetUserAlbumStickers(albumId, {
@@ -134,6 +135,19 @@ export function AlbumDetail() {
         toast({ title: "Album rimosso" });
         setLocation("/album");
       },
+    },
+  });
+
+  // Aggiunta dell'album quando la pagina viene aperta per un album NON in
+  // collezione (vedi guardia "notInCollection" più sotto): al successo le due
+  // query si invalidano e la pagina si ricarica come album posseduto.
+  const addAlbum = useAddAlbumToUser({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetUserAlbumsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: stickersKey });
+      },
+      onError: () => toast({ title: "Operazione non riuscita", variant: "destructive" }),
     },
   });
 
@@ -291,13 +305,48 @@ export function AlbumDetail() {
     { key: "mancanti", label: "Mancanti", count: missing, numberColor: "text-gray-400", bulkState: "mancante" },
   ];
 
-  if (isLoading) {
+  if (isLoading || (!isGuideDemo && userAlbumsLoading)) {
     return (
       <div className="p-4 space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-20 w-full" />
         <div className="grid grid-cols-7 gap-1.5">
           {Array.from({ length: 21 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-md" />)}
+        </div>
+      </div>
+    );
+  }
+
+  // GUARDIA: la pagina dettaglio è per album IN collezione. Se si arriva a un
+  // album non aggiunto (URL diretto, cronologia, deep link) `user_stickers` è
+  // vuoto: senza questa guardia si vedrebbe un falso "0 figurine" + "Rimuovi
+  // album". Mostriamo invece uno stato chiaro con l'azione "Aggiungi".
+  const notInCollection = !isGuideDemo && userAlbums !== undefined && !albumInfo;
+  if (notInCollection) {
+    return (
+      <div className="flex flex-col h-full">
+        <AppHeader />
+        <div className="px-4 pt-3 shrink-0">
+          <button
+            className="shrink-0 -ml-1 p-1.5 rounded-full text-foreground active:scale-95 transition-transform"
+            onClick={() => setLocation("/album")}
+            aria-label="Torna agli album"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-3">
+          <p className="text-lg font-semibold text-foreground">Album non nella tua collezione</p>
+          <p className="text-sm text-muted-foreground">
+            Aggiungilo per iniziare a segnare le figurine che possiedi.
+          </p>
+          <Button
+            className="mt-1 bg-accent text-accent-foreground hover:bg-accent/90"
+            disabled={addAlbum.isPending}
+            onClick={() => addAlbum.mutate({ albumId })}
+          >
+            Aggiungi alla collezione
+          </Button>
         </div>
       </div>
     );
