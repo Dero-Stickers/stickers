@@ -7,6 +7,12 @@
 
 ## 2026-07
 
+- **Modale condividi: rimosso Facebook (policy) [10 lug]** — Facebook via `sharer.php` NON pre-compila il
+  testo: la **Platform Policy 2.3** di Meta vieta di pre-popolare messaggi con contenuto non scritto
+  dall'utente (verificato su fonti ufficiali developers.facebook.com, non dedotto). Apriva solo il link,
+  senza il messaggio d'invito → esperienza incoerente. Rimosso; tenuti **WhatsApp e Telegram** (che
+  pre-compilano davvero testo+link), resi **più grandi e touch-friendly** (2 colonne). Il "Copia link"
+  resta per qualsiasi altro canale.
 - **Admin utenti: nomi album, area da CAP completa, export scambi-album [10 lug]** — (1) Il **report
   utente** (modale) ora elenca i **nomi degli album** in collezione (backend `array_agg` dei titoli per
   utente, campo `albumTitles` in `AdminUser`); rimossi da lì Scambi/Donazioni/Invito. (2) **Area da CAP

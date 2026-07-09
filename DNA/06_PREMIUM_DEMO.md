@@ -102,7 +102,9 @@ sostenere l'app, **senza spam** e nel rispetto delle policy store.
   `visibilitychange`), poi resta **finché l'utente non lo chiude** (visibilità legata
   allo stato locale, non a `data.nudge`: cliccando un social torna nell'app senza
   che sparisca). Modale `dona` = CTA Ko-fi; `condividi` = logo + messaggio + link +
-  "Copia link" + **WhatsApp/Telegram/Facebook** (icone/colori ufficiali).
+  "Copia link" + **WhatsApp/Telegram** (icone/colori ufficiali, pulsanti grandi
+  touch-friendly). Facebook rimosso: la sua policy (Platform Policy 2.3) vieta il
+  testo precompilato → condividerebbe solo il link senza messaggio.
   `POST /api/me/nudge/seen` con `{type}` lo consuma. Route `/me/*` dietro gate
   auth+anti-blocco. Il `type` è validato con allowlist lato server.
 - **Testo** (concordato con l'owner): dona = complimento ("sei tra i più attivi"),
