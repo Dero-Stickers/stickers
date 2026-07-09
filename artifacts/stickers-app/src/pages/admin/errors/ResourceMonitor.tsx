@@ -21,6 +21,14 @@ function fmtBytes(b: number): string {
   return `${Math.round(b / (1024 * 1024))} MB`;
 }
 
+// Semaforo latenza DB: verde = risposta rapida (app scattante), giallo = il DB
+// inizia a faticare, rosso = molto lento (utenti in attesa).
+function latencyLevel(ms: number): string {
+  if (ms > 800) return "red";
+  if (ms >= 200) return "yellow";
+  return "green";
+}
+
 // Una metrica compatta: icona + label, percentuale colorata, dettaglio minuto.
 function Metric({
   icon,
@@ -83,8 +91,10 @@ export function ResourceMonitor() {
           detail={`${data.users.count}/~${data.users.softLimit}`}
         />
       </div>
-      <div className="border-l pl-3 text-[10px] text-muted-foreground/70 leading-tight whitespace-nowrap">
-        Latenza<br />{data.latencyMs} ms
+      <div className="border-l pl-3 text-[10px] leading-tight whitespace-nowrap">
+        <span className="text-muted-foreground/70">Latenza</span>
+        <br />
+        <span className={`font-semibold ${LEVEL_TEXT[latencyLevel(data.latencyMs)]}`}>{data.latencyMs} ms</span>
       </div>
     </div>
   );
