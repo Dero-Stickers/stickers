@@ -342,19 +342,20 @@ export function AdminUsers() {
       <div className="flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}
+        className="[&_table]:min-w-[760px]"
         head={
           <>
             <th>
               <SortHeader label="Utente" col="nickname" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
             </th>
-            <th className="hidden sm:table-cell">
+            <th>
               <SortHeader label="CAP" col="cap" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
             </th>
-            <th className="hidden sm:table-cell">
+            <th>
               <SortHeader label="Area" col="area" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
             </th>
-            <th className="hidden md:table-cell w-16">Scambi</th>
-            <th className="hidden md:table-cell w-16">Album</th>
+            <th className="w-16">Scambi</th>
+            <th className="w-16">Album</th>
             <th className="w-20">Donazioni</th>
             <th className="w-24">Invito<br/>dona</th>
             <th className="w-24">Invito<br/>condividi</th>
@@ -381,10 +382,10 @@ export function AdminUsers() {
                 <p className="font-medium text-foreground">{nick}</p>
                 {user.isBlocked && <p className="text-xs text-destructive">Bloccato</p>}
               </td>
-              <td className="hidden sm:table-cell text-center text-foreground">{user.cap}</td>
-              <td className="hidden sm:table-cell text-center text-muted-foreground">{user.area}</td>
-              <td className="hidden md:table-cell text-center text-foreground">{user.exchangesCompleted}</td>
-              <td className="hidden md:table-cell text-center text-foreground">
+              <td className="text-center text-foreground whitespace-nowrap">{user.cap}</td>
+              <td className="text-center text-muted-foreground whitespace-nowrap">{user.area}</td>
+              <td className="text-center text-foreground">{user.exchangesCompleted}</td>
+              <td className="text-center text-foreground">
                 {(() => {
                   // Verde = almeno un album gestito (ha segnato figurine sue o doppie).
                   // Rosso = ha album ma nessuno gestito (tutte mancanti).
