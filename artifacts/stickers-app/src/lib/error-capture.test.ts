@@ -17,9 +17,29 @@ test("isNoise filters well-known harmless errors", () => {
   assert.equal(isNoise(""), true);
 });
 
+// Rumore reale osservato nel pannello admin che prima sfuggiva al filtro.
+test("isNoise filters aborted fetches (browser navigation, not a fault)", () => {
+  assert.equal(isNoise("GET /api/user/albums → rete/connessione: Fetch is aborted"), true);
+  assert.equal(isNoise("GET /api/user/albums → rete/connessione: signal is aborted without reason"), true);
+});
+
+test("isNoise filters third-party trackers injected by the browser", () => {
+  assert.equal(isNoise("Risorsa non caricata: script https://connect.facebook.net/en_US/pcm.js"), true);
+});
+
+test("isNoise filters an empty 'Rejected' promise but only exact match", () => {
+  assert.equal(isNoise("Rejected"), true);
+  assert.equal(isNoise("  rejected  "), true);
+  // ...ma una frase VERA che contiene 'rejected' NON va filtrata
+  assert.equal(isNoise("Payment rejected by server: insufficient funds"), false);
+});
+
 test("isNoise lets real errors through", () => {
   assert.equal(isNoise("TypeError: cannot read 'x' of undefined"), false);
   assert.equal(isNoise("HTTP 500 Internal Server Error"), false);
+  // VINCOLO: un vero guasto server sulla stessa rotta DEVE continuare ad arrivare.
+  assert.equal(isNoise("GET /api/user/albums → HTTP 500: Internal Server Error"), false);
+  assert.equal(isNoise("GET /api/user/albums → HTTP 503: Service Unavailable"), false);
 });
 
 // ---------------------------------------------------------------------------

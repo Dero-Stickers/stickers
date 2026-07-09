@@ -39,18 +39,35 @@ const NOISE_SUBSTRINGS = [
   "load failed", // Safari's generic message for an aborted fetch
   "the operation was aborted", // AbortController cancellations
   "abort error",
+  // Fetch annullata dal browser quando l'utente cambia pagina / ricarica prima
+  // che la risposta arrivi. È navigazione normale, NON un guasto: un vero errore
+  // server risponde HTTP 5xx (passa da reportApiFailure, senza "aborted") e
+  // continua ad arrivare. Chrome dice "Fetch is aborted", Firefox "signal is
+  // aborted without reason".
+  "is aborted", // copre "fetch is aborted" e "signal is aborted..."
+  "aborted without reason",
   "networkerror when attempting to fetch resource", // often a cancelled nav
-  // Browser extension / wallet noise.
+  // Browser extension / wallet / tracker noise (iniettato dal browser utente,
+  // mai dal nostro codice: filtrare non nasconde nulla di nostro).
   "chrome-extension://",
   "moz-extension://",
   "safari-extension://",
   "extensions/",
   "__firefox__",
+  "connect.facebook.net", // pixel/SDK Facebook iniettato da estensioni o in-app browser
+  "fbevents.js",
+  "googletagmanager.com",
+  "google-analytics.com",
 ];
 
 export function isNoise(message: string): boolean {
   if (!message) return true;
   const m = message.toLowerCase();
+  // Promise rifiutata senza alcun contenuto: describe() non ha trovato né
+  // messaggio né stack, resta solo la parola generica "Rejected". Non è
+  // azionabile (nessun frame nostro). Match ESATTO per non filtrare per sbaglio
+  // errori veri che contengono la parola "rejected" in una frase più ricca.
+  if (m.trim() === "rejected") return true;
   return NOISE_SUBSTRINGS.some((s) => m.includes(s));
 }
 
