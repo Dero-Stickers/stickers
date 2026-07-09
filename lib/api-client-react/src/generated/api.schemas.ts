@@ -19,6 +19,48 @@ export interface SuccessResponse {
   message?: string;
 }
 
+export type ResourceUsageDbLevel =
+  (typeof ResourceUsageDbLevel)[keyof typeof ResourceUsageDbLevel];
+
+export const ResourceUsageDbLevel = {
+  green: "green",
+  yellow: "yellow",
+  red: "red",
+} as const;
+
+export type ResourceUsageDb = {
+  usedBytes: number;
+  limitBytes: number;
+  percent: number;
+  level: ResourceUsageDbLevel;
+};
+
+export type ResourceUsageUsersLevel =
+  (typeof ResourceUsageUsersLevel)[keyof typeof ResourceUsageUsersLevel];
+
+export const ResourceUsageUsersLevel = {
+  green: "green",
+  yellow: "yellow",
+  red: "red",
+} as const;
+
+export type ResourceUsageUsers = {
+  count: number;
+  softLimit: number;
+  percent: number;
+  level: ResourceUsageUsersLevel;
+};
+
+/**
+ * Uso risorse free tier (per il monitor admin)
+ */
+export interface ResourceUsage {
+  db: ResourceUsageDb;
+  users: ResourceUsageUsers;
+  latencyMs: number;
+  timestamp: string;
+}
+
 /**
  * Tipo di invito inviato
  */

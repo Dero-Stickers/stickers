@@ -53,6 +53,7 @@ import type {
   RegisterBody,
   Report,
   ReportBody,
+  ResourceUsage,
   SendMessageBody,
   Sticker,
   SuccessResponse,
@@ -3423,6 +3424,81 @@ export const useNudgeAll = <
 > => {
   return useMutation(getNudgeAllMutationOptions(options));
 };
+
+/**
+ * @summary Free-tier resource usage (DB size %, users, latency)
+ */
+export const getGetResourcesUrl = () => {
+  return `/api/admin/resources`;
+};
+
+export const getResources = async (
+  options?: RequestInit,
+): Promise<ResourceUsage> => {
+  return customFetch<ResourceUsage>(getGetResourcesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetResourcesQueryKey = () => {
+  return [`/api/admin/resources`] as const;
+};
+
+export const getGetResourcesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getResources>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getResources>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetResourcesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getResources>>> = ({
+    signal,
+  }) => getResources({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getResources>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetResourcesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getResources>>
+>;
+export type GetResourcesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Free-tier resource usage (DB size %, users, latency)
+ */
+
+export function useGetResources<
+  TData = Awaited<ReturnType<typeof getResources>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getResources>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetResourcesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List all chats

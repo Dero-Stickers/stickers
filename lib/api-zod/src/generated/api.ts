@@ -936,6 +936,28 @@ export const NudgeAllResponse = zod.object({
 });
 
 /**
+ * @summary Free-tier resource usage (DB size %, users, latency)
+ */
+export const GetResourcesResponse = zod
+  .object({
+    db: zod.object({
+      usedBytes: zod.number(),
+      limitBytes: zod.number(),
+      percent: zod.number(),
+      level: zod.enum(["green", "yellow", "red"]),
+    }),
+    users: zod.object({
+      count: zod.number(),
+      softLimit: zod.number(),
+      percent: zod.number(),
+      level: zod.enum(["green", "yellow", "red"]),
+    }),
+    latencyMs: zod.number(),
+    timestamp: zod.string(),
+  })
+  .describe("Uso risorse free tier (per il monitor admin)");
+
+/**
  * @summary List all chats
  */
 export const AdminListChatsResponseItem = zod.object({

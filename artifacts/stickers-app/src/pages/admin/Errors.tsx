@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ErrorRow } from "./errors/ErrorRow";
 import { ErrorDetailDialog } from "./errors/ErrorDetailDialog";
 import { AdminPage } from "@/components/admin/AdminPage";
+import { ResourceMonitor } from "./errors/ResourceMonitor";
 import { useConfirm } from "@/components/admin/ConfirmDialog";
 import {
   authHeaders,
@@ -348,6 +349,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
           : <AlertTriangle className="h-6 w-6 text-amber-500" />
       }
       subtitle={ui.subtitle}
+      actions={group === "auto" ? <ResourceMonitor /> : undefined}
     >
       <div className="shrink-0 space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

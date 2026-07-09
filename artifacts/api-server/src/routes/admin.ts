@@ -295,6 +295,65 @@ const nudgeAll: RequestHandler = async (req, res) => {
   }
 };
 
+// GET /api/admin/resources
+// Monitor risorse free tier: quanto è pieno il DB (limite Supabase Free 500 MB →
+// sola lettura oltre) e quanti utenti (soglia pratica ~6.500, vedi DNA/16). Solo
+// letture leggere (pg_database_size + COUNT), con cache in memoria per non
+// gravare a ogni apertura. Funziona identico in produzione: stesso DB Supabase.
+const DB_LIMIT_BYTES = 500 * 1024 * 1024; // Supabase Free: 500 MB
+const USERS_SOFT_LIMIT = 6500; // soglia pratica free tier (DNA/16)
+let resourcesCache: { at: number; data: unknown } | null = null;
+const RESOURCES_TTL_MS = 5 * 60 * 1000; // 5 min
+
+const getResources: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    // Cache: evita di interrogare il DB a ogni refresh della pagina.
+    if (resourcesCache && Date.now() - resourcesCache.at < RESOURCES_TTL_MS) {
+      res.json(resourcesCache.data);
+      return;
+    }
+    const { db } = await import("@workspace/db");
+    const start = Date.now();
+    const sizeRes = await db.execute<{ bytes: number }>(
+      sql`SELECT pg_database_size(current_database())::bigint AS bytes`,
+    );
+    const latencyMs = Date.now() - start;
+    const bytes = Number((((sizeRes as any).rows ?? sizeRes) as { bytes: number }[])[0]?.bytes ?? 0);
+    const usersRes = await db.execute<{ n: number }>(
+      sql`SELECT COUNT(*)::int AS n FROM users WHERE is_admin = false`,
+    );
+    const users = Number((((usersRes as any).rows ?? usersRes) as { n: number }[])[0]?.n ?? 0);
+
+    const dbPct = Math.round((bytes / DB_LIMIT_BYTES) * 1000) / 10;
+    const usersPct = Math.round((users / USERS_SOFT_LIMIT) * 1000) / 10;
+    // Livello semaforo: verde <70%, giallo 70–85%, rosso >85%.
+    const level = (pct: number) => (pct > 85 ? "red" : pct >= 70 ? "yellow" : "green");
+    const data = {
+      db: {
+        usedBytes: bytes,
+        limitBytes: DB_LIMIT_BYTES,
+        percent: dbPct,
+        level: level(dbPct),
+      },
+      users: {
+        count: users,
+        softLimit: USERS_SOFT_LIMIT,
+        percent: usersPct,
+        level: level(usersPct),
+      },
+      latencyMs,
+      timestamp: new Date().toISOString(),
+    };
+    resourcesCache = { at: Date.now(), data };
+    res.json(data);
+  } catch (err) {
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
 // GET /api/admin/chats
 // Ottimizzato per scalare a migliaia di chat: niente N+1 (prima 1 + 4·N query).
 // Ora poche query totali — nickname, conteggi messaggi e report aggregati in blocco.
@@ -512,6 +571,7 @@ router.get("/users", listUsers);
 router.patch("/users/:userId/block", toggleBlock);
 router.post("/users/:userId/nudge", nudgeUser);
 router.post("/nudge-all", nudgeAll);
+router.get("/resources", getResources);
 router.get("/chats", listChats);
 router.patch("/chats/:chatId/close", closeChat);
 router.patch("/chats/:chatId/reopen", reopenChat);

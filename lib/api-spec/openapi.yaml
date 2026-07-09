@@ -858,6 +858,19 @@ paths:
                     description: Numero di utenti raggiunti
                 required: [success, count]
 
+  /admin/resources:
+    get:
+      operationId: getResources
+      tags: [admin]
+      summary: Free-tier resource usage (DB size %, users, latency)
+      responses:
+        "200":
+          description: Resource usage snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceUsage"
+
   /admin/chats:
     get:
       operationId: adminListChats
@@ -985,6 +998,30 @@ components:
         message:
           type: string
       required: [success]
+
+    ResourceUsage:
+      type: object
+      description: Uso risorse free tier (per il monitor admin)
+      properties:
+        db:
+          type: object
+          properties:
+            usedBytes: { type: integer }
+            limitBytes: { type: integer }
+            percent: { type: number }
+            level: { type: string, enum: [green, yellow, red] }
+          required: [usedBytes, limitBytes, percent, level]
+        users:
+          type: object
+          properties:
+            count: { type: integer }
+            softLimit: { type: integer }
+            percent: { type: number }
+            level: { type: string, enum: [green, yellow, red] }
+          required: [count, softLimit, percent, level]
+        latencyMs: { type: integer }
+        timestamp: { type: string }
+      required: [db, users, latencyMs, timestamp]
 
     NudgeResult:
       type: object
