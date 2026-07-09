@@ -349,9 +349,9 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
           : <AlertTriangle className="h-6 w-6 text-amber-500" />
       }
       subtitle={ui.subtitle}
-      actions={group === "auto" ? <ResourceMonitor /> : undefined}
     >
       <div className="shrink-0 space-y-4">
+      {group === "auto" && <ResourceMonitor />}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Card className="shadow-sm">
           <CardContent className="p-4">

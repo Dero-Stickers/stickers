@@ -7,6 +7,15 @@
 
 ## 2026-07
 
+- **Admin: monitor risorse free tier (Supabase) [10 lug]** — box compatto orizzontale in alto a destra
+  della pagina "Errori ricevuti" (solo vista `auto`): mostra % riempimento **DB** (limite Supabase Free
+  500 MB → sola lettura oltre), crescita **utenti** (soglia pratica ~6.500, DNA/16) e **latenza DB**, con
+  semaforo verde=ok / giallo=monitorare / rosso=risolvere. Soglie: DB/utenti 70%/85%; latenza 500/1500 ms
+  (ampie, perché in locale include il viaggio Mac→Supabase). Backend `GET /api/admin/resources`
+  (`getResources`, hook `useGetResources`): `pg_database_size` + `COUNT` — **sola lettura**, cache in memoria
+  5 min, solo admin. Legge il DB reale → funziona identico in produzione (dal pannello admin online, anche
+  da telefono). Limite noto: egress/chiamate API non leggibili via SQL (solo dashboard Supabase). Vale
+  [[sticker-serie-fix-non-corrompere]].
 - **Modale condividi: rimosso Facebook (policy) [10 lug]** — Facebook via `sharer.php` NON pre-compila il
   testo: la **Platform Policy 2.3** di Meta vieta di pre-popolare messaggi con contenuto non scritto
   dall'utente (verificato su fonti ufficiali developers.facebook.com, non dedotto). Apriva solo il link,

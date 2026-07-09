@@ -69,33 +69,32 @@ export function ResourceMonitor() {
       : "green";
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-white shadow-sm px-3 py-2">
+    // Responsive: su mobile va a capo (flex-wrap) e occupa la larghezza piena
+    // sotto il titolo, senza sforare né sovrapporsi. Su desktop resta una riga
+    // compatta. Le metriche non si tagliano mai.
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-white shadow-sm px-3 py-2">
       <div className="flex items-center gap-1.5">
-        <span className={`h-2 w-2 rounded-full ${LEVEL_COLOR[worst]}`} title={`Stato: ${worst}`} />
+        <span className={`h-2.5 w-2.5 rounded-full ${LEVEL_COLOR[worst]}`} title={`Stato: ${worst}`} />
         <span className="text-[11px] font-semibold text-foreground leading-tight">SUPABASE<br /><span className="font-normal text-muted-foreground">free tier</span></span>
       </div>
-      <div className="border-l pl-3">
-        <Metric
-          icon={<Database className="h-3 w-3" />}
-          label="DB"
-          percent={data.db.percent}
-          level={data.db.level}
-          detail={`${fmtBytes(data.db.usedBytes)}/${fmtBytes(data.db.limitBytes)}`}
-        />
-      </div>
-      <div className="border-l pl-3">
-        <Metric
-          icon={<Users className="h-3 w-3" />}
-          label="Utenti"
-          percent={data.users.percent}
-          level={data.users.level}
-          detail={`${data.users.count}/~${data.users.softLimit}`}
-        />
-      </div>
-      <div className="border-l pl-3 text-[10px] leading-tight whitespace-nowrap">
-        <span className="text-muted-foreground/70">Latenza</span>
+      <Metric
+        icon={<Database className="h-3.5 w-3.5" />}
+        label="DB"
+        percent={data.db.percent}
+        level={data.db.level}
+        detail={`${fmtBytes(data.db.usedBytes)}/${fmtBytes(data.db.limitBytes)}`}
+      />
+      <Metric
+        icon={<Users className="h-3.5 w-3.5" />}
+        label="Utenti"
+        percent={data.users.percent}
+        level={data.users.level}
+        detail={`${data.users.count}/~${data.users.softLimit}`}
+      />
+      <div className="text-[11px] leading-tight whitespace-nowrap">
+        <span className="text-muted-foreground">Latenza</span>
         <br />
-        <span className={`font-semibold ${LEVEL_TEXT[latencyLevel(data.latencyMs)]}`}>{data.latencyMs} ms</span>
+        <span className={`text-sm font-semibold ${LEVEL_TEXT[latencyLevel(data.latencyMs)]}`}>{data.latencyMs} ms</span>
       </div>
     </div>
   );
