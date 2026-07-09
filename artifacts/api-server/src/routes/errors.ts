@@ -266,16 +266,33 @@ const listErrors: RequestHandler = async (req, res) => {
       for (const u of us) nickById.set(u.id, u.nickname);
     }
 
-    // Counts for the UI badges.
+    // Counts per i box in alto. DEVONO rispettare lo stesso `group` della lista:
+    // altrimenti la sezione "Segnalazioni & proposte" (manual) mostrerebbe nei
+    // box anche gli errori di sistema (auto) — es. "Nuove: 1" senza avere alcuna
+    // segnalazione utente in lista. Il filtro group è indipendente dal filtro di
+    // stato/priorità della lista, così i box restano stabili quando si clicca un
+    // chip. "Totali" è il conteggio reale del gruppo, non rows.length (troncato a
+    // `limit`).
+    const groupCond =
+      group === "auto" || group === "manual"
+        ? inArray(errorReportsTable.errorType, [...TYPE_GROUPS[group]])
+        : undefined;
     const since = new Date(Date.now() - 7 * 24 * 60 * 60_000);
-    const recent = await db
-      .select()
-      .from(errorReportsTable)
-      .where(gte(errorReportsTable.lastSeenAt, since));
+    const [allInGroup, recent] = await Promise.all([
+      db.select().from(errorReportsTable).where(groupCond),
+      db
+        .select()
+        .from(errorReportsTable)
+        .where(
+          groupCond
+            ? and(groupCond, gte(errorReportsTable.lastSeenAt, since))
+            : gte(errorReportsTable.lastSeenAt, since),
+        ),
+    ]);
     const counts = {
-      total: rows.length,
-      new: recent.filter((r) => r.status === "new").length,
-      critical: recent.filter((r) => r.priority === "critical" && r.status !== "ignored").length,
+      total: allInGroup.length,
+      new: allInGroup.filter((r) => r.status === "new").length,
+      critical: allInGroup.filter((r) => r.priority === "critical" && r.status !== "ignored").length,
       last7d: recent.length,
     };
 
