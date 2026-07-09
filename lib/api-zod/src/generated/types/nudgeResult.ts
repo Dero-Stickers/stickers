@@ -5,12 +5,15 @@
  * Sticker Matchbox API
  * OpenAPI spec version: 0.1.0
  */
+import type { NudgeResultType } from "./nudgeResultType";
 
 /**
- * Esito dell'invio dell'invito a donare (lato admin)
+ * Esito dell'invio di un invito (dona o condividi), lato admin
  */
 export interface NudgeResult {
   success: boolean;
+  /** Tipo di invito inviato */
+  type?: NudgeResultType;
   nudgeSentAt: string;
   nudgeSeenAt?: string | null;
 }

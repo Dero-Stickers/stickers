@@ -23,8 +23,12 @@ export interface AdminUser {
   donations: AdminUserDonationsItem[];
   /** Quando l'admin ha inviato l'invito a donare (null = mai invitato) */
   nudgeSentAt?: string | null;
-  /** Quando l'utente ha visto l'invito (null = non ancora visto) */
+  /** Quando l'utente ha visto l'invito a donare (null = non ancora visto) */
   nudgeSeenAt?: string | null;
+  /** Quando l'admin ha inviato l'invito a condividere l'app (null = mai) */
+  shareSentAt?: string | null;
+  /** Quando l'utente ha visto l'invito a condividere (null = non ancora) */
+  shareSeenAt?: string | null;
   exchangesCompleted: number;
   isBlocked: boolean;
   createdAt?: string;

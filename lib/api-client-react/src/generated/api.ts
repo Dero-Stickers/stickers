@@ -39,11 +39,13 @@ import type {
   GetNearbyMatchesParams,
   HealthStatus,
   LoginBody,
+  MarkMyNudgeSeenBody,
   MatchDetail,
   MatchSummary,
   Message,
   MyNudge,
   NudgeResult,
+  NudgeUserBody,
   OpenChatBody,
   PublishBody,
   RegisterBody,
@@ -534,18 +536,21 @@ export function useGetMyNudge<
 }
 
 /**
- * @summary Mark the current user's donation invite as seen (one-shot)
+ * @summary Mark the current user's invite as seen (one-shot)
  */
 export const getMarkMyNudgeSeenUrl = () => {
   return `/api/me/nudge/seen`;
 };
 
 export const markMyNudgeSeen = async (
+  markMyNudgeSeenBody?: MarkMyNudgeSeenBody,
   options?: RequestInit,
 ): Promise<SuccessResponse> => {
   return customFetch<SuccessResponse>(getMarkMyNudgeSeenUrl(), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(markMyNudgeSeenBody),
   });
 };
 
@@ -556,14 +561,14 @@ export const getMarkMyNudgeSeenMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof markMyNudgeSeen>>,
     TError,
-    void,
+    { data: BodyType<MarkMyNudgeSeenBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof markMyNudgeSeen>>,
   TError,
-  void,
+  { data: BodyType<MarkMyNudgeSeenBody> },
   TContext
 > => {
   const mutationKey = ["markMyNudgeSeen"];
@@ -577,9 +582,11 @@ export const getMarkMyNudgeSeenMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof markMyNudgeSeen>>,
-    void
-  > = () => {
-    return markMyNudgeSeen(requestOptions);
+    { data: BodyType<MarkMyNudgeSeenBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return markMyNudgeSeen(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -588,11 +595,11 @@ export const getMarkMyNudgeSeenMutationOptions = <
 export type MarkMyNudgeSeenMutationResult = NonNullable<
   Awaited<ReturnType<typeof markMyNudgeSeen>>
 >;
-
+export type MarkMyNudgeSeenMutationBody = BodyType<MarkMyNudgeSeenBody>;
 export type MarkMyNudgeSeenMutationError = ErrorType<unknown>;
 
 /**
- * @summary Mark the current user's donation invite as seen (one-shot)
+ * @summary Mark the current user's invite as seen (one-shot)
  */
 export const useMarkMyNudgeSeen = <
   TError = ErrorType<unknown>,
@@ -601,14 +608,14 @@ export const useMarkMyNudgeSeen = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof markMyNudgeSeen>>,
     TError,
-    void,
+    { data: BodyType<MarkMyNudgeSeenBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof markMyNudgeSeen>>,
   TError,
-  void,
+  { data: BodyType<MarkMyNudgeSeenBody> },
   TContext
 > => {
   return useMutation(getMarkMyNudgeSeenMutationOptions(options));
@@ -3243,7 +3250,7 @@ export const useToggleBlockUser = <
 };
 
 /**
- * @summary Send a one-time gentle donation invite to a user
+ * @summary Send a gentle invite to a user (donation or share the app)
  */
 export const getNudgeUserUrl = (userId: number) => {
   return `/api/admin/users/${userId}/nudge`;
@@ -3251,11 +3258,14 @@ export const getNudgeUserUrl = (userId: number) => {
 
 export const nudgeUser = async (
   userId: number,
+  nudgeUserBody?: NudgeUserBody,
   options?: RequestInit,
 ): Promise<NudgeResult> => {
   return customFetch<NudgeResult>(getNudgeUserUrl(userId), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(nudgeUserBody),
   });
 };
 
@@ -3266,14 +3276,14 @@ export const getNudgeUserMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof nudgeUser>>,
     TError,
-    { userId: number },
+    { userId: number; data: BodyType<NudgeUserBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof nudgeUser>>,
   TError,
-  { userId: number },
+  { userId: number; data: BodyType<NudgeUserBody> },
   TContext
 > => {
   const mutationKey = ["nudgeUser"];
@@ -3287,11 +3297,11 @@ export const getNudgeUserMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof nudgeUser>>,
-    { userId: number }
+    { userId: number; data: BodyType<NudgeUserBody> }
   > = (props) => {
-    const { userId } = props ?? {};
+    const { userId, data } = props ?? {};
 
-    return nudgeUser(userId, requestOptions);
+    return nudgeUser(userId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -3300,11 +3310,11 @@ export const getNudgeUserMutationOptions = <
 export type NudgeUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof nudgeUser>>
 >;
-
+export type NudgeUserMutationBody = BodyType<NudgeUserBody>;
 export type NudgeUserMutationError = ErrorType<unknown>;
 
 /**
- * @summary Send a one-time gentle donation invite to a user
+ * @summary Send a gentle invite to a user (donation or share the app)
  */
 export const useNudgeUser = <
   TError = ErrorType<unknown>,
@@ -3313,14 +3323,14 @@ export const useNudgeUser = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof nudgeUser>>,
     TError,
-    { userId: number },
+    { userId: number; data: BodyType<NudgeUserBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof nudgeUser>>,
   TError,
-  { userId: number },
+  { userId: number; data: BodyType<NudgeUserBody> },
   TContext
 > => {
   return useMutation(getNudgeUserMutationOptions(options));

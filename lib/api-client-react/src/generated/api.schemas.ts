@@ -20,20 +20,46 @@ export interface SuccessResponse {
 }
 
 /**
- * Esito dell'invio dell'invito a donare (lato admin)
+ * Tipo di invito inviato
+ */
+export type NudgeResultType =
+  (typeof NudgeResultType)[keyof typeof NudgeResultType];
+
+export const NudgeResultType = {
+  dona: "dona",
+  condividi: "condividi",
+} as const;
+
+/**
+ * Esito dell'invio di un invito (dona o condividi), lato admin
  */
 export interface NudgeResult {
   success: boolean;
+  /** Tipo di invito inviato */
+  type?: NudgeResultType;
   nudgeSentAt: string;
   nudgeSeenAt?: string | null;
 }
 
+/**
+ * Tipo di invito da mostrare (dona = donazione, condividi = condividi l'app)
+ */
+export type MyNudgeNudgeType =
+  (typeof MyNudgeNudgeType)[keyof typeof MyNudgeNudgeType];
+
+export const MyNudgeNudgeType = {
+  dona: "dona",
+  condividi: "condividi",
+} as const;
+
 export type MyNudgeNudge = {
+  /** Tipo di invito da mostrare (dona = donazione, condividi = condividi l'app) */
+  type: MyNudgeNudgeType;
   sentAt: string;
 } | null;
 
 /**
- * Invito a donare in attesa per l'utente corrente (null se nessuno)
+ * Invito in attesa per l'utente corrente (null se nessuno)
  */
 export interface MyNudge {
   nudge: MyNudgeNudge;
@@ -339,8 +365,12 @@ export interface AdminUser {
   donations: AdminUserDonationsItem[];
   /** Quando l'admin ha inviato l'invito a donare (null = mai invitato) */
   nudgeSentAt?: string | null;
-  /** Quando l'utente ha visto l'invito (null = non ancora visto) */
+  /** Quando l'utente ha visto l'invito a donare (null = non ancora visto) */
   nudgeSeenAt?: string | null;
+  /** Quando l'admin ha inviato l'invito a condividere l'app (null = mai) */
+  shareSentAt?: string | null;
+  /** Quando l'utente ha visto l'invito a condividere (null = non ancora) */
+  shareSeenAt?: string | null;
   exchangesCompleted: number;
   isBlocked: boolean;
   createdAt?: string;
@@ -413,6 +443,22 @@ export interface AppSettings {
   guideMode?: AppSettingsGuideMode;
 }
 
+/**
+ * Tipo da marcare come visto (omesso = tutti i pendenti)
+ */
+export type MarkMyNudgeSeenBodyType =
+  (typeof MarkMyNudgeSeenBodyType)[keyof typeof MarkMyNudgeSeenBodyType];
+
+export const MarkMyNudgeSeenBodyType = {
+  dona: "dona",
+  condividi: "condividi",
+} as const;
+
+export type MarkMyNudgeSeenBody = {
+  /** Tipo da marcare come visto (omesso = tutti i pendenti) */
+  type?: MarkMyNudgeSeenBodyType;
+};
+
 export type GetNearbyMatchesParams = {
   /**
    * Raggio di ricerca in km (1-100).
@@ -420,4 +466,20 @@ export type GetNearbyMatchesParams = {
    * @maximum 100
    */
   radius?: number;
+};
+
+/**
+ * Tipo di invito (default dona)
+ */
+export type NudgeUserBodyType =
+  (typeof NudgeUserBodyType)[keyof typeof NudgeUserBodyType];
+
+export const NudgeUserBodyType = {
+  dona: "dona",
+  condividi: "condividi",
+} as const;
+
+export type NudgeUserBody = {
+  /** Tipo di invito (default dona) */
+  type?: NudgeUserBodyType;
 };

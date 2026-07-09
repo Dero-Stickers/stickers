@@ -141,7 +141,18 @@ paths:
     post:
       operationId: markMyNudgeSeen
       tags: [me]
-      summary: Mark the current user's donation invite as seen (one-shot)
+      summary: Mark the current user's invite as seen (one-shot)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [dona, condividi]
+                  description: Tipo da marcare come visto (omesso = tutti i pendenti)
       responses:
         "200":
           description: Marked as seen
@@ -787,13 +798,24 @@ paths:
     post:
       operationId: nudgeUser
       tags: [admin]
-      summary: Send a one-time gentle donation invite to a user
+      summary: Send a gentle invite to a user (donation or share the app)
       parameters:
         - name: userId
           in: path
           required: true
           schema:
             type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [dona, condividi]
+                  description: Tipo di invito (default dona)
       responses:
         "200":
           description: Invite sent (or re-armed)
@@ -932,10 +954,14 @@ components:
 
     NudgeResult:
       type: object
-      description: Esito dell'invio dell'invito a donare (lato admin)
+      description: Esito dell'invio di un invito (dona o condividi), lato admin
       properties:
         success:
           type: boolean
+        type:
+          type: string
+          enum: [dona, condividi]
+          description: Tipo di invito inviato
         nudgeSentAt:
           type: string
         nudgeSeenAt:
@@ -945,15 +971,19 @@ components:
 
     MyNudge:
       type: object
-      description: Invito a donare in attesa per l'utente corrente (null se nessuno)
+      description: Invito in attesa per l'utente corrente (null se nessuno)
       properties:
         nudge:
           type: object
           nullable: true
           properties:
+            type:
+              type: string
+              enum: [dona, condividi]
+              description: Tipo di invito da mostrare (dona = donazione, condividi = condividi l'app)
             sentAt:
               type: string
-          required: [sentAt]
+          required: [type, sentAt]
       required: [nudge]
 
     RegisterBody:
@@ -1487,7 +1517,15 @@ components:
         nudgeSeenAt:
           type: string
           nullable: true
-          description: Quando l'utente ha visto l'invito (null = non ancora visto)
+          description: Quando l'utente ha visto l'invito a donare (null = non ancora visto)
+        shareSentAt:
+          type: string
+          nullable: true
+          description: Quando l'admin ha inviato l'invito a condividere l'app (null = mai)
+        shareSeenAt:
+          type: string
+          nullable: true
+          description: Quando l'utente ha visto l'invito a condividere (null = non ancora)
         exchangesCompleted:
           type: integer
         isBlocked:

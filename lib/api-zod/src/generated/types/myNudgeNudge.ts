@@ -5,7 +5,10 @@
  * Sticker Matchbox API
  * OpenAPI spec version: 0.1.0
  */
+import type { MyNudgeNudgeType } from "./myNudgeNudgeType";
 
 export type MyNudgeNudge = {
+  /** Tipo di invito da mostrare (dona = donazione, condividi = condividi l'app) */
+  type: MyNudgeNudgeType;
   sentAt: string;
 } | null;

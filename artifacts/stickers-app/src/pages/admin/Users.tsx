@@ -98,7 +98,7 @@ export function AdminUsers() {
     },
   });
 
-  // Invito a donare (una tantum): l'utente lo vedrà una volta al prossimo
+  // Invio invito (dona o condividi): l'utente lo vedrà una volta al prossimo
   // accesso. Ricarica l'elenco così lo stato ("Inviato") si aggiorna subito.
   const nudge = useNudgeUser({
     mutation: {
@@ -131,18 +131,21 @@ export function AdminUsers() {
 
   // Invia (o reinvia) l'invito a donare — SEMPRE con conferma (salvaguardia
   // anti-spam; lo storico è comunque visibile nella cella stessa).
-  const sendNudge = async (user: AdminUser, isResend: boolean) => {
+  const sendNudge = async (user: AdminUser, isResend: boolean, type: "dona" | "condividi" = "dona") => {
+    const azione = type === "condividi" ? "a condividere l'app" : "a donare";
     const ok = await confirm({
       title: isResend
-        ? `Reinviare l'invito a ${user.nickname}?`
-        : `Inviare l'invito a donare a ${user.nickname}?`,
-      description: isResend
-        ? "Lo rivedrà una volta al prossimo accesso. Usa il reinvio con parsimonia."
-        : "Riceverà un gentile invito a sostenere l'app: lo vedrà una volta al prossimo accesso.",
+        ? `Reinviare l'invito ${azione} a ${user.nickname}?`
+        : `Inviare l'invito ${azione} a ${user.nickname}?`,
+      description: type === "condividi"
+        ? "Riceverà un invito a condividere l'app con gli amici: lo vedrà una volta al prossimo accesso. Puoi rinviarlo quando vuoi."
+        : (isResend
+            ? "Lo rivedrà una volta al prossimo accesso. Usa il reinvio con parsimonia."
+            : "Riceverà un gentile invito a sostenere l'app: lo vedrà una volta al prossimo accesso."),
       confirmLabel: isResend ? "Reinvia" : "Invia invito",
     });
     if (!ok) return;
-    nudge.mutate({ userId: user.id });
+    nudge.mutate({ userId: user.id, data: { type } });
   };
 
   // Cella "Invito": mostra lo STORICO (anti-spam) e l'azione giusta.
@@ -154,44 +157,57 @@ export function AdminUsers() {
     if (user.isBlocked) {
       return <span className="text-muted-foreground/50" title="Utente bloccato: nessun invito">—</span>;
     }
-    const sentAt = user.nudgeSentAt ?? null;
-    const seenAt = user.nudgeSeenAt ?? null;
-    if (!sentAt) {
-      return (
-        <button
-          type="button"
-          onClick={() => sendNudge(user, false)}
-          disabled={nudge.isPending}
-          className="inline-flex items-center gap-1.5 text-primary text-xs font-medium hover:underline disabled:opacity-40"
-          title="Invita gentilmente a donare (lo vedrà una volta al prossimo accesso)"
-        >
-          <Send className="h-3.5 w-3.5" />
-          Invita
-        </button>
-      );
-    }
-    return (
-      <div className="flex flex-col items-center gap-0.5">
-        {seenAt ? (
-          <span className="inline-flex items-center gap-1 text-xs text-green-600" title={`Visto il ${nudgeDate(seenAt)}`}>
-            <Check className="h-3.5 w-3.5" />
-            Visto
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title={`Inviato il ${nudgeDate(sentAt)}`}>
+    // Sotto-blocco riutilizzabile per un singolo tipo di invito (dona | condividi).
+    const inviteBlock = (
+      sentAt: string | null,
+      seenAt: string | null,
+      type: "dona" | "condividi",
+      label: string,
+      inviteTitle: string,
+    ) => {
+      if (!sentAt) {
+        return (
+          <button
+            type="button"
+            onClick={() => sendNudge(user, false, type)}
+            disabled={nudge.isPending}
+            className="inline-flex items-center gap-1.5 text-primary text-xs font-medium hover:underline disabled:opacity-40"
+            title={inviteTitle}
+          >
             <Send className="h-3.5 w-3.5" />
-            Inviato
-          </span>
-        )}
-        <span className="text-[10px] text-muted-foreground/70">{nudgeDate(seenAt ?? sentAt)}</span>
-        <button
-          type="button"
-          onClick={() => sendNudge(user, true)}
-          disabled={nudge.isPending}
-          className="text-[10px] text-primary/80 hover:underline disabled:opacity-40"
-        >
-          Reinvia
-        </button>
+            {label}
+          </button>
+        );
+      }
+      return (
+        <div className="flex flex-col items-center gap-0.5">
+          {seenAt ? (
+            <span className="inline-flex items-center gap-1 text-xs text-green-600" title={`${label}: visto il ${nudgeDate(seenAt)}`}>
+              <Check className="h-3.5 w-3.5" />
+              {label} · visto
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title={`${label}: inviato il ${nudgeDate(sentAt)}`}>
+              <Send className="h-3.5 w-3.5" />
+              {label} · inviato
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => sendNudge(user, true, type)}
+            disabled={nudge.isPending}
+            className="text-[10px] text-primary/80 hover:underline disabled:opacity-40"
+          >
+            Reinvia
+          </button>
+        </div>
+      );
+    };
+    return (
+      <div className="flex flex-col items-center gap-2">
+        {inviteBlock(user.nudgeSentAt ?? null, user.nudgeSeenAt ?? null, "dona", "Dona", "Invita gentilmente a donare (lo vedrà una volta al prossimo accesso)")}
+        <div className="w-full border-t border-border/60" />
+        {inviteBlock(user.shareSentAt ?? null, user.shareSeenAt ?? null, "condividi", "Condividi", "Invita a condividere l'app con gli amici (lo vedrà una volta al prossimo accesso)")}
       </div>
     );
   };

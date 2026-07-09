@@ -87,17 +87,27 @@ export const GetMyNudgeResponse = zod
   .object({
     nudge: zod
       .object({
+        type: zod
+          .enum(["dona", "condividi"])
+          .describe(
+            "Tipo di invito da mostrare (dona = donazione, condividi = condividi l'app)",
+          ),
         sentAt: zod.string(),
       })
       .nullable(),
   })
-  .describe(
-    "Invito a donare in attesa per l'utente corrente (null se nessuno)",
-  );
+  .describe("Invito in attesa per l'utente corrente (null se nessuno)");
 
 /**
- * @summary Mark the current user's donation invite as seen (one-shot)
+ * @summary Mark the current user's invite as seen (one-shot)
  */
+export const MarkMyNudgeSeenBody = zod.object({
+  type: zod
+    .enum(["dona", "condividi"])
+    .optional()
+    .describe("Tipo da marcare come visto (omesso = tutti i pendenti)"),
+});
+
 export const MarkMyNudgeSeenResponse = zod.object({
   success: zod.boolean(),
   message: zod.string().optional(),
@@ -790,7 +800,21 @@ export const AdminListUsersResponseItem = zod.object({
   nudgeSeenAt: zod
     .string()
     .nullish()
-    .describe("Quando l'utente ha visto l'invito (null = non ancora visto)"),
+    .describe(
+      "Quando l'utente ha visto l'invito a donare (null = non ancora visto)",
+    ),
+  shareSentAt: zod
+    .string()
+    .nullish()
+    .describe(
+      "Quando l'admin ha inviato l'invito a condividere l'app (null = mai)",
+    ),
+  shareSeenAt: zod
+    .string()
+    .nullish()
+    .describe(
+      "Quando l'utente ha visto l'invito a condividere (null = non ancora)",
+    ),
   exchangesCompleted: zod.number(),
   isBlocked: zod.boolean(),
   createdAt: zod.string().optional(),
@@ -843,26 +867,51 @@ export const ToggleBlockUserResponse = zod.object({
   nudgeSeenAt: zod
     .string()
     .nullish()
-    .describe("Quando l'utente ha visto l'invito (null = non ancora visto)"),
+    .describe(
+      "Quando l'utente ha visto l'invito a donare (null = non ancora visto)",
+    ),
+  shareSentAt: zod
+    .string()
+    .nullish()
+    .describe(
+      "Quando l'admin ha inviato l'invito a condividere l'app (null = mai)",
+    ),
+  shareSeenAt: zod
+    .string()
+    .nullish()
+    .describe(
+      "Quando l'utente ha visto l'invito a condividere (null = non ancora)",
+    ),
   exchangesCompleted: zod.number(),
   isBlocked: zod.boolean(),
   createdAt: zod.string().optional(),
 });
 
 /**
- * @summary Send a one-time gentle donation invite to a user
+ * @summary Send a gentle invite to a user (donation or share the app)
  */
 export const NudgeUserParams = zod.object({
   userId: zod.coerce.number(),
 });
 
+export const NudgeUserBody = zod.object({
+  type: zod
+    .enum(["dona", "condividi"])
+    .optional()
+    .describe("Tipo di invito (default dona)"),
+});
+
 export const NudgeUserResponse = zod
   .object({
     success: zod.boolean(),
+    type: zod
+      .enum(["dona", "condividi"])
+      .optional()
+      .describe("Tipo di invito inviato"),
     nudgeSentAt: zod.string(),
     nudgeSeenAt: zod.string().nullish(),
   })
-  .describe("Esito dell'invio dell'invito a donare (lato admin)");
+  .describe("Esito dell'invio di un invito (dona o condividi), lato admin");
 
 /**
  * @summary List all chats

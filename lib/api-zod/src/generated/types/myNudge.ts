@@ -8,7 +8,7 @@
 import type { MyNudgeNudge } from "./myNudgeNudge";
 
 /**
- * Invito a donare in attesa per l'utente corrente (null se nessuno)
+ * Invito in attesa per l'utente corrente (null se nessuno)
  */
 export interface MyNudge {
   nudge: MyNudgeNudge;
