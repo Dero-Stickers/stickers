@@ -37,6 +37,30 @@ if (import.meta.env.DEV && "serviceWorker" in navigator) {
 // Quando il nuovo SW è pronto, skipWaiting lo attiva subito e la pagina prende
 // il codice aggiornato al giro successivo. Nessuna azione richiesta all'utente.
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  // Registrazione GESTITA del service worker (prima la iniettava vite-plugin-pwa
+  // con injectRegister:"auto", senza catch → se falliva usciva un
+  // "unhandledrejection" che l'app segnalava come crash "Rejected"). La
+  // registrazione può legittimamente fallire e NON è un guasto dell'app:
+  //  - browser in incognito / SW disabilitati;
+  //  - in-app browser (Facebook/Instagram su iOS) che limita i SW;
+  //  - l'utente lascia la pagina (es. /login) prima che finisca.
+  // In tutti questi casi l'app funziona lo stesso, solo senza offline/precache.
+  // Usiamo l'API nativa (nessuna dipendenza extra): il SW è "sw.js" alla root,
+  // generato da vite-plugin-pwa. Il catch assorbe il fallimento: niente crash,
+  // niente report inutile.
+  const registerServiceWorker = () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, {
+      scope: import.meta.env.BASE_URL,
+    }).catch(() => {
+      /* registrazione SW fallita: innocua (vedi sopra), non è un errore app */
+    });
+  };
+  if (document.readyState === "complete") {
+    registerServiceWorker();
+  } else {
+    window.addEventListener("load", registerServiceWorker, { once: true });
+  }
+
   const checkForUpdate = () => {
     navigator.serviceWorker
       .getRegistration()

@@ -33,7 +33,15 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: "auto",
+      // La registrazione del service worker la facciamo NOI in main.tsx, con un
+      // catch esplicito, via l'API nativa navigator.serviceWorker.register().
+      // Con injectRegister:"auto" il plugin iniettava uno script inline senza
+      // gestione dell'errore: se la registrazione falliva (browser in incognito,
+      // in-app browser iOS, utente che lascia la pagina prima del load) la promise
+      // rifiutava senza catch → "unhandledrejection" catturato come crash generico
+      // "Rejected". Con null nessuno script viene iniettato: registriamo a mano.
+      // Il SW buildato resta "sw.js" alla root (default del plugin).
+      injectRegister: null,
       // Riusa il manifest statico esistente in public/manifest.webmanifest
       // (già linkato in index.html). NON generarne un secondo.
       manifest: false,

@@ -60,14 +60,18 @@ const NOISE_SUBSTRINGS = [
   "google-analytics.com",
 ];
 
-export function isNoise(message: string): boolean {
+export function isNoise(message: string, stack = ""): boolean {
   if (!message) return true;
   const m = message.toLowerCase();
-  // Promise rifiutata senza alcun contenuto: describe() non ha trovato né
-  // messaggio né stack, resta solo la parola generica "Rejected". Non è
-  // azionabile (nessun frame nostro). Match ESATTO per non filtrare per sbaglio
-  // errori veri che contengono la parola "rejected" in una frase più ricca.
-  if (m.trim() === "rejected") return true;
+  // Fallimento della registrazione del service worker: la causa è gestita alla
+  // radice (main.tsx registra con onRegisterError), ma un browser/estensione può
+  // ancora emettere un "unhandledrejection" senza messaggio utile — resta solo
+  // "Rejected" con lo stack che punta al ServiceWorkerContainer. Innocuo (l'app
+  // funziona senza offline): riconosciuto dallo STACK, non dalla parola generica
+  // "rejected" (che in un errore vero — es. "Payment rejected" — deve passare).
+  if (m.trim() === "rejected" && stack.toLowerCase().includes("serviceworker")) {
+    return true;
+  }
   return NOISE_SUBSTRINGS.some((s) => m.includes(s));
 }
 
@@ -100,8 +104,9 @@ export function shouldSend(
   message: string,
   page: string,
   ts: number = now(),
+  stack = "",
 ): boolean {
-  if (isNoise(message)) return false;
+  if (isNoise(message, stack)) return false;
   if (sentCount >= MAX_REPORTS_PER_SESSION) return false;
   if (ts - lastSendAt < MIN_INTERVAL_MS) return false;
 
@@ -166,7 +171,7 @@ function dispatch(
   page = currentPage(),
 ): void {
   try {
-    if (!shouldSend(type, message, page)) return;
+    if (!shouldSend(type, message, page, undefined, stack)) return;
     void reportError({
       errorType: type,
       page,

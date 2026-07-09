@@ -27,11 +27,15 @@ test("isNoise filters third-party trackers injected by the browser", () => {
   assert.equal(isNoise("Risorsa non caricata: script https://connect.facebook.net/en_US/pcm.js"), true);
 });
 
-test("isNoise filters an empty 'Rejected' promise but only exact match", () => {
-  assert.equal(isNoise("Rejected"), true);
-  assert.equal(isNoise("  rejected  "), true);
-  // ...ma una frase VERA che contiene 'rejected' NON va filtrata
-  assert.equal(isNoise("Payment rejected by server: insufficient funds"), false);
+test("isNoise filters a bare service-worker 'Rejected' but nothing else", () => {
+  // "Rejected" con stack del ServiceWorker = registrazione SW fallita, innocua.
+  const swStack = "Error: Rejected\n    at ServiceWorkerContainer.<anonymous> (<anonymous>:1:1)";
+  assert.equal(isNoise("Rejected", swStack), true);
+  assert.equal(isNoise("  rejected  ", swStack), true);
+  // "Rejected" SENZA stack SW: non lo classifichiamo rumore (potrebbe essere altro).
+  assert.equal(isNoise("Rejected"), false);
+  // Una frase VERA che contiene 'rejected' NON va mai filtrata, con o senza stack.
+  assert.equal(isNoise("Payment rejected by server: insufficient funds", swStack), false);
 });
 
 test("isNoise lets real errors through", () => {
