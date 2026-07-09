@@ -265,15 +265,29 @@ export function AdminUsers() {
               <td className="hidden sm:table-cell text-center text-muted-foreground">{user.area}</td>
               <td className="hidden md:table-cell text-center text-foreground">{user.exchangesCompleted}</td>
               <td className="hidden md:table-cell text-center text-foreground">
-                <button
-                  type="button"
-                  onClick={() => setReportOf(user)}
-                  title="Vedi il quadro completo dell'utente"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1 font-medium hover:bg-muted transition-colors"
-                >
-                  {user.albumCount}
-                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
+                {(() => {
+                  // Verde = almeno un album gestito (ha segnato figurine sue o doppie).
+                  // Rosso = ha album ma nessuno gestito (tutte mancanti).
+                  // Neutro = nessun album.
+                  const gestito = (user.ownedCount ?? 0) > 0 || (user.duplicatesCount ?? 0) > 0;
+                  const color =
+                    user.albumCount === 0
+                      ? "text-foreground"
+                      : gestito
+                        ? "text-green-600"
+                        : "text-red-600";
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setReportOf(user)}
+                      title="Vedi il quadro completo dell'utente"
+                      className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold ${color} hover:bg-muted transition-colors`}
+                    >
+                      {user.albumCount}
+                      <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  );
+                })()}
               </td>
               <td className="text-center">
                 {user.donationCount > 0 ? (
@@ -347,15 +361,19 @@ export function AdminUsers() {
           {reportOf && (
             <div className="space-y-2">
               {(() => {
-                const gestito = reportOf.albumCount > 0 && (reportOf.ownedCount > 0 || reportOf.duplicatesCount > 0);
+                // Fallback difensivo (?? 0): se l'API servisse dati vecchi senza
+                // questi campi, mostriamo 0 e non "undefined" nel report.
+                const owned = reportOf.ownedCount ?? 0;
+                const duplicates = reportOf.duplicatesCount ?? 0;
+                const gestito = reportOf.albumCount > 0 && (owned > 0 || duplicates > 0);
                 const rows: Array<{ label: string; value: string; tone?: string }> = [
                   { label: "Album in collezione", value: String(reportOf.albumCount) },
                   reportOf.albumCount === 0
                     ? { label: "Gestione", value: "nessun album", tone: "text-muted-foreground" }
                     : gestito
-                      ? { label: "Gestione", value: `${reportOf.ownedCount} mie · ${reportOf.duplicatesCount} doppie`, tone: "text-green-600" }
+                      ? { label: "Gestione", value: `${owned} mie · ${duplicates} doppie`, tone: "text-green-600" }
                       : { label: "Gestione", value: "non gestito (tutte mancanti)", tone: "text-amber-600" },
-                  { label: "Doppie pronte allo scambio", value: String(reportOf.duplicatesCount) },
+                  { label: "Doppie pronte allo scambio", value: String(duplicates) },
                   { label: "Scambi completati", value: String(reportOf.exchangesCompleted) },
                   {
                     label: "Donazioni",
