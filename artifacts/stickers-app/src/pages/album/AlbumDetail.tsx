@@ -77,7 +77,7 @@ export function AlbumDetail() {
   const { data: userAlbums, isLoading: userAlbumsLoading } = useGetUserAlbums();
   const albumInfo = isGuideDemo ? GUIDE_DEMO_ALBUM : userAlbums?.find(a => a.id === albumId);
 
-  const { data: apiStickers, isLoading: apiLoading } = useGetUserAlbumStickers(albumId, {
+  const { data: apiStickers, isLoading: apiLoading, isFetching: apiFetching } = useGetUserAlbumStickers(albumId, {
     query: { enabled: !isGuideDemo, queryKey: getGetUserAlbumStickersQueryKey(albumId) },
   });
   const demoStickers = useMemo(() => (isGuideDemo ? buildGuideDemoStickers() : null), [isGuideDemo]);
@@ -305,7 +305,14 @@ export function AlbumDetail() {
     { key: "mancanti", label: "Mancanti", count: missing, numberColor: "text-gray-400", bulkState: "mancante" },
   ];
 
-  if (isLoading || (!isGuideDemo && userAlbumsLoading)) {
+  // Un album POSSEDUTO ha sempre le sue figurine seminate (transazione atomica
+  // lato server). Se ne conta 0 mentre la query sta ricaricando (es. subito dopo
+  // l'aggiunta, quando la cache mostra ancora la lista vuota), è uno stato
+  // TRANSITORIO: mostriamo lo skeleton, non il falso "Nessuna figurina".
+  const seededEmptyRefetching =
+    !isGuideDemo && albumInfo != null && (stickers?.length ?? 0) === 0 && apiFetching;
+
+  if (isLoading || (!isGuideDemo && userAlbumsLoading) || seededEmptyRefetching) {
     return (
       <div className="p-4 space-y-4">
         <Skeleton className="h-8 w-48" />
