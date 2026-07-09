@@ -59,6 +59,7 @@ export function AdminUsers() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   // Modale dettaglio donazioni dell'utente (può averne più di una).
   const [donationsOf, setDonationsOf] = useState<AdminUser | null>(null);
+  const [reportOf, setReportOf] = useState<AdminUser | null>(null);
 
   const { data: users, isLoading, isFetching, refetch } = useAdminListUsers();
 
@@ -264,22 +265,15 @@ export function AdminUsers() {
               <td className="hidden sm:table-cell text-center text-muted-foreground">{user.area}</td>
               <td className="hidden md:table-cell text-center text-foreground">{user.exchangesCompleted}</td>
               <td className="hidden md:table-cell text-center text-foreground">
-                {user.albumCount === 0 ? (
-                  <span className="text-muted-foreground/50">—</span>
-                ) : user.ownedCount === 0 && user.duplicatesCount === 0 ? (
-                  // Ha aggiunto album ma non ha segnato nulla (tutte mancanti).
-                  <div className="flex flex-col items-center leading-tight">
-                    <span className="font-medium">{user.albumCount}</span>
-                    <span className="text-[11px] text-amber-600">non gestito</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center leading-tight">
-                    <span className="font-medium">{user.albumCount}</span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {user.ownedCount} mie · {user.duplicatesCount} doppie
-                    </span>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setReportOf(user)}
+                  title="Vedi il quadro completo dell'utente"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1 font-medium hover:bg-muted transition-colors"
+                >
+                  {user.albumCount}
+                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
               </td>
               <td className="text-center">
                 {user.donationCount > 0 ? (
@@ -334,6 +328,72 @@ export function AdminUsers() {
       {/* Modale donazioni dell'utente — un utente può averne PIÙ di una: qui
           l'elenco completo con data, importo e messaggio di ognuna. Il match col
           nickname è best-effort (indizio, non certo). */}
+      {/* Report compatto: tutto il quadro dell'utente in un colpo d'occhio.
+          Si apre cliccando sulla cella Album. Solo dati già restituiti dall'API. */}
+      <Dialog open={reportOf !== null} onOpenChange={(o) => { if (!o) setReportOf(null); }}>
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {reportOf?.nickname}
+              {reportOf?.isBlocked && (
+                <span className="text-xs font-normal text-destructive">(bloccato)</span>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {reportOf?.area ? `${reportOf.area} · ` : ""}CAP {reportOf?.cap}
+              {reportOf?.createdAt ? ` · iscritto il ${formatDateTime(reportOf.createdAt)}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {reportOf && (
+            <div className="space-y-2">
+              {(() => {
+                const gestito = reportOf.albumCount > 0 && (reportOf.ownedCount > 0 || reportOf.duplicatesCount > 0);
+                const rows: Array<{ label: string; value: string; tone?: string }> = [
+                  { label: "Album in collezione", value: String(reportOf.albumCount) },
+                  reportOf.albumCount === 0
+                    ? { label: "Gestione", value: "nessun album", tone: "text-muted-foreground" }
+                    : gestito
+                      ? { label: "Gestione", value: `${reportOf.ownedCount} mie · ${reportOf.duplicatesCount} doppie`, tone: "text-green-600" }
+                      : { label: "Gestione", value: "non gestito (tutte mancanti)", tone: "text-amber-600" },
+                  { label: "Doppie pronte allo scambio", value: String(reportOf.duplicatesCount) },
+                  { label: "Scambi completati", value: String(reportOf.exchangesCompleted) },
+                  {
+                    label: "Donazioni",
+                    value: reportOf.donationCount > 0
+                      ? `${reportOf.donationCount} · ${money(reportOf.donationTotal, reportOf.donationCurrency)}`
+                      : "nessuna",
+                    tone: reportOf.donationCount > 0 ? "text-accent" : "text-muted-foreground",
+                  },
+                  {
+                    label: "Invito a donare",
+                    value: reportOf.nudgeSentAt
+                      ? (reportOf.nudgeSeenAt ? "inviato · visto" : "inviato · non visto")
+                      : "mai inviato",
+                    tone: "text-muted-foreground",
+                  },
+                ];
+                return rows.map((r, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 rounded-xl border bg-muted/40 px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">{r.label}</span>
+                    <span className={`font-medium ${r.tone ?? "text-foreground"}`}>{r.value}</span>
+                  </div>
+                ));
+              })()}
+              {reportOf.donationCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { const u = reportOf; setReportOf(null); setDonationsOf(u); }}
+                  className="w-full inline-flex items-center justify-center gap-1.5 text-primary text-xs font-medium hover:underline pt-1"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Vedi dettaglio donazioni
+                </button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={donationsOf !== null} onOpenChange={(o) => { if (!o) setDonationsOf(null); }}>
         <DialogContent className="max-w-md rounded-3xl">
           <DialogHeader>
