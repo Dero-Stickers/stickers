@@ -201,10 +201,22 @@ export function AlbumDetail() {
   // IDENTICA agli altri album (stesse 7 colonne, stesse proporzioni di cella):
   // il codice lungo entra nella cella quadrata standard andando su due righe
   // (StickerCell). Il flag serve solo ad attivare i divisori di blocco.
-  const hasLongCodes = useMemo(
-    () => (stickers ?? []).some(s => (s.code?.length ?? 0) > 3),
-    [stickers],
-  );
+  //
+  // Attivazione RISTRETTA: i divisori a blocchi hanno senso solo quando le sigle
+  // alfabetiche (nazione: MEX, ARG…) sono la MAGGIORANZA dell'album. Negli album
+  // Calciatori (codici numerici 001, 002… + poche speciali tipo UPD01) i pochi
+  // codici lunghi facevano scattare la modalità a blocchi: ma `prefixOf` su un
+  // codice numerico restituisce il numero stesso, quindi ogni figurina finiva in
+  // un blocco a sé → una per riga. Richiedendo la maggioranza alfabetica, quegli
+  // album tornano alla griglia unica; Mondiali/Europei restano a blocchi. La
+  // condizione può solo RESTRINGERE il caso precedente (mai attivarlo dove prima
+  // era spento): serve comunque almeno un codice > 3 caratteri.
+  const hasLongCodes = useMemo(() => {
+    const list = stickers ?? [];
+    if (!list.some(s => (s.code?.length ?? 0) > 3)) return false;
+    const alpha = list.filter(s => /[A-Za-z]/.test(s.code ?? "")).length;
+    return alpha > list.length / 2;
+  }, [stickers]);
 
   // "Condividi lista": testo sintetico (titolo + mancanti + doppie) da incollare
   // su WhatsApp/Telegram/ecc. Usa i codici stampati sulla bustina (es. FWC1), o il
