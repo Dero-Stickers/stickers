@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Shield, ShieldOff, Heart, Eye, Send, Check } from "lucide-react";
+import { Shield, ShieldOff, Heart, Eye, Send, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -134,6 +134,54 @@ export function AdminUsers() {
     nudgeAll.mutate({ data: { type } });
   };
 
+  // Copia i dati degli utenti (quelli visibili col filtro corrente) in un formato
+  // TESTO ottimizzato per l'analisi con un'AI esterna: intestazione con legenda +
+  // una scheda per utente con collezione (album, possedute/doppie, stato gestione)
+  // e attività (scambi). Dati derivati dalle stesse colonne della tabella.
+  const copyInfo = async () => {
+    const list = filteredUsers;
+    if (list.length === 0) {
+      toast({ title: "Nessun utente da copiare" });
+      return;
+    }
+    const stato = (u: AdminUser) => {
+      if (u.albumCount === 0) return "nessun album";
+      if ((u.ownedCount ?? 0) === 0 && (u.duplicatesCount ?? 0) === 0) return "non gestito (tutte mancanti)";
+      return "gestito";
+    };
+    const header = [
+      "# UTENTI STICKER — export per analisi",
+      `Generato: ${new Date().toLocaleString("it-IT")}`,
+      `Totale utenti: ${list.length}` + (search.trim() ? ` (filtro ricerca: "${search.trim()}")` : "") + (statusFilter === "blocked" ? " (solo bloccati)" : ""),
+      "",
+      "LEGENDA CAMPI:",
+      "- Album: numero di album nella collezione + elenco titoli",
+      "- Mie: figurine possedute (segnate dall'utente)",
+      "- Doppie: figurine doppie, pronte allo scambio",
+      "- Gestione: 'gestito' se ha segnato figurine, 'non gestito' se ha album ma tutte mancanti",
+      "- Scambi: scambi completati dall'utente",
+      "- Zona: area/provincia derivata dal CAP",
+      "========================================",
+    ].join("\n");
+    const blocks = list.map((u, i) => {
+      const titles = (u.albumTitles ?? []);
+      return [
+        `## ${i + 1}. ${u.nickname}${u.isBlocked ? " [BLOCCATO]" : ""}`,
+        `Zona: ${u.area ?? "—"} (CAP ${u.cap})`,
+        `Album: ${u.albumCount}${titles.length ? ` → ${titles.join(", ")}` : ""}`,
+        `Collezione: ${u.ownedCount ?? 0} mie · ${u.duplicatesCount ?? 0} doppie · Gestione: ${stato(u)}`,
+        `Scambi completati: ${u.exchangesCompleted}`,
+      ].join("\n");
+    });
+    const text = `${header}\n\n${blocks.join("\n\n")}\n`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Info copiate", description: `${list.length} utenti negli appunti, pronti per l'analisi AI.` });
+    } catch {
+      toast({ title: "Copia non riuscita", variant: "destructive" });
+    }
+  };
+
   // Aggiorna + azzera: riporta la tabella allo stato originale (ricarica dal
   // server e pulisce ricerca, filtro di stato e ordinamento).
   const resetAndRefresh = () => {
@@ -248,6 +296,16 @@ export function AdminUsers() {
         ]}
         extra={
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 gap-1.5 text-xs bg-white hover:bg-white/90"
+              onClick={copyInfo}
+              title="Copia i dati degli utenti in formato testo per l'analisi AI"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              Copia info
+            </Button>
             <Button
               size="sm"
               variant="outline"
