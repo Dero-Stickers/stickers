@@ -71,6 +71,19 @@ const listUsers: RequestHandler = async (req, res) => {
       (((albumRows as any).rows ?? albumRows) as { user_id: number; n: number }[]).map(r => [r.user_id, r.n]),
     );
 
+    // Titoli degli album in collezione per utente (una query, no N+1): serve al
+    // report utente per elencare i nomi degli album, non solo il conteggio.
+    const albumTitleRows = await db.execute<{ user_id: number; titles: string[] }>(
+      sql`SELECT ua.user_id, array_agg(a.title ORDER BY a.title) AS titles
+          FROM user_albums ua
+          JOIN albums a ON a.id = ua.album_id
+          GROUP BY ua.user_id`,
+    );
+    const albumTitlesMap = new Map<number, string[]>(
+      (((albumTitleRows as any).rows ?? albumTitleRows) as { user_id: number; titles: string[] }[])
+        .map(r => [r.user_id, r.titles ?? []]),
+    );
+
     // Gestione album: quante figurine l'utente ha davvero segnato come "sue"
     // (posseduta) e quante "doppie" (pronte allo scambio). Una query aggregata
     // (GROUP BY), stesso pattern di albumMap. Serve all'admin per distinguere
@@ -143,6 +156,7 @@ const listUsers: RequestHandler = async (req, res) => {
         cap: u.cap,
         area: u.area,
         albumCount: albumMap.get(u.id) ?? 0,
+        albumTitles: albumTitlesMap.get(u.id) ?? [],
         ownedCount: stickerMap.get(u.id)?.owned ?? 0,
         duplicatesCount: stickerMap.get(u.id)?.duplicates ?? 0,
         donationCount: donations.length,

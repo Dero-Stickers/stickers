@@ -433,21 +433,6 @@ export function AdminUsers() {
                       ? { label: "Gestione", value: `${owned} mie · ${duplicates} doppie`, tone: "text-green-600" }
                       : { label: "Gestione", value: "non gestito (tutte mancanti)", tone: "text-amber-600" },
                   { label: "Doppie pronte allo scambio", value: String(duplicates) },
-                  { label: "Scambi completati", value: String(reportOf.exchangesCompleted) },
-                  {
-                    label: "Donazioni",
-                    value: reportOf.donationCount > 0
-                      ? `${reportOf.donationCount} · ${money(reportOf.donationTotal, reportOf.donationCurrency)}`
-                      : "nessuna",
-                    tone: reportOf.donationCount > 0 ? "text-accent" : "text-muted-foreground",
-                  },
-                  {
-                    label: "Invito a donare",
-                    value: reportOf.nudgeSentAt
-                      ? (reportOf.nudgeSeenAt ? "inviato · visto" : "inviato · non visto")
-                      : "mai inviato",
-                    tone: "text-muted-foreground",
-                  },
                 ];
                 return rows.map((r, i) => (
                   <div key={i} className="flex items-center justify-between gap-3 rounded-xl border bg-muted/40 px-3 py-2 text-sm">
@@ -456,15 +441,20 @@ export function AdminUsers() {
                   </div>
                 ));
               })()}
-              {reportOf.donationCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => { const u = reportOf; setReportOf(null); setDonationsOf(u); }}
-                  className="w-full inline-flex items-center justify-center gap-1.5 text-primary text-xs font-medium hover:underline pt-1"
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  Vedi dettaglio donazioni
-                </button>
+
+              {/* Nomi degli album in collezione */}
+              {(reportOf.albumTitles ?? []).length > 0 && (
+                <div className="rounded-xl border bg-muted/40 px-3 py-2 text-sm">
+                  <p className="text-muted-foreground mb-1.5">Album in collezione</p>
+                  <ul className="space-y-1">
+                    {(reportOf.albumTitles ?? []).map((title, i) => (
+                      <li key={i} className="font-medium text-foreground flex items-start gap-1.5">
+                        <span className="text-muted-foreground/60">•</span>
+                        <span>{title}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </div>
           )}

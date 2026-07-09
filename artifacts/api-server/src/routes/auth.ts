@@ -12,6 +12,7 @@ import { z } from "zod";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 import { invalidateUser } from "../lib/matchCache";
 import { verifySupabaseToken, isSupabaseAuthConfigured } from "../lib/supabase-auth";
+import { provinceFromCap } from "../lib/cap-provinces";
 
 // Nickname: 5–12 caratteri (lettere, numeri, - o _), normalizzato a forma
 // canonica "iniziale maiuscola + resto minuscolo" (es. "marco-bo" -> "Marco-bo").
@@ -53,22 +54,16 @@ const ChangeLocationBody = z.object({
 
 // Deriva l'area leggibile dal CAP. Unica fonte, riusata da registrazione e
 // cambio zona, così CAP e area non vanno mai fuori sincrono.
-// 1) match esatto su zone note; 2) fallback sul prefisso provincia (prime 2
-// cifre ≈ provincia in Italia); 3) generico se sconosciuto.
+// 1) zone note precise (macro-quartieri di grandi città); 2) provincia dal
+// prefisso CAP (copre tutti i CAP italiani, vedi lib/cap-provinces.ts);
+// 3) generico se davvero sconosciuto. NB: solo etichetta — il match usa il CAP.
 const AREA_MAP: Record<string, string> = {
   "20100": "Milano Nord", "20121": "Milano Centro", "20135": "Milano Sud",
   "20151": "Milano Ovest", "20137": "Milano Est", "00100": "Roma Centro",
   "00118": "Roma Nord", "10100": "Torino Centro", "40100": "Bologna",
 };
-const AREA_PREFIX: Record<string, string> = {
-  "00": "Roma", "09": "Cagliari", "10": "Torino", "16": "Genova",
-  "20": "Milano", "30": "Venezia", "34": "Trieste", "35": "Padova",
-  "37": "Verona", "40": "Bologna", "41": "Modena", "43": "Parma",
-  "47": "Forlì-Cesena", "50": "Firenze", "60": "Ancona", "70": "Bari",
-  "80": "Napoli", "90": "Palermo", "95": "Catania",
-};
 function deriveArea(cap: string): string {
-  return AREA_MAP[cap] || AREA_PREFIX[cap.slice(0, 2)] || `Area ${cap.slice(0, 2)}XXX`;
+  return AREA_MAP[cap] || provinceFromCap(cap) || `Area ${cap.slice(0, 2)}XXX`;
 }
 
 const LOGIN_MAX_ATTEMPTS = 8;

@@ -1517,6 +1517,11 @@ components:
           nullable: true
         albumCount:
           type: integer
+        albumTitles:
+          type: array
+          items:
+            type: string
+          description: Titoli degli album in collezione dell'utente
         ownedCount:
           type: integer
           description: Figurine segnate "possedute" (le sue). 0 con albumCount>0 = album non gestito.
@@ -1566,7 +1571,7 @@ components:
           type: boolean
         createdAt:
           type: string
-      required: [id, nickname, cap, albumCount, ownedCount, duplicatesCount, donationCount, donationTotal, donationCurrency, donations, exchangesCompleted, isBlocked]
+      required: [id, nickname, cap, albumCount, albumTitles, ownedCount, duplicatesCount, donationCount, donationTotal, donationCurrency, donations, exchangesCompleted, isBlocked]
 
     BlockUserBody:
       type: object

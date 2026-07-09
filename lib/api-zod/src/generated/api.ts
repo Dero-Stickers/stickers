@@ -772,6 +772,9 @@ export const AdminListUsersResponseItem = zod.object({
   cap: zod.string(),
   area: zod.string().nullish(),
   albumCount: zod.number(),
+  albumTitles: zod
+    .array(zod.string())
+    .describe("Titoli degli album in collezione dell'utente"),
   ownedCount: zod
     .number()
     .describe(
@@ -839,6 +842,9 @@ export const ToggleBlockUserResponse = zod.object({
   cap: zod.string(),
   area: zod.string().nullish(),
   albumCount: zod.number(),
+  albumTitles: zod
+    .array(zod.string())
+    .describe("Titoli degli album in collezione dell'utente"),
   ownedCount: zod
     .number()
     .describe(
