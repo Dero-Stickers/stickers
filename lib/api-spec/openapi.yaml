@@ -1453,6 +1453,12 @@ components:
           nullable: true
         albumCount:
           type: integer
+        ownedCount:
+          type: integer
+          description: Figurine segnate "possedute" (le sue). 0 con albumCount>0 = album non gestito.
+        duplicatesCount:
+          type: integer
+          description: Figurine segnate "doppie" (pronte allo scambio).
         donationCount:
           type: integer
         donationTotal:
@@ -1488,7 +1494,7 @@ components:
           type: boolean
         createdAt:
           type: string
-      required: [id, nickname, cap, albumCount, donationCount, donationTotal, donationCurrency, donations, exchangesCompleted, isBlocked]
+      required: [id, nickname, cap, albumCount, ownedCount, duplicatesCount, donationCount, donationTotal, donationCurrency, donations, exchangesCompleted, isBlocked]
 
     BlockUserBody:
       type: object

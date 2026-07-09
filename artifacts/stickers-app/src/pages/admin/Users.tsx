@@ -264,7 +264,22 @@ export function AdminUsers() {
               <td className="hidden sm:table-cell text-center text-muted-foreground">{user.area}</td>
               <td className="hidden md:table-cell text-center text-foreground">{user.exchangesCompleted}</td>
               <td className="hidden md:table-cell text-center text-foreground">
-                {user.albumCount}
+                {user.albumCount === 0 ? (
+                  <span className="text-muted-foreground/50">—</span>
+                ) : user.ownedCount === 0 && user.duplicatesCount === 0 ? (
+                  // Ha aggiunto album ma non ha segnato nulla (tutte mancanti).
+                  <div className="flex flex-col items-center leading-tight">
+                    <span className="font-medium">{user.albumCount}</span>
+                    <span className="text-[11px] text-amber-600">non gestito</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center leading-tight">
+                    <span className="font-medium">{user.albumCount}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {user.ownedCount} mie · {user.duplicatesCount} doppie
+                    </span>
+                  </div>
+                )}
               </td>
               <td className="text-center">
                 {user.donationCount > 0 ? (

@@ -71,6 +71,22 @@ const listUsers: RequestHandler = async (req, res) => {
       (((albumRows as any).rows ?? albumRows) as { user_id: number; n: number }[]).map(r => [r.user_id, r.n]),
     );
 
+    // Gestione album: quante figurine l'utente ha davvero segnato come "sue"
+    // (posseduta) e quante "doppie" (pronte allo scambio). Una query aggregata
+    // (GROUP BY), stesso pattern di albumMap. Serve all'admin per distinguere
+    // "sta gestendo la collezione" da "ha solo aggiunto l'album" (tutte mancanti
+    // → owned=0, duplicates=0 = "non gestito"). Le mancanti non si contano.
+    const stickerRows = await db.execute<{ user_id: number; owned: number; duplicates: number }>(
+      sql`SELECT user_id,
+                 COUNT(*) FILTER (WHERE state = 'posseduta')::int AS owned,
+                 COUNT(*) FILTER (WHERE state = 'doppia')::int    AS duplicates
+          FROM user_stickers GROUP BY user_id`,
+    );
+    const stickerMap = new Map<number, { owned: number; duplicates: number }>(
+      (((stickerRows as any).rows ?? stickerRows) as { user_id: number; owned: number; duplicates: number }[])
+        .map(r => [r.user_id, { owned: r.owned, duplicates: r.duplicates }]),
+    );
+
     // Donazioni per nickname (best-effort): match sul nome del donatore Ko-fi
     // (from_name) OPPURE sul messaggio che contiene il nickname (il modale invita
     // l'utente a incollarlo). NON è garantito al 100% — è un INDIZIO, non un dato
@@ -125,6 +141,8 @@ const listUsers: RequestHandler = async (req, res) => {
         cap: u.cap,
         area: u.area,
         albumCount: albumMap.get(u.id) ?? 0,
+        ownedCount: stickerMap.get(u.id)?.owned ?? 0,
+        duplicatesCount: stickerMap.get(u.id)?.duplicates ?? 0,
         donationCount: donations.length,
         donationTotal: donationTotal.toFixed(2),
         donationCurrency: donations[0]?.currency ?? "EUR",

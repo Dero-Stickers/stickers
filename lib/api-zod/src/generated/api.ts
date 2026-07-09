@@ -762,6 +762,14 @@ export const AdminListUsersResponseItem = zod.object({
   cap: zod.string(),
   area: zod.string().nullish(),
   albumCount: zod.number(),
+  ownedCount: zod
+    .number()
+    .describe(
+      'Figurine segnate \"possedute\" (le sue). 0 con albumCount>0 = album non gestito.',
+    ),
+  duplicatesCount: zod
+    .number()
+    .describe('Figurine segnate \"doppie\" (pronte allo scambio).'),
   donationCount: zod.number(),
   donationTotal: zod.string(),
   donationCurrency: zod.string(),
@@ -807,6 +815,14 @@ export const ToggleBlockUserResponse = zod.object({
   cap: zod.string(),
   area: zod.string().nullish(),
   albumCount: zod.number(),
+  ownedCount: zod
+    .number()
+    .describe(
+      'Figurine segnate \"possedute\" (le sue). 0 con albumCount>0 = album non gestito.',
+    ),
+  duplicatesCount: zod
+    .number()
+    .describe('Figurine segnate \"doppie\" (pronte allo scambio).'),
   donationCount: zod.number(),
   donationTotal: zod.string(),
   donationCurrency: zod.string(),

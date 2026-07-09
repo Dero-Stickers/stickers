@@ -13,6 +13,10 @@ export interface AdminUser {
   cap: string;
   area?: string | null;
   albumCount: number;
+  /** Figurine segnate "possedute" (le sue). 0 con albumCount>0 = album non gestito. */
+  ownedCount: number;
+  /** Figurine segnate "doppie" (pronte allo scambio). */
+  duplicatesCount: number;
   donationCount: number;
   donationTotal: string;
   donationCurrency: string;
