@@ -89,17 +89,22 @@ sostenere l'app, **senza spam** e nel rispetto delle policy store.
   - **`condividi`** (RIPETIBILE): invito a condividere l'app con gli amici (più
     persone = più match). Rinviandolo si riarma (`seen_at` azzerato).
 - **Admin** (`pages/admin/Users.tsx`, colonna **"Invito"**): due bottoni **"Dona"**
-  e **"Condividi"** (`POST /api/admin/users/:id/nudge` con `{type}`, upsert su
-  `(user_id,type)`) — **con conferma**; ai **bloccati** non si invia ("—"). Storico
-  anti-spam per tipo: "Dona/Condividi · inviato/visto" + "Reinvia". Nessun invio
-  automatico di massa.
-- **Utente** (`components/brand/NudgeDialog.tsx` → `<NudgeGate>` in `App.tsx`): al
-  prossimo accesso `GET /api/me/nudge` restituisce l'invito non visto (con `type`) →
-  modale **una volta sola**. Modale `dona` = CTA Ko-fi; modale `condividi` = logo +
-  messaggio + link + "Copia link" + **WhatsApp/Telegram/Facebook** (icone/colori
-  ufficiali; cliccare un social NON chiude il modale, così si condivide su più
-  canali). `POST /api/me/nudge/seen` con `{type}` lo consuma. Route `/me/*` dietro
-  gate auth+anti-blocco. Il `type` è validato con allowlist lato server.
+  e **"Condividi"** (due colonne distinte, bottone solo icona;
+  `POST /api/admin/users/:id/nudge` con `{type}`, upsert su `(user_id,type)`) —
+  **con conferma**; ai **bloccati** non si invia ("—"). Storico anti-spam per tipo:
+  "Dona/Condividi · inviato/visto" + "Reinvia". **Broadcast**: due pulsanti "Invita
+  tutti a donare/condividere" nella barra filtri (`POST /api/admin/nudge-all` con
+  `{type}`, `useNudgeAll`) → upsert massivo atomico a tutti i non-admin non bloccati,
+  con conferma, idempotente, ritorna `count`.
+- **Utente** (`components/brand/NudgeDialog.tsx` → `<NudgeGate>` in `App.tsx`):
+  `GET /api/me/nudge` restituisce l'invito non visto (con `type`). Il modale appare
+  all'avvio **e al ritorno in primo piano** (`refetchOnWindowFocus` +
+  `visibilitychange`), poi resta **finché l'utente non lo chiude** (visibilità legata
+  allo stato locale, non a `data.nudge`: cliccando un social torna nell'app senza
+  che sparisca). Modale `dona` = CTA Ko-fi; `condividi` = logo + messaggio + link +
+  "Copia link" + **WhatsApp/Telegram/Facebook** (icone/colori ufficiali).
+  `POST /api/me/nudge/seen` con `{type}` lo consuma. Route `/me/*` dietro gate
+  auth+anti-blocco. Il `type` è validato con allowlist lato server.
 - **Testo** (concordato con l'owner): dona = complimento ("sei tra i più attivi"),
   **mai** colpevolizzazione; condividi = "più collezionisti = più match". Contributo
   libero, non sblocca nulla, chiudibile.

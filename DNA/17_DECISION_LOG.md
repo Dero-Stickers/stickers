@@ -20,7 +20,16 @@
   Facebook con icone/colori ufficiali, `encodeURIComponent`, `_blank`+`noopener`). Cliccare un social NON
   chiude il modale (più condivisioni); ripetibile = rinviando si riarma (`seen_at` azzerato). `type` validato
   con allowlist lato server. Push notification valutate e **scartate** (fuori scope: richiederebbero VAPID +
-  permesso utente + on/off obbligatorio). Vale [[sticker-kofi-account-dedicato]].
+  permesso utente + on/off obbligatorio). (3) **UI Utenti**: colonna "Invito" divisa in **due colonne**
+  ("Invito dona" / "Invito condividi"), bottone invio solo icona. (4) **Broadcast** `POST /admin/nudge-all`
+  (`useNudgeAll`): due pulsanti "Invita tutti a donare/condividere" nella barra filtri (con conferma) →
+  upsert massivo atomico che (ri)arma l'invito a tutti i non-admin **non bloccati**; solo admin, idempotente,
+  ritorna `count`. (5) **Comportamento modale** (`NudgeGate`): appare all'avvio **e al ritorno in primo piano**
+  (`refetchOnWindowFocus` + `visibilitychange`, per PWA installata), con guardia anti-loop per chiave
+  (tipo+data). Una volta aperto **resta visibile finché l'utente non lo chiude a mano** (visibilità legata allo
+  stato locale `open` + snapshot `openType`, NON a `data.nudge`): così cliccando un social — che consuma
+  l'invito — e tornando nell'app il modale non sparisce, si può condividere su più canali. Vale
+  [[sticker-kofi-account-dedicato]].
 - **Admin errori: meno rumore + fix conteggi box + service worker gestito [9 lug]** — chiusura sessione,
   3 fix. (1) **Filtro rumore esteso** (`error-capture.ts`): la sezione "Errori ricevuti" riceveva
   eventi non-azionabili — fetch annullate dal browser (`Fetch/signal is aborted` su navigazione/refetch),
