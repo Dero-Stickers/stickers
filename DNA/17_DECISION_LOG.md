@@ -7,6 +7,22 @@
 
 ## 2026-07
 
+- **Admin errori: meno rumore + fix conteggi box + service worker gestito [9 lug]** — chiusura sessione,
+  3 fix. (1) **Filtro rumore esteso** (`error-capture.ts`): la sezione "Errori ricevuti" riceveva
+  eventi non-azionabili — fetch annullate dal browser (`Fetch/signal is aborted` su navigazione/refetch),
+  tracker iniettati da estensioni utente (`connect.facebook.net`), promise vuote (`Rejected`). Aggiunti ai
+  `NOISE_SUBSTRINGS`; il vincolo è che i **veri guasti server continuino ad arrivare** (un `HTTP 5xx` sulla
+  stessa rotta passa: coperto da test). (2) **Service Worker gestito** (`main.tsx` + `vite.config.ts`
+  `injectRegister:null`): la registrazione PWA era iniettata da vite-plugin-pwa **senza catch** → se falliva
+  (incognito, in-app browser iOS, uscita anticipata da /login) usciva un `unhandledrejection` catturato come
+  crash generico "Rejected". Ora registrata a mano con l'API nativa `navigator.serviceWorker.register('sw.js')`
+  + `.catch()` che assorbe il fallimento (innocuo: l'app resta usabile senza offline). Nessuna dipendenza
+  aggiunta. (3) **Fix conteggi box admin** (`routes/errors.ts`): i box Totali/Nuove/7gg erano calcolati con una
+  query che **ignorava il filtro `group`** → "Segnalazioni & proposte" mostrava "Nuove: 1" pur senza alcuna
+  segnalazione utente (contava errori di sistema). Ora i counts rispettano il gruppo come la lista; "Totali" è
+  il conteggio reale (non `rows.length` troncato a `limit`). Verificato e2e (manual/auto/all → conteggi
+  corretti). Tabella `error_reports` svuotata dei 5 record di rumore già analizzati (backup JSON locale prima
+  del DELETE). Nessuna modifica a schema/DB. Vale [[sticker-serie-fix-non-corrompere]].
 - **Album: fix visualizzazione figurine + rifiniture UX [9 lug]** — (1) **Griglia ripristinata**: i
   blocchi per-nazione si attivano ora solo se i codici alfabetici sono la MAGGIORANZA (prima bastava
   1 codice > 3 char); così i Calciatori e World Cup 2006 (numerici) tornano griglia unica invece di
