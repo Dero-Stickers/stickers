@@ -173,7 +173,9 @@ export function AdminUsers() {
         `Scambi completati: ${u.exchangesCompleted}`,
       ].join("\n");
     });
-    const text = `${header}\n\n${blocks.join("\n\n")}\n`;
+    // Blocchi separati da una riga vuota + separatore, così restano distinti anche
+    // se il testo viene reincollato dove il markdown collassa gli a-capo singoli.
+    const text = `${header}\n\n${blocks.join("\n\n---\n\n")}\n`;
     try {
       await navigator.clipboard.writeText(text);
       toast({ title: "Info copiate", description: `${list.length} utenti negli appunti, pronti per l'analisi AI.` });
