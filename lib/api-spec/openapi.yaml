@@ -824,6 +824,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/NudgeResult"
 
+  /admin/nudge-all:
+    post:
+      operationId: nudgeAll
+      tags: [admin]
+      summary: Send/re-arm an invite (donation or share) to all non-blocked users
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [dona, condividi]
+                  description: Tipo di invito (default dona)
+      responses:
+        "200":
+          description: Broadcast done
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  type:
+                    type: string
+                    enum: [dona, condividi]
+                  count:
+                    type: integer
+                    description: Numero di utenti raggiunti
+                required: [success, count]
+
   /admin/chats:
     get:
       operationId: adminListChats

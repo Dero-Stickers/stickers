@@ -6,6 +6,7 @@ import {
   useAdminListUsers,
   useToggleBlockUser,
   useNudgeUser,
+  useNudgeAll,
   getAdminListUsersQueryKey,
   type AdminUser,
 } from "@workspace/api-client-react";
@@ -109,6 +110,29 @@ export function AdminUsers() {
       onError: () => toast({ title: "Invito non riuscito", variant: "destructive" }),
     },
   });
+
+  // Invio a TUTTI (broadcast): riarma l'invito del tipo a ogni utente non
+  // bloccato, in un solo colpo. Sempre con conferma (azione su tutti).
+  const nudgeAll = useNudgeAll({
+    mutation: {
+      onSuccess: (res: { count: number }) => {
+        queryClient.invalidateQueries({ queryKey: getAdminListUsersQueryKey() });
+        toast({ title: "Invito inviato a tutti", description: `Raggiunti ${res.count} utenti.` });
+      },
+      onError: () => toast({ title: "Invio non riuscito", variant: "destructive" }),
+    },
+  });
+
+  const sendNudgeAll = async (type: "dona" | "condividi") => {
+    const azione = type === "condividi" ? "a condividere l'app" : "a donare";
+    const ok = await confirm({
+      title: `Invitare TUTTI gli utenti ${azione}?`,
+      description: "L'invito sarà (re)inviato a tutti gli utenti non bloccati: lo vedranno una volta al prossimo accesso.",
+      confirmLabel: "Invia a tutti",
+    });
+    if (!ok) return;
+    nudgeAll.mutate({ data: { type } });
+  };
 
   // Aggiorna + azzera: riporta la tabella allo stato originale (ricarica dal
   // server e pulisce ricerca, filtro di stato e ordinamento).
@@ -222,6 +246,32 @@ export function AdminUsers() {
           ["all", "Tutti"],
           ["blocked", "Bloccati"],
         ]}
+        extra={
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 gap-1.5 text-xs bg-white hover:bg-white/90"
+              disabled={nudgeAll.isPending}
+              onClick={() => sendNudgeAll("dona")}
+              title="Invita tutti gli utenti a donare"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Invita tutti a donare
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 gap-1.5 text-xs bg-white hover:bg-white/90"
+              disabled={nudgeAll.isPending}
+              onClick={() => sendNudgeAll("condividi")}
+              title="Invita tutti gli utenti a condividere l'app"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Invita tutti a condividere
+            </Button>
+          </div>
+        }
       />
       {/* Spaziatura coerente con Album/Messaggi: gap naturale di AdminPage tra
           barra filtri e tabella (niente margine negativo). */}

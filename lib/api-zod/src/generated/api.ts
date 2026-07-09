@@ -914,6 +914,22 @@ export const NudgeUserResponse = zod
   .describe("Esito dell'invio di un invito (dona o condividi), lato admin");
 
 /**
+ * @summary Send/re-arm an invite (donation or share) to all non-blocked users
+ */
+export const NudgeAllBody = zod.object({
+  type: zod
+    .enum(["dona", "condividi"])
+    .optional()
+    .describe("Tipo di invito (default dona)"),
+});
+
+export const NudgeAllResponse = zod.object({
+  success: zod.boolean(),
+  type: zod.enum(["dona", "condividi"]).optional(),
+  count: zod.number().describe("Numero di utenti raggiunti"),
+});
+
+/**
  * @summary List all chats
  */
 export const AdminListChatsResponseItem = zod.object({

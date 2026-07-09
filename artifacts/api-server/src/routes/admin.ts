@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { verifyToken } from "../lib/auth";
 
 const router = Router();
@@ -243,6 +243,44 @@ const nudgeUser: RequestHandler = async (req, res) => {
   }
 };
 
+// POST /api/admin/nudge-all  { type?: "dona" | "condividi" }
+// Invia (o riarma) l'invito del tipo dato a TUTTI gli utenti non-admin e NON
+// bloccati, in un solo upsert massivo (atomico, niente N+1). Riarma anche chi
+// l'aveva già visto: lo rivedrà al prossimo accesso. Ritorna quanti raggiunti.
+const nudgeAll: RequestHandler = async (req, res) => {
+  try {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    const rawType = (req.body?.type as string | undefined)?.trim();
+    const type: "dona" | "condividi" = rawType === "condividi" ? "condividi" : "dona";
+    const { db } = await import("@workspace/db");
+    const { usersTable, donationNudgesTable } = await import("@workspace/db");
+    const now = new Date();
+    // Destinatari: non-admin e non bloccati.
+    const recipients = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(and(eq(usersTable.isAdmin, false), eq(usersTable.isBlocked, false)));
+    if (recipients.length === 0) {
+      res.json({ success: true, type, count: 0 });
+      return;
+    }
+    // Un solo upsert per tutte le righe: riarma (sent_at nuovo, seen_at azzerato)
+    // gli inviti esistenti di quel tipo, crea gli altri. onConflict su (user_id,type).
+    await db
+      .insert(donationNudgesTable)
+      .values(recipients.map((u) => ({ userId: u.id, type, sentAt: now, seenAt: null })))
+      .onConflictDoUpdate({
+        target: [donationNudgesTable.userId, donationNudgesTable.type],
+        set: { sentAt: now, seenAt: null },
+      });
+    res.json({ success: true, type, count: recipients.length });
+  } catch (err) {
+    req.log?.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+};
+
 // GET /api/admin/chats
 // Ottimizzato per scalare a migliaia di chat: niente N+1 (prima 1 + 4·N query).
 // Ora poche query totali — nickname, conteggi messaggi e report aggregati in blocco.
@@ -459,6 +497,7 @@ router.get("/donations", getDonations);
 router.get("/users", listUsers);
 router.patch("/users/:userId/block", toggleBlock);
 router.post("/users/:userId/nudge", nudgeUser);
+router.post("/nudge-all", nudgeAll);
 router.get("/chats", listChats);
 router.patch("/chats/:chatId/close", closeChat);
 router.patch("/chats/:chatId/reopen", reopenChat);

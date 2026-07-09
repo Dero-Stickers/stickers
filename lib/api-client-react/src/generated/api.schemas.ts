@@ -483,3 +483,34 @@ export type NudgeUserBody = {
   /** Tipo di invito (default dona) */
   type?: NudgeUserBodyType;
 };
+
+/**
+ * Tipo di invito (default dona)
+ */
+export type NudgeAllBodyType =
+  (typeof NudgeAllBodyType)[keyof typeof NudgeAllBodyType];
+
+export const NudgeAllBodyType = {
+  dona: "dona",
+  condividi: "condividi",
+} as const;
+
+export type NudgeAllBody = {
+  /** Tipo di invito (default dona) */
+  type?: NudgeAllBodyType;
+};
+
+export type NudgeAll200Type =
+  (typeof NudgeAll200Type)[keyof typeof NudgeAll200Type];
+
+export const NudgeAll200Type = {
+  dona: "dona",
+  condividi: "condividi",
+} as const;
+
+export type NudgeAll200 = {
+  success: boolean;
+  type?: NudgeAll200Type;
+  /** Numero di utenti raggiunti */
+  count: number;
+};

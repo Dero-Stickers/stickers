@@ -44,6 +44,8 @@ import type {
   MatchSummary,
   Message,
   MyNudge,
+  NudgeAll200,
+  NudgeAllBody,
   NudgeResult,
   NudgeUserBody,
   OpenChatBody,
@@ -3334,6 +3336,92 @@ export const useNudgeUser = <
   TContext
 > => {
   return useMutation(getNudgeUserMutationOptions(options));
+};
+
+/**
+ * @summary Send/re-arm an invite (donation or share) to all non-blocked users
+ */
+export const getNudgeAllUrl = () => {
+  return `/api/admin/nudge-all`;
+};
+
+export const nudgeAll = async (
+  nudgeAllBody?: NudgeAllBody,
+  options?: RequestInit,
+): Promise<NudgeAll200> => {
+  return customFetch<NudgeAll200>(getNudgeAllUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(nudgeAllBody),
+  });
+};
+
+export const getNudgeAllMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof nudgeAll>>,
+    TError,
+    { data: BodyType<NudgeAllBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof nudgeAll>>,
+  TError,
+  { data: BodyType<NudgeAllBody> },
+  TContext
+> => {
+  const mutationKey = ["nudgeAll"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof nudgeAll>>,
+    { data: BodyType<NudgeAllBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return nudgeAll(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type NudgeAllMutationResult = NonNullable<
+  Awaited<ReturnType<typeof nudgeAll>>
+>;
+export type NudgeAllMutationBody = BodyType<NudgeAllBody>;
+export type NudgeAllMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Send/re-arm an invite (donation or share) to all non-blocked users
+ */
+export const useNudgeAll = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof nudgeAll>>,
+    TError,
+    { data: BodyType<NudgeAllBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof nudgeAll>>,
+  TError,
+  { data: BodyType<NudgeAllBody> },
+  TContext
+> => {
+  return useMutation(getNudgeAllMutationOptions(options));
 };
 
 /**
