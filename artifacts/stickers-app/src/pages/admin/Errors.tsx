@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Copy, RefreshCw, Search, Trash2, MessageSquarePlus } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -352,27 +352,19 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
     >
       <div className="shrink-0 space-y-4">
       {group === "auto" && <ResourceMonitor />}
-      <div className="grid grid-cols-3 gap-2 md:gap-3">
-        <Card className="shadow-sm">
-          <CardContent className="p-3 md:p-4">
-            <p className="text-xs text-muted-foreground">Totali</p>
-            <p className="text-2xl font-bold mt-1">{data?.counts.total ?? "—"}</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardContent className="p-3 md:p-4">
-            <p className="text-xs text-muted-foreground">Nuove</p>
-            <p className="text-2xl font-bold mt-1 text-green-600">
-              {data?.counts.new ?? "—"}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardContent className="p-3 md:p-4">
-            <p className="text-xs text-muted-foreground">Ultimi 7 giorni</p>
-            <p className="text-2xl font-bold mt-1">{data?.counts.last7d ?? "—"}</p>
-          </CardContent>
-        </Card>
+      {/* Stat compatte: label + numero su UNA riga (poco spazio, un numero non
+          merita una card alta). Su mobile restano leggibili e in una riga sola. */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: "Totali", value: data?.counts.total, tone: "text-foreground" },
+          { label: "Nuove", value: data?.counts.new, tone: "text-green-600" },
+          { label: "Ultimi 7gg", value: data?.counts.last7d, tone: "text-foreground" },
+        ].map((s) => (
+          <div key={s.label} className="flex items-baseline justify-between gap-1.5 rounded-xl border bg-white shadow-sm px-3 py-2">
+            <span className="text-[11px] text-muted-foreground truncate">{s.label}</span>
+            <span className={`text-lg font-bold leading-none ${s.tone}`}>{s.value ?? "—"}</span>
+          </div>
+        ))}
       </div>
 
       {/* Filtri SENZA box contenitore (coerente con Messaggi/Utenti): resi
@@ -397,28 +389,12 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
             <button
               onClick={resetAndRefresh}
               disabled={loading}
-              aria-label="Aggiorna e azzera i filtri"
-              title="Aggiorna e azzera i filtri"
+              aria-label="Aggiorna e azzera la ricerca"
+              title="Aggiorna e azzera la ricerca"
               className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </button>
-            {/* Chip stato. */}
-            {(["all", "new", "investigating", "resolved", "ignored"] as const).map(
-              (s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={`shrink-0 px-2.5 py-1 rounded-full border transition-colors ${
-                    statusFilter === s
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:bg-muted"
-                  }`}
-                >
-                  {s === "all" ? "Tutte" : STATUS_LABEL[s as Status]}
-                </button>
-              ),
-            )}
             {/* Copia: compatto (icona + testo breve), spinto a destra. */}
             <button
               onClick={copyAll}

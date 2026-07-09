@@ -22,9 +22,11 @@ export function AdminPage({
 }) {
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-4 md:gap-6">
-      <div className="flex items-start justify-between gap-4 shrink-0">
+      {/* Su mobile: titolo/sottotitolo CENTRATI e in colonna; da md in su:
+          allineati a sinistra con le azioni a destra (layout classico admin). */}
+      <div className="flex flex-col md:flex-row items-center md:items-start md:justify-between gap-4 shrink-0 text-center md:text-left">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center justify-center md:justify-start gap-2">
             {icon}
             {title}
           </h1>
