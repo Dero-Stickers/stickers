@@ -7,6 +7,20 @@
 
 ## 2026-07
 
+- **Admin utenti: quadro gestione album + invito "condividi l'app" [9 lug]** — (1) **Report utente**:
+  nella Gestione Utenti la colonna Album mostra solo il numero, colorato (verde = collezione gestita, rosso =
+  album aggiunti ma tutte figurine mancanti, neutro = nessun album); cliccando si apre un modale con il quadro
+  compatto (album, `N mie · M doppie` o "non gestito", scambi, donazioni, invito, CAP/area, iscrizione).
+  Backend: query aggregata su `user_stickers` (owned/duplicates per utente) → `ownedCount`/`duplicatesCount`
+  in `AdminUser`. Colonna "Dettagli" rimossa (l'importo Donazioni è ora cliccabile). (2) **Invito "condividi
+  l'app"** (ripetibile, a discrezione admin): nuovo tipo di nudge accanto a "dona". **Migrazione 0014**
+  additiva su `donation_nudges` (colonna `type` default `'dona'`, unique `(user_id,type)`) — APPLICATA in
+  produzione, non distruttiva, 0 record esistenti. L'admin invia da Utenti (bottoni Dona/Condividi);
+  l'utente vede il modale una volta (logo + messaggio + link + "Copia link" giallo + WhatsApp/Telegram/
+  Facebook con icone/colori ufficiali, `encodeURIComponent`, `_blank`+`noopener`). Cliccare un social NON
+  chiude il modale (più condivisioni); ripetibile = rinviando si riarma (`seen_at` azzerato). `type` validato
+  con allowlist lato server. Push notification valutate e **scartate** (fuori scope: richiederebbero VAPID +
+  permesso utente + on/off obbligatorio). Vale [[sticker-kofi-account-dedicato]].
 - **Admin errori: meno rumore + fix conteggi box + service worker gestito [9 lug]** — chiusura sessione,
   3 fix. (1) **Filtro rumore esteso** (`error-capture.ts`): la sezione "Errori ricevuti" riceveva
   eventi non-azionabili — fetch annullate dal browser (`Fetch/signal is aborted` su navigazione/refetch),

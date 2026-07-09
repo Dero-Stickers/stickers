@@ -80,20 +80,29 @@ Funzione **100% interna** (DB + backend nostri; Ko-fi entra solo se l'utente
 sceglie di donare). Serve a invitare gentilmente gli utenti più attivi a
 sostenere l'app, **senza spam** e nel rispetto delle policy store.
 
-- **Tabella** `donation_nudges` (schema `donation-nudges.ts`, mig.
-  `0011_donation_nudges.sql`): `user_id` UNIQUE, `sent_at`, `seen_at`.
-- **Admin** (`pages/admin/Users.tsx`, colonna **"Invito"**): pulsante "Invita"
-  (`POST /api/admin/users/:id/nudge`, upsert) — **sempre con conferma**; agli
-  utenti **bloccati** non si invia (mostra "—"). Storico anti-spam in colonna:
-  "Inviato · data" / "Visto · data" + "Reinvia". L'admin sceglie a mano chi
-  invitare (nessun invio automatico di massa).
-- **Utente** (`components/brand/NudgeDialog.tsx` → `<NudgeGate>` montato in
-  `App.tsx`): al prossimo accesso `GET /api/me/nudge` restituisce l'invito non
-  visto → modale **una volta sola**; alla chiusura (sia "Sostieni Stickers" sia
-  "No grazie") `POST /api/me/nudge/seen` lo consuma e non riappare più. Le route
-  `/me/*` sono dietro il gate auth+anti-blocco.
-- **Testo** (concordato con l'owner): complimento ("sei tra i più attivi"),
-  **mai** colpevolizzazione; contributo libero, non sblocca nulla, chiudibile.
+- **Tabella** `donation_nudges` (schema `donation-nudges.ts`, mig. `0011` +
+  `0014_nudge_type.sql`): `user_id`, **`type`** (`dona` | `condividi`, default
+  `dona`), `sent_at`, `seen_at`. UNIQUE su **`(user_id, type)`**: un invito-dona e
+  un invito-condividi possono coesistere. Due tipi di invito, entrambi a discrezione
+  admin, entrambi mostrati una volta al prossimo accesso:
+  - **`dona`** (una tantum): invito a sostenere l'app via Ko-fi;
+  - **`condividi`** (RIPETIBILE): invito a condividere l'app con gli amici (più
+    persone = più match). Rinviandolo si riarma (`seen_at` azzerato).
+- **Admin** (`pages/admin/Users.tsx`, colonna **"Invito"**): due bottoni **"Dona"**
+  e **"Condividi"** (`POST /api/admin/users/:id/nudge` con `{type}`, upsert su
+  `(user_id,type)`) — **con conferma**; ai **bloccati** non si invia ("—"). Storico
+  anti-spam per tipo: "Dona/Condividi · inviato/visto" + "Reinvia". Nessun invio
+  automatico di massa.
+- **Utente** (`components/brand/NudgeDialog.tsx` → `<NudgeGate>` in `App.tsx`): al
+  prossimo accesso `GET /api/me/nudge` restituisce l'invito non visto (con `type`) →
+  modale **una volta sola**. Modale `dona` = CTA Ko-fi; modale `condividi` = logo +
+  messaggio + link + "Copia link" + **WhatsApp/Telegram/Facebook** (icone/colori
+  ufficiali; cliccare un social NON chiude il modale, così si condivide su più
+  canali). `POST /api/me/nudge/seen` con `{type}` lo consuma. Route `/me/*` dietro
+  gate auth+anti-blocco. Il `type` è validato con allowlist lato server.
+- **Testo** (concordato con l'owner): dona = complimento ("sei tra i più attivi"),
+  **mai** colpevolizzazione; condividi = "più collezionisti = più match". Contributo
+  libero, non sblocca nulla, chiudibile.
 
 ## DB — cleanup APPLICATO (5 lug 2026)
 
