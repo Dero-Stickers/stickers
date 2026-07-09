@@ -38,6 +38,7 @@ import { BulkStateDialog, type BulkState } from "@/components/album/BulkStateDia
 import { StickerCell, stateColors, type StickerState } from "@/components/album/StickerCell";
 import { isGuideDemoAlbumId, GUIDE_DEMO_ALBUM, buildGuideDemoStickers } from "@/lib/guide/guide-demo";
 import { useGuideStepId } from "@/lib/guide/GuideContext";
+import { translateNation } from "@/lib/nations";
 
 type FilterType = "tutte" | "mancanti" | "possedute" | "doppie";
 
@@ -438,7 +439,7 @@ export function AlbumDetail() {
           <div key={block.key} className="mb-1">
             {block.label && (
               <div className="flex items-center gap-2 pt-2 pb-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground shrink-0">{block.label}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground shrink-0">{translateNation(block.label)}</span>
                 <div className="flex-1 border-t border-border" />
               </div>
             )}
