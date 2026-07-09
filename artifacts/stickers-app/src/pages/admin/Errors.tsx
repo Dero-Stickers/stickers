@@ -352,15 +352,15 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
     >
       <div className="shrink-0 space-y-4">
       {group === "auto" && <ResourceMonitor />}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 md:gap-3">
         <Card className="shadow-sm">
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <p className="text-xs text-muted-foreground">Totali</p>
             <p className="text-2xl font-bold mt-1">{data?.counts.total ?? "—"}</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <p className="text-xs text-muted-foreground">Nuove</p>
             <p className="text-2xl font-bold mt-1 text-green-600">
               {data?.counts.new ?? "—"}
@@ -368,7 +368,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
           </CardContent>
         </Card>
         <Card className="shadow-sm">
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <p className="text-xs text-muted-foreground">Ultimi 7 giorni</p>
             <p className="text-2xl font-bold mt-1">{data?.counts.last7d ?? "—"}</p>
           </CardContent>
