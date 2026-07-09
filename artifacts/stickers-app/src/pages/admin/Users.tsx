@@ -288,13 +288,8 @@ export function AdminUsers() {
 
   return (
     <AdminPage
-      title="Gestione Utenti"
+      title={isLoading ? "Utenti" : `${filteredUsers.length} utenti`}
       subtitle="Visualizza e gestisci gli utenti registrati"
-      actions={
-        <div className="bg-primary text-primary-foreground text-sm font-bold px-3 py-1.5 rounded-lg">
-          {isLoading ? "..." : `${filteredUsers.length} utenti`}
-        </div>
-      }
     >
       <AdminFilterBar<"all" | "blocked">
         search={search}
@@ -309,16 +304,14 @@ export function AdminUsers() {
         ]}
         extra={
           <div className="ml-auto flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 gap-1.5 text-xs bg-white hover:bg-white/90"
+            <button
               onClick={copyInfo}
+              aria-label="Copia info scambi-album"
               title="Copia i dati scambi e album degli utenti in formato testo per l'analisi AI"
+              className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
-              <Copy className="h-3.5 w-3.5" />
-              Copia info scambi-album
-            </Button>
+              <Copy className="h-4 w-4" />
+            </button>
             <Button
               size="sm"
               variant="outline"

@@ -42,19 +42,8 @@ export function AdminFilterBar<T extends string>({
     // scorre in orizzontale (flex-nowrap + overflow-x-auto) — coerente in tutte
     // le sezioni admin.
     <div className="shrink-0 flex flex-nowrap items-center gap-2 overflow-x-auto">
-      {/* Box ricerca: più stretto su mobile per lasciare spazio ai chip. */}
-      <div className="relative w-36 sm:w-48 md:w-56 shrink-0">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder={placeholder}
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-          className="w-full h-9 pl-8 pr-3 rounded-xl border bg-white text-sm shadow-sm"
-        />
-      </div>
-      {/* Refresh/reset: pulsante TONDO, sola icona, SEMPRE subito dopo la
-          ricerca (posizione fissa in tutte le pagine). */}
+      {/* Refresh/reset: pulsante TONDO, sola icona, SEMPRE in PRIMA posizione
+          (fisso in tutte le pagine). */}
       {onRefresh && (
         <button
           type="button"
@@ -67,15 +56,27 @@ export function AdminFilterBar<T extends string>({
           <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
         </button>
       )}
-      <div className="flex flex-nowrap gap-1.5 text-xs shrink-0">
+      {/* Box ricerca: stretto su mobile (ruba spazio ai chip/copia), più ampio
+          da sm in su. */}
+      <div className="relative w-28 sm:w-44 md:w-56 shrink-0">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={search}
+          onChange={(e) => onSearch(e.target.value)}
+          className="w-full h-9 pl-8 pr-3 rounded-xl border bg-white text-sm shadow-sm"
+        />
+      </div>
+      <div className="flex flex-nowrap gap-1.5 shrink-0">
         {options.map(([val, lbl]) => (
           <button
             key={val}
             onClick={() => onFilter(val)}
-            className={`shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full border transition-colors ${
+            className={`shrink-0 whitespace-nowrap h-9 px-3.5 rounded-full border text-sm shadow-sm transition-colors ${
               filter === val
                 ? "bg-primary text-primary-foreground border-primary"
-                : "border-border hover:bg-muted"
+                : "bg-white border-border hover:bg-muted"
             }`}
           >
             {lbl}

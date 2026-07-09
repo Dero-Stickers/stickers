@@ -297,9 +297,9 @@ export function AdminMessages() {
             disabled={copying || !filteredChats.length}
             aria-label="Copia tutte le chat"
             title="Copia tutte le chat"
-            className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Copy className={`h-3.5 w-3.5 ${copying ? "animate-pulse" : ""}`} />
+            <Copy className={`h-4 w-4 ${copying ? "animate-pulse" : ""}`} />
           </button>
         }
       />

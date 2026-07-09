@@ -374,18 +374,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
               flex-nowrap + overflow-x-auto: se lo spazio manca scorre in orizzontale
               invece di andare a capo, così resta sempre una riga unica. */}
           <div className="flex flex-nowrap items-center gap-2 overflow-x-auto text-xs">
-            {/* Box ricerca corto e bianco, come Gestione Messaggi (riferimento). */}
-            <div className="relative w-44 md:w-52 shrink-0">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Cerca..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 pl-8 pr-3 rounded-xl border bg-white text-sm shadow-sm"
-              />
-            </div>
-            {/* Aggiorna: pulsante TONDO, sola icona. Ricarica + azzera i filtri. */}
+            {/* Aggiorna: pulsante TONDO, sola icona, SEMPRE in PRIMA posizione. */}
             <button
               onClick={resetAndRefresh}
               disabled={loading}
@@ -395,16 +384,26 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </button>
-            {/* Copia: compatto (icona + testo breve), spinto a destra. */}
+            {/* Box ricerca corto e bianco, come Gestione Messaggi (riferimento). */}
+            <div className="relative w-28 sm:w-44 md:w-52 shrink-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Cerca..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-9 pl-8 pr-3 rounded-xl border bg-white text-sm shadow-sm"
+              />
+            </div>
+            {/* Copia: solo icona senza contorno (uniforme con le altre sezioni). */}
             <button
               onClick={copyAll}
               disabled={loading || !filtered.length}
               aria-label="Copia tutte le segnalazioni"
               title="Copia tutte le segnalazioni"
-              className="ml-auto shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="ml-auto shrink-0 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Copy className="h-4 w-4" />
-              <span>Copia tutto</span>
             </button>
           </div>
 
