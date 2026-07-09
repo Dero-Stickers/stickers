@@ -236,7 +236,6 @@ export function AdminUsers() {
             <th className="hidden md:table-cell">Scambi</th>
             <th className="hidden md:table-cell">Album</th>
             <th>Donazioni</th>
-            <th>Dettagli</th>
             <th>Invito</th>
             <th>Azioni</th>
           </>
@@ -244,7 +243,7 @@ export function AdminUsers() {
       >
         {!isLoading && filteredUsers.length === 0 && (
           <tr>
-            <td colSpan={9} className="text-center text-muted-foreground">
+            <td colSpan={8} className="text-center text-muted-foreground">
               <div className="py-8">
                 {regularUsers.length === 0
                   ? "Nessun utente da mostrare."
@@ -269,23 +268,14 @@ export function AdminUsers() {
               </td>
               <td className="text-center">
                 {user.donationCount > 0 ? (
-                  <span className="font-medium text-accent">
-                    {money(user.donationTotal, user.donationCurrency)}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground/50">—</span>
-                )}
-              </td>
-              <td className="text-center">
-                {user.donationCount > 0 ? (
                   <button
                     type="button"
                     onClick={() => setDonationsOf(user)}
-                    className="inline-flex items-center gap-1.5 text-primary text-xs font-medium hover:underline"
+                    className="inline-flex items-center gap-1.5 font-medium text-accent hover:underline"
                     title="Vedi le donazioni rilevate col suo nickname"
                   >
+                    {money(user.donationTotal, user.donationCurrency)}
                     <Eye className="h-3.5 w-3.5" />
-                    Vedi
                   </button>
                 ) : (
                   <span className="text-muted-foreground/50">—</span>
