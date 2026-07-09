@@ -148,66 +148,55 @@ export function AdminUsers() {
     nudge.mutate({ userId: user.id, data: { type } });
   };
 
-  // Cella "Invito": mostra lo STORICO (anti-spam) e l'azione giusta.
-  // - utente bloccato → nessun invito (—): a un bloccato non si manda nulla;
+  // Cella invito per UN tipo (dona | condividi): due colonne distinte nella
+  // tabella. Mostra lo storico (anti-spam) e l'azione giusta:
+  // - utente bloccato → "—" (a un bloccato non si manda nulla);
   // - mai invitato    → pulsante "Invita";
-  // - inviato, non visto → "Inviato" (data) + "Reinvia";
-  // - visto           → "Visto" (data) + "Reinvia".
-  const renderNudgeCell = (user: AdminUser) => {
+  // - inviato/visto   → stato (data) + "Reinvia".
+  const renderNudgeCell = (user: AdminUser, type: "dona" | "condividi") => {
     if (user.isBlocked) {
       return <span className="text-muted-foreground/50" title="Utente bloccato: nessun invito">—</span>;
     }
-    // Sotto-blocco riutilizzabile per un singolo tipo di invito (dona | condividi).
-    const inviteBlock = (
-      sentAt: string | null,
-      seenAt: string | null,
-      type: "dona" | "condividi",
-      label: string,
-      inviteTitle: string,
-    ) => {
-      if (!sentAt) {
-        return (
-          <button
-            type="button"
-            onClick={() => sendNudge(user, false, type)}
-            disabled={nudge.isPending}
-            className="inline-flex items-center gap-1.5 text-primary text-xs font-medium hover:underline disabled:opacity-40"
-            title={inviteTitle}
-          >
-            <Send className="h-3.5 w-3.5" />
-            {label}
-          </button>
-        );
-      }
+    const sentAt = (type === "dona" ? user.nudgeSentAt : user.shareSentAt) ?? null;
+    const seenAt = (type === "dona" ? user.nudgeSeenAt : user.shareSeenAt) ?? null;
+    const inviteTitle = type === "dona"
+      ? "Invita gentilmente a donare (lo vedrà una volta al prossimo accesso)"
+      : "Invita a condividere l'app con gli amici (lo vedrà una volta al prossimo accesso)";
+    if (!sentAt) {
       return (
-        <div className="flex flex-col items-center gap-0.5">
-          {seenAt ? (
-            <span className="inline-flex items-center gap-1 text-xs text-green-600" title={`${label}: visto il ${nudgeDate(seenAt)}`}>
-              <Check className="h-3.5 w-3.5" />
-              {label} · visto
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title={`${label}: inviato il ${nudgeDate(sentAt)}`}>
-              <Send className="h-3.5 w-3.5" />
-              {label} · inviato
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => sendNudge(user, true, type)}
-            disabled={nudge.isPending}
-            className="text-[10px] text-primary/80 hover:underline disabled:opacity-40"
-          >
-            Reinvia
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => sendNudge(user, false, type)}
+          disabled={nudge.isPending}
+          aria-label={inviteTitle}
+          className="inline-flex items-center justify-center text-primary hover:text-primary/70 disabled:opacity-40"
+          title={inviteTitle}
+        >
+          <Send className="h-4 w-4" />
+        </button>
       );
-    };
+    }
     return (
-      <div className="flex flex-col items-center gap-2">
-        {inviteBlock(user.nudgeSentAt ?? null, user.nudgeSeenAt ?? null, "dona", "Dona", "Invita gentilmente a donare (lo vedrà una volta al prossimo accesso)")}
-        <div className="w-full border-t border-border/60" />
-        {inviteBlock(user.shareSentAt ?? null, user.shareSeenAt ?? null, "condividi", "Condividi", "Invita a condividere l'app con gli amici (lo vedrà una volta al prossimo accesso)")}
+      <div className="flex flex-col items-center gap-0.5">
+        {seenAt ? (
+          <span className="inline-flex items-center gap-1 text-xs text-green-600" title={`Visto il ${nudgeDate(seenAt)}`}>
+            <Check className="h-3.5 w-3.5" />
+            Visto
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title={`Inviato il ${nudgeDate(sentAt)}`}>
+            <Send className="h-3.5 w-3.5" />
+            Inviato
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => sendNudge(user, true, type)}
+          disabled={nudge.isPending}
+          className="text-[10px] text-primary/80 hover:underline disabled:opacity-40"
+        >
+          Reinvia
+        </button>
       </div>
     );
   };
@@ -250,17 +239,18 @@ export function AdminUsers() {
             <th className="hidden sm:table-cell">
               <SortHeader label="Area" col="area" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
             </th>
-            <th className="hidden md:table-cell">Scambi</th>
-            <th className="hidden md:table-cell">Album</th>
-            <th>Donazioni</th>
-            <th>Invito</th>
+            <th className="hidden md:table-cell w-16">Scambi</th>
+            <th className="hidden md:table-cell w-16">Album</th>
+            <th className="w-20">Donazioni</th>
+            <th className="w-24">Invito<br/>dona</th>
+            <th className="w-24">Invito<br/>condividi</th>
             <th>Azioni</th>
           </>
         }
       >
         {!isLoading && filteredUsers.length === 0 && (
           <tr>
-            <td colSpan={8} className="text-center text-muted-foreground">
+            <td colSpan={9} className="text-center text-muted-foreground">
               <div className="py-8">
                 {regularUsers.length === 0
                   ? "Nessun utente da mostrare."
@@ -321,7 +311,10 @@ export function AdminUsers() {
                 )}
               </td>
               <td className="text-center">
-                {renderNudgeCell(user)}
+                {renderNudgeCell(user, "dona")}
+              </td>
+              <td className="text-center">
+                {renderNudgeCell(user, "condividi")}
               </td>
               <td>
                 <div className="flex justify-center">
