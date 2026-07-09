@@ -149,33 +149,44 @@ export function AdminUsers() {
       if ((u.ownedCount ?? 0) === 0 && (u.duplicatesCount ?? 0) === 0) return "non gestito (tutte mancanti)";
       return "gestito";
     };
+    const filtro = search.trim() ? `ricerca "${search.trim()}"` : (statusFilter === "blocked" ? "solo bloccati" : "tutti");
     const header = [
-      "# UTENTI STICKER — export per analisi",
-      `Generato: ${new Date().toLocaleString("it-IT")}`,
-      `Totale utenti: ${list.length}` + (search.trim() ? ` (filtro ricerca: "${search.trim()}")` : "") + (statusFilter === "blocked" ? " (solo bloccati)" : ""),
+      "═══════════════════════════════════════",
+      "  UTENTI STICKER — EXPORT PER ANALISI",
+      "═══════════════════════════════════════",
+      `Generato .....: ${new Date().toLocaleString("it-IT")}`,
+      `Totale utenti : ${list.length}`,
+      `Filtro .......: ${filtro}`,
       "",
-      "LEGENDA CAMPI:",
-      "- Album: numero di album nella collezione + elenco titoli",
-      "- Mie: figurine possedute (segnate dall'utente)",
-      "- Doppie: figurine doppie, pronte allo scambio",
-      "- Gestione: 'gestito' se ha segnato figurine, 'non gestito' se ha album ma tutte mancanti",
-      "- Scambi: scambi completati dall'utente",
-      "- Zona: area/provincia derivata dal CAP",
-      "========================================",
+      "LEGENDA:",
+      "  Zona       = provincia derivata dal CAP",
+      "  Album      = n. album in collezione (titoli elencati sotto)",
+      "  Possedute  = figurine sue (segnate)",
+      "  Doppie     = figurine doppie, pronte allo scambio",
+      "  Gestione   = gestito | non gestito (album ma tutte mancanti) | nessun album",
+      "  Scambi     = scambi completati",
     ].join("\n");
     const blocks = list.map((u, i) => {
       const titles = (u.albumTitles ?? []);
-      return [
-        `## ${i + 1}. ${u.nickname}${u.isBlocked ? " [BLOCCATO]" : ""}`,
-        `Zona: ${u.area ?? "—"} (CAP ${u.cap})`,
-        `Album: ${u.albumCount}${titles.length ? ` → ${titles.join(", ")}` : ""}`,
-        `Collezione: ${u.ownedCount ?? 0} mie · ${u.duplicatesCount ?? 0} doppie · Gestione: ${stato(u)}`,
-        `Scambi completati: ${u.exchangesCompleted}`,
-      ].join("\n");
+      const lines = [
+        `[${i + 1}] ${u.nickname}${u.isBlocked ? "  (BLOCCATO)" : ""}`,
+        `    Zona ......: ${u.area ?? "—"} — CAP ${u.cap}`,
+        `    Album .....: ${u.albumCount}`,
+        `    Possedute .: ${u.ownedCount ?? 0}`,
+        `    Doppie ....: ${u.duplicatesCount ?? 0}`,
+        `    Gestione ..: ${stato(u)}`,
+        `    Scambi ....: ${u.exchangesCompleted}`,
+      ];
+      if (titles.length) {
+        lines.push("    Collezione:");
+        titles.forEach((t, k) => lines.push(`      ${String(k + 1).padStart(2, " ")}. ${t}`));
+      }
+      return lines.join("\n");
     });
-    // Blocchi separati da una riga vuota + separatore, così restano distinti anche
+    // Ogni utente separato da una riga di trattini: schema chiaro e stabile anche
     // se il testo viene reincollato dove il markdown collassa gli a-capo singoli.
-    const text = `${header}\n\n${blocks.join("\n\n---\n\n")}\n`;
+    const sep = "\n───────────────────────────────────────\n";
+    const text = `${header}${sep}${blocks.join(sep)}\n`;
     try {
       await navigator.clipboard.writeText(text);
       toast({ title: "Info copiate", description: `${list.length} utenti negli appunti, pronti per l'analisi AI.` });
@@ -303,10 +314,10 @@ export function AdminUsers() {
               variant="outline"
               className="h-9 gap-1.5 text-xs bg-white hover:bg-white/90"
               onClick={copyInfo}
-              title="Copia i dati degli utenti in formato testo per l'analisi AI"
+              title="Copia i dati scambi e album degli utenti in formato testo per l'analisi AI"
             >
               <Copy className="h-3.5 w-3.5" />
-              Copia info
+              Copia info scambi-album
             </Button>
             <Button
               size="sm"
