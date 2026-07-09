@@ -48,8 +48,14 @@ Ciclo tapping: Mancante → Posseduta → Doppia → Mancante
   linea sottile) messa SOPRA la sua griglia, in un contenitore separato — NON dentro la grid
   (un header `col-span-full` dentro l'unica grid rompeva su WebKit `aspect-square` +
   `content-visibility`, prima cella a tutto schermo). Etichetta = squadra maggioritaria dal
-  suffisso " - Team", altrimenti la sigla; blocchi di 1 figurina (logo "00") muti. Attivo solo
-  per album con codici > 3 char; i Calciatori restano una griglia unica, identici.
+  suffisso " - Team", altrimenti la sigla; blocchi di 1 figurina (logo "00") muti. **Attivazione
+  (fix 9 lug)**: i blocchi si attivano SOLO se i codici alfabetici sono la **maggioranza**
+  dell'album (Mondiali/Europei a nazioni), non se basta un solo codice > 3 char — altrimenti i
+  Calciatori (numerici 001,002… + poche speciali tipo UPD01) finivano a blocchi e, non avendo
+  sigla, ogni figurina faceva blocco a sé → una per riga. Ora i Calciatori (e World Cup 2006,
+  numerico) restano griglia unica. **Intestazioni tradotte in italiano** via `translateNation`
+  (`lib/nations.ts`), solo a display (dati DB invariati): South Korea→Corea del Sud, Germany Top
+  XI→Germania Top XI; voci non-nazione (FIFA Museum, sigle) invariate.
 - **Categorie master (lug 2026)**: ogni album ha `category`. Chiavi stabili `campionato`/
   `europei`/`mondiali`, label mostrate **Campionati/Europei/Mondiali** (la key resta
   `campionato`). L'ORDINE della lista `ALBUM_CATEGORIES` (Campionati → Europei → Mondiali)

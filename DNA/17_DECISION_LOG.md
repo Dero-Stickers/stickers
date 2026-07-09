@@ -7,6 +7,16 @@
 
 ## 2026-07
 
+- **Album: fix visualizzazione figurine + rifiniture UX [9 lug]** — (1) **Griglia ripristinata**: i
+  blocchi per-nazione si attivano ora solo se i codici alfabetici sono la MAGGIORANZA (prima bastava
+  1 codice > 3 char); così i Calciatori e World Cup 2006 (numerici) tornano griglia unica invece di
+  "una figurina per riga". (2) **Guardia "album non in collezione"** in `AlbumDetail`: aprendo per URL
+  un album non aggiunto non si mostra più il falso "0 figurine + Rimuovi", ma "Aggiungi alla
+  collezione" (il seeding lato server è atomico e integro — verificato su tutti i 35 album). (3) **No
+  falso vuoto post-aggiunta**: album posseduto con 0 figurine durante il refetch → skeleton, non
+  "Nessuna figurina". (4) **Toast** in alto e durata 1s (prima centrati, 3s). (5) **Nazioni** dei
+  blocchi tradotte in italiano a display (`lib/nations.ts`), dati DB invariati. Nessuna modifica a
+  DB/schema. Vale [[import-panini-collections]].
 - **Sicurezza: migrazione 0012 (revoke grant anon/authenticated) APPLICATA in produzione [9 lug]** — un
   audit pre-pubblicazione ha rilevato che la 0012 (difesa in profondità, revoca i grant inutili ai ruoli
   client Supabase) era **scritta ma mai applicata**: 210 grant residui su `public` per anon/authenticated.
