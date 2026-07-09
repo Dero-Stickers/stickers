@@ -21,11 +21,12 @@ function fmtBytes(b: number): string {
   return `${Math.round(b / (1024 * 1024))} MB`;
 }
 
-// Semaforo latenza DB: verde = risposta rapida (app scattante), giallo = il DB
-// inizia a faticare, rosso = molto lento (utenti in attesa).
+// Semaforo latenza DB. Soglie ampie per non allarmare inutilmente: in locale il
+// valore include il viaggio internet Mac→Supabase (~300ms è normale), in
+// produzione è più basso. Verde = ok, giallo = da monitorare, rosso = problema.
 function latencyLevel(ms: number): string {
-  if (ms > 800) return "red";
-  if (ms >= 200) return "yellow";
+  if (ms > 1500) return "red";
+  if (ms >= 500) return "yellow";
   return "green";
 }
 
