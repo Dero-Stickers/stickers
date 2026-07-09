@@ -296,10 +296,10 @@ export function AdminMessages() {
             onClick={copyAll}
             disabled={copying || !filteredChats.length}
             aria-label="Copia tutte le chat"
-            className="ml-auto shrink-0 flex items-center gap-1.5 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Copia tutte le chat"
+            className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Copy className="h-4 w-4" />
-            {copying ? "Copio…" : "Copia tutte le chat"}
+            <Copy className={`h-3.5 w-3.5 ${copying ? "animate-pulse" : ""}`} />
           </button>
         }
       />

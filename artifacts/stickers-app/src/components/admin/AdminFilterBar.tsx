@@ -38,10 +38,12 @@ export function AdminFilterBar<T extends string>({
   extra?: ReactNode;
 }) {
   return (
-    <div className="shrink-0 flex flex-wrap items-center gap-2">
-      {/* Box ricerca corto (come Gestione Messaggi, riferimento condiviso):
-          lascia spazio ai chip sulla stessa riga invece di occupare tutto. */}
-      <div className="relative w-48 md:w-56 shrink-0">
+    // Riga unica: ricerca + refresh + chip + extra. Su mobile NON va a capo,
+    // scorre in orizzontale (flex-nowrap + overflow-x-auto) — coerente in tutte
+    // le sezioni admin.
+    <div className="shrink-0 flex flex-nowrap items-center gap-2 overflow-x-auto">
+      {/* Box ricerca: più stretto su mobile per lasciare spazio ai chip. */}
+      <div className="relative w-36 sm:w-48 md:w-56 shrink-0">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <input
           type="text"
@@ -65,12 +67,12 @@ export function AdminFilterBar<T extends string>({
           <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
         </button>
       )}
-      <div className="flex flex-wrap gap-1.5 text-xs">
+      <div className="flex flex-nowrap gap-1.5 text-xs shrink-0">
         {options.map(([val, lbl]) => (
           <button
             key={val}
             onClick={() => onFilter(val)}
-            className={`px-2.5 py-1 rounded-full border transition-colors ${
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full border transition-colors ${
               filter === val
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-border hover:bg-muted"
