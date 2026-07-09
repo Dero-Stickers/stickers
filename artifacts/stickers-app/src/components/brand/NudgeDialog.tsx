@@ -46,6 +46,12 @@ export function NudgeGate() {
   const markSeen = useMarkMyNudgeSeen();
 
   const [open, setOpen] = useState(false);
+  // Snapshot del tipo di invito al momento dell'apertura. Una volta aperto, il
+  // modale NON deve dipendere più da `data.nudge`: se dipendesse, tornando
+  // nell'app dopo aver aperto un social (che consuma l'invito → il server
+  // risponde "nessun invito") il modale sparirebbe da solo. Con lo snapshot resta
+  // visibile finché l'utente non lo chiude a mano.
+  const [openType, setOpenType] = useState<"dona" | "condividi" | null>(null);
   const [copied, setCopied] = useState(false);
   // Evita di segnare "visto" più di una volta (es. chiusura + smontaggio).
   const seenRef = useRef(false);
@@ -74,8 +80,11 @@ export function NudgeGate() {
   useEffect(() => {
     if (enabled && nudgeKey && nudgeKey !== consumedKey.current) {
       seenRef.current = false;
+      setOpenType(type);
       setOpen(true);
     }
+    // `type` è derivato da data.nudge: incluso di proposito, cambia con nudgeKey.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, nudgeKey]);
 
   // Segna l'invito come visto (una volta), per il tipo corrente: l'invito è
@@ -85,14 +94,17 @@ export function NudgeGate() {
     if (!seenRef.current) {
       seenRef.current = true;
       consumedKey.current = nudgeKey;
-      markSeen.mutate({ data: { type } });
+      // Usa il tipo mostrato nel modale (snapshot), non `type` derivato dai dati
+      // (che potrebbe già essere cambiato dopo un refetch).
+      markSeen.mutate({ data: { type: openType ?? type } });
     }
   };
 
-  // "No grazie"/"Chiudi" o tap fuori: consuma e chiudi.
+  // "No grazie"/"Chiudi" o tap fuori: consuma e chiudi (solo su azione utente).
   const dismiss = () => {
     consume();
     setOpen(false);
+    setOpenType(null);
   };
 
   // Link pubblico dell'app: l'origine corrente funziona sia in locale che in
@@ -142,10 +154,13 @@ export function NudgeGate() {
     },
   ];
 
-  if (!data?.nudge) return null;
+  // Visibilità legata SOLO allo stato locale `open`, non a `data.nudge`: il
+  // modale resta finché l'utente non lo chiude, anche se nel frattempo l'invito
+  // è stato consumato (es. dopo aver aperto un social e essere tornato nell'app).
+  if (!open || !openType) return null;
 
   // ---- Modale "condividi l'app" -------------------------------------------
-  if (type === "condividi") {
+  if (openType === "condividi") {
     return (
       <Dialog open={open} onOpenChange={(o) => { if (!o) dismiss(); }}>
         <DialogContent className="max-w-sm rounded-3xl text-center">
