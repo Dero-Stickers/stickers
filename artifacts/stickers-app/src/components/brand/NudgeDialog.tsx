@@ -31,8 +31,17 @@ export function NudgeGate() {
   // solo quando serve, senza cache stantia (un invito appena inviato dev'essere
   // visto al primo accesso utile).
   const enabled = isAuthenticated && !!currentUser && !currentUser.isAdmin;
-  const { data } = useGetMyNudge({
-    query: { queryKey: getGetMyNudgeQueryKey(), enabled, staleTime: 0, refetchOnMount: "always" },
+  const { data, refetch } = useGetMyNudge({
+    // Ricontrolla l'invito all'avvio E ogni volta che l'app torna in primo piano
+    // (refetchOnWindowFocus): così un invito inviato dall'admin appare al prossimo
+    // ritorno sull'app, non solo dopo un riavvio completo. staleTime:0 = mai cache.
+    query: {
+      queryKey: getGetMyNudgeQueryKey(),
+      enabled,
+      staleTime: 0,
+      refetchOnMount: "always",
+      refetchOnWindowFocus: true,
+    },
   });
   const markSeen = useMarkMyNudgeSeen();
 
@@ -40,13 +49,34 @@ export function NudgeGate() {
   const [copied, setCopied] = useState(false);
   // Evita di segnare "visto" più di una volta (es. chiusura + smontaggio).
   const seenRef = useRef(false);
+  // Chiave (tipo+data) dell'ultimo invito consumato in questa sessione: evita che
+  // il refetch al ritorno in foreground riapra un modale appena chiuso prima che
+  // il server registri il "visto".
+  const consumedKey = useRef<string | null>(null);
 
   const type = data?.nudge?.type === "condividi" ? "condividi" : "dona";
+  const nudgeKey = data?.nudge ? `${data.nudge.type}:${data.nudge.sentAt}` : null;
 
-  // Apri appena arriva un invito non visto (una volta per montaggio).
+  // Ritorno in primo piano su PWA installata (iOS/Android): visibilitychange è
+  // più affidabile del focus-window. Riesegue il controllo dell'invito.
   useEffect(() => {
-    if (enabled && data?.nudge) setOpen(true);
-  }, [enabled, data?.nudge]);
+    if (!enabled) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refetch();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [enabled, refetch]);
+
+  // Apri quando arriva un invito non ancora consumato IN QUESTA sessione.
+  // Confronto per chiave (tipo+data): un invito già chiuso non si riapre; un
+  // invito NUOVO (arrivato al ritorno in foreground) sì.
+  useEffect(() => {
+    if (enabled && nudgeKey && nudgeKey !== consumedKey.current) {
+      seenRef.current = false;
+      setOpen(true);
+    }
+  }, [enabled, nudgeKey]);
 
   // Segna l'invito come visto (una volta), per il tipo corrente: l'invito è
   // consumato e non riappare finché l'admin non lo rinvia. NON chiude il modale
@@ -54,6 +84,7 @@ export function NudgeGate() {
   const consume = () => {
     if (!seenRef.current) {
       seenRef.current = true;
+      consumedKey.current = nudgeKey;
       markSeen.mutate({ data: { type } });
     }
   };
