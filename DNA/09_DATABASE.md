@@ -256,6 +256,10 @@ Tabella per il calcolo distanza tra CAP.
 
 ## Calcolo distanza CAP
 
-- Fase iniziale: distanza approssimata su un dataset di CAP italiani con
-  coordinate indicative (distanza euclidea, sufficiente per i match per vicinanza).
-- Produzione: funzione Haversine o PostGIS su Supabase.
+- Match per vicinanza: distanza stimata dalla differenza numerica dei CAP
+  (`estimateDistance` in `routes/matches.ts`) — approssimazione deterministica,
+  sufficiente per ordinare vicino/lontano. Non usa coordinate GPS reali.
+- **Etichetta "Area"** (solo display, NON usata dal match): derivata dal CAP via
+  `deriveArea` (`routes/auth.ts`) + `lib/cap-provinces.ts` = provincia da prefisso
+  CAP (2 cifre + eccezioni a 3), copre tutti i CAP italiani.
+- Evoluzione possibile: Haversine/PostGIS con coordinate reali se servisse precisione.

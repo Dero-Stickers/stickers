@@ -7,6 +7,15 @@
 
 ## 2026-07
 
+- **Admin utenti: nomi album, area da CAP completa, export scambi-album [10 lug]** — (1) Il **report
+  utente** (modale) ora elenca i **nomi degli album** in collezione (backend `array_agg` dei titoli per
+  utente, campo `albumTitles` in `AdminUser`); rimossi da lì Scambi/Donazioni/Invito. (2) **Area da CAP
+  completa**: `deriveArea` copre ora TUTTI i CAP italiani via `lib/cap-provinces.ts` (provincia dal prefisso
+  2 cifre + eccezioni a 3), niente più "Area 87XXX". Solo etichetta — il match per vicinanza usa il CAP
+  numerico (invariato). Corretta in DB l'area di un utente esistente (87100 → Cosenza): update mirato di sola
+  etichetta, CAP e collezione intatti. (3) **"Copia info scambi-album"**: pulsante nella barra filtri che
+  copia i dati utenti (scambi + collezione: album/titoli, possedute/doppie, gestione, zona) in **testo
+  schematico** ottimizzato per analisi AI (rispetta ricerca/filtro attivi, sola lettura).
 - **Admin utenti: quadro gestione album + invito "condividi l'app" [9 lug]** — (1) **Report utente**:
   nella Gestione Utenti la colonna Album mostra solo il numero, colorato (verde = collezione gestita, rosso =
   album aggiunti ma tutte figurine mancanti, neutro = nessun album); cliccando si apre un modale con il quadro
