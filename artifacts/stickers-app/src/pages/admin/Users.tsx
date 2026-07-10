@@ -11,6 +11,7 @@ import {
   type AdminUser,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatMoney, formatDate, formatDateTime } from "@/lib/format";
 import {
   Dialog,
   DialogContent,
@@ -26,31 +27,6 @@ import { useConfirm } from "@/components/admin/ConfirmDialog";
 
 type SortKey = "nickname" | "cap" | "area";
 
-// Formattatori riusati nel modale donazioni.
-function money(amount: string | number, currency = "EUR"): string {
-  const n = typeof amount === "string" ? Number(amount) : amount;
-  const safe = Number.isFinite(n) ? n : 0;
-  try {
-    return new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(safe);
-  } catch {
-    return `${safe.toFixed(2)} ${currency}`;
-  }
-}
-function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("it-IT", {
-    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  }).format(d);
-}
-// Data breve (senza ora) per la cella "Invito".
-function nudgeDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short", year: "numeric" }).format(d);
-}
 
 export function AdminUsers() {
   const { toast } = useToast();
@@ -264,12 +240,12 @@ export function AdminUsers() {
     return (
       <div className="flex flex-col items-center gap-0.5">
         {seenAt ? (
-          <span className="inline-flex items-center gap-1 text-xs text-green-600" title={`Visto il ${nudgeDate(seenAt)}`}>
+          <span className="inline-flex items-center gap-1 text-xs text-green-600" title={`Visto il ${formatDate(seenAt)}`}>
             <Check className="h-3.5 w-3.5" />
             Visto
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title={`Inviato il ${nudgeDate(sentAt)}`}>
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title={`Inviato il ${formatDate(sentAt)}`}>
             <Send className="h-3.5 w-3.5" />
             Inviato
           </span>
@@ -418,7 +394,7 @@ export function AdminUsers() {
                     className="inline-flex items-center gap-1.5 font-medium text-accent hover:underline"
                     title="Vedi le donazioni rilevate col suo nickname"
                   >
-                    {money(user.donationTotal, user.donationCurrency)}
+                    {formatMoney(user.donationTotal, user.donationCurrency)}
                     <Eye className="h-3.5 w-3.5" />
                   </button>
                 ) : (
@@ -537,7 +513,7 @@ export function AdminUsers() {
               {donationsOf && (
                 <>
                   {donationsOf.donationCount} donazion{donationsOf.donationCount === 1 ? "e" : "i"} · totale{" "}
-                  {money(donationsOf.donationTotal, donationsOf.donationCurrency)}. Abbinamento dal nickname:
+                  {formatMoney(donationsOf.donationTotal, donationsOf.donationCurrency)}. Abbinamento dal nickname:
                   è un indizio, non una certezza.
                 </>
               )}
@@ -547,7 +523,7 @@ export function AdminUsers() {
             {donationsOf?.donations.map((d, i) => (
               <div key={i} className="rounded-xl border bg-muted/40 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold text-foreground">{money(d.amount, d.currency)}</span>
+                  <span className="font-semibold text-foreground">{formatMoney(d.amount, d.currency)}</span>
                   <span className="text-xs text-muted-foreground">{formatDateTime(d.createdAt)}</span>
                 </div>
                 {d.message && (

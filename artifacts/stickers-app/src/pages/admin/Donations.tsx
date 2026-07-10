@@ -18,39 +18,12 @@ import { AdminPage } from "@/components/admin/AdminPage";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
 import { SortHeader, type SortDir } from "@/components/admin/SortHeader";
+import { formatMoney, formatDate, formatDateTime } from "@/lib/format";
 import {
   useGetAdminDonations,
   getGetAdminDonationsQueryKey,
   type AdminDonation,
 } from "@workspace/api-client-react";
-
-// Formatta un importo "12.50" + valuta in "€ 12,50" (o simbolo generico).
-function money(amount: string | number, currency = "EUR"): string {
-  const n = typeof amount === "string" ? Number(amount) : amount;
-  const safe = Number.isFinite(n) ? n : 0;
-  try {
-    return new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(safe);
-  } catch {
-    return `${safe.toFixed(2)} ${currency}`;
-  }
-}
-
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short", year: "numeric" }).format(d);
-}
-
-// Data + ora, per il modale di dettaglio (l'elenco mostra solo la data).
-function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("it-IT", {
-    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  }).format(d);
-}
 
 export function AdminDonations() {
   // refetchOnMount "always" + niente cache stantia: ogni apertura della pagina
@@ -105,7 +78,7 @@ export function AdminDonations() {
   }, [donations, search, sortKey, sortDir]);
 
   const cards = [
-    { label: "Totale raccolto", value: money(summary?.total ?? "0", currency), icon: Heart, color: "text-accent" },
+    { label: "Totale raccolto", value: formatMoney(summary?.total ?? "0", currency), icon: Heart, color: "text-accent" },
     { label: "Donazioni", value: String(summary?.count ?? 0), icon: Gift, color: "text-primary" },
   ];
 
@@ -203,7 +176,7 @@ export function AdminDonations() {
               <td className="max-w-xs truncate text-center text-muted-foreground">
                 {d.message || "—"}
               </td>
-              <td className="whitespace-nowrap text-center font-semibold">{money(d.amount, d.currency)}</td>
+              <td className="whitespace-nowrap text-center font-semibold">{formatMoney(d.amount, d.currency)}</td>
               <td className="text-center">
                 <button
                   type="button"
@@ -233,7 +206,7 @@ export function AdminDonations() {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Importo</span>
-                <span className="font-semibold">{money(selected.amount, selected.currency)}</span>
+                <span className="font-semibold">{formatMoney(selected.amount, selected.currency)}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Da</span>

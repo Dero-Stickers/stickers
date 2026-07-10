@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { SUPPORT_EMAIL_FALLBACK } from "@/hooks/useSupportEmail";
 
 // Nessun testo legale è hardcoded qui: l'unica fonte è il DB (app_settings,
 // modificabile da admin → /api/settings). Se il documento non è ancora stato
@@ -30,7 +31,7 @@ export function LegalPage() {
         if (cancelled) return;
         // Segnaposto {EMAIL_SUPPORTO} nei testi legali → sostituito con l'email
         // unica del pannello admin, così cambiare l'email la aggiorna anche qui.
-        const email = data?.supportEmail?.trim() || "stickers@deroarts.com";
+        const email = data?.supportEmail?.trim() || SUPPORT_EMAIL_FALLBACK;
         const fill = (s: string) => s.split("{EMAIL_SUPPORTO}").join(email);
         const p = data?.privacyPolicyText;
         const t = data?.termsText;
