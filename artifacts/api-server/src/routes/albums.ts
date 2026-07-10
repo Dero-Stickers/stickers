@@ -6,6 +6,9 @@ import { verifyToken } from "../lib/auth";
 
 const router = Router();
 
+// Lunghezza massima del titolo album (validazione input lato server).
+const MAX_ALBUM_TITLE = 120;
+
 const requireAuth = async (req: any, res: any) => getSession(req, res);
 
 // GET /api/albums
@@ -56,12 +59,16 @@ const createAlbum: RequestHandler = async (req, res) => {
   try {
     const session = await requireAuth(req, res);
     if (!session) return;
+    // Titolo obbligatorio: stringa non vuota entro il limite (evita titoli vuoti
+    // o abnormi che gonfierebbero la UI/DB).
+    const title = typeof req.body.title === "string" ? req.body.title.trim() : "";
+    if (!title || title.length > MAX_ALBUM_TITLE) { res.status(400).json({ error: "INVALID_TITLE" }); return; }
     const { db } = await import("@workspace/db");
     const { albumsTable, isAlbumCategory, DEFAULT_ALBUM_CATEGORY } = await import("@workspace/db");
     // Categoria validata contro la lista canonica; input non valido → default.
     const category = isAlbumCategory(req.body.category) ? req.body.category : DEFAULT_ALBUM_CATEGORY;
     const [album] = await db.insert(albumsTable).values({
-      title: req.body.title,
+      title,
       isPublished: req.body.isPublished ?? false,
       category,
     }).returning();
@@ -97,12 +104,19 @@ const getAlbum: RequestHandler = async (req, res) => {
 const updateAlbum: RequestHandler = async (req, res) => {
   try {
     const albumId = parseInt(req.params.albumId as string, 10);
+    if (Number.isNaN(albumId)) { res.status(400).json({ error: "INVALID_ALBUM_ID" }); return; }
+    // Titolo: se fornito deve essere valido; se assente resta invariato.
+    let title: string | undefined = undefined;
+    if (req.body.title !== undefined) {
+      title = typeof req.body.title === "string" ? req.body.title.trim() : "";
+      if (!title || title.length > MAX_ALBUM_TITLE) { res.status(400).json({ error: "INVALID_TITLE" }); return; }
+    }
     const { db } = await import("@workspace/db");
     const { albumsTable, isAlbumCategory } = await import("@workspace/db");
     // Aggiorna category solo se presente e valida (altrimenti lascia invariata).
     const category = isAlbumCategory(req.body.category) ? req.body.category : undefined;
     const [album] = await db.update(albumsTable).set({
-      title: req.body.title,
+      title,
       isPublished: req.body.isPublished ?? undefined,
       category,
     }).where(eq(albumsTable.id, albumId)).returning();

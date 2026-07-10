@@ -6,6 +6,10 @@ import { broadcast } from "../lib/realtime";
 
 const router = Router();
 
+// Lunghezza massima di un messaggio di chat, allineata al maxLength della
+// textarea lato client (ChatRoom.tsx). Il server è l'autorità: rifiuta oltre.
+const MAX_MESSAGE_LEN = 500;
+
 const requireAuth = async (req: any, res: any) => getSession(req, res);
 
 // GET /api/chats — single aggregated query: chat + other user + last message
@@ -199,8 +203,12 @@ const sendMessage: RequestHandler = async (req, res) => {
     const session = await requireAuth(req, res);
     if (!session) return;
     const chatId = parseInt(req.params.chatId as string, 10);
+    if (Number.isNaN(chatId)) { res.status(400).json({ error: "INVALID_CHAT_ID" }); return; }
     const { text } = req.body;
-    if (!text?.trim()) { res.status(400).json({ error: "EMPTY_MESSAGE" }); return; }
+    if (typeof text !== "string" || !text.trim()) { res.status(400).json({ error: "EMPTY_MESSAGE" }); return; }
+    // Limite lunghezza allineato al client (maxLength 500 nella textarea): evita
+    // messaggi giganti (fino al body-limit di 256kb) che gonfierebbero il DB.
+    if (text.length > MAX_MESSAGE_LEN) { res.status(400).json({ error: "MESSAGE_TOO_LONG" }); return; }
 
     const { db } = await import("@workspace/db");
     const { chatsTable, messagesTable, usersTable } = await import("@workspace/db");
