@@ -167,8 +167,10 @@ export function AdminSettings() {
           <p className="text-xs text-muted-foreground">
             Decidi se e quando mostrare la guida ai nuovi utenti.
           </p>
-          {/* Tre modalità affiancate su una riga (spazio ampio in admin). */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Su mobile: 3 modalità IMPILATE (una sotto l'altra) e allineate a
+              sinistra, così il testo resta su una riga leggibile. Da sm in su:
+              affiancate su una riga (spazio ampio in admin). */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {GUIDE_MODES.map(m => {
               const active = form.guideMode === m.value;
               return (
@@ -176,7 +178,7 @@ export function AdminSettings() {
                   key={m.value}
                   type="button"
                   onClick={() => setForm(p => ({ ...p, guideMode: m.value }))}
-                  className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 transition-colors ${
+                  className={`flex items-center justify-start sm:justify-center gap-2 rounded-xl border-2 px-4 py-3 transition-colors ${
                     active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
                   }`}
                 >

@@ -64,7 +64,7 @@ export function ResourceMonitor() {
         SUPABASE <span className="font-normal">free tier</span>
       </p>
       {/* DB · Utenti · Latenza su UNA riga (scorre se lo spazio manca) */}
-      <div className="flex items-center justify-between gap-3 overflow-x-auto">
+      <div className="flex items-center justify-between gap-3 overflow-x-auto touch-pan-x">
         <Metric
           icon={<Database className="h-3.5 w-3.5" />}
           label="DB"

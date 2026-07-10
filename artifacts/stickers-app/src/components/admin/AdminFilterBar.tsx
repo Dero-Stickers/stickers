@@ -41,7 +41,7 @@ export function AdminFilterBar<T extends string>({
     // Riga unica: ricerca + refresh + chip + extra. Su mobile NON va a capo,
     // scorre in orizzontale (flex-nowrap + overflow-x-auto) — coerente in tutte
     // le sezioni admin.
-    <div className="shrink-0 w-full flex flex-nowrap items-center gap-2 overflow-x-auto">
+    <div className="shrink-0 w-full flex flex-nowrap items-center gap-2 overflow-x-auto touch-pan-x">
       {/* Refresh/reset: pulsante TONDO, sola icona, SEMPRE in PRIMA posizione
           (fisso in tutte le pagine). */}
       {onRefresh && (

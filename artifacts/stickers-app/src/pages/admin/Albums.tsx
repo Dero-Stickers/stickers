@@ -215,7 +215,7 @@ export function AdminAlbums() {
           scorrevole (flex-nowrap + overflow-x-auto), stessa altezza h-9 e stesso
           stile degli altri chip. Compaiono solo con più di una categoria. */}
       {presentCategories.length > 1 && (
-        <div className="shrink-0 w-full flex flex-nowrap items-center gap-1.5 overflow-x-auto -mt-2">
+        <div className="shrink-0 w-full flex flex-nowrap items-center gap-1.5 overflow-x-auto touch-pan-x -mt-2">
           <button
             onClick={() => setCatFilter("all")}
             className={`shrink-0 whitespace-nowrap h-9 px-3.5 rounded-xl border text-sm shadow-sm transition-colors ${

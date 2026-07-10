@@ -42,7 +42,11 @@ export function AdminTable({
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto md:flex-1 md:min-h-0 md:overflow-auto">
+        // touch-pan-x su mobile: il gesto orizzontale scorre SOLO la tabella,
+        // quello verticale viene passato alla pagina → niente movimento diagonale
+        // "a 360°" (o si scorre in orizzontale, o in verticale). Da md in su la
+        // tabella scorre internamente in entrambe le direzioni.
+        <div className="overflow-x-auto touch-pan-x md:touch-auto md:flex-1 md:min-h-0 md:overflow-auto">
           <table
             className={cn(
               "w-full border-collapse text-sm",

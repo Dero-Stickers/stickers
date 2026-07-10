@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { AlertTriangle, CheckCircle2, Copy, RefreshCw, Search, Trash2, MessageSquarePlus } from "lucide-react";
+import { CheckCircle2, Copy, RefreshCw, Search, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,8 +32,8 @@ const GROUP_UI: Record<ErrorsGroup, { title: string; subtitle: string; empty: st
     empty: "Nessun errore di sistema",
   },
   manual: {
-    title: "Segnalazioni & proposte",
-    subtitle: "Bug, errori nei contenuti e proposte scritti dagli utenti.",
+    title: "Segnalazioni & Proposte",
+    subtitle: "Errori e proposte, scritte dagli utenti.",
     empty: "Nessuna segnalazione dagli utenti",
   },
 };
@@ -343,11 +343,6 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
   return (
     <AdminPage
       title={ui.title}
-      icon={
-        group === "manual"
-          ? <MessageSquarePlus className="h-6 w-6 text-primary" />
-          : <AlertTriangle className="h-6 w-6 text-amber-500" />
-      }
       subtitle={ui.subtitle}
     >
       <div className="shrink-0 space-y-4">
@@ -373,7 +368,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
           {/* Tutti i filtri su UNA riga: cerca + aggiorna(reset) + chip stato + copia.
               flex-nowrap + overflow-x-auto: se lo spazio manca scorre in orizzontale
               invece di andare a capo, così resta sempre una riga unica. */}
-          <div className="flex flex-nowrap items-center gap-2 overflow-x-auto text-xs">
+          <div className="flex flex-nowrap items-center gap-2 overflow-x-auto touch-pan-x text-xs">
             {/* Aggiorna: pulsante TONDO, sola icona, SEMPRE in PRIMA posizione. */}
             <button
               onClick={resetAndRefresh}
