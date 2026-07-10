@@ -56,10 +56,10 @@ export function AdminFilterBar<T extends string>({
           <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
         </button>
       )}
-      {/* Box ricerca: su mobile si allunga per riempire lo spazio residuo della
-          riga (flex-1 min-w-0), così la riga filtri è piena e coerente con la
-          riga sotto; da sm in su larghezza fissa. */}
-      <div className="relative flex-1 min-w-0 sm:flex-none sm:w-44 md:w-56">
+      {/* Box ricerca: larghezza FISSA (mai flex-1: in una riga scorrevole con
+          altri chip il flex-1 finirebbe per accavallarsi ai chip). Un filo più
+          largo su mobile, poi cresce da sm in su. */}
+      <div className="relative w-32 sm:w-44 md:w-56 shrink-0">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <input
           type="text"
