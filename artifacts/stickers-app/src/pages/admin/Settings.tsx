@@ -197,7 +197,7 @@ export function AdminSettings() {
             onClick={handleCopyAll}
             aria-label="Copia tutto il testo legale"
             title="Copia tutto il testo legale"
-            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="shrink-0 flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <Copy className="h-4 w-4" />
             Copia tutto

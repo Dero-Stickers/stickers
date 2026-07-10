@@ -380,7 +380,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
               disabled={loading}
               aria-label="Aggiorna e azzera la ricerca"
               title="Aggiorna e azzera la ricerca"
-              className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </button>
@@ -401,7 +401,7 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
               disabled={loading || !filtered.length}
               aria-label="Copia tutte le segnalazioni"
               title="Copia tutte le segnalazioni"
-              className="ml-auto shrink-0 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="ml-auto shrink-0 flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Copy className="h-4 w-4" />
             </button>

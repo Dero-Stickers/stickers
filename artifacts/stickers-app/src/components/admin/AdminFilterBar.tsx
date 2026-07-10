@@ -32,7 +32,7 @@ export function AdminFilterBar<T extends string>({
   placeholder?: string;
   filter: T;
   onFilter: (v: T) => void;
-  options: readonly (readonly [T, string])[];
+  options: readonly (readonly [T, ReactNode])[];
   onRefresh?: () => void;
   refreshing?: boolean;
   extra?: ReactNode;
@@ -41,7 +41,7 @@ export function AdminFilterBar<T extends string>({
     // Riga unica: ricerca + refresh + chip + extra. Su mobile NON va a capo,
     // scorre in orizzontale (flex-nowrap + overflow-x-auto) — coerente in tutte
     // le sezioni admin.
-    <div className="shrink-0 flex flex-nowrap items-center gap-2 overflow-x-auto">
+    <div className="shrink-0 w-full flex flex-nowrap items-center gap-2 overflow-x-auto">
       {/* Refresh/reset: pulsante TONDO, sola icona, SEMPRE in PRIMA posizione
           (fisso in tutte le pagine). */}
       {onRefresh && (
@@ -51,14 +51,15 @@ export function AdminFilterBar<T extends string>({
           disabled={refreshing}
           aria-label="Aggiorna e azzera i filtri"
           title="Aggiorna e azzera i filtri"
-          className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl border bg-white text-muted-foreground shadow-sm hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
         </button>
       )}
-      {/* Box ricerca: stretto su mobile (ruba spazio ai chip/copia), più ampio
-          da sm in su. */}
-      <div className="relative w-28 sm:w-44 md:w-56 shrink-0">
+      {/* Box ricerca: su mobile si allunga per riempire lo spazio residuo della
+          riga (flex-1 min-w-0), così la riga filtri è piena e coerente con la
+          riga sotto; da sm in su larghezza fissa. */}
+      <div className="relative flex-1 min-w-0 sm:flex-none sm:w-44 md:w-56">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <input
           type="text"
@@ -73,7 +74,7 @@ export function AdminFilterBar<T extends string>({
           <button
             key={val}
             onClick={() => onFilter(val)}
-            className={`shrink-0 whitespace-nowrap h-9 px-3.5 rounded-full border text-sm shadow-sm transition-colors ${
+            className={`shrink-0 whitespace-nowrap h-9 px-3.5 rounded-xl border text-sm shadow-sm transition-colors ${
               filter === val
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-white border-border hover:bg-muted"

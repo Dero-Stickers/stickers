@@ -6,7 +6,7 @@
 // arrivo" (Ko-fi si collega configurando il webhook nel pannello Ko-fi).
 
 import { useMemo, useState } from "react";
-import { Heart, Gift, TrendingUp, Clock, Eye } from "lucide-react";
+import { Heart, Gift, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -107,8 +107,6 @@ export function AdminDonations() {
   const cards = [
     { label: "Totale raccolto", value: money(summary?.total ?? "0", currency), icon: Heart, color: "text-accent" },
     { label: "Donazioni", value: String(summary?.count ?? 0), icon: Gift, color: "text-primary" },
-    { label: "Media donazione", value: money(summary?.average ?? "0", currency), icon: TrendingUp, color: "text-primary" },
-    { label: "Ultima", value: formatDate(summary?.lastAt), icon: Clock, color: "text-muted-foreground" },
   ];
 
   return (
@@ -128,7 +126,7 @@ export function AdminDonations() {
       {/* Riepilogo + avviso: FISSI in cima (shrink-0). Solo l'AdminTable sotto
           scorre (ha già il proprio scroll interno) → coerente con le altre
           pagine admin: testata e riepilogo restano sempre visibili. */}
-      <div className="shrink-0 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="shrink-0 grid grid-cols-2 gap-4">
         {cards.map((card) => (
           <Card key={card.label} className="shadow-sm">
             <CardContent className="p-4">
@@ -142,24 +140,16 @@ export function AdminDonations() {
         ))}
       </div>
 
-      {/* Avviso mostrato SOLO finché non è arrivata alcuna donazione: guida al
-          collegamento di Ko-fi. Appena arriva il primo contributo, sparisce. */}
+      {/* Finché non è arrivata alcuna donazione, solo il titolo di stato (la
+          spiegazione è stata rimossa per tenere la pagina pulita). */}
       {isEmpty && (
         <Card className="shrink-0 shadow-sm border-accent/30 bg-accent/5">
-          <CardHeader className="pb-2">
+          <CardHeader className="py-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Heart className="h-4 w-4 text-accent" />
               In attesa della prima donazione
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              L'app è gratuita: l'unico introito sono le donazioni spontanee.
-              Ogni contributo ricevuto tramite Ko-fi comparirà qui in tempo
-              reale (importo, nome e messaggio) con l'andamento complessivo.
-              La pagina è di sola lettura: nessun pagamento passa dall'app.
-            </p>
-          </CardContent>
         </Card>
       )}
 
@@ -181,11 +171,14 @@ export function AdminDonations() {
           tutte le info (messaggio intero). Solo questa tabella scorre. */}
       <AdminTable
         isLoading={isLoading}
+        // Su mobile tutte le colonne restano visibili: si scorre in orizzontale
+        // (min-width), coerente con Utenti / Album / Messaggi.
+        className="[&_table]:min-w-[640px]"
         head={
           <>
             <th><SortHeader label="Data" col="createdAt" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} /></th>
             <th>Da</th>
-            <th className="hidden sm:table-cell">Messaggio</th>
+            <th>Messaggio</th>
             <th><SortHeader label="Importo" col="amount" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} /></th>
             <th>Dettagli</th>
           </>
@@ -207,7 +200,7 @@ export function AdminDonations() {
             >
               <td className="whitespace-nowrap text-center text-foreground">{formatDate(d.createdAt)}</td>
               <td className="text-center text-foreground">{d.fromName || "Anonimo"}</td>
-              <td className="hidden sm:table-cell max-w-xs truncate text-center text-muted-foreground">
+              <td className="max-w-xs truncate text-center text-muted-foreground">
                 {d.message || "—"}
               </td>
               <td className="whitespace-nowrap text-center font-semibold">{money(d.amount, d.currency)}</td>

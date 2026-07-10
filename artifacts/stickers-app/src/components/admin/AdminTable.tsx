@@ -28,7 +28,10 @@ export function AdminTable({
   return (
     <Card
       className={cn(
-        "shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden",
+        // Mobile: altezza al contenuto (è la PAGINA a scorrere in verticale, vedi
+        // AdminPage) così tutte le righe si raggiungono scrollando. Da md in su:
+        // flex-1 + scroll interno (solo la tabella scorre, testata fissa).
+        "shadow-sm flex flex-col overflow-hidden md:flex-1 md:min-h-0",
         className,
       )}
     >
@@ -39,7 +42,7 @@ export function AdminTable({
           ))}
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="overflow-x-auto md:flex-1 md:min-h-0 md:overflow-auto">
           <table
             className={cn(
               "w-full border-collapse text-sm",

@@ -297,7 +297,7 @@ export function AdminMessages() {
             disabled={copying || !filteredChats.length}
             aria-label="Copia tutte le chat"
             title="Copia tutte le chat"
-            className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Copy className={`h-4 w-4 ${copying ? "animate-pulse" : ""}`} />
           </button>
@@ -306,12 +306,15 @@ export function AdminMessages() {
       <div className="flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}
+        // Su mobile tutte le colonne restano visibili: si scorre in orizzontale
+        // (min-width), coerente con Utenti / Album.
+        className="[&_table]:min-w-[560px]"
         head={
           <>
             <th>
               <SortHeader label="Partecipanti" col="participants" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} />
             </th>
-            <th className="hidden md:table-cell">
+            <th>
               <SortHeader label="Messaggi" col="messageCount" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} />
             </th>
             <th>Stato</th>
@@ -330,7 +333,7 @@ export function AdminMessages() {
                 {chat.hasReport && <Flag className="h-3.5 w-3.5 text-destructive shrink-0" />}
               </div>
             </td>
-            <td className="hidden md:table-cell text-center text-foreground">{chat.messageCount}</td>
+            <td className="text-center text-foreground">{chat.messageCount}</td>
             <td className="text-center">
               {chat.hasReport ? (
                 <Badge className="bg-red-100 text-red-700 border-0 text-xs">Segnalata</Badge>

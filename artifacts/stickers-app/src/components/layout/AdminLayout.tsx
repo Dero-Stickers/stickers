@@ -1,6 +1,6 @@
 import { ReactNode, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { useScrollResetOnNavigate } from "@/hooks/useScrollResetOnNavigate";
@@ -29,7 +29,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
         <div className="relative flex items-center justify-center px-4 h-14">
           <AppLogo className="h-8 w-auto" />
-          <span className="absolute left-4 text-[10px] text-sidebar-foreground/85 uppercase tracking-widest font-semibold">Admin</span>
+          {/* Distintivo admin: scudetto vuoto (solo contorno blu scuro), al posto
+              del testo "Admin". Simbolo standard e immediato dell'area riservata. */}
+          <Shield className="absolute left-4 h-6 w-6 text-slate-800" aria-label="Area admin" />
+          <span className="sr-only">Admin</span>
           <button
             onClick={() => setMobileOpen(o => !o)}
             className="absolute right-3 p-2 rounded-lg hover:bg-sidebar-accent transition-colors"

@@ -185,11 +185,14 @@ export function AdminAlbums() {
       subtitle={isLoading ? "..." : `${albums?.length ?? 0} album totali`}
       actions={
         <Button
-          className="gap-2 bg-primary text-primary-foreground"
+          // Su mobile solo l'icona "+" tonda (recupera spazio verticale); da sm in
+          // su torna il pulsante con testo "Crea album".
+          className="bg-primary text-primary-foreground h-9 w-9 p-0 rounded-full sm:w-auto sm:px-4 sm:rounded-md sm:gap-2"
           onClick={() => { setNewTitle(""); setNewCategory(DEFAULT_ALBUM_CATEGORY); setShowCreate(true); }}
+          aria-label="Crea album"
         >
           <Plus className="h-4 w-4" />
-          Crea album
+          <span className="hidden sm:inline">Crea album</span>
         </Button>
       }
     >
@@ -202,55 +205,59 @@ export function AdminAlbums() {
         refreshing={isFetching}
         options={[
           ["all", "Tutti"],
-          ["online", "On Line"],
-          ["offline", "Off Line"],
+          // Su mobile abbreviati (On / Off) per evitare lo scroll orizzontale;
+          // da sm in su l'etichetta completa (On Line / Off Line).
+          ["online", <><span className="sm:hidden">On</span><span className="hidden sm:inline">On Line</span></>],
+          ["offline", <><span className="sm:hidden">Off</span><span className="hidden sm:inline">Off Line</span></>],
         ]}
-        extra={
-          // Chip categoria sulla stessa riga: compaiono solo con più di una
-          // categoria presente (con una sola il filtro non serve).
-          presentCategories.length > 1 && (
-            <div className="flex flex-wrap gap-1.5 text-xs sm:border-l sm:border-border sm:pl-2">
-              <button
-                onClick={() => setCatFilter("all")}
-                className={`px-2.5 py-1 rounded-full border transition-colors ${
-                  catFilter === "all"
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border hover:bg-muted"
-                }`}
-              >
-                Tutte
-              </button>
-              {presentCategories.map(c => (
-                <button
-                  key={c.key}
-                  onClick={() => setCatFilter(c.key)}
-                  className={`px-2.5 py-1 rounded-full border transition-colors ${
-                    catFilter === c.key
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:bg-muted"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          )
-        }
       />
+      {/* Chip categoria su una SECONDA riga sotto i filtri stato: riga propria
+          scorrevole (flex-nowrap + overflow-x-auto), stessa altezza h-9 e stesso
+          stile degli altri chip. Compaiono solo con più di una categoria. */}
+      {presentCategories.length > 1 && (
+        <div className="shrink-0 w-full flex flex-nowrap items-center gap-1.5 overflow-x-auto -mt-2">
+          <button
+            onClick={() => setCatFilter("all")}
+            className={`shrink-0 whitespace-nowrap h-9 px-3.5 rounded-xl border text-sm shadow-sm transition-colors ${
+              catFilter === "all"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-white border-border hover:bg-muted"
+            }`}
+          >
+            Tutti
+          </button>
+          {presentCategories.map(c => (
+            <button
+              key={c.key}
+              onClick={() => setCatFilter(c.key)}
+              className={`shrink-0 whitespace-nowrap h-9 px-3.5 rounded-xl border text-sm shadow-sm transition-colors ${
+                catFilter === c.key
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-white border-border hover:bg-muted"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
       {/* Spaziatura coerente con Gestione Messaggi: il gap naturale di AdminPage
           tra barra filtri e tabella resta (niente margine negativo). */}
       <div className="flex-1 min-h-0 flex flex-col">
       <AdminTable
         isLoading={isLoading}
+        // Su mobile tutte le colonne restano visibili: si scorre in orizzontale
+        // (min-width della tabella), coerente con Gestione Utenti.
+        className="[&_table]:min-w-[680px]"
         head={
           <>
             <th>
               <SortHeader label="Titolo" col="title" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} />
             </th>
-            <th className="hidden md:table-cell">
+            <th>
               <SortHeader label="Figurine" col="totalStickers" sortKey={sortKey ?? ""} sortDir={sortDir} onSort={handleSort} />
             </th>
-            <th className="hidden sm:table-cell">Categoria</th>
+            <th>Categoria</th>
             <th>Stato</th>
             <th>Utenti</th>
             <th>Azioni</th>
@@ -259,7 +266,7 @@ export function AdminAlbums() {
       >
         {!isLoading && filteredAlbums.length === 0 && (
           <tr>
-            <td colSpan={5} className="text-center text-muted-foreground">
+            <td colSpan={6} className="text-center text-muted-foreground">
               <div className="py-8">Nessun risultato per la ricerca o il filtro</div>
             </td>
           </tr>
@@ -269,8 +276,8 @@ export function AdminAlbums() {
             <td>
               <span className="font-medium text-foreground">{album.title}</span>
             </td>
-            <td className="hidden md:table-cell text-center text-foreground">{album.totalStickers}</td>
-            <td className="hidden sm:table-cell text-muted-foreground">
+            <td className="text-center text-foreground">{album.totalStickers}</td>
+            <td className="text-muted-foreground whitespace-nowrap">
               <span className="flex items-center justify-center gap-1.5">
                 {CATEGORY_ICON[album.category] && <img src={CATEGORY_ICON[album.category]} alt="" className="h-5 w-auto" />}
                 {albumCategoryLabel(album.category)}
@@ -304,7 +311,7 @@ export function AdminAlbums() {
         ))}
         {(albums?.length ?? 0) === 0 && (
           <tr>
-            <td colSpan={5} className="text-center text-muted-foreground">
+            <td colSpan={6} className="text-center text-muted-foreground">
               <div className="py-8">Nessun album. Crea il primo.</div>
             </td>
           </tr>

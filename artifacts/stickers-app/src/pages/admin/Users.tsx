@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Shield, ShieldOff, Heart, Eye, Send, Check, Copy } from "lucide-react";
+import { Ban, Heart, Eye, Send, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -288,7 +288,7 @@ export function AdminUsers() {
 
   return (
     <AdminPage
-      title={isLoading ? "Utenti" : `${filteredUsers.length} utenti`}
+      title={isLoading ? "Utenti" : `${filteredUsers.length} Utenti`}
       subtitle="Visualizza e gestisci gli utenti registrati"
     >
       <AdminFilterBar<"all" | "blocked">
@@ -308,7 +308,7 @@ export function AdminUsers() {
               onClick={copyInfo}
               aria-label="Copia info scambi-album"
               title="Copia i dati scambi e album degli utenti in formato testo per l'analisi AI"
-              className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <Copy className="h-4 w-4" />
             </button>
@@ -452,7 +452,7 @@ export function AdminUsers() {
                       toggleBlock.mutate({ userId: user.id, data: { isBlocked: !user.isBlocked } });
                     }}
                   >
-                    {user.isBlocked ? <ShieldOff className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
+                    {user.isBlocked ? <Check className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
                     <span className="hidden sm:inline">{user.isBlocked ? "Sblocca" : "Blocca"}</span>
                   </Button>
                 </div>
