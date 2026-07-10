@@ -7,6 +7,21 @@
 
 ## 2026-07
 
+- **Hardening & pulizia (audit) [10 lug]** — sessione di consolidamento senza cambi di
+  comportamento visibile. (1) **Log su ogni catch 500**: tutti i `catch` che rispondevano
+  `SERVER_ERROR` senza tracciare ora chiamano `req.log?.error(err)` (stile pino-http già
+  dominante) → niente più errori muti in produzione. (2) **`requireAdmin` a livello router**:
+  gate montato una volta su `/admin` in `routes/index.ts` (difesa in profondità: i check
+  per-handler restano); un futuro handler admin è protetto anche se dimentica il check.
+  (3) **Validazione input**: messaggi chat max 500 char (allineato al client) + `chatId` NaN
+  → 400; titoli album obbligatori ≤120 char + `albumId` NaN → 400. (4) **Pulizia dipendenze**:
+  rimosse 21 dep scaffold mai importate (shadcn/Radix inutilizzati, `cookie-parser`) + 3
+  componenti ui orfani (separator/sheet/toggle); `@tailwindcss/typography` TENUTO (usato in
+  `index.css`). (5) **Test in CI**: `pnpm -r test` (26 unit test) ora gira su ogni push.
+  (6) **Helper condivisi**: `src/lib/format.ts` (formatMoney/formatDate/formatDateTime) al
+  posto dei duplicati in Users/Donations; email fallback da `SUPPORT_EMAIL_FALLBACK`.
+  Restano da valutare (non urgenti): drift `openapi.yaml` (13 endpoint reali non nello spec),
+  aggiornamento `express` (3 vuln transitive path-to-regexp/qs), `.env.example` mancante.
 - **Admin: monitor risorse free tier (Supabase) [10 lug]** — box compatto orizzontale in alto a destra
   della pagina "Errori ricevuti" (solo vista `auto`): mostra % riempimento **DB** (limite Supabase Free
   500 MB → sola lettura oltre), crescita **utenti** (soglia pratica ~6.500, DNA/16) e **latenza DB**, con
