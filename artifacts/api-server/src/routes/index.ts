@@ -11,7 +11,7 @@ import settingsRouter from "./settings";
 import errorsRouter from "./errors";
 import kofiRouter from "./kofi";
 import meRouter from "./me";
-import { requireAuth, requireNotBlocked } from "../middlewares/auth";
+import { requireAuth, requireNotBlocked, requireAdmin } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -47,8 +47,11 @@ router.use("/chats", chatsRouter);
 // Conferma scambio concluso (montata sotto /chats)
 router.use("/chats", chatTradeRouter);
 
-// Admin routes
-router.use("/admin", adminRouter);
+// Admin routes — gate requireAdmin montato UNA volta sul prefisso: ogni route
+// admin (presente e FUTURA) è protetta a livello router, non solo dal controllo
+// per-handler. Un nuovo handler admin che dimenticasse il check resta comunque
+// chiuso. La validazione interna dei singoli handler resta (difesa in profondità).
+router.use("/admin", requireAdmin, adminRouter);
 
 // Settings routes
 router.use("/settings", settingsRouter);
