@@ -188,6 +188,7 @@ const getChatMessages: RequestHandler = async (req, res) => {
       createdAt: r.m.createdAt.toISOString(),
     })));
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -230,6 +231,7 @@ const sendMessage: RequestHandler = async (req, res) => {
 
     res.status(201).json({ id: msg.id, chatId: msg.chatId, senderId: msg.senderId, senderNickname: u.nickname, text: msg.text, isRead: msg.isRead, createdAt: msg.createdAt.toISOString() });
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -252,6 +254,7 @@ const reportChat: RequestHandler = async (req, res) => {
     await db.insert(reportsTable).values({ chatId, reporterId: session.userId, reportedUserId, reason: req.body.reason ?? "" });
     res.status(201).json({ success: true, message: "Segnalazione inviata" });
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };

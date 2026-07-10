@@ -67,6 +67,7 @@ const createAlbum: RequestHandler = async (req, res) => {
     }).returning();
     res.status(201).json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, category: album.category, createdAt: album.createdAt.toISOString() });
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -87,6 +88,7 @@ const getAlbum: RequestHandler = async (req, res) => {
       stickers: stickers.map(s => ({ id: s.id, albumId: s.albumId, number: s.number, code: s.code, name: s.name, description: s.description })),
     });
   } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -106,7 +108,8 @@ const updateAlbum: RequestHandler = async (req, res) => {
     }).where(eq(albumsTable.id, albumId)).returning();
     if (!album) { res.status(404).json({ error: "NOT_FOUND" }); return; }
     res.json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, category: album.category, createdAt: album.createdAt.toISOString() });
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -120,7 +123,8 @@ const togglePublish: RequestHandler = async (req, res) => {
     const [album] = await db.update(albumsTable).set({ isPublished: req.body.isPublished }).where(eq(albumsTable.id, albumId)).returning();
     if (!album) { res.status(404).json({ error: "NOT_FOUND" }); return; }
     res.json({ id: album.id, title: album.title, totalStickers: album.totalStickers, isPublished: album.isPublished, category: album.category, createdAt: album.createdAt.toISOString() });
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -133,7 +137,8 @@ const listStickers: RequestHandler = async (req, res) => {
     const { stickersTable } = await import("@workspace/db");
     const stickers = await db.select().from(stickersTable).where(eq(stickersTable.albumId, albumId));
     res.json(stickers.map(s => ({ id: s.id, albumId: s.albumId, number: s.number, code: s.code, name: s.name, description: s.description })));
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -239,7 +244,8 @@ const updateSticker: RequestHandler = async (req, res) => {
       .returning();
     if (!s) { res.status(404).json({ error: "NOT_FOUND" }); return; }
     res.json({ id: s.id, albumId: s.albumId, number: s.number, code: s.code, name: s.name, description: s.description });
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };

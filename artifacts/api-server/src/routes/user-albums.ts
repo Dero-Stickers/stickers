@@ -147,7 +147,8 @@ const removeAlbum: RequestHandler = async (req, res) => {
 
     invalidateUser(session.userId); // collezione cambiata → invalida cache match
     res.json({ success: true, message: "Album rimosso" });
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -181,7 +182,8 @@ const getUserAlbumStickers: RequestHandler = async (req, res) => {
       name: r.s.name,
       description: r.s.description,
     })));
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -228,7 +230,8 @@ const updateStickerState: RequestHandler = async (req, res) => {
       name: s?.name ?? "",
       description: s?.description ?? null,
     });
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };

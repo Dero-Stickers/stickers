@@ -210,7 +210,8 @@ const toggleBlock: RequestHandler = async (req, res) => {
       isBlocked: updated.isBlocked,
       createdAt: updated.createdAt.toISOString(),
     });
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -423,7 +424,8 @@ const closeChat: RequestHandler = async (req, res) => {
     const { chatsTable } = await import("@workspace/db");
     await db.update(chatsTable).set({ status: "closed" }).where(eq(chatsTable.id, chatId));
     res.json({ success: true, message: "Chat chiusa" });
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -438,7 +440,8 @@ const reopenChat: RequestHandler = async (req, res) => {
     const { chatsTable } = await import("@workspace/db");
     await db.update(chatsTable).set({ status: "active" }).where(eq(chatsTable.id, chatId));
     res.json({ success: true, message: "Chat riaperta" });
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -480,7 +483,8 @@ const getChatMessages: RequestHandler = async (req, res) => {
       .innerJoin(usersTable, eq(usersTable.id, messagesTable.senderId))
       .where(eq(messagesTable.chatId, chatId));
     res.json(msgs.map(r => ({ id: r.m.id, chatId: r.m.chatId, senderId: r.m.senderId, senderNickname: r.u.nickname, text: r.m.text, isRead: r.m.isRead, createdAt: r.m.createdAt.toISOString() })));
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
@@ -509,7 +513,8 @@ const listReports: RequestHandler = async (req, res) => {
       };
     }));
     res.json(result);
-  } catch {
+  } catch (err) {
+    req.log?.error(err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
 };
