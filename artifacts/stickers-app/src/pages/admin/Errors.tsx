@@ -365,11 +365,11 @@ export function AdminErrors({ group = "auto" }: { group?: ErrorsGroup }) {
       {/* Filtri SENZA box contenitore (coerente con Messaggi/Utenti): resi
           direttamente, non dentro una Card. */}
       <div className="space-y-3">
-          {/* Tutti i filtri su UNA riga: cerca + aggiorna(reset) + chip stato + copia.
+          {/* Tutti i filtri su UNA riga: aggiorna(reset) + cerca + copia.
               flex-nowrap + overflow-x-auto: se lo spazio manca scorre in orizzontale
               invece di andare a capo, così resta sempre una riga unica. */}
           <div className="flex flex-nowrap items-center gap-2 overflow-x-auto touch-pan-x text-xs">
-            {/* Aggiorna: pulsante TONDO, sola icona, SEMPRE in PRIMA posizione. */}
+            {/* Aggiorna: sola icona, SEMPRE in PRIMA posizione. */}
             <button
               onClick={resetAndRefresh}
               disabled={loading}

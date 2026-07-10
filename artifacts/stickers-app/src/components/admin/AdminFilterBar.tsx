@@ -2,16 +2,17 @@ import { Search, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 
 /**
- * Barra filtri minimale condivisa per le tabelle admin: campo ricerca (sfondo
- * bianco, placeholder "Cerca...") + pulsante refresh/reset tondo + chip di
- * stato. Discreta, attaccata alla tabella. Riutilizzata da Messaggi / Utenti /
- * Album / Donazioni / Errori per un aspetto e un comportamento coerenti.
+ * Barra filtri minimale condivisa per le tabelle admin: pulsante refresh/reset
+ * + campo ricerca (sfondo bianco, placeholder "Cerca...") + chip di stato.
+ * Tutti gli elementi hanno la stessa altezza (h-9) e lo stesso arrotondamento
+ * (rounded-xl). Discreta, attaccata alla tabella. Riutilizzata da Messaggi /
+ * Utenti / Album / Donazioni / Errori per un aspetto e comportamento coerenti.
  *
- * Ordine FISSO su una riga (stesso in ogni pagina): ricerca → refresh/reset →
- * chip → extra. Il pulsante refresh sta SEMPRE subito dopo la ricerca.
+ * Ordine FISSO su una riga (stesso in ogni pagina): refresh/reset → ricerca →
+ * chip → extra. Il pulsante refresh sta SEMPRE in prima posizione.
  *
  * I chip sono generici: ogni pagina passa le proprie opzioni [valore, etichetta].
- * `onRefresh` opzionale: se passato, mostra il pulsante tondo (ricarica i dati e
+ * `onRefresh` opzionale: se passato, mostra il pulsante (ricarica i dati e
  * azzera i filtri, a cura della pagina). `refreshing` fa girare l'icona.
  * `extra` = contenuto opzionale reso sulla STESSA riga dopo i chip di stato
  * (es. il pulsante "Copia" in Messaggi), così tutti i filtri stanno in una riga.
@@ -42,8 +43,8 @@ export function AdminFilterBar<T extends string>({
     // scorre in orizzontale (flex-nowrap + overflow-x-auto) — coerente in tutte
     // le sezioni admin.
     <div className="shrink-0 w-full flex flex-nowrap items-center gap-2 overflow-x-auto touch-pan-x">
-      {/* Refresh/reset: pulsante TONDO, sola icona, SEMPRE in PRIMA posizione
-          (fisso in tutte le pagine). */}
+      {/* Refresh/reset: sola icona, SEMPRE in PRIMA posizione (fisso in tutte
+          le pagine). */}
       {onRefresh && (
         <button
           type="button"
