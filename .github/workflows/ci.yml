@@ -44,3 +44,7 @@ jobs:
 
       - name: Typecheck + build
         run: pnpm build
+
+      # Unit test (tsx --test) di frontend e backend — non richiedono DB.
+      - name: Test
+        run: pnpm -r test
